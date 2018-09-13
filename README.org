@@ -1,0 +1,10 @@
+* Flypitch
+
+* Goals
+The Flypitch project aims to produce a formal proof of the independence of the continuum hypothesis. We will produce the formal proof by systematically formalizing the conventional human-readable account of the proof, [[https://www.github.com/flypitch/flypitch-notes/][located here]].
+
+* Contributors
+Current contributors include:
+ - Jesse Han
+ - Andrew Tindall
+ - Tom Hales
