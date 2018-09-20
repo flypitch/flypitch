@@ -1,4 +1,7 @@
-
+/- 9/20/18 
+    Preliminary definitions and some functions for working with languages and first-order logic.
+    Much of the structure and methods are taken from Russell O'Connor's proof of Goedel's incompleteness theorem, at http://r6.ca/Goedel/goedel1.html
+    Andrew Tindall-/
 
 structure Language := 
     language :: (relations : Π n : nat, Type) (functions : Π  n : nat, Type)
@@ -151,7 +154,13 @@ inductive prf : list (formula L) → formula L → Type
     | eq1 : prf [] ((var L 0) ≍ (var L 0))
     | eq2 : prf [] (( (var L 0) ≍ (var L 1)) ⟾ ((var L 1) ≍ (var L 0)))
     | eq3 : prf [] (((var L 0) ≍ (var L 1)) ⟾ (((var L 1) ≍ (var L 2)) ⟾ ((var L 0) ≍ (var L 2))))
-    /- the following two axioms are examples standing in for the more general equality axioms that need to be generated for n-ary relations and functions-/
+    /- the following two axioms are examples standing in for the more general equality axioms that need to be generated for n-ary relations and functions;
+            
+            x0 = x1 ⇒ … ⇒ x2n-2 = x2n-1 ⇒ (R(x0, x2, …, x2n-2) ⇔ R(x1, x3, …, x2n-1))  and
+            x0 = x1 ⇒ … ⇒ x2n-2 = x2n-1 ⇒ f(x0, x2, …, x2n-2) = f(x1, x3, …, x2n-1)
+            
+            src http://r6.ca/Goedel/goedel1.html
+            -/
     | eq4 : ∀ r : L.relations 2, prf [] (((var L 0) ≍ (var L 1)) ⟾ 
                                         (((var L 2) ≍ (var L 3)) ⟾ 
                                             ((atomic 2 r (conj 2 (var L 0) (conj 1 (var L 2) (nil L)))) ⟺ (atomic 2 r (conj 2 (var L 1) (conj 1 (var L 3) (nil L)))))))
