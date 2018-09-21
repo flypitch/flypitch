@@ -1,0 +1,18 @@
+* Syntax
+** TODO make sentence declarations easier
+** TODO write prenex normal form method
+
+* Semantics
+** TODO Define model
+** TODO Define satisfiability
+* Soundness
+** TODO Soundness theorem
+
+* Completeness
+** TODO Completeness theorem (via Henkin construction)
+
+* Lowenheim skolem
+** TODO Lowenheim skolem
+
+* ZFC
+** TODO Define ZFC
