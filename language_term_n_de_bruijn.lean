@@ -3,6 +3,11 @@
     Much of the structure and methods are taken from Russell O'Connor's proof of Goedel's incompleteness theorem, at http://r6.ca/Goedel/goedel1.html
     Andrew Tindall-/
 
+/- 2018-09-21T13:12:55
+   Added some proof rules more closely reflecting rules of deduction in Prop
+   We should double-check that the additional constructors true, false, and and or have been taken care of appropriately in the implementation of de Bruijn indices.
+   ---Jesse -/
+
 structure Language := 
     language :: (relations : Π n : nat, Type) (functions : Π  n : nat, Type) (consts : Type)
 variable L : Language
@@ -34,8 +39,12 @@ instance term_has_sizeof { n: term_param}  : has_sizeof (term L n) := ⟨ term_s
 
 
 inductive formula : Type 
+    | true : formula
+    | false : formula
     | equal : term L atm → term L atm → formula
     | atomic : ∀ (n : nat) (r : L.relations n), term L (vec n) → formula 
+    | and : formula → formula → formula
+    | or : formula → formula → formula
     | imp : formula → formula → formula
     | not : formula → formula
     | all : formula → formula
@@ -62,9 +71,13 @@ def free_vars_term : Π n, ℕ → (term L n) → list ℕ
 def free_vars_formula : ℕ → formula L → list ℕ 
     | m (equal t1 t2) := list.union (free_vars_term L atm m t1) (free_vars_term L atm m t2)
     | m (atomic n r ts) := free_vars_term L (vec n) m ts
+    | m (and t1 t2) := list.union(free_vars_formula m t1) (free_vars_formula m t2)
+    | m (or t1 t2) := list.union(free_vars_formula m t1) (free_vars_formula m t2)
     | m (imp f1 f2) := list.union (free_vars_formula m f1) (free_vars_formula m f2)
     | m (not f) := free_vars_formula m f
     | m (all  f) := free_vars_formula (m+1) f
+    | m (false L) := []
+    | m (true L) := []
 
 
 def raise_depth_term : ∀ n, term L n → ℕ  → term L n
@@ -76,9 +89,13 @@ def raise_depth_term : ∀ n, term L n → ℕ  → term L n
 def raise_depth_formula : formula L → ℕ → formula L
     | (equal t1 t2) m := equal (raise_depth_term L atm t1 m) (raise_depth_term L atm t2 m)
     | (atomic n r ts) m := atomic n r (raise_depth_term L (vec n) ts m)
+    | (and t1 t2) m :=  and (raise_depth_formula t1 m) (raise_depth_formula t2 m)
+    | (or t1 t2) m :=  or (raise_depth_formula t1 m) (raise_depth_formula t2 m)    
     | (imp f1 f2) m := imp (raise_depth_formula f1 m) (raise_depth_formula f2 m)
     | (not f) m := not (raise_depth_formula f m)
     | (all f) m := all (raise_depth_formula f m)
+    | (false L) m := (false L)
+    | (true L) m := (true L)
 
 def lower_depth_term : ∀ n, term L n → ℕ  → term L n
     | atm (var L n) m := var L (n-m)
@@ -89,9 +106,13 @@ def lower_depth_term : ∀ n, term L n → ℕ  → term L n
 def lower_depth_formula : formula L → ℕ → formula L
     | (equal t1 t2) m := equal (lower_depth_term L atm t1 m) (lower_depth_term L atm t2 m)
     | (atomic n r ts) m := atomic n r (lower_depth_term L (vec n) ts m)
+    | (and t1 t2) m :=  and (lower_depth_formula t1 m) (lower_depth_formula t2 m)
+    | (or t1 t2) m :=  or (lower_depth_formula t1 m) (lower_depth_formula t2 m)    
     | (imp f1 f2) m := imp (lower_depth_formula f1 m) (lower_depth_formula f2 m)
     | (not f) m := not (lower_depth_formula f m)
     | (all f) m := all (lower_depth_formula f m)
+    | (false L) m := (false L)
+    | (true L) m := (true L)
 
 
 lemma lt_add : ∀ (n m k : ℕ), n < m → n < k + m:= begin {intros n m k n_lt_m, induction k, rw zero_add,exact n_lt_m, rw nat.succ_add, apply nat.lt_succ_of_lt,exact k_ih} end
@@ -148,9 +169,13 @@ def var_in_formula : ℕ → ℕ → formula L → Prop
 def substitute_formula : formula L → (nat × term L atm) → ℕ → formula L
     | (equal t t') pair m := equal (substitute_term L atm t pair m) (substitute_term L atm t' pair m)
     | (atomic n r t) pair m := atomic n r (substitute_term L (vec n) t pair m) 
+    | (and t1 t2) pair m :=  and (substitute_formula t1 pair m) (substitute_formula t2 pair m)
+    | (or t1 t2) pair m :=  or (substitute_formula t1 pair m) (substitute_formula t2 pair m)    
     | (imp f f') pair m := imp (substitute_formula f pair m) (substitute_formula f' pair m)
     | (not f) pair m := not (substitute_formula f pair m)
     | (all f) pair m := substitute_formula f pair (m+1)
+    | (false L) pair m := (false L)
+    | (true L) pair m := (true L)
 
 
 
@@ -180,9 +205,18 @@ def axm_eq_5 : ∀ n, L.relations n → formula L
 
 
 
+-- L.true must be interpreted as true --- need to have reified true for soundness
 
 inductive prf : list (formula L) → formula L → Type
-    | axm : ∀ a, prf [a] a
+    | true_intro : ∀ as, prf as (true L) -- true is vacuously provable
+    | false_elim : ∀ a, prf [false L] a  -- principle of explosion
+    | not_elim : ∀ a, prf [not a] (a ⟾ (false L))
+    | not_intro :∀ a, prf [a ⟾ false L] (not a)
+    | and_eliml : ∀ a b, prf [formula.and a b] a -- if we know A ∧ B, then we know A 
+    | and_elimr : ∀ a b, prf [formula.and a b] b -- if we know A ∧ B, then we know B
+    | and_intro : ∀ as, prf as (as.foldr (formula.and) (true L)) -- if A1...An are known, then true ∧ A1 ∧ ... ∧ An is provable (and true ∧ B → B) by modus ponens and and_elim
+    | or_intro : ∀ a b, prf [a] (formula.or a b) -- if we know A is true, then for any B, A ∨ B is true.
+    | axm : ∀ a, prf [a] (true L ⟾ a) -- equivalent to O'Connor's axm by MP
     | mp : ∀ axm axm' f g, prf axm (imp f g) → prf axm' f → prf (axm ++ axm') g
     | gen : ∀ axm f, prf axm f → prf axm (all (raise_depth_formula L f 1))
     | imp1 : ∀ f g, prf [] (f ⟾ (g ⟾ f))
