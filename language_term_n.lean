@@ -4,54 +4,64 @@
     Andrew Tindall-/
 
 structure Language := 
-    language :: (relations : Π n : nat, Type) (functions : Π  n : nat, Type)
+    language :: (relations : Π n : nat, Type) (functions : Π  n : nat, Type) (consts : Type)
 variable L : Language
 
+def term_param := unit ⊕ nat
+def atm :term_param := sum.inl ()
+def vec : nat → term_param := λ n, sum.inr n
 
-inductive term  : Π n, Type 
-    | nil : term 1
-    | var : ℕ → term 0
-    | conj : ∀ n, term 0 → term n → term (n + 1)
-    | apply : ∀ (n : nat) (f : L.functions n), term (n+1) → term 0
+inductive term : Π n, Type 
+    | var : ℕ → term atm
+    | const: L.consts → term atm
+    | apply : ∀ (n : nat) (f : L.functions n), term (vec n) → term atm
+    | nil : term (vec 0)
+    | conj : ∀ n, term atm → term (vec n) → term (vec (n + 1))
+    
 open term
+
+local notation `⟦` l:(foldr `, ` (h t, ((prod.fst t) + 1, conj t.fst h (prod.snd t))) (0, nil L) `⟧`) := prod.snd l
 
 
 def term_sizeof :Π n, term L n → ℕ 
-    | 0 (var L n) := 0
-    | 0 (apply n f ts) :=  n + 2 + term_sizeof (n+1) ts
-    | n (conj m t ts) := 1 + term_sizeof 0 t + term_sizeof m ts
-    | 1 (nil L) := 0
-instance term_has_sizeof { n: nat}  : has_sizeof (term L n) := ⟨ term_sizeof L n ⟩ 
+    | atm (var L n) := 0
+    | atm (const c) := 0
+    | atm (apply n f ts) :=  n + 2 + term_sizeof (vec n) ts
+    | (sum.inr 0) (nil L) := 0
+    | (sum.inr (n+1)) (conj m t ts) := 1 + term_sizeof atm t + term_sizeof (vec m) ts
+
+instance term_has_sizeof { n: term_param}  : has_sizeof (term L n) := ⟨ term_sizeof L n ⟩ 
 
 
 inductive formula : Type 
-    | equal : term L 0 → term L 0 → formula
-    | atomic : ∀ (n : nat) (r : L.relations n), term L (n+1) → formula 
+    | equal : term L atm → term L atm → formula
+    | atomic : ∀ (n : nat) (r : L.relations n), term L (vec n) → formula 
     | imp : formula → formula → formula
     | not : formula → formula
     | all : ℕ → formula → formula
 open formula
 
-def andf := λ f g, not (imp f (not g))
+def andf := λ (f : formula L) g, not (imp f (not g))
 
 reserve infix `⟾`:10
 infix ⟾ := imp
 
-reserve infix `⟺`:15
-infix ⟺ := λ f g, andf (f ⟾ g) (g ⟾ f)
+reserve infix `⇔`:15
+local infix ⇔ := λ (f : formula L) g, andf L (f ⟾ g) (g ⟾ f)
 
 reserve infix `≍`:20
 infix ≍ := equal
 
 def free_vars_term : Π n, (term L n) → list ℕ 
-    | 1 _ := []
-    | 0 (var L n) := [n]
-    | 0 (apply n f ts) := free_vars_term (n+1) ts
-    | (n+1) (conj L t ts) := list.union (free_vars_term 0 t) (free_vars_term n ts)
+    | atm (var L n) := [n]
+    | atm (const c) := []
+    | atm (apply n f ts) := free_vars_term (vec n) ts
+    | (sum.inr 0) _ := []
+    | (sum.inr (n+1)) (conj m t ts) := list.union (free_vars_term atm t) (free_vars_term (vec n) ts)
 
 def free_vars_formula : formula L → list ℕ 
-    | (equal t1 t2) := list.union (free_vars_term L 0 t1) (free_vars_term L 0 t2)
-    | (atomic n r ts) := free_vars_term L (n+1) ts
+    | (equal t1 t2) := list.union (free_vars_term L atm t1) (free_vars_term L atm t2)
+    | (atomic n r ts) := free_vars_term L (vec n) ts
     | (imp f1 f2) := list.union (free_vars_formula f1) (free_vars_formula f2)
     | (not f) := free_vars_formula f
     | (all n f) := list.filter (≠ n) (free_vars_formula f)
@@ -60,71 +70,76 @@ def free_vars_formula : formula L → list ℕ
 lemma lt_add : ∀ (n m k : ℕ), n < m → n < k + m:= begin {intros n m k n_lt_m, induction k, rw zero_add,exact n_lt_m, rw nat.succ_add, apply nat.lt_succ_of_lt,exact k_ih} end
 lemma add_lt : ∀ (n m k : ℕ), n < m → n < m + k := begin {intros n m k n_lt_m, induction k, rw add_zero,exact n_lt_m, rw nat.add_comm, rw nat.succ_add, apply nat.lt_succ_of_lt, rw nat.add_comm, exact k_ih} end
 
-def substitute_term : Π (n : nat), term L n → list (nat × term L 0) → term L n
-    | 1 a b := nil L
-    | 0 (var L n) [] := var L n
-    | 0 (var L n) ((m, t) :: pairs) := if n = m then t else substitute_term 0 (var L n) pairs
-    | 0 (apply n f ts) pairs := have n + (2 + term_sizeof L (n + 1) ts) < 1 + term_sizeof L 0 (apply n f ts), from
-        begin
-        simp [term_sizeof],
-        apply add_lt_add_left,
-            have l : ∀ a: nat, a < 1 + a, by {intro a,rw add_comm, rw nat.add_one, apply nat.lt_succ_self},
-            apply l,
-        end,
-    apply n f (substitute_term (n+1) ts pairs)
-    | n (conj m t ts) pairs := have 1 + term_sizeof L 0 t < m + (2 + term_sizeof L (m + 1) (conj m t ts)), from 
-        begin
-            simp [term_sizeof],
-            apply lt_add, apply lt_add, apply lt_add,
-            apply add_lt_add_right,
-            admit,
-        end, have 1 + term_sizeof L m ts < 2 + term_sizeof L (m + 1) (conj m t ts), from 
-            begin 
-                simp [term_sizeof], apply add_lt_add_left, apply lt_add_of_pos_right, admit
-            end,
-    conj m (substitute_term 0 t pairs) (substitute_term m ts pairs)
+def substitute_term : Π (n : term_param), term L n → list (nat × term L atm) → term L n
+    | atm (var L n) [] := var L n
+    | atm (var L n) ((m, t) :: pairs) := if n = m then t else substitute_term atm (var L n) pairs
+    | atm (const c) _ := const c
+    | atm (apply n f ts) pairs := 
+            have term_sizeof L (vec n) ts < term_sizeof L atm (apply n f ts), from 
+                begin simp[term_sizeof], 
+                    apply lt_add,
+                    exact nat.lt_add_of_pos_right (nat.zero_lt_succ 1) 
+                end,
+        apply n f (substitute_term (sum.inr n) ts pairs)
+    | (sum.inr 0) a b := nil L
+    | (sum.inr n) (conj m t ts) pairs := 
+            have term_sizeof L atm t < term_sizeof L (sum.inr (m + 1)) (conj m t ts), from 
+                begin 
+                    simp [term_sizeof, nat.add_assoc], simp [nat.one_add], 
+                    apply nat.lt_succ_of_le, 
+                    apply nat.le_add_right  
+                end,
+            have term_sizeof L (vec m) ts < term_sizeof L (sum.inr (m + 1)) (conj m t ts), from 
+                begin 
+                    simp [term_sizeof, nat.one_add], 
+                    apply nat.lt_add_of_pos_left, 
+                    apply nat.zero_lt_succ 
+                end,
+        conj m (substitute_term atm t pairs) (substitute_term (vec m) ts pairs)
 using_well_founded {rel_tac := λ _ _, `[exact ⟨_, measure_wf psigma.sizeof⟩]}
 
 def var_in_term : ∀ n, ℕ → term L n → Prop
-    | 0 x (var L y) := x = y
-    | 0 x (apply n f ts) := var_in_term (n+1) x ts
-    | (n+1) x (conj m t ts) := var_in_term 0 x t ∨ var_in_term n x ts
-    | 1 x (nil L) := false
+    | atm x (var L y) := x = y
+    | atm _ (const c) := false
+    | atm x (apply n f ts) := var_in_term (vec n) x ts
+    | (sum.inr 0) _ _ := false
+    | (sum.inr (n+1)) x (conj m t ts) := var_in_term atm x t ∨ var_in_term (vec n) x ts
 
 def var_in_formula : ℕ → formula L → Prop
-    | x (equal t t') := var_in_term L 0 x t ∨ var_in_term L 0 x t'
-    | x (atomic n r ts) := var_in_term L (n+1) x ts
+    | x (equal t t') := var_in_term L atm x t ∨ var_in_term L atm x t'
+    | x (atomic n r ts) := var_in_term L (vec n) x ts
     | x (imp f f') := var_in_formula x f ∨ var_in_formula x f'
     | x (not f) := var_in_formula x f
     | x (all n f) := x = n ∨ var_in_formula x f
 
-def var_in_pairs : ℕ → list (nat × term L 0) → Prop
+def var_in_pairs : ℕ → list (nat × term L atm) → Prop
     | x [] := false
-    | x ((n, t) :: pairs) := var_in_term L 0 x t ∨ var_in_pairs x pairs
+    | x ((n, t) :: pairs) := (var_in_term L atm) x t ∨ var_in_pairs x pairs
 
 
 def max_var_in_term : ∀ n, term L n → ℕ 
-    | 1 _ := 0
-    | 0 (var L n) := n
-    | 0 (apply n f ts) := max_var_in_term (n+1) ts
-    | (n+1) (conj L t ts) := max (max_var_in_term 0 t) (max_var_in_term n ts)
+    | atm (var L n) := n
+    | atm (const c) := 0
+    | atm (apply n f ts) := max_var_in_term (vec n) ts
+    | (sum.inr 0) _ := 0
+    | (sum.inr (n+1)) (conj L t ts) := max (max_var_in_term atm t) (max_var_in_term (vec n) ts)
 
-def max_var_in_pairs : list (ℕ × term L 0) → ℕ
+def max_var_in_pairs : list (ℕ × term L atm) → ℕ
     | [] := 0
-    | ((n, t) :: pairs) := max (max_var_in_term L 0 t) (max_var_in_pairs pairs)
+    | ((n, t) :: pairs) := max (max_var_in_term L atm t) (max_var_in_pairs pairs)
 
 def max_var_in_formula : formula L → ℕ 
-    | (equal t t') := max (max_var_in_term L 0  t) (max_var_in_term L 0 t')
-    | (atomic n r ts) := max_var_in_term L (n+1) ts
+    | (equal t t') := max (max_var_in_term L atm  t) (max_var_in_term L atm t')
+    | (atomic n r ts) := max_var_in_term L (vec n) ts
     | (imp f f') := max (max_var_in_formula f) (max_var_in_formula f')
     | (not f) := max_var_in_formula f
     | (all n f) := max n (max_var_in_formula f)
 
-def var_not_in : formula L → list (ℕ × term L 0) → ℕ 
+def var_not_in : formula L → list (ℕ × term L atm) → ℕ 
     | f pairs := 1 + (max (max_var_in_formula L f) (max_var_in_pairs L pairs))
 
-def free_pairs : formula L → list (ℕ × term L 0) → list (ℕ × term L 0)
-    | f pairs := let fv := free_vars_formula L f in list.filter (λ p : ℕ × term L 0, p.fst ∈ fv) pairs
+def free_pairs : formula L → list (ℕ × term L atm) → list (ℕ × term L atm)
+    | f pairs := let fv := free_vars_formula L f in list.filter (λ p : ℕ × term L atm, p.fst ∈ fv) pairs
 
 instance var_in_decidable : ∀ n pairs f, decidable (var_in_formula L n f ∨ var_in_pairs L n pairs) := 
 begin
@@ -133,13 +148,35 @@ begin
 end
 
 
-
-def substitute_formula : formula L → list (nat × term L 0) → formula L
-    | (equal t t') pairs := equal (substitute_term L 0 t pairs) (substitute_term L 0 t' pairs)
-    | (atomic n r t) pairs := atomic n r (substitute_term L (n+1) t pairs) 
+def substitute_formula : formula L → list (nat × term L atm) → formula L
+    | (equal t t') pairs := equal (substitute_term L atm t pairs) (substitute_term L atm t' pairs)
+    | (atomic n r t) pairs := atomic n r (substitute_term L (vec n) t pairs) 
     | (imp f f') pairs := imp (substitute_formula f pairs) (substitute_formula f' pairs)
     | (not f) pairs := not (substitute_formula f pairs)
     | (all n f) pairs := if var_in_formula L n f ∨ var_in_pairs L n pairs then let n' := var_not_in L f (free_pairs L f pairs) in all n' (substitute_formula f ((n, var L n') :: pairs)) else all n (substitute_formula f (free_pairs L f pairs))
+
+
+def vec_length_n_diff_two : ∀ n, ℕ →  term L (vec n)
+    | 0 hd := nil L
+    | (n+1) hd := conj n (var L hd) (vec_length_n_diff_two n (hd+2))
+
+
+
+def even_vec := λ n, vec_length_n_diff_two L n 0
+def odd_vec := λ n, vec_length_n_diff_two L n 1
+
+
+def axm_eq' : ∀ m, formula L → formula L
+    | 0 f := (((var L 0) ≍ (var L 1)) ⟾ f)
+    | (m+1) f := axm_eq' m (((var L (2 * (m + 1))) ≍ (var L (2 * (m + 1) + 1))) ⟾ f)
+
+def axm_eq_4 : ∀ n, L.functions n → formula L
+    | 0 f := ((apply 0 f (nil L)) ≍ (apply 0 f (nil L)))
+    | (n+1) f := axm_eq' L n ((apply (n+1) f (even_vec L (n+1)) ≍ (apply (n+1) f (odd_vec L (n+1)))))
+
+def axm_eq_5 : ∀ n, L.relations n → formula L
+    | 0 r := ((atomic 0 r (nil L)) ⇔ (atomic 0 r (nil L)))
+    | (n+1) r := axm_eq' L n ((atomic (n+1) r (even_vec L (n+1))) ⇔ (atomic (n+1) r (odd_vec L (n+1))))
 
 inductive prf : list (formula L) → formula L → Type
     | axm : ∀ a, prf [a] a
@@ -161,11 +198,7 @@ inductive prf : list (formula L) → formula L → Type
             
             src http://r6.ca/Goedel/goedel1.html
             -/
-    | eq4 : ∀ r : L.relations 2, prf [] (((var L 0) ≍ (var L 1)) ⟾ 
-                                        (((var L 2) ≍ (var L 3)) ⟾ 
-                                            ((atomic 2 r (conj 2 (var L 0) (conj 1 (var L 2) (nil L)))) ⟺ (atomic 2 r (conj 2 (var L 1) (conj 1 (var L 3) (nil L)))))))
-    | eq5 : ∀ f : L.functions 2, prf [] (((var L 0) ≍ (var L 1)) ⟾ 
-                                        (((var L 2) ≍ (var L 3)) ⟾ 
-                                            ((apply 2 f (conj 2 (var L 0) (conj 1 (var L 2) (nil L)))) ≍ (apply 2 f (conj 2 (var L 1) (conj 1 (var L 3) (nil L)))))))
+    | eq4 : ∀ n, ∀  r : L.functions n, prf [] (axm_eq_4 L n r)
+    | eq5 : ∀ n, ∀ f : L.relations n, prf [] (axm_eq_5 L n f)
  
  /-exact ⟨ λ t1 t2, prod.lex nat.lt nat.lt (sizeof t1.fst, sizeof t1.snd) (sizeof t2.fst, sizeof t2.snd)-/
