@@ -1,6 +1,7 @@
 * Syntax
  -  TODO make sentence declarations easier
  -  TODO write prenex normal form method
+ -  TODO maybe look at locally nameless representations on top of de Bruijn indexing for bound variables?
 
 * Semantics
  -  TODO Define model

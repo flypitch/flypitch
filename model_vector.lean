@@ -1,5 +1,7 @@
 import .language_term_n_de_bruijn
 import data.vector
+import init.data.nat.lemmas
+
 
 open term
 open formula
@@ -43,6 +45,27 @@ variable S: L_Structure
     
     also I can't get lean to see that vector α j is the same type as vector α (min j (max j k)), but this is hopefully an easy fix.
     -/
+
+/- added a partially-proven lemma for the bit at the end
+   looks like to finish this we need a lemma which says
+   max(j, k) = j => max(j+1, k) = max(j+1, max(j,k))
+   then we should be able to just hit with simp
+
+
+   I also dislike the whole "include ALL the variables!" thing, but...
+   since we have function extensionality it should be """fine""".
+   --- Jesse
+ -/
+
+lemma min_max_lemma (j k : ℕ) : min j (max j k) = j :=
+begin
+induction j with j ih,
+  {induction k with k ih,
+  {simp [le_refl]},
+        {simp [le_refl, zero_lt_one]}},
+  {induction k with k ih,
+  admit}
+end
 
 mutual def realization_atm, realization_vec
 with realization_atm : ∀ (t: term S.L atm), (Σ n, (vector S.A n → S.A))
