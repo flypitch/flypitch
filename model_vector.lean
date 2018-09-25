@@ -53,7 +53,7 @@ variable S: L_Structure
 
 
    I also dislike the whole "include ALL the variables!" thing, but...
-   since we have function extensionality it should be """fine""".
+   since we have function extensionality it should be """fine""" (for some definition of fine).
    --- Jesse
  -/
 
