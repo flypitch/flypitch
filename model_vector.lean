@@ -104,3 +104,24 @@ with realization_vec: ∀ m (t: term S.L (vec m)), (Σ n, (vector S.A n → vect
             end,
         match realization_vec n ts with 
             | ⟨k, g⟩ := ⟨ max j k, λv, vector.cons (f (vector.take j v)) (g (vector.take k v)) ⟩ end end 
+
+def realization_formula : formula S.L → (Σ n, (vector S.A n → Prop))
+    | (equal t1 t2) := match realization_atm S t1 with | ⟨j, f⟩ := match realization_atm S t2 with | ⟨k, g⟩ := ⟨ max j k, λ v, (f (take' S.A j (max j k) (j_lt_max j k) v)) = (g (take' S.A k (max j k) (k_lt_max j k) v))⟩ end end 
+    | (atomic n r ts) := match realization_vec S n ts with | ⟨j, f⟩ := ⟨ j, (S.rel_map n r) ∘ f⟩ end
+    | (imp f1 f2) := match realization_formula f1 with | ⟨j, f⟩ := match realization_formula f2 with | ⟨k, g⟩ := ⟨ max j k, λ v, (f ( take' S.A j (max j k ) (j_lt_max j k) v) → (g (take' S.A k (max j k) (k_lt_max j k) v)))⟩  end end
+    | (not f1) := match realization_formula f1 with | ⟨ j, f ⟩ := ⟨j, λ v, ¬ f v⟩ end
+    | (all f1) := match realization_formula f1 with | ⟨0, f⟩ := ⟨0, λ v, (∀ x: S.A, f v) ⟩ | ⟨nat.succ(j), f⟩ :=  ⟨j, λ v, (∀ x: S.A, f (vector.cons x v)) ⟩ end
+
+def sentence := { f : formula S.L // (realization_formula S f).fst = 0}
+
+def realization_sentence : sentence S → Prop
+    | ⟨ f, p ⟩ := match realization_formula S f with 
+        | ⟨0, g⟩ := g vector.nil
+        | ⟨nat.succ(n), x⟩ := begin apply absurd, apply p, admit end
+    end
+
+def soundness: ∀ f: sentence S, prf S.L [] f.1 → realization_sentence S f
+    | f (prf.mp [] [] f' g' pf1 pf2) := begin
+        cases f,
+        simp [realization_sentence],
+    end
