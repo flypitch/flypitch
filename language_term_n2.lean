@@ -9,6 +9,7 @@
 -- this file depends on mathlib
 import data.list.basic algebra.ordered_group
 
+universe variable u
 namespace nat
 lemma add_sub_swap {n k : ℕ} (h : k ≤ n) (m : ℕ) : n + m - k = n - k + m :=
 by rw [add_comm, nat.add_sub_assoc h, add_comm]
@@ -18,12 +19,17 @@ succ_le_of_lt (lt_of_le_of_lt n.zero_le H)
 
 lemma add_sub_cancel_right (n m k : ℕ) : n + (m + k) - k = n + m :=
 by rw [nat.add_sub_assoc, nat.add_sub_cancel]; apply k.le_add_left
-
 end nat
 
-lemma {u} lt_by_cases {α : Type u} [linear_order α] (x y : α) {P : Prop}
+lemma lt_by_cases {α : Type u} [linear_order α] (x y : α) {P : Prop}
   (h₁ : x < y → P) (h₂ : x = y → P) (h₃ : y < x → P) : P :=
 or.elim (lt_trichotomy x y) h₁ (λh, or.elim h h₂ h₃)
+
+namespace list
+
+protected def to_set {α : Type u} (l : list α) : set α := { x | x ∈ l }
+
+end list
 
 namespace tactic
 namespace interactive
@@ -33,7 +39,14 @@ end tactic
 
 open list nat
 namespace fol
-structure Language := 
+
+/- 
+  Note: we only work in the bottom universe. If we don't, then when we define the realization of
+  formulae in a structure S, we want to send preformula n to 
+  S → (S → ... → (S → Prop)...)
+  with n occurrences of S. If S : Type u, then this type lives in `Type u` for n ≥ 1 and in Type 0 for n = 0, which is super inconvenient/impossible to work with
+-/
+structure Language : Type 2 := 
 (relations : ℕ → Type) (functions : ℕ → Type)
 section
 parameter {L : Language}
@@ -41,10 +54,10 @@ parameter {L : Language}
 /- preterm l is a partially applied term. if applied to n terms, it becomes a term.
 * Every element of preterm 0 is well typed. 
 * We use this encoding to avoid mutual or nested inductive types, since those are not too convenient to work with in Lean. -/
-inductive preterm : ℕ → Type 
+inductive preterm : ℕ → Type
 | var : ℕ → preterm 0
-| func : ∀ {l : nat}, L.functions l → preterm l
-| app : ∀ {l : nat}, preterm (l + 1) → preterm 0 → preterm l
+| func : ∀ {l : ℕ}, L.functions l → preterm l
+| app : ∀ {l : ℕ}, preterm (l + 1) → preterm 0 → preterm l
 open preterm
 @[reducible] def term := preterm 0
 
@@ -59,7 +72,7 @@ prefix `&`:max := _root_.fol.preterm.var
 notation t ` ↑ `:90 n ` # `:90 m:90 := _root_.fol.lift_term_at t n m -- input ↑ with \u or \upa
 
 @[reducible] def lift_term {l} (t : preterm l) (n : ℕ) : preterm l := t ↑ n # 0
-@[reducible] def lift_term1 (t : term) : term := t ↑ 1 # 0
+@[reducible] def lift_term1 {l} (t : preterm l) : preterm l := t ↑ 1 # 0
 
 infix ` ↑↑ `:100 := _root_.fol.lift_term -- input ↑ with \upa
 postfix ` ↑1`:100 := _root_.fol.lift_term1 -- input ↑ with \upa
@@ -226,15 +239,12 @@ lemma subst_term2 : ∀{l} (t : preterm l) (s₁ s₂ : term) (n₁ n₂),
 | _ (func f)    s₁ s₂ n₁ n₂ := rfl
 | _ (app t1 t2) s₁ s₂ n₁ n₂ := by simp*
 
-
 lemma subst_term2_0 {l} (t : preterm l) (s₁ s₂ : term) (n) :
   t [s₁ // 0] [s₂ // n] = t [s₂ // n + 1] [s₁[s₂ // n] // 0] :=
 let h := subst_term2 t s₁ s₂ 0 n in by simp at h; exact h
 
 /- Probably useful facts about substitution which we should add when needed:
 (forall M N i j k, ( M [ j ← N] ) ↑ k # (j+i) = (M ↑ k # (S (j+i))) [ j ← (N ↑ k # i ) ])
-
-
 subst_travers : (forall M N P n, (M [← N]) [n ← P] = (M [n+1 ← P])[← N[n← P]])
 erasure_lem1 : (forall a n, a = (a ↑ 1 # (S n)) [n ← #0])
 erasure_lem3 : (forall n m t, m>n->#m = (#m ↑ 1 # (S n)) [n ← t]). 
@@ -245,27 +255,27 @@ subst_is_lift : (forall N T A n j, N [n ← T]=A↑ 1#j->j<n->exists M,N=M↑ 1#
 
 /- preformula l is a partially applied formula. if applied to n terms, it becomes a formula. 
   * We only have implication as binary connective. Since we use classical logic, we can define
-    the other connectives from implication and false. 
+    the other connectives from implication and falsum. 
   * Similarly, universal quantification is our only quantifier. 
-  * We could make `false` and `equal` into elements of rel. However, if we do that, then we cannot make the interpretation of them in a model definitionally what we want.
+  * We could make `falsum` and `equal` into elements of rel. However, if we do that, then we cannot make the interpretation of them in a model definitionally what we want.
 -/
-inductive preformula : ℕ → Type 
-| false : preformula 0
+inductive preformula : ℕ → Type
+| falsum : preformula 0
 | equal : term → term → preformula 0
-| rel : ∀ {l : nat}, L.relations l → preformula l
-| apprel : ∀ {l : nat}, preformula (l + 1) → term → preformula l
+| rel : ∀ {l : ℕ}, L.relations l → preformula l
+| apprel : ∀ {l : ℕ}, preformula (l + 1) → term → preformula l
 | imp : preformula 0 → preformula 0 → preformula 0
 | all : preformula 0 → preformula 0
 open preformula
 @[reducible] def formula := preformula 0
 
-def not (f : formula) : formula := imp f false
+def not (f : formula) : formula := imp f falsum
 def and (f₁ f₂ : formula) : formula := not (imp f₁ (not f₂))
 def or (f₁ f₂ : formula) : formula := imp (not f₁) f₂
 def iff (f₁ f₂ : formula) : formula := and (imp f₁ f₂) (imp f₂ f₁)
 def ex (f : formula) : formula := not (all (not f))
 
-notation `⊥` := _root_.fol.preformula.false -- input: \bot
+notation `⊥` := _root_.fol.preformula.falsum -- input: \bot
 infix ` ≃ `:88 := _root_.fol.preformula.equal -- input \~- or \simeq
 infix ` ⟹ `:62 := _root_.fol.preformula.imp -- input \==>
 prefix `∼`:max := _root_.fol.not -- input \~
@@ -276,7 +286,7 @@ prefix `∀∀`:110 := _root_.fol.preformula.all
 prefix `∃∃`:110 := _root_.fol.ex
 
 @[simp] def lift_formula_at : ∀ {l}, preformula l → ℕ → ℕ → preformula l
-| _ false        n m := false
+| _ falsum        n m := falsum
 | _ (t1 ≃ t2)    n m := equal (lift_term_at t1 n m) (lift_term_at t2 n m)
 | _ (rel R)      n m := rel R
 | _ (apprel f t) n m := apprel (lift_formula_at f n m) (lift_term_at t n m)
@@ -286,7 +296,7 @@ prefix `∃∃`:110 := _root_.fol.ex
 notation f ` ↑ `:90 n ` # `:90 m:90 := _root_.fol.lift_formula_at f n m -- input ↑ with \upa
 
 @[reducible] def lift_formula {l} (f : preformula l) (n : ℕ) : preformula l := f ↑ n # 0
-@[reducible] def lift_formula1 (f : formula) : formula := f ↑ 1 # 0
+@[reducible] def lift_formula1 {l} (f : preformula l) : preformula l := f ↑ 1 # 0
 
 infix ` ↑↑ `:100 := _root_.fol.lift_formula -- input ↑ with \upa
 postfix ` ↑1`:100 := _root_.fol.lift_formula1 -- input ↑ with \upa
@@ -304,7 +314,7 @@ begin
 end
 
 @[simp] lemma lift_formula_at_zero : ∀ {l} (f : preformula l) (m : ℕ), f ↑ 0 # m = f
-| _ false        m := by refl
+| _ falsum       m := by refl
 | _ (t1 ≃ t2)    m := by simp
 | _ (rel R)      m := by refl
 | _ (apprel f t) m := by simp; apply lift_formula_at_zero
@@ -314,7 +324,7 @@ end
 /- the following lemmas simplify iterated lifts, depending on the size of m' -/
 lemma lift_formula_at2_small : ∀ {l} (f : preformula l) (n n') {m m'}, m' ≤ m → 
   (f ↑ n # m) ↑ n' # m' = (f ↑ n' # m') ↑ n # (m + n')
-| _ false        n n' m m' H := by refl
+| _ falsum       n n' m m' H := by refl
 | _ (t1 ≃ t2)    n n' m m' H := by simp [lift_term_at2_small, H]
 | _ (rel R)      n n' m m' H := by refl
 | _ (apprel f t) n n' m m' H := 
@@ -325,7 +335,7 @@ lemma lift_formula_at2_small : ∀ {l} (f : preformula l) (n n') {m m'}, m' ≤ 
 
 lemma lift_formula_at2_medium : ∀ {l} (f : preformula l) (n n') {m m'}, m ≤ m' → m' ≤ m+n → 
   (f ↑ n # m) ↑ n' # m' = f ↑ (n+n') # m
-| _ false        n n' m m' H₁ H₂ := by refl
+| _ falsum       n n' m m' H₁ H₂ := by refl
 | _ (t1 ≃ t2)    n n' m m' H₁ H₂ := by simp [*, lift_term_at2_medium]
 | _ (rel R)      n n' m m' H₁ H₂ := by refl
 | _ (apprel f t) n n' m m' H₁ H₂ := by simp [*, lift_term_at2_medium, -add_comm]
@@ -344,7 +354,7 @@ have H₂ : m ≤ m' - n, from nat.le_sub_right_of_add_le H,
 begin rw fol.lift_formula_at2_small f n' n H₂, rw [nat.sub_add_cancel], exact H₁ end
 
 @[simp] def subst_formula : ∀ {l}, preformula l → term → ℕ → preformula l
-| _ false        s n := false
+| _ falsum       s n := falsum
 | _ (t1 ≃ t2)    s n := subst_term t1 s n ≃ subst_term t2 s n
 | _ (rel R)      s n := rel R
 | _ (apprel f t) s n := apprel (subst_formula f s n) (subst_term t s n)
@@ -361,7 +371,7 @@ by simp
   simp* can do the `all` case, and I'm lazy. -/
 lemma lift_at_subst_formula_large' : ∀{l} (f : preformula l) (s : term) {n₁ n₂ m}, m ≤ n₁ →
   (f [s // n₁]) ↑ n₂ # m = (f ↑ n₂ # m)[s // n₁+n₂]
-| _ false        s n₁ n₂ m h := by refl
+| _ falsum       s n₁ n₂ m h := by refl
 | _ (t1 ≃ t2)    s n₁ n₂ m h := by simp [*, lift_at_subst_term_large]
 | _ (rel R)      s n₁ n₂ m h := by refl
 | _ (apprel f t) s n₁ n₂ m h := by simp [*, lift_at_subst_term_large]
@@ -374,7 +384,7 @@ lemma lift_subst_formula_large {l} (f : preformula l) (s : term) {n₁ n₂} :
 
 lemma subst_formula2 : ∀{l} (f : preformula l) (s₁ s₂ : term) (n₁ n₂),
   f [s₁ // n₁] [s₂ // n₁ + n₂] = f [s₂ // n₁ + n₂ + 1] [s₁[s₂ // n₂] // n₁]
-| _ false        s₁ s₂ n₁ n₂ := by refl
+| _ falsum       s₁ s₂ n₁ n₂ := by refl
 | _ (t1 ≃ t2)    s₁ s₂ n₁ n₂ := by simp [*, subst_term2]
 | _ (rel R)      s₁ s₂ n₁ n₂ := by refl
 | _ (apprel f t) s₁ s₂ n₁ n₂ := by simp [*, subst_term2]
@@ -395,7 +405,7 @@ inductive prf : list formula → formula → Type
 | axm    : ∀{Γ A}, A ∈ Γ → prf Γ A
 | impI   : ∀{Γ A B}, prf (A::Γ) B → prf Γ (A ⟹ B)
 | impE   : ∀{Γ} (A) {B}, prf Γ (A ⟹ B) → prf Γ A → prf Γ B
-| falseE : ∀{Γ A}, prf (∼A::Γ) false → prf Γ A
+| falseE : ∀{Γ A}, prf (∼A::Γ) falsum → prf Γ A
 | allI   : ∀{Γ A}, prf (map lift_formula1 Γ) A → prf Γ (∀∀ A)
 | allE'  : ∀{Γ} A t, prf Γ (∀∀ A) → prf Γ (A[t // 0])
 | refl   : ∀Γ t, prf Γ (t ≃ t)
@@ -451,7 +461,7 @@ weakening (cons_subset_cons _ (Γ.subset_cons _)) H
 def deduction {Γ} {A B : formula} (H : Γ ⊢ A ⟹ B) : A::Γ ⊢ B :=
 impE A (weakening1 H) axm1
 
-def exfalso {Γ} {A : formula} (H : prf Γ false) : prf Γ A :=
+def exfalso {Γ} {A : formula} (H : Γ ⊢ falsum) : prf Γ A :=
 falseE (weakening1 H)
 
 def andI {Γ} {f₁ f₂ : formula} (H₁ : Γ ⊢ f₁) (H₂ : Γ ⊢ f₂) : Γ ⊢ f₁ ⊓ f₂ :=
@@ -525,6 +535,104 @@ begin
   { rw [subst_formula_equal, lift_term1_subst_term], apply refl },
   { rw [subst_formula_equal, lift_term1_subst_term] }
 end
+
+def arity (α β : Type u) : ℕ → Type u
+| 0     := β
+| (n+1) := α → arity n
+
+def arity_map2 {α β : Type u} (q : (α → β) → β)(f : β → β → β) : 
+  ∀{n}, arity α β n → arity α β n → β
+| 0     x y := f x y
+| (n+1) x y := q (λz, arity_map2 (x z) (y z))
+
+def arity_imp {α : Type} {n : ℕ} (f₁ f₂ : arity α Prop n) : Prop := 
+arity_map2 (λP, ∀x, P x) (λP Q, P → Q) f₁ f₂
+
+def term_variables_below : Π{l}, preterm l → ℕ → Prop
+| _ &k          n := if k < n then true else false
+| _ (func f)    n := true
+| _ (app t1 t2) n := term_variables_below t1 n ∧ term_variables_below t2 n
+
+def formula_variables_below : Π{l}, preformula l → ℕ → Prop
+| _ falsum       n := true
+| _ (t1 ≃ t2)    n := term_variables_below t1 n ∧ term_variables_below t2 n 
+| _ (rel R)      n := true
+| _ (apprel f t) n := formula_variables_below f n ∧ term_variables_below t n
+| _ (f1 ⟹ f2)   n := formula_variables_below f1 n ∧ formula_variables_below f2 n
+| _ (∀∀ f)       n := formula_variables_below f (n+1)
+
+def is_sentence {l} (t : preformula l) := formula_variables_below t 0
+def sentence := { t : formula // is_sentence t }
+
+structure Structure :=
+(carrier : Type) 
+(fun_map : ∀{n}, L.functions n → arity carrier carrier n)
+(rel_map : ∀{n}, L.relations n → arity carrier Prop n) 
+
+instance : has_coe_to_sort (@_root_.fol.Structure L) :=
+⟨Type, Structure.carrier⟩
+
+/- realize of terms -/
+def realize_term {S : Structure} (v : ℕ → S) : Π{l}, preterm l → arity S S l
+| _ &k          := v k
+| _ (func f)    := S.fun_map f
+| _ (app t1 t2) := realize_term t1 $ realize_term t2
+
+open ulift
+def realize_succ {S : Type u} (x : S) (v : ℕ → S) : ℕ → S
+| 0     := x
+| (n+1) := v n
+
+/- realize of terms -/
+@[simp] def realize_formula {S : Structure} : Π{l}, (ℕ → S) → preformula l → arity S Prop l
+| _ v falsum       := false
+| _ v (t1 ≃ t2)    := realize_term v t1 = realize_term v t2
+| _ v (rel R)      := S.rel_map R
+| _ v (apprel f t) := realize_formula v f $ realize_term v t
+| _ v (f1 ⟹ f2)   := realize_formula v f1 → realize_formula v f2
+| _ v (∀∀ f)       := ∀(x : S), realize_formula (realize_succ x v) f
+
+def realize_formula_succ {S : Structure} (x : S) : Π{l} (v : ℕ → S) (f : preformula l),
+  arity_imp (realize_formula v f) (realize_formula (realize_succ x v) (f ↑1)) :=
+sorry
+
+def provable (T : set formula) (f : formula) :=
+∃(Γ : list formula), Γ.to_set ⊆ T ∧ nonempty (Γ ⊢ f)
+def all_provable (T : set formula) (S : set formula) := ∀(f ∈ S), provable T f
+
+def satisfied_in (S : Structure) (f : formula) :=
+∀(v : ℕ → S), realize_formula v f
+
+infix ` ⊨ `:51 := _root_.fol.satisfied_in -- input using \|= or \vDash, but not using \models 
+
+def satisfied (T : set formula) (f : formula) :=
+∀(S : Structure) (v : ℕ → S), (∀f' ∈ T, realize_formula v (f' : formula)) → realize_formula v f
+
+infix ` ⊨ `:51 := _root_.fol.satisfied -- input using \|= or \vDash, but not using \models 
+
+def all_satisfied (T : set formula) (S : set formula) :=
+∀(f ∈ S), T ⊨ f
+
+infix ` ⊢ `:51 := _root_.fol.provable -- input: \|- or \vdash
+infix ` ⊢ `:51 := _root_.fol.all_provable -- input: \|- or \vdash
+
+def soundness' (Γ : list formula) (A : formula) (H : Γ ⊢ A) : Γ.to_set ⊨ A :=
+begin
+  intro S, induction H; intros v h,
+  { apply h, simp [H_a, list.to_set] },
+  { intro ha, apply H_ih, intros f hf, induction hf, { subst hf, assumption },
+    apply h f hf },
+  { exact H_ih_a v h (H_ih_a_1 v h) },
+  { apply classical.by_contradiction, intro ha, 
+    apply H_ih v, intros f hf, induction hf, { cases hf, exact ha }, 
+    apply h f hf },
+  { intro x, apply H_ih, intros f hf, cases exists_of_mem_map hf with f' hf', 
+    induction hf', induction hf'_right, exact realize_formula_succ x v f' (h f' hf'_left) },
+  { sorry },
+  { dsimp, refl },
+  { sorry },
+end
+
 
 end
 end fol
