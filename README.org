@@ -5,6 +5,7 @@ The Flypitch project aims to produce a formal proof of the independence of the c
 
 * Contributors
 Current contributors include:
- - Jesse Han
+ - [[https://www.pitt.edu/~jmh288][Jesse Han]]
  - Andrew Tindall
- - Tom Hales
+ - [[http://florisvandoorn.com/][Floris van Doorn]]
+ - [[https://sites.google.com/site/thalespitt/][Tom Hales]]

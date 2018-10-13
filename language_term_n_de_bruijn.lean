@@ -202,9 +202,6 @@ def axm_eq_5 : ∀ n, L.relations n → formula L
     | 0 r := ((atomic 0 r (nil L)) ⇔ (atomic 0 r (nil L)))
     | (n+1) r := axm_eq' L n ((atomic (n+1) r (even_vec L (n+1))) ⇔ (atomic (n+1) r (odd_vec L (n+1))))
 
-
-
-
 -- L.true must be interpreted as true --- need to have reified true for soundness
 
 inductive prf : list (formula L) → formula L → Type
