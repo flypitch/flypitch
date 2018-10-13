@@ -215,12 +215,13 @@ inductive prf : list (formula L) → formula L → Type
     | or_intro : ∀ a b, prf [a] (formula.or a b) -- if we know A is true, then for any B, A ∨ B is true.
     | axm : ∀ a, prf [a] (true L ⟾ a) -- equivalent to O'Connor's axm by MP
     | mp : ∀ axm axm' f g, prf axm (imp f g) → prf axm' f → prf (axm ++ axm') g
-    | gen : ∀ axm f, prf axm f → prf axm (all (raise_depth_formula L f 1))
+--    | gen : ∀ axm f, prf axm f → prf axm (all (raise_depth_formula L f 1)) --- this follows from all2 and using and_intro to move axm to the right
     | imp1 : ∀ f g, prf [] (f ⟾ (g ⟾ f))
     | imp2 : ∀ f g h, prf [] (f ⟾ (g ⟾ h) ⟾ ((f ⟾ g) ⟾ (f ⟾ h)))
-    | cp : ∀ f g,  prf [] (((not f) ⟾ (not g)) ⟾ (g ⟾ f))
-    | all1 : ∀ f t, prf [] ((all f) ⟾ (raise_depth_formula L (substitute_formula L f (0,t) 0)) 1)
-    | all2 : ∀ f g, prf [] ((all (f ⟾ g) ⟾ ((all f) ⟾ (all g))))
+--    | cp : ∀ f g,  prf [] (((not f) ⟾ (not g)) ⟾ (g ⟾ f)) --- until we implement tautology reflection, we should just have double-negation elimination outright
+    | dne : ∀ f, prf [] ((not (not f)) ⟾ f)
+    | forall_elim : ∀ f t, prf [] ((all f) ⟾ (raise_depth_formula L (substitute_formula L f (0,t) 0)) 1)
+    | all2 : ∀ f g, prf [] ((all (f ⟾ g) ⟾ ((all f) ⟾ (all g)))) -- TODO: this seems fishy --- why aren't we able to only quantify over _some_ of the free variables, if we're allowing open variables in the proof system in the first place?
     | eq1 : prf [] ((var L 0) ≍ (var L 0))
     | eq2 : prf [] (( (var L 0) ≍ (var L 1)) ⟾ ((var L 1) ≍ (var L 0)))
     | eq3 : prf [] (((var L 0) ≍ (var L 1)) ⟾ (((var L 1) ≍ (var L 2)) ⟾ ((var L 0) ≍ (var L 2))))
