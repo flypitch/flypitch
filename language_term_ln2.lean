@@ -224,30 +224,32 @@ def var_close_preformula : Π (n : ℕ), ℕ → preformula n → preformula n
 -- The motivation for the cofinite quantification will be discussed in details later on (§4.2)
 
 -- Arthur's talking crazy. I'm going with the counting-of-bound-variables.
+end
+
+variable L : Language
 
 def locally_closed_preterm : Π n : ℕ, ℕ → preterm L n → Prop
 | 0 k (preterm.bvar L i) := nat.lt i k
-| 0 k (preterm.fvar L i) := tt
-| n k (preterm.func f) := tt
+| 0 k (preterm.fvar L i) := true
+| n k (preterm.func f) := true
 | n k (preterm.apply t1 t2) := (locally_closed_preterm (n+1) k t1) ∧ (locally_closed_preterm 0 k t2)
 
-def locally_closed_preformula : Π n : ℕ, ℕ → preformula n → Prop
-| 0 k (true L) := tt
-| 0 k (false L) := tt
-| 0 k (equal t1 t2) := (locally_closed_preterm 0 k t1) ∧ (locally_closed_preterm 0 k t2)
-| 0 k (imp ψ ϕ) := (locally_closed_preformula 0 k ψ) ∧ (locally_closed_preformula 0 k ϕ)
-| 0 k (all ψ) := (locally_closed_preformula 0 (k+1) ψ)
-| n k (rel R) := tt
-| n k (apprel ψ t) := (locally_closed_preformula (n+1) k ψ) ∧ (locally_closed_preterm 0 k t)
+def locally_closed_preformula : Π n : ℕ, ℕ → preformula L n → Prop
+| 0 k (preformula.true L) := true
+| 0 k (preformula.false L) := tt
+| 0 k (preformula.equal t1 t2) := (locally_closed_preterm L 0 k t1) ∧ (locally_closed_preterm L 0 k t2)
+| 0 k (preformula.imp ψ ϕ) := (locally_closed_preformula 0 k ψ) ∧ (locally_closed_preformula 0 k ϕ)
+| 0 k (preformula.all ψ) := (locally_closed_preformula 0 (k+1) ψ)
+| n k (preformula.rel R) := tt
+| n k (preformula.apprel ψ t) := (locally_closed_preformula (n+1) k ψ) ∧ (locally_closed_preterm L 0 k t)
 
 -- NOTE: "locally closed" means the same as "well-formed". Therefore, we introduce the following aliases
 
 /-- A well-formed term, by itself, has no bound variables --/
-def well_formed_term : term L → Prop := locally_closed_preterm 0 0
+def well_formed_term : term L → Prop := locally_closed_preterm L 0 0
 
 /-- A well-formed formula is a locally closed preformula. Remember the second nat parameter counts the number of quantifiers we have passed.--/
-def well_formed_formula : formula → Prop := locally_closed_preformula 0 0
-
+def well_formed_formula : formula L → Prop := locally_closed_preformula L 0 0
 /-***********************************-/
 
 
@@ -262,19 +264,18 @@ def substitute_preterm : Π n : ℕ, preterm L n → term L → ℕ → preterm 
 | n (preterm.apply t1 t2) t k := preterm.apply (substitute_preterm (n+1) t1 t k) (substitute_preterm 0 t2 t k)
 
 /-- Given an n-preformula, a term t, and a fvar x, return that n-preterm with all instances of x replaced with t--/
-def substitute_preformula : Π n : ℕ, preformula n → term L → ℕ → preformula n
-| _ (true L) _ _ := true
-| _ (false L) _ _ := false
-| _ (equal t1 t2) t k := equal (substitute_preterm 0 t1 t k) (substitute_preterm 0 t2 t k)
-| _ (rel R) t k := rel R
-| _ (apprel ϕ s) t k := apprel (substitute_preformula _ ϕ t k) (substitute_preterm _ s t k)
-| _ (imp ϕ ψ) t k := imp (substitute_preformula _ ϕ t k) (substitute_preformula _ ψ t k)
-| _ (all ψ) t k := all (substitute_preformula _ ψ t k)
-
+def substitute_preformula : Π n : ℕ, preformula L n → term L → ℕ → preformula L n
+| _ (preformula.true L) _ _ := preformula.true L
+| _ (preformula.false L) _ _ := preformula.false L
+| _ (preformula.equal t1 t2) t k := preformula.equal (substitute_preterm L 0 t1 t k) (substitute_preterm L 0 t2 t k)
+| _ (preformula.rel R) t k := preformula.rel R
+| _ (preformula.apprel ϕ s) t k := preformula.apprel (substitute_preformula _ ϕ t k) (substitute_preterm L _ s t k)
+| _ (preformula.imp ϕ ψ) t k := preformula.imp (substitute_preformula _ ϕ t k) (substitute_preformula _ ψ t k)
+| _ (preformula.all ψ) t k := preformula.all (substitute_preformula _ ψ t k)
 
 /-***********************************-/
 
-end
+
 
 /- ignore the rest of this file-/
 
