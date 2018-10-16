@@ -8,8 +8,6 @@ Thanks to Andrew who wrote the prototypical examples in language_term_n*
 
 import .language_term_ln2
 
-axiom list_nil_lemma : @list.nil ℕ ∪ list.nil = list.nil
-
 section
 parameter L : Language
 
@@ -63,15 +61,13 @@ split,
   cases ϕ_property,
   cases ψ_property,
   simp[free_vars_preformula], 
-  have h :list.nil ∪ list.nil = list.nil,
-    {exact list_nil_lemma},
   have h1 : free_vars_preformula L 0 ϕ_val = free_vars_formula L ϕ_val,
     {refl},
   have h2 :  free_vars_preformula L 0 ψ_val = free_vars_formula L ψ_val,
     {refl},
   simp [h1, h2],
   rw [ϕ_property_left, ψ_property_left],
-  assumption  },
+  refl},
 {split,
   {exact and.right (ϕ.property)},
   {exact and.right (ψ.property)}, }
