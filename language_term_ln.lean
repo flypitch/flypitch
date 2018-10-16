@@ -54,13 +54,16 @@ def substitute_preterm : Π n : ℕ, Π (t : preterm n), term → {x : string //
 | _ (@apply L n t1 t2) t x := sorry
 end
 
+section
+
+parameter L : Language
 /- preformula n is a partially applied formula. if applied to n terms, it becomes a formula -/
 inductive preformula : ℕ → Type 
 | true : preformula 0
 | false : preformula 0
-| equal : term → term → preformula 0
+| equal : (term L)  → (term L) → preformula 0
 | rel : ∀ {n : nat}, L.relations n → preformula n
-| apprel : ∀ {n : nat}, preformula (n + 1) → term → preformula n
+| apprel : ∀ {n : nat}, preformula (n + 1) → (term L) → preformula n
 | imp : preformula 0 → preformula 0 → preformula 0
 | all : preformula 0 → preformula 0
 open preformula
@@ -69,9 +72,9 @@ def formula := preformula 0
 def free_vars_preformula : Π n : ℕ, preformula n → list string
 | _ (true L) := []
 | _ (false L) := []
-| _ (equal t1 t2) := free_vars_term t1 ∪ free_vars_term t2
+| _ (equal t1 t2) := free_vars_term L t1 ∪ free_vars_term L t2
 | _ (@rel L n R) := []
-| _ (@apprel L n ψ t) := free_vars_preformula _ ψ ∪ free_vars_term t
+| _ (@apprel L n ψ t) := free_vars_preformula _ ψ ∪ free_vars_term L t
 | _ (imp ϕ ψ) := free_vars_preformula _ ϕ ∪ free_vars_preformula _ ψ
 | _ (all ψ) := free_vars_preformula _ ψ
 
@@ -86,10 +89,10 @@ def free_vars_formula : formula → list string := free_vars_preformula 0
 -- | _ (imp f1 f2) n m := imp (raise_depth_formula f1 n m) (raise_depth_formula f2 n m)
 -- | _ (all f) n m := all (raise_depth_formula f n (m+1))
 
-def substitute_formula : ∀ {l}, preformula l → term → ℕ → preformula l
+def substitute_formula : ∀ {l}, preformula l → (term L) → ℕ → preformula l
 | _ (true L) s n := true
 | _ (false L) s n := false
-| _ (equal t1 t2) s n := equal (substitute_term t1 s n) (substitute_term t2 s n)
+| _ (equal t1 t2) s n := equal (substitute_term L t1 s n) (substitute_term L t2 s n)
 | _ (rel R) s n := rel R
 | _ (apprel f t) s n := apprel (substitute_formula f s n) (substitute_term t s n)
 | _ (imp f1 f2) s n := imp (substitute_formula f1 s n) (substitute_formula f2 s n)
@@ -101,5 +104,3 @@ def substitute_preformula : Π n : ℕ, Π (ψ : preformula n), term → {x : st
 | _ (false L) t x := false
 | _ (equal t1 t2) := equal (substitute_preformula _ _ _ _ t1) (substitute_preformula _ _ _ _ t2)
 end
-
-
