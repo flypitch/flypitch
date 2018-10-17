@@ -25,6 +25,13 @@ lemma lt_by_cases {α : Type u} [linear_order α] (x y : α) {P : Prop}
   (h₁ : x < y → P) (h₂ : x = y → P) (h₃ : y < x → P) : P :=
 or.elim (lt_trichotomy x y) h₁ (λh, or.elim h h₂ h₃)
 
+lemma imp_eq_congr {a b c d : Prop} (h₁ : a = b) (h₂ : c = d) : (a → c) = (b → d) :=
+by subst h₁; subst h₂; refl
+
+lemma forall_eq_congr {α : Sort u} {p q : α → Prop} (h : ∀ a, p a = q a) : 
+  (∀ a, p a) = ∀ a, q a :=
+have h' : p = q, from funext h, by subst h'; refl
+
 namespace list
 
 protected def to_set {α : Type u} (l : list α) : set α := { x | x ∈ l }
@@ -39,6 +46,51 @@ end tactic
 
 open list nat
 namespace fol
+
+/- realizers of variables are just maps ℕ → S. We need some operations on them -/
+
+def subst_realize {S : Type u} (v : ℕ → S) (x : S) (n k : ℕ) : S :=
+if k < n then v k else if n < k then v (k - 1) else x
+
+notation v `[`:95 x ` // `:95 n `]`:0 := _root_.fol.subst_realize v x n
+
+@[simp] lemma subst_realize_lt {S : Type u} (v : ℕ → S) (x : S) {n k : ℕ} (H : k < n) : 
+  v[x // n] k = v k :=
+by simp [H, subst_realize]
+
+@[simp] lemma subst_realize_gt {S : Type u} (v : ℕ → S) (x : S) {n k : ℕ} (H : n < k) : 
+  v[x // n] k = v (k-1) :=
+have h : ¬(k < n), from lt_asymm H,
+by simp [*, subst_realize]
+
+@[simp] lemma subst_realize_var_eq {S : Type u} (v : ℕ → S) (x : S) (n : ℕ) : v[x // n] n = x :=
+by simp [subst_realize, lt_irrefl]
+
+lemma subst_realize_congr {S : Type u} {v v' : ℕ → S} (hv : ∀k, v k = v' k) (x : S) (n k : ℕ) : 
+ v [x // n] k = v' [x // n] k :=
+by apply lt_by_cases k n; intro h; simp*
+
+lemma subst_realize2 {S : Type u} (v : ℕ → S) (x x' : S) (n₁ n₂ k : ℕ) :
+  v [x' // n₁ + n₂] [x // n₁] k = v [x // n₁] [x' // n₁ + n₂ + 1] k :=
+begin
+    apply lt_by_cases k n₁; intro h,
+    { have : k < n₁ + n₂, from lt_of_le_of_lt (k.le_add_right n₂) (add_lt_add_right h n₂),
+      have : k < n₁ + n₂ + 1, from lt.step this,
+      simp [*, -add_comm, -add_assoc] },
+    { have : k < n₂ + (k + 1), from nat.lt_add_left _ _ n₂ (lt.base k),
+      subst h, simp [*, -add_comm] },
+    apply lt_by_cases k (n₁ + n₂ + 1); intro h',
+    { have : k - 1 < n₁ + n₂, from (nat.sub_lt_right_iff_lt_add (one_le_of_lt h)).2 h', 
+      simp [*, -add_comm, -add_assoc] },
+    { subst h', simp [h, -add_comm, -add_assoc] },
+    { have : n₁ + n₂ < k - 1, from nat.lt_sub_right_of_add_lt h', 
+      have : n₁ < k - 1, from lt_of_le_of_lt (n₁.le_add_right n₂) this,
+      simp [*, -add_comm, -add_assoc] }
+end
+
+lemma subst_realize2_0 {S : Type u} (v : ℕ → S) (x x' : S) (n k : ℕ) :
+  v [x' // n] [x // 0] k = v [x // 0] [x' // n + 1] k :=
+let h := subst_realize2 v x x' 0 n k in by simp at h; exact h
 
 /- 
   Note: we only work in the bottom universe. If we don't, then when we define the realization of
@@ -133,6 +185,9 @@ lemma lift_term2_medium {l} {t : preterm l} {n n' m'} (h : m' ≤ n) :
   (t ↑↑ n) ↑ n' # m' = t ↑↑ (n+n') :=
 lift_term_at2_medium m'.zero_le (by simp*)
 
+lemma lift_term2 {l} {t : preterm l} {n n'} : (t ↑↑ n) ↑↑ n' = t ↑↑ (n+n') :=
+lift_term2_medium n.zero_le
+
 lemma lift_term_at2_eq {l} (t : preterm l) (n n' m : ℕ) : 
   (t ↑ n # m) ↑ n' # (m+n) = t ↑ (n+n') # m :=
 lift_term_at2_medium (m.le_add_right n) (le_refl _)
@@ -145,21 +200,20 @@ begin rw fol.lift_term_at2_small t n' n H₂, rw [nat.sub_add_cancel], exact H�
 
 /- subst_term t s n substitutes s for (&n) and reduces the level of all variables above n by 1 -/
 def subst_term : ∀ {l}, preterm l → term → ℕ → preterm l
-| _ &k          s n := if k < n then &k else if n < k then &(k-1) else s ↑↑ n
+| _ &k          s n := subst_realize var (s ↑↑ n) n k
 | _ (func f)    s n := func f
 | _ (app t1 t2) s n := app (subst_term t1 s n) (subst_term t2 s n)
 
 notation t `[`:max s ` // `:95 n `]`:0 := _root_.fol.subst_term t s n
 
 @[simp] lemma subst_term_var_lt (s : term) {k n : ℕ} (H : k < n) : &k[s // n] = &k :=
-by simp [subst_term, H]
+by simp [H, subst_term]
 
 @[simp] lemma subst_term_var_gt (s : term) {k n : ℕ} (H : n < k) : &k[s // n] = &(k-1) :=
-have h : ¬(k < n), from lt_asymm H,
-by simp [*, subst_term]
+by simp [H, subst_term]
 
 @[simp] lemma subst_term_var_eq (s : term) (n : ℕ) : &n[s // n] = s ↑ n # 0 :=
-by simp [subst_term, lt_irrefl]
+by simp [subst_term]
 
 lemma subst_term_var0 (s : term) : &0[s // 0] = s := by simp
 
@@ -206,9 +260,9 @@ lemma lift_at_subst_term_medium : ∀{l} (t : preterm l) (s : term) {n₁ n₂ m
 | _ (func f)    s n₁ n₂ m h₁ h₂ := rfl
 | _ (app t1 t2) s n₁ n₂ m h₁ h₂ := by simp*
 
-lemma lift_subst_term_medium {l} (t : preterm l) (s : term) {n₁ n₂} :
-  (t ↑↑ ((n₁ + n₂) + 1))[s // n₂] = t ↑↑ (n₁ + n₂) :=
-lift_at_subst_term_medium t s n₂.zero_le (by rw [zero_add]; exact n₂.le_add_left n₁)
+lemma lift_subst_term_medium {l} (t : preterm l) (s : term) (n₁ n₂) :
+  (t ↑↑ ((n₁ + n₂) + 1))[s // n₁] = t ↑↑ (n₁ + n₂) :=
+lift_at_subst_term_medium t s n₁.zero_le (by rw [zero_add]; exact n₁.le_add_right n₂)
 
 lemma lift_at_subst_term_eq {l} (t : preterm l) (s : term) (n : ℕ) : (t ↑ 1 # n)[s // n] = t :=
 begin rw [lift_at_subst_term_medium t s, lift_term_at_zero]; refl end
@@ -219,7 +273,7 @@ lift_at_subst_term_eq t s 0
 lemma subst_term2 : ∀{l} (t : preterm l) (s₁ s₂ : term) (n₁ n₂),
   t [s₁ // n₁] [s₂ // n₁ + n₂] = t [s₂ // n₁ + n₂ + 1] [s₁[s₂ // n₂] // n₁]
 | _ &k          s₁ s₂ n₁ n₂ :=
-  begin
+  begin -- can we use subst_realize2 here?
     apply lt_by_cases k n₁; intro h,
     { have : k < n₁ + n₂, from lt_of_le_of_lt (k.le_add_right n₂) (by simp*),
       have : k < n₁ + n₂ + 1, from lt.step this,
@@ -230,8 +284,7 @@ lemma subst_term2 : ∀{l} (t : preterm l) (s₁ s₂ : term) (n₁ n₂),
     apply lt_by_cases k (n₁ + n₂ + 1); intro h',
     { have : k - 1 < n₁ + n₂, from (nat.sub_lt_right_iff_lt_add (one_le_of_lt h)).2 h', 
       simp [*, -add_comm, -add_assoc] },
-    { subst h', simp [h, -add_comm, -add_assoc], symmetry, apply lift_at_subst_term_medium,
-      apply n₁.zero_le, rw [zero_add], apply n₁.le_add_right },
+    { subst h', simp [h, -add_comm, -add_assoc], symmetry, apply lift_subst_term_medium },
     { have : n₁ + n₂ < k - 1, from nat.lt_sub_right_of_add_lt h', 
       have : n₁ < k - 1, from lt_of_le_of_lt (n₁.le_add_right n₂) this,
       simp [*, -add_comm, -add_assoc] }
@@ -304,7 +357,8 @@ postfix ` ↑1`:100 := _root_.fol.lift_formula1 -- input ↑ with \upa
 @[simp] lemma lift_formula1_not (f : formula) : lift_formula1 (not f) = not (lift_formula1 f) :=
 by refl
 
-lemma lift_formula_at_inj {l} {f f' : preformula l} {n m : ℕ} (H : f ↑ n # m = f' ↑ n # m) : f = f' :=
+lemma lift_formula_at_inj {l} {f f' : preformula l} {n m : ℕ} (H : f ↑ n # m = f' ↑ n # m) : 
+  f = f' :=
 begin
   induction f generalizing m; cases f'; injection H,
   simp [lift_term_at_inj h_1, lift_term_at_inj h_2],
@@ -365,22 +419,21 @@ notation f `[`:95 s ` // `:95 n `]`:0 := _root_.fol.subst_formula f s n
 
 lemma subst_formula_equal (t₁ t₂ s : term) (n : ℕ) :
   (t₁ ≃ t₂)[s // n] = t₁[s // n] ≃ (t₂[s // n]) :=
-by simp
+by refl
 
-/- this lemma is in the other directions as similar lemma's, because only in this direction
-  simp* can do the `all` case, and I'm lazy. -/
-lemma lift_at_subst_formula_large' : ∀{l} (f : preformula l) (s : term) {n₁ n₂ m}, m ≤ n₁ →
-  (f [s // n₁]) ↑ n₂ # m = (f ↑ n₂ # m)[s // n₁+n₂]
+lemma lift_at_subst_formula_large : ∀{l} (f : preformula l) (s : term) {n₁} (n₂) {m}, m ≤ n₁ →
+  (f ↑ n₂ # m)[s // n₁+n₂] = (f [s // n₁]) ↑ n₂ # m
 | _ falsum       s n₁ n₂ m h := by refl
 | _ (t1 ≃ t2)    s n₁ n₂ m h := by simp [*, lift_at_subst_term_large]
 | _ (rel R)      s n₁ n₂ m h := by refl
 | _ (apprel f t) s n₁ n₂ m h := by simp [*, lift_at_subst_term_large]
 | _ (f1 ⟹ f2)   s n₁ n₂ m h := by simp*
-| _ (∀∀ f)       s n₁ n₂ m h := by simp*
+| _ (∀∀ f)       s n₁ n₂ m h := 
+  by have := lift_at_subst_formula_large f s n₂ (add_le_add_right h 1); simp at this; simp*
 
 lemma lift_subst_formula_large {l} (f : preformula l) (s : term) {n₁ n₂} :
- (f ↑↑ n₂)[s // n₁+n₂] = (f [s // n₁]) ↑↑ n₂ :=
-(lift_at_subst_formula_large' f s n₁.zero_le).symm
+  (f ↑↑ n₂)[s // n₁+n₂] = (f [s // n₁]) ↑↑ n₂ :=
+lift_at_subst_formula_large f s n₂ n₁.zero_le
 
 lemma subst_formula2 : ∀{l} (f : preformula l) (s₁ s₂ : term) (n₁ n₂),
   f [s₁ // n₁] [s₂ // n₁ + n₂] = f [s₂ // n₁ + n₂ + 1] [s₁[s₂ // n₂] // n₁]
@@ -396,7 +449,7 @@ lemma subst_formula2_zero {l} (f : preformula l) (s₁ s₂ : term) (n) :
   f [s₁ // 0] [s₂ // n] = f [s₂ // n + 1] [s₁[s₂ // n] // 0] :=
 let h := subst_formula2 f s₁ s₂ 0 n in by simp at h; exact h
 
-/- Provability relation
+/- Provability
 * to decide: should Γ be a list or a set (or finset)?
 * We use natural deduction as our deduction system, since that is most convenient to work with.
 * All rules are motivated to work well with backwards reasoning.
@@ -537,52 +590,52 @@ begin
 end
 
 /- sentences -/
--- def term_variables_below : Π{l}, preterm l → ℕ → Prop
--- | _ &k          n := if k < n then true else false
--- | _ (func f)    n := true
--- | _ (app t1 t2) n := term_variables_below t1 n ∧ term_variables_below t2 n
+def term_variables_below : Π{l}, preterm l → ℕ → Prop
+| _ &k          n := if k < n then true else false
+| _ (func f)    n := true
+| _ (app t1 t2) n := term_variables_below t1 n ∧ term_variables_below t2 n
 
--- def formula_variables_below : Π{l}, preformula l → ℕ → Prop
--- | _ falsum       n := true
--- | _ (t1 ≃ t2)    n := term_variables_below t1 n ∧ term_variables_below t2 n 
--- | _ (rel R)      n := true
--- | _ (apprel f t) n := formula_variables_below f n ∧ term_variables_below t n
--- | _ (f1 ⟹ f2)   n := formula_variables_below f1 n ∧ formula_variables_below f2 n
--- | _ (∀∀ f)       n := formula_variables_below f (n+1)
+def formula_variables_below : Π{l}, preformula l → ℕ → Prop
+| _ falsum       n := true
+| _ (t1 ≃ t2)    n := term_variables_below t1 n ∧ term_variables_below t2 n 
+| _ (rel R)      n := true
+| _ (apprel f t) n := formula_variables_below f n ∧ term_variables_below t n
+| _ (f1 ⟹ f2)   n := formula_variables_below f1 n ∧ formula_variables_below f2 n
+| _ (∀∀ f)       n := formula_variables_below f (n+1)
 
--- def is_sentence {l} (t : preformula l) := formula_variables_below t 0
--- def sentence := { t : formula // is_sentence t }
-
+def is_sentence {l} (t : preformula l) := formula_variables_below t 0
+def sentence := { t : formula // is_sentence t }
 
 /- model theory -/
+
 /-- The type α → (α → ... (α → β)...) with n α's. We require that α and β live in the same universe, otherwise we have to use ulift. -/
 def arity (α β : Type u) : ℕ → Type u
 | 0     := β
 | (n+1) := α → arity n
 
-def for_all {α : Type u} (P : α → Prop) : Prop := ∀x, P x
+-- def for_all {α : Type u} (P : α → Prop) : Prop := ∀x, P x
 
-@[simp] def arity_map2 {α β : Type u} (q : (α → β) → β) (f : β → β → β) : 
-  ∀{n}, arity α β n → arity α β n → β
-| 0     x y := f x y
-| (n+1) x y := q (λz, arity_map2 (x z) (y z))
+-- @[simp] def arity_map2 {α β : Type u} (q : (α → β) → β) (f : β → β → β) : 
+--   ∀{n}, arity α β n → arity α β n → β
+-- | 0     x y := f x y
+-- | (n+1) x y := q (λz, arity_map2 (x z) (y z))
 
-@[simp] lemma arity_map2_refl {α : Type} {f : Prop → Prop → Prop} (r : ΠA, f A A) : 
-  ∀{n} (x : arity α Prop n), arity_map2 for_all f x x
-| 0     x := r x
-| (n+1) x := λy, arity_map2_refl (x y)
+-- @[simp] lemma arity_map2_refl {α : Type} {f : Prop → Prop → Prop} (r : ΠA, f A A) : 
+--   ∀{n} (x : arity α Prop n), arity_map2 for_all f x x
+-- | 0     x := r x
+-- | (n+1) x := λy, arity_map2_refl (x y)
 
-def arity_imp {α : Type} {n : ℕ} (f₁ f₂ : arity α Prop n) : Prop := 
-arity_map2 for_all (λP Q, P → Q) f₁ f₂
+-- def arity_imp {α : Type} {n : ℕ} (f₁ f₂ : arity α Prop n) : Prop := 
+-- arity_map2 for_all (λP Q, P → Q) f₁ f₂
 
-def arity_iff {α : Type} {n : ℕ} (f₁ f₂ : arity α Prop n) : Prop := 
-arity_map2 for_all iff f₁ f₂
+-- def arity_iff {α : Type} {n : ℕ} (f₁ f₂ : arity α Prop n) : Prop := 
+-- arity_map2 for_all iff f₁ f₂
 
-lemma arity_iff_refl {α : Type} {n : ℕ} (f : arity α Prop n) : arity_iff f f := 
-arity_map2_refl iff.refl f
+-- lemma arity_iff_refl {α : Type} {n : ℕ} (f : arity α Prop n) : arity_iff f f := 
+-- arity_map2_refl iff.refl f
 
-lemma arity_iff_rfl {α : Type} {n : ℕ} {f : arity α Prop n} : arity_iff f f := 
-arity_iff_refl f
+-- lemma arity_iff_rfl {α : Type} {n : ℕ} {f : arity α Prop n} : arity_iff f f := 
+-- arity_iff_refl f
 
 structure Structure :=
 (carrier : Type) 
@@ -591,34 +644,6 @@ structure Structure :=
 
 instance : has_coe_to_sort (@_root_.fol.Structure L) :=
 ⟨Type, Structure.carrier⟩
-
-/- realizers of variables are just maps ℕ → S. We need some operations on them -/
-def subst_realize {S : Type u} (v : ℕ → S) (x : S) (m n : ℕ) : S :=
-if n < m then v n else if m < n then v (n - 1) else x
-
-notation v `[`:95 x ` // `:95 m `]`:0 := _root_.fol.subst_realize v x m
-
-@[simp] lemma subst_realize_lt {S : Type u} (v : ℕ → S) (x : S) {m n : ℕ} (H : n < m) : 
-  v[x // m] n = v n :=
-by simp [H, subst_realize]
-
-@[simp] lemma subst_realize_gt {S : Type u} (v : ℕ → S) (x : S) {m n : ℕ} (H : m < n) : 
-  v[x // m] n = v (n-1) :=
-have h : ¬(n < m), from lt_asymm H,
-by simp [*, subst_realize]
-
-@[simp] lemma subst_realize_var_eq {S : Type u} (v : ℕ → S) (x : S) (n : ℕ) : v[x // n] n = x :=
-by simp [subst_realize, lt_irrefl]
-
-lemma subst_realize_congr {S : Type u} {v v' : ℕ → S} (hv : ∀n, v n = v' n) (x : S) (m n : ℕ) : 
- v [x // m] n = v' [x // m] n :=
-by apply lt_by_cases n m; intro h; simp*
-
-lemma subst_realize2 {S : Type u} (v : ℕ → S) (x x' : S) (m m' n : ℕ) :
-  v [x // m] [x' // m + m' + 1] n = v [x' // m + m'] [x // m] n :=
-begin
-  sorry
-end
 
 /- realization of terms -/
 @[simp] def realize_term {S : Structure} (v : ℕ → S) : Π{l}, preterm l → arity S S l
@@ -632,7 +657,14 @@ lemma realize_term_congr {S : Structure} {v v' : ℕ → S} (h : ∀n, v n = v' 
 | _ (func f)    := by refl
 | _ (app t1 t2) := by dsimp; rw [realize_term_congr t1, realize_term_congr t2]
 
-lemma subst_realize_term {S : Structure} (v : ℕ → S) (x : S) (m : ℕ) : Π{l} (t : preterm l),
+lemma realize_term_subst {S : Structure} (v : ℕ → S) : Π{l} (n : ℕ) (t : preterm l) 
+  (s : term), realize_term (v[realize_term v (s ↑↑ n) // n]) t = realize_term v (t[s // n])
+| _ n &k          s := 
+  by apply lt_by_cases k n; intro h;[simp [h], {subst h; simp}, simp [h]]
+| _ n (func f)    s := by refl
+| _ n (app t1 t2) s := by dsimp; simp*
+
+lemma realize_term_subst_lift {S : Structure} (v : ℕ → S) (x : S) (m : ℕ) : Π{l} (t : preterm l),
   realize_term (v [x // m]) (t ↑ 1 # m) = realize_term v t
 | _ &k          := 
   begin 
@@ -653,24 +685,57 @@ lemma subst_realize_term {S : Structure} (v : ℕ → S) (x : S) (m : ℕ) : Π{
 | _ v (∀∀ f)       := ∀(x : S), realize_formula (v [x // 0]) f
 
 lemma realize_formula_congr {S : Structure} : Π{l} {v v' : ℕ → S} (h : ∀n, v n = v' n) 
-  (f : preformula l), arity_iff (realize_formula v f) (realize_formula v' f) :=
-sorry
+  (f : preformula l), realize_formula v f = realize_formula v' f
+| _ v v' h falsum       := by refl
+| _ v v' h (t1 ≃ t2)    := by simp [realize_term_congr h]
+| _ v v' h (rel R)      := by refl
+| _ v v' h (apprel f t) := by simp [realize_term_congr h]; rw [realize_formula_congr h]
+| _ v v' h (f1 ⟹ f2)   := by dsimp; rw [realize_formula_congr h, realize_formula_congr h]
+| _ v v' h (∀∀ f)       := 
+  by apply forall_eq_congr; intro x; apply realize_formula_congr; intro n; 
+     apply subst_realize_congr h
 
-lemma subst_realize_formula {S : Structure} : Π{l} (v : ℕ → S) (x : S) (m : ℕ) (f : preformula l),
-  arity_iff (realize_formula (v [x // m]) (f ↑ 1 # m)) (realize_formula v f)
-| _ v x m falsum       := iff.rfl
-| _ v x m (t1 ≃ t2)    := by simp [arity_iff, subst_realize_term]
-| _ v x m (rel R)      := arity_iff_rfl
-| _ v x m (apprel f t) := by simp [subst_realize_term]; exact subst_realize_formula v x m f _
-| _ v x m (f1 ⟹ f2)   := by apply imp_congr; exact @subst_realize_formula 0 v x m _
-| _ v x m (∀∀ f)       := by apply forall_congr; intro x'; sorry
+lemma realize_formula_subst {S : Structure} : Π{l} (v : ℕ → S) (n : ℕ) (f : preformula l) 
+  (s : term), realize_formula (v[realize_term v (s ↑↑ n) // n]) f = realize_formula v (f[s // n]) 
+| _ v n falsum       s := by refl
+| _ v n (t1 ≃ t2)    s := by simp [realize_term_subst]
+| _ v n (rel R)      s := by refl
+| _ v n (apprel f t) s := by simp [realize_term_subst]; rw realize_formula_subst
+| _ v n (f1 ⟹ f2)   s := by dsimp; apply imp_eq_congr; apply realize_formula_subst
+| _ v n (∀∀ f)       s := 
+  begin 
+    apply forall_eq_congr, intro x, rw [←realize_formula_subst], apply realize_formula_congr, 
+    intro k, rw [subst_realize2_0, ←realize_term_subst_lift v x 0, lift_term2_medium n.zero_le]
+  end
 
+lemma realize_formula_subst0 {S : Structure} {l} (v : ℕ → S) (f : preformula l) (s : term) :
+  realize_formula (v[realize_term v s // 0]) f = realize_formula v (f[s // 0]) :=
+let h := realize_formula_subst v 0 f s in by simp at h; exact h
+
+lemma realize_formula_subst_lift {S : Structure} : Π{l} (v : ℕ → S) (x : S) (m : ℕ) 
+  (f : preformula l), realize_formula (v [x // m]) (f ↑ 1 # m) = realize_formula v f
+| _ v x m falsum       := by refl
+| _ v x m (t1 ≃ t2)    := by simp [realize_term_subst_lift]
+| _ v x m (rel R)      := by refl
+| _ v x m (apprel f t) := by simp [realize_term_subst_lift]; rw realize_formula_subst_lift
+| _ v x m (f1 ⟹ f2)   := by dsimp; apply imp_eq_congr; apply realize_formula_subst_lift
+| _ v x m (∀∀ f)       := 
+  begin 
+    apply forall_eq_congr, intro x', 
+    rw [realize_formula_congr (subst_realize2_0 _ _ _ _), realize_formula_subst_lift]
+  end
+
+/- the following definitions of provability and satisfiability are not exactly how you normally define them, since we define it for formulae instead of sentences. If all the formulae happen to be sentences, then these definitions are equivalent to the normal definitions (the realization of closed terms and sentences are independent of the realizer v). 
+We could do it for sentences, but then things get a little uglier. 
+ -/
 def provable (T : set formula) (f : formula) :=
 ∃(Γ : list formula), Γ.to_set ⊆ T ∧ nonempty (Γ ⊢ f)
-def all_provable (T : set formula) (S : set formula) := ∀(f ∈ S), provable T f
+infix ` ⊢ `:51 := _root_.fol.provable -- input: \|- or \vdash
 
-def satisfied_in (S : Structure) (f : formula) :=
-∀(v : ℕ → S), realize_formula v f
+def all_provable (T : set formula) (S : set formula) := ∀(f ∈ S), T ⊢ f
+infix ` ⊢ `:51 := _root_.fol.all_provable -- input: \|- or \vdash
+
+def satisfied_in (S : Structure) (f : formula) := ∀(v : ℕ → S), realize_formula v f
 
 infix ` ⊨ `:51 := _root_.fol.satisfied_in -- input using \|= or \vDash, but not using \models 
 
@@ -679,13 +744,14 @@ def satisfied (T : set formula) (f : formula) :=
 
 infix ` ⊨ `:51 := _root_.fol.satisfied -- input using \|= or \vDash, but not using \models 
 
+def sweakening {T T' : set formula} (H : T ⊆ T') {f : formula} (HT : T ⊨ f) : T' ⊨ f :=
+λS v h, HT S v $ λf Hf, h f $ H Hf
+
 def all_satisfied (T : set formula) (S : set formula) :=
 ∀(f ∈ S), T ⊨ f
 
-infix ` ⊢ `:51 := _root_.fol.provable -- input: \|- or \vdash
-infix ` ⊢ `:51 := _root_.fol.all_provable -- input: \|- or \vdash
-
-lemma soundness' (Γ : list formula) (A : formula) (H : Γ ⊢ A) : Γ.to_set ⊨ A :=
+/- soundness for a list of formulae -/
+lemma soundness' {Γ : list formula} {A : formula} (H : Γ ⊢ A) : Γ.to_set ⊨ A :=
 begin
   intro S, induction H; intros v h,
   { apply h, simp [H_a, list.to_set] },
@@ -694,11 +760,16 @@ begin
   { apply classical.by_contradiction, intro ha, 
     apply H_ih v, intros f hf, induction hf, { cases hf, exact ha }, apply h f hf },
   { intro x, apply H_ih, intros f hf, cases exists_of_mem_map hf with f' hf', induction hf', 
-    induction hf'_right, exact (subst_realize_formula v x 0 f').2 (h f' hf'_left) },
-  { sorry },
+    induction hf'_right, rw [realize_formula_subst_lift v x 0 f'], exact h f' hf'_left },
+  { rw [←realize_formula_subst0], apply H_ih v h (realize_term v H_t) },
   { dsimp, refl },
-  { sorry },
+  { have h' := H_ih_a v h, dsimp at h', rw [←realize_formula_subst0, ←h', realize_formula_subst0],
+    apply H_ih_a_1 v h },
 end
+
+/- soundness for a set of formulae -/
+lemma soundness {T : set formula} {A : formula} (H : T ⊢ A) : T ⊨ A :=
+by rcases H with ⟨Γ, ⟨H1, ⟨H2⟩⟩⟩; exact sweakening H1 (soundness' H2)
 
 
 end
