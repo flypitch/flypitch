@@ -5,4 +5,8 @@ auto
 auto/*
 *png
 test.lean
-leanpkg*
+leanpkg.toml
+leanpkg.path
+*.olean
+/_target
+/leanpkg.path

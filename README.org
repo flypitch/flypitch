@@ -6,8 +6,12 @@ The Flypitch project aims to produce a formal proof of the independence of the c
 * Compilation
 To compile some parts of the Flypitch project, you will need a compiled copy of ~mathlib~ on your marchine. After cloning the repository to ~flypitch~, navigate to ~flypitch~ and run
 #+BEGIN_SRC
-leanpkg add /PATH/TO/MATHLIB
+leanpkg init
+git checkout -- .gitignore
+leanpkg add PATH/TO/mathlib
 #+END_SRC
+
+After this, you can (re)build the project using ~leanpkg build~.
 
 * Contributors
 Current contributors include:
