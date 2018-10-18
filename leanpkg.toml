@@ -5,4 +5,4 @@ lean_version = "nightly-2018-04-20"
 path = "src"
 
 [dependencies]
-mathlib = {path = "../mathlib"}
+mathlib = {path = "/home/pv/org/projects/mathlib/"}

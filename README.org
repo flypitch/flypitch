@@ -1,7 +1,13 @@
 * Flypitch
 
 * Goals
-The Flypitch project aims to produce a formal proof of the independence of the continuum hypothesis. We will produce the formal proof by systematically formalizing the conventional human-readable account of the proof, [[https://www.github.com/flypitch/flypitch-notes/][located here]].
+The Flypitch project aims to produce a formal proof of the independence of the continuum hypothesis. We will produce the formal proof based on the conventional human-readable account of the proof, [[https://www.github.com/flypitch/flypitch-notes/][located here]].
+
+* Compilation
+To compile some parts of the Flypitch project, you will need a compiled copy of `mathlib` on your marchine. After cloning the repository to `flypitch`, navigate to `flypitch` and run
+```
+leanpkg add /PATH/TO/mathlib/
+```
 
 * Contributors
 Current contributors include:
