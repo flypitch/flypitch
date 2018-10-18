@@ -5,9 +5,7 @@ The Flypitch project aims to produce a formal proof of the independence of the c
 
 * Compilation
 To compile some parts of the Flypitch project, you will need a compiled copy of `mathlib` on your marchine. After cloning the repository to `flypitch`, navigate to `flypitch` and run
-```
-leanpkg add /PATH/TO/mathlib/
-```
+`leanpkg add /PATH/TO/mathlib/`
 
 * Contributors
 Current contributors include:
