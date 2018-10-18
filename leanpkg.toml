@@ -1,8 +1,0 @@
-[package]
-name = "flypitch"
-version = "0.1"
-lean_version = "nightly-2018-04-20"
-path = "src"
-
-[dependencies]
-mathlib = {path = "/home/pv/org/projects/mathlib/"}

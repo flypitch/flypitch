@@ -4,4 +4,5 @@ README.org~
 auto
 auto/*
 *png
-test.leanleanpkg*
+test.lean
+leanpkg*
