@@ -996,7 +996,7 @@ inductive formula_below : ∀{l}, ℕ → preformula l → Type
     formula_below n (f₁ ⟹ f₂)
 | b_all {n} (f : formula) (hf : formula_below (n+1) f) : formula_below n (∀' f)
 open formula_below
-
+export formula_below
 def b_not (n : ℕ) (f : preformula 0) (hf : formula_below n f)  : formula_below n (fol.not f) := begin
 simp[fol.not],
 refine b_imp _ _ _ _,
