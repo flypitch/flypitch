@@ -504,6 +504,7 @@ def ex (f : formula) : formula := not (all (not f))
 notation `⊥` := _root_.fol.preformula.falsum -- input: \bot
 infix ` ≃ `:88 := _root_.fol.preformula.equal -- input \~- or \simeq
 infix ` ⟹ `:62 := _root_.fol.preformula.imp -- input \==>
+infix ` ⟺ `:63 := _root_.fol.biimp -- input ??
 prefix `∼`:max := _root_.fol.not -- input \~, the ASCII character ~ has too low precedence
 infixr ` ⊔ ` := _root_.fol.or -- input: \sqcup
 infixr ` ⊓ ` := _root_.fol.and -- input: \sqcap
@@ -995,6 +996,37 @@ inductive formula_below : ∀{l}, ℕ → preformula l → Type
     formula_below n (f₁ ⟹ f₂)
 | b_all {n} (f : formula) (hf : formula_below (n+1) f) : formula_below n (∀' f)
 open formula_below
+
+def b_not (n : ℕ) (f : preformula 0) (hf : formula_below n f)  : formula_below n (fol.not f) := begin
+simp[fol.not],
+refine b_imp _ _ _ _,
+assumption,
+exact formula_below.b_falsum
+end
+
+def b_and (n : ℕ) (f g : preformula 0) (hf : formula_below n f) (hg : formula_below n g) : formula_below n (fol.and f g) :=
+begin
+simp[fol.and],
+refine b_not _ _ _,
+refine formula_below.b_imp _ _ _ _,
+assumption,
+apply b_not,
+assumption
+end
+
+def b_biimp (n : ℕ) (f g : preformula 0) (hf : formula_below n f) (hg : formula_below n g) : formula_below n (f ⟺ g) :=
+begin
+simp[biimp,fol.and, fol.not],
+refine formula_below.b_imp _ _ _ _,
+have := formula_below.b_falsum, --
+refine formula_below.b_imp _ _ _ _,
+refine formula_below.b_imp _ _ _ _,
+assumption, assumption,
+refine formula_below.b_imp _ _ _ _,
+refine formula_below.b_imp _ _ _ _,
+assumption, assumption, assumption,
+exact formula_below.b_falsum,
+end
 
 @[simp] def realize_formula_below {S : Structure} : ∀{n} (v : fin n → S)
   {l} {f : preformula l} (hf : formula_below n f), arity S Prop l

@@ -1,11 +1,3 @@
-**/*~
-**/*#*
-auto
-auto/*
-*png
-**/test.lean
-**/leanpkg.toml
-**/leanpkg.path
-**/*.olean
+*.olean
 /_target
 /leanpkg.path
