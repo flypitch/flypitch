@@ -1145,7 +1145,7 @@ apply b_not,
 assumption
 end
 
-def b_biimp (n : ℕ) (f g : preformula 0) (hf : formula_below n f) (hg : formula_below n g) : formula_below n (f ⟺ g) :=
+def b_biimp (n : ℕ) (f g : preformula 0) (hf : formula_below n f) (hg : formula_below n g) : formula_below n (f ⇔ g) :=
 begin
 simp[biimp,fol.and, fol.not],
 refine formula_below.b_imp _ _ _ _,
