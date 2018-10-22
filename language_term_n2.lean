@@ -8,7 +8,12 @@
 
 import .to_mathlib
 
+open nat set
 universe variable u
+
+local notation h :: t  := dvector.cons h t
+local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`) := l
+
 namespace fol
 
 /- realizers of variables are just maps ℕ → S. We need some operations on them -/
