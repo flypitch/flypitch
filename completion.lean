@@ -222,7 +222,7 @@ dite (Ts = ∅) -- dependent if
 -- start over from scratch
 
 /- Send a theory T to a theory T' over T, with a proof that T' is complete. -/
-def completion_theory2 : Π (T : @Theory L), Σ' T' : (@Theory_over L T), is_complete T'.val :=
+noncomputable def completion_theory2 : Π (T : @Theory L), Σ' T' : (@Theory_over L T), is_complete T'.val :=
 begin
   intro T,
   split,
@@ -242,7 +242,7 @@ begin
   have := H_infty T' H',
   simp[S, has_subset.subset] at this,
   simp[S],
-  simpa
+  simp*
   },
       {intro, intro, intro, intro a_sub_b, intro b_sub_c,  -- set.subset is transitive, another argument to zorn
     simp[Theory_over_subset], simp[Theory_over_subset] at a_sub_b, simp[Theory_over_subset] at b_sub_c,
