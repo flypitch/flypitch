@@ -98,7 +98,8 @@ dite (Ts = ∅) -- dependent if
      refine and.intro _ _,
      assumption, assumption
      end)
- 
+
+
      -- (begin,
      -- split, swap,
      -- exact set.sUnion Ts,
@@ -137,77 +138,120 @@ have := subset_is_transitive a b c h_ab h_bc,
 have := this x_in_a, assumption
 end
 
+lemma nonempty_of_not_empty {α : Type} (a : set α) (h : ¬ a = ∅) : nonempty a :=
+begin
+simp*,
+by_contra,
+simp[not_exists_not] at a_1,
+have : a = ∅,
+refine funext _,
+intro x,
+refine propext _,
+split,
+apply a_1,
+intro,
+simp[has_emptyc.emptyc] at a_2,
+exfalso, assumption,
+contradiction
+end
+
 def Theory_over {L : Language} (T : @Theory L) : Type := {T' : @Theory L // T ⊆ T'}
 
-/-Send a theory T to a theory T' extending T, with a proof that T' is complete-/
-def completion_theory : Π (T : @Theory L), Σ' T' : (@Theory_over L T), is_complete T'.val :=
+def over_self {L : Language} (T : @Theory L) : Theory_over T :=
 begin
-intro T,
-split,
-swap,
-refine classical.choice _,
-refine nonempty_of_exists _,
-exact λ x, true,  -- maybe want is_complete x ∧ is_consistent x instead of true?
-refine ex_coe _ (@zorn (@Theory_over L T) (λ T1 T2, T1.val ⊆ T2.val) _ _),  
-/- Hypotheses of Zorn's lemma -/
-  {intro Ts,
-    intro h_chain,
-    have : chain set.subset ((λ x : Theory_over T, x.val) '' Ts),
-      {simp[chain], simp[chain] at h_chain,
-        simp[set.pairwise_on], simp[set.pairwise_on] at h_chain,
-        intros T1 h1 h1' h_T1_coh T2 h2 h2' h_T2_coh h_neq,           
-        have : ¬ (h1 = h2),
-          {by_contra,
-          have : h1.val = h2.val,
-          simp*,
-          cc}, rename this neq_lift,
-        have := h_chain h1 h1' h2 h2' neq_lift, rename this chain_lift,
-        rw[h_T1_coh, h_T2_coh] at chain_lift,
-        assumption
-        },
-    rename this h'_chain,
-    let Ts' := ((λ x : Theory_over T, x.val) '' Ts),
-    let T_infty := (limit_theory Ts' h'_chain T),
---    have := (limit_theory Ts h_chain) = T_infty, by refl,
-    refine exists.intro _ _,
-    {refine ⟨T_infty.fst, _⟩,
-      intro,
-      have := T_infty.snd, rename this P,      
-      intro,
-      by_cases (Ts' = ∅),
-      {have : T_infty.fst = T,
-       have := (limit_theory_of_empty_is_T Ts' h'_chain T h), rename this h1,
-      have : (limit_theory Ts' h'_chain T).fst = T_infty.fst, by refl, by cc,
-      rw[<-this] at a_1, assumption},
-    refine subset_is_transitive_map T _ T_infty.fst _ _ _ _,
-    {sorry},
-    {sorry},
-    {sorry},
-    {assumption},
-    },
-simp*,
-  intros A hA,
-  intros ψ hψ,
-  simp[limit_theory],
-  by_cases Ts' = ∅,
-swap,
-{simp*,
-sorry -- we again need to show that there exists a lift, and apply transitivity
-},
-{  simp*,
-  exfalso,
- { have : A.val ∈ Ts', -- this case should be easy, just need to show that A cannot actually exist
-admit},
-    },
-  {intro, intro, intro, intro a_sub_b, intro b_sub_c,  -- set.subset is transitive, another argument to zorn
-    simp[set.subset], simp[set.subset] at a_sub_b, simp[set.subset] at b_sub_c,
+refine ⟨T, _⟩,
+trivial
+end
+
+def Theory_over_subset {L : Language} {T : @Theory L} : Theory_over T → Theory_over T → Prop
+:= λ T1 T2, T1.val ⊆ T2.val
+
+instance {T : @Theory L} : has_subset (Theory_over T) := ⟨Theory_over_subset⟩
+
+/- Given a set of theories over T and a proof that they form a chain under set-inclusion,
+return their union and a proof that this contains every theory in the chain
+
+We need an extra case to handle the case where the chain is empty. This is the third argument, which will be the default return value.
+-/
+
+noncomputable def limit_theory2 {L : Language} {T : @Theory L} (Ts : set (Theory_over T)) (h_chain : chain Theory_over_subset Ts) : Σ' T : Theory_over T, ∀ T' ∈ Ts, T' ⊆ T :=
+dite (Ts = ∅) -- dependent if
+
+     (begin intro, split, swap, -- then
+      exact over_self T, intro, intro hc,
+      exfalso, simp[a] at hc,
+     assumption end)
+
+     (begin intro, split, swap, --else
+      unfold Theory_over,
+     refine ⟨_, _⟩,
+     
+     {refine set.sUnion {T' : @Theory L | ∃T'' ∈ Ts, _},
+     unfold Theory_over at T'', exact T''.val = T'},
+     simp[set.sUnion],
+     intro ψ, intro hψ,
+     simp*,
+     have : nonempty Ts,
+     apply nonempty_of_not_empty, assumption, rename this H,
+     let T' := (classical.choice H).val,
+     let H' := (classical.choice H).property,
+     refine exists.intro _ _,
+     exact T'.val,
+     refine and.intro _ _,
+     refine exists.intro _ _,
+     exact T',
+     exact and.intro H' rfl,
+     apply T'.property, assumption,
+     intro T',
+     intro H',
+     intro ψ, intro hψ,
+     simp[set.sUnion, Theory_over],
+     unfold has_mem.mem,
+     unfold set.mem,
+     split, swap,
+     exact T'.val,
+     split,
+     split,
+     swap,
+     exact T',
+     refine and.intro H' _,
+     refl, assumption
+     end)
+
+
+-- start over from scratch
+
+/- Send a theory T to a theory T' over T, with a proof that T' is complete. -/
+def completion_theory2 : Π (T : @Theory L), Σ' T' : (@Theory_over L T), is_complete T'.val :=
+begin
+  intro T,
+  split,
+  swap,
+  refine classical.choice _,
+  refine nonempty_of_exists _, 
+  exact λ x, true,
+  refine ex_coe _ (@zorn (@Theory_over L T) Theory_over_subset _ _),
+
+  {intro Ts, intro h_chain, let S := limit_theory2 Ts h_chain,
+  let T_infty := S.fst,
+  let H_infty := S.snd,
+  refine exists.intro _ _,
+  exact T_infty,
+  intro T',
+  intro H',
+  have := H_infty T' H',
+  simp[S, has_subset.subset] at this,
+  simp[S],
+  simpa
+  },
+      {intro, intro, intro, intro a_sub_b, intro b_sub_c,  -- set.subset is transitive, another argument to zorn
+    simp[Theory_over_subset], simp[Theory_over_subset] at a_sub_b, simp[Theory_over_subset] at b_sub_c,
     intro,
     intro,
     have := a_sub_b a_2,
     have := b_sub_c this,
-    assumption  },
-
-  {sorry} -- end result is actually complete
+    assumption},
+  {sorry}
 end
 
 end
