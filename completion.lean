@@ -157,6 +157,7 @@ end
 
 def Theory_over {L : Language} (T : @Theory L) : Type := {T' : @Theory L // T ⊆ T'}
 
+/- Every theory T is trivially a theory over itself -/
 def over_self {L : Language} (T : @Theory L) : Theory_over T :=
 begin
 refine ⟨T, _⟩,
@@ -222,16 +223,17 @@ dite (Ts = ∅) -- dependent if
 -- start over from scratch
 
 /- Send a theory T to a theory T' over T, with a proof that T' is complete. -/
-noncomputable def completion_theory2 : Π (T : @Theory L), Σ' T' : (@Theory_over L T), is_complete T'.val :=
+noncomputable def completion_theory2 : Π (T : @Theory L) (h_consis : is_consistent T), Σ' T' : (@Theory_over L T), is_complete T'.val :=
 begin
   intro T,
+  intro h_consis,
   split,
   swap,
   refine classical.choice _,
   refine nonempty_of_exists _, 
   exact λ x, true,
   refine ex_coe _ (@zorn (@Theory_over L T) Theory_over_subset _ _),
-
+/- Hypotheses of Zorn's lemma -/
   {intro Ts, intro h_chain, let S := limit_theory2 Ts h_chain,
   let T_infty := S.fst,
   let H_infty := S.snd,
@@ -244,14 +246,18 @@ begin
   simp[S],
   simp*
   },
-      {intro, intro, intro, intro a_sub_b, intro b_sub_c,  -- set.subset is transitive, another argument to zorn
+/- Now we prove ⊆ is transitive -/
+      {intro, intro, intro, intro a_sub_b, intro b_sub_c,
     simp[Theory_over_subset], simp[Theory_over_subset] at a_sub_b, simp[Theory_over_subset] at b_sub_c,
     intro,
     intro,
     have := a_sub_b a_2,
     have := b_sub_c this,
-    assumption},
-  {sorry}
+    assumption,},
+  { split,
+  unfold is_consistent,
+  sorry
+  }
 end
 
 end
