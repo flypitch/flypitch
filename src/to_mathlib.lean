@@ -81,12 +81,27 @@ have h' : p = q, from funext h, by subst h'; refl
 
 namespace set
 
+variables {α : Type u} {β : Type v} 
 -- generalizes set.image_preimage_eq
-lemma image_preimage_eq_of_subset_image {α : Type u} {β : Type v} {f : α → β} {s : set β} 
+lemma image_preimage_eq_of_subset_image {f : α → β} {s : set β} 
   {t : set α} (h : s ⊆ f '' t) : f '' (f ⁻¹' s) = s :=
 subset.antisymm
   (image_preimage_subset f s)
   (λ x hx, begin rcases h hx with ⟨a, ha, rfl⟩, apply mem_image_of_mem f, exact hx end)
+
+def subset_union_left_of_subset {s t : set α} (h : s ⊆ t) (u : set α) : s ⊆ t ∪ u :=
+subset.trans h (subset_union_left t u)
+
+def subset_union_right_of_subset {s u : set α} (h : s ⊆ u) (t : set α) : s ⊆ t ∪ u :=
+subset.trans h (subset_union_right t u)
+
+def subset_sUnion {s : set α} {t : set (set α)} (h : s ∈ t) : s ⊆ ⋃₀ t :=
+by exact λx hx, ⟨s, ⟨h, hx⟩⟩
+
+def subset_sUnion_of_subset {s : set α} (t : set (set α)) (u : set α) (h₁ : s ⊆ u) 
+  (h₂ : u ∈ t) : s ⊆ ⋃₀ t :=
+subset.trans h₁ (subset_sUnion h₂)
+
 
 end set
 open nat set
