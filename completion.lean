@@ -67,8 +67,6 @@ dite (is_consistent $ T ∪ {ψ}) -- dependent if
 Now, we have to show that given an arbitrary chain in this poset, we can obtain an upper bound in this chain. We do this by taking the union.
 -/
 
-
-
 open zorn
 private lemma ex_coe {α : Type} (P : α → Prop) : (∃ x, P x) → (∃ x : α, true)
 | ⟨a, b⟩ := ⟨a, trivial⟩
@@ -127,11 +125,38 @@ def Theory_over_subset {L : Language} {T : @Theory L} {hT : is_consistent T} : T
 
 instance {T : @Theory L} {hT : is_consistent T} : has_subset (Theory_over T hT) := ⟨Theory_over_subset⟩
 
+instance {T : @Theory L} {hT : is_consistent T} : nonempty (Theory_over T hT) := ⟨over_self T hT⟩
+
 /- Given a set of theories over T and a proof that they form a chain under set-inclusion,
 return their union and a proof that this contains every theory in the chain
 
 We need an extra case to handle the case where the chain is empty. This is the third argument, which will be the default return value.
 -/
+
+/-- Given T ⊢ ψ, return the finite context from T required to prove ψ, and a proof of this --/
+def proof_finite_support {L : Language} (T : @Theory L) (ψ : @sentence L) (hψ : T ⊢ ψ) : Σ' Γ : finset (@sentence L), {ϕ : @sentence L | ϕ ∈ Γ} ⊢ ψ :=
+sorry
+
+def provable_of_provable_from_subset {L : Language} (T : @Theory L) (T' : @Theory L) (h_sub : T' ⊆ T) (ψ : @sentence L) (hψ : T' ⊢ ψ) : T ⊢ ψ :=
+sorry
+
+
+lemma consis_limit {L : Language} {T : @Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : is_consistent (T ∪ set.sUnion (subtype.val '' Ts)) :=
+begin -- so _here_ is where we need that proofs are finitely supported
+unfold is_consistent,
+intro h_inconsis,
+let Γpair := proof_finite_support (T ∪ ⋃₀(subtype.val '' Ts)) ⊥ h_inconsis,
+have h_bad : ∃ T' : (@Theory L), (T' ∈ (subtype.val '' Ts)) ∧ {ψ | ψ ∈ Γpair.fst} ⊆ T',
+{sorry},
+let T_bad := @strong_indefinite_description (@Theory L) (λ S, S ∈ (subtype.val '' Ts) ∧ ({ϕ | ϕ ∈ Γpair.fst} ⊆ S))  begin apply_instance end,
+have T_bad_inconsis : sprovable T_bad.val ⊥,
+fapply provable_of_provable_from_subset T_bad.val {ϕ | ϕ ∈ Γpair.fst},
+exact (T_bad.property h_bad).right,
+exact Γpair.snd,
+have T_bad_consis : is_consistent T_bad.val,
+{sorry},
+contradiction
+end
 
 def limit_theory2 {L : Language} {T : @Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : Σ' T : Theory_over T hT, ∀ T' ∈ Ts, T' ⊆ T :=
 begin
@@ -174,7 +199,6 @@ end
 
 open classical
 
-instance {T : @Theory L} {hT : is_consistent T} : nonempty (Theory_over T hT) := ⟨over_self T hT⟩
 
 /- Given a consistent theory T, return a maximal extension of it given by Zorn's lemma, along with the proof that it is consistent and maximal -/
 noncomputable def maximal_extension2 (L : Language) (T : @Theory L) (hT : is_consistent T)  : Σ' (T_max : Theory_over T hT), ∀ T' : Theory_over T hT, T_max ⊆ T' → T' ⊆ T_max :=
