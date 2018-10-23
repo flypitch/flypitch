@@ -110,70 +110,13 @@ end
 
 def axiom_of_emptyset : @sentence L_ZFC' := -- for all x, x is not in the constant emptyset.
 begin
-split, swap,
-  {
-  dsimp[formula],
-  {exact (∀'∼(apprel (apprel (rel ZFC'_rel.ϵ) &0) (func ZFC'_f0.emptyset)))},},
-
-{ simp*,
-  refine b_all _ _,
-  refine b_not _ _ _,
-  refine b_apprel _ _ _ _,
-  refine b_apprel _ _ _ _,
-  refine b_rel _,
-  refine term_below.b_var _ _,
-  simp*,
-  apply nat.zero_lt_succ,
-  refine term_below.b_func _ }
+repeat {constructor}
 end
 
 def axiom_of_subset : @sentence L_ZFC' := -- for all x, for all z, x ⊆ y (if and only if) , z ∈ x → z ∈ y.
 begin
-split,
-swap,
-  {
-  dsimp[formula],
-  {exact ∀' (∀'( ∀'( (apprel (apprel (rel $ rel_is_rel ZFC'_rel.subset) &0) (var 2)) ⟺ (apprel (apprel (rel ZFC'_rel.ϵ) &1) (var 2)))))}},
-{
-simp*,
-refine b_all _ _,
-refine b_all _ _,
-refine b_all _ _,
-refine b_biimp _ _ _ _ _,
-refine b_apprel _ _ _ _,
-refine b_apprel _ _ _ _,
-{refine b_rel _},
-{simp*, refine term_below.b_var _ _, apply nat.zero_lt_succ},
-{simp*, refine term_below.b_var _ _, simp*, apply nat.zero_lt_succ},
-{refine b_apprel _ _ _ _, 
-{refine b_apprel _ _ _ _,
-refine b_rel _,
-{simp*, refine term_below.b_var _ _, simp*, apply nat.zero_lt_succ}
-},
-{{simp*, refine term_below.b_var _ _, simp*, apply nat.zero_lt_succ}}
-}}
+repeat {constructor} -- thanks Floris!
 end
-
-/- less efficient proof below -/
---   {simp*,
--- have : @formula_below L_ZFC' 0 1 (fol.not (apprel (apprel (rel ZFC_rel.ϵ) &0) (func ZFC'_f0.emptyset))),
---      {
---      have : @formula_below L_ZFC' 0 1 (apprel (apprel (rel ZFC_rel.ϵ) &0) (func ZFC'_f0.emptyset)), 
---      {
---     refine formula_below.b_apprel _ _ _ _,
---  swap,
--- refine term_below.b_func _,
--- refine formula_below.b_apprel _ _ _ _,
--- refine formula_below.b_rel _,
--- refine term_below.b_var _ _,
---  apply nat.zero_lt_succ
--- }
--- ,
--- refine b_not _ _ _,
--- exact this
---        },
---        exact (s_all (fol.not (apprel (apprel (rel $ rel_is_rel ZFC_rel.ϵ) &0) (func ZFC'_f0.emptyset))) this).snd}
-
 
 def axiom_of_extensionality : @sentence L_ZFC' := -- for all x for all y for all z, z in x iff z in y implies x = y
 begin
