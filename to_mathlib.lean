@@ -68,9 +68,13 @@ nat.sub_lt_right_iff_lt_add H
 
 end nat
 
-lemma lt_by_cases {α : Type u} [linear_order α] (x y : α) {P : Prop}
+def lt_by_cases {α : Type u} [decidable_linear_order α] (x y : α) {P : Sort v}
   (h₁ : x < y → P) (h₂ : x = y → P) (h₃ : y < x → P) : P :=
-or.elim (lt_trichotomy x y) h₁ (λh, or.elim h h₂ h₃)
+begin
+  by_cases h : x < y, { exact h₁ h },
+  by_cases h' : y < x, { exact h₃ h' },
+  apply h₂, apply le_antisymm; apply le_of_not_gt; assumption
+end
 
 lemma imp_eq_congr {a b c d : Prop} (h₁ : a = b) (h₂ : c = d) : (a → c) = (b → d) :=
 by subst h₁; subst h₂; refl
@@ -96,7 +100,7 @@ lemma subset_union_right_of_subset {s u : set α} (h : s ⊆ u) (t : set α) : s
 subset.trans h (subset_union_right t u)
 
 lemma subset_sUnion {s : set α} {t : set (set α)} (h : s ∈ t) : s ⊆ ⋃₀ t :=
-by exact λx hx, ⟨s, ⟨h, hx⟩⟩
+λx hx, ⟨s, ⟨h, hx⟩⟩
 
 lemma subset_sUnion_of_subset {s : set α} (t : set (set α)) (u : set α) (h₁ : s ⊆ u) 
   (h₂ : u ∈ t) : s ⊆ ⋃₀ t :=
@@ -105,6 +109,17 @@ subset.trans h₁ (subset_sUnion h₂)
 
 end set
 open nat set
+
+namespace nonempty
+variables {α : Type u} {β : Type v} {γ : Type w}
+
+protected def map (f : α → β) : nonempty α → nonempty β
+| ⟨x⟩ := ⟨f x⟩
+
+protected def map2 (f : α → β → γ) : nonempty α → nonempty β → nonempty γ
+| ⟨x⟩ ⟨y⟩ := ⟨f x y⟩
+
+end nonempty
 
 namespace fin
 
@@ -115,7 +130,13 @@ end fin
 
 namespace tactic
 namespace interactive
+/- maybe we should use congr' 1 instead? -/
 meta def congr1 : tactic unit := 
 do focus1 (congr_core >> all_goals (try reflexivity >> try assumption))
+
+
 end interactive
 end tactic
+
+
+
