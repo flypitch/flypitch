@@ -58,7 +58,7 @@ by refl
 @[reducible]def rel_is_rel : ZFC'_rel → L_ZFC'.relations 2 :=
 begin
 intro,
-simp[duh],
+rw[duh],
 assumption
 end
 
