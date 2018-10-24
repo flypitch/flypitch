@@ -1,6 +1,6 @@
 /- Show that every theory can be extended to a complete theory -/
 
-import .language_term_n2 order.zorn order.filter logic.basic
+import .language_term_n2 order.zorn order.filter logic.basic data.finset
 local attribute [instance] classical.prop_decidable
 open fol
 
@@ -35,20 +35,32 @@ intro, refine absurd h _,
 exact absurd a_1 h,
 exact id
 end
+open classical
+noncomputable def instantiate_existential {α : Type} {P : α → Prop} (h : ∃ x : α, P x) : nonempty α → {x // P x} :=
+begin
+intro h_nonempty,
+let X := (@strong_indefinite_description α P h_nonempty),
+refine ⟨X.val, _⟩,
+apply X.property,
+exact h
+end
 
 lemma can_extend {L : Language} (T : @Theory L) (ψ : @sentence L) (h : is_consistent T): (is_consistent (T ∪ {ψ})) ∨ (is_consistent (T ∪ {∼ ψ}))
 :=
 begin
--- simp*,
 by_contra,
 rename a hc,
-simp[is_consistent] at hc,
-simp[not_or_distrib] at hc,
+simp[is_consistent, not_or_distrib] at hc,
 cases hc with hc1 hc2,
--- simp[is_consistent] at h,
 apply h,
-have hc_uno : T ⊢  ψ ⟹ s_falsum, sorry
--- need a deduction rule for sentences 
+have hc_uno : T ⊢  ψ ⟹ s_falsum,
+  apply simpI hc1,
+have hc_dos : T ⊢ ∼ψ ⟹ s_falsum,
+  apply simpI hc2,
+rw[<-s_not] at hc_uno, rw[<-s_not] at hc_dos,
+have hc_tres : T ⊢ (∼ ψ) ⊓ (∼ ∼ ψ),
+  apply sandI hc_uno hc_dos,
+exact @snot_and_self L T ∼ψ hc_tres,
 end
 
 /- Given a consistent theory T and sentence ψ, return whichever one of T ∪ ψ or T ∪ ∼ ψ is consistent.  We will need `extend` to show that the maximal theory given by Zorn's lemma is complete. -/
@@ -74,8 +86,6 @@ private lemma ex_coe {α : Type} (P : α → Prop) : (∃ x, P x) → (∃ x : �
 /- Given a set of theories and a proof that they form a chain under set-inclusion, return their union and a proof that this contains every theory in the chain
 
 -/
-
-open classical
 
 lemma subset_is_transitive {α : Type} : ∀ a b c : set α, a ⊆ b → b ⊆ c → a ⊆ c :=
 begin intros a b c, intro a_sub_b, intro b_sub_c,
@@ -133,12 +143,30 @@ return their union and a proof that this contains every theory in the chain
 We need an extra case to handle the case where the chain is empty. This is the third argument, which will be the default return value.
 -/
 
-/-- Given T ⊢ ψ, return the finite context from T required to prove ψ, and a proof of this --/
-def proof_finite_support {L : Language} (T : @Theory L) (ψ : @sentence L) (hψ : T ⊢ ψ) : Σ' Γ : finset (@sentence L), {ϕ : @sentence L | ϕ ∈ Γ} ⊢ ψ :=
+/-- Given T ⊢ ψ, return the finite context from T required to prove ψ, a proof of that, and a proof that the finite context was a subset of T --/
+
+
+
+def proof_finite_support {L : Language} (T : @Theory L) (ψ : @sentence L) (hψ : T ⊢ ψ) : Σ' Γ : finset (@sentence L), {ϕ : @sentence L | ϕ ∈ Γ} ⊢ ψ ∧ {ϕ : @sentence L | ϕ ∈ Γ} ⊆ T:=
+begin
+rw[sprovable] at hψ,
+simp[sentence] at ψ,
+fapply psigma.mk,
+cases ψ,
+simp[sentence.fst] at hψ,
+cases ψ_fst,
+exact (list.nil).to_finset,
 sorry
+end
 
 def provable_of_provable_from_subset {L : Language} (T : @Theory L) (T' : @Theory L) (h_sub : T' ⊆ T) (ψ : @sentence L) (hψ : T' ⊢ ψ) : T ⊢ ψ :=
+begin
+rw[sprovable],
+cases ψ, cases ψ_fst,
+simp[sprovable] at hψ,
+apply exfalso,
 sorry
+end
 
 
 lemma consis_limit {L : Language} {T : @Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : is_consistent (T ∪ set.sUnion (subtype.val '' Ts)) :=
@@ -147,23 +175,37 @@ unfold is_consistent,
 intro h_inconsis,
 let Γpair := proof_finite_support (T ∪ ⋃₀(subtype.val '' Ts)) ⊥ h_inconsis,
 have h_bad : ∃ T' : (@Theory L), (T' ∈ (subtype.val '' Ts)) ∧ {ψ | ψ ∈ Γpair.fst} ⊆ T',
-{sorry},
+{
+fapply exists.intro,
+sorry --- need to show that, given a finset in the union, can exhibit it has a subset of a single theory in the union. find such a theory for each element and take their union.
+},
 let T_bad := @strong_indefinite_description (@Theory L) (λ S, S ∈ (subtype.val '' Ts) ∧ ({ϕ | ϕ ∈ Γpair.fst} ⊆ S))  begin apply_instance end,
 have T_bad_inconsis : sprovable T_bad.val ⊥,
 fapply provable_of_provable_from_subset T_bad.val {ϕ | ϕ ∈ Γpair.fst},
 exact (T_bad.property h_bad).right,
-exact Γpair.snd,
+exact Γpair.snd.left,
 have T_bad_consis : is_consistent T_bad.val,
-{sorry},
+{
+have almost_done := (T_bad.property h_bad).left,
+simp[set.image] at almost_done,
+cases almost_done,
+exact almost_done_w.right
+},
 contradiction
 end
+
+--refine @exists.elim ( T ⊆ T_bad.val ∧ is_consistent (T_bad.val)) (λ x :  T ⊆ T_bad.val ∧ is_consistent (T_bad.val), ⟨_, x⟩ ∈ Ts), swap},
+
+
+
+/-- Given a chain of consistent extensions of a theory T, return the union of those theories and a proof that this is a consistent extension of T --/
 
 def limit_theory2 {L : Language} {T : @Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : Σ' T : Theory_over T hT, ∀ T' ∈ Ts, T' ⊆ T :=
 begin
 refine ⟨⟨T ∪ set.sUnion (subtype.val '' Ts), _⟩, _⟩,
 simp*,
 intro,
-sorry, -- just need to show that the union of consistent theories is consistent
+exact @consis_limit L T hT Ts h_chain begin simp* end,
 intros T' hT' ψ hψ,
 right, split, swap,
 exact T'.val,
@@ -196,8 +238,6 @@ begin
     have := b_sub_c this,
     assumption,
 end
-
-open classical
 
 
 /- Given a consistent theory T, return a maximal extension of it given by Zorn's lemma, along with the proof that it is consistent and maximal -/

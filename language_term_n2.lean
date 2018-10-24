@@ -627,8 +627,20 @@ inductive prf : set formula → formula → Prop
 | allE'  : ∀{Γ} A t, prf Γ (∀' A) → prf Γ (A[t // 0])
 | refl   : ∀Γ t, prf Γ (t ≃ t)
 | subst' : ∀{Γ} s t f, prf Γ (s ≃ t) → prf Γ (f[s // 0]) → prf Γ (f[t // 0])
+
+inductive prf' : set formula → formula → Type
+| axm : ∀{Γ A}, A ∈ Γ → prf Γ A → prf' Γ A
+| impI   : ∀{Γ : set formula} {A B}, prf (insert A Γ) B → prf Γ (A ⟹ B) → prf' (insert A Γ) B → prf' Γ (A ⟹ B)
+| impE   : ∀{Γ} (A) {B}, prf' Γ (A ⟹ B) → prf' Γ A → prf' Γ B
+| falseE : ∀{Γ : set formula} {A}, prf (insert ∼A Γ) falsum → prf Γ A → prf' (insert ∼A Γ) falsum → prf' Γ A
+| allI   : ∀{Γ A}, prf (lift_formula1 '' Γ) A → prf Γ (∀' A) → prf' (lift_formula1 '' Γ) A → prf' Γ (∀' A)
+| allE'  : ∀{Γ} A t, prf Γ (∀' A) → prf Γ (A[t // 0]) → prf' Γ (∀' A) → prf' Γ (A[t // 0])
+| refl   : ∀Γ t, prf Γ (t ≃ t) → prf' Γ (t ≃ t)
+| subst' : ∀{Γ} s t f, prf Γ (s ≃ t) → prf Γ (f[s // 0]) → prf Γ (f[t // 0]) → prf' Γ (s ≃ t) → prf' Γ (f[s // 0]) → prf' Γ (f[t // 0])
+
 export prf
 infix ` ⊢ `:51 := _root_.fol.prf -- input: \|- or \vdash
+infix ` ⊢' `:51 := _root_.fol.prf' -- input: \|- or \vdash
 
 def allE {Γ} (A : formula) (t) {B} (H₁ : prf Γ (∀' A)) (H₂ : A[t // 0] = B) : prf Γ B :=
 by induction H₂; exact allE' A t H₁
@@ -734,6 +746,16 @@ begin
   rw [image_insert_eq], apply impE _ axm2, apply weakening2 H₂
 end
 
+
+def not_and_self {Γ : set formula} {f : formula} (H : Γ ⊢(f ⊓ ∼f)) : Γ ⊢ ⊥ :=
+begin
+have H1 := andE1 ∼f H, 
+have H2 := andE2 f H,
+rw[not] at H2,
+exact impE f H2 H1
+end
+
+-- def andE1 {Γ f₁} (f₂ : formula) (H : Γ ⊢ f₁ ⊓ f₂) : Γ ⊢ f₁ :=
 def symm {Γ} {s t : term} (H : Γ ⊢ s ≃ t) : Γ ⊢ t ≃ s :=
 begin 
   apply subst (&0 ≃ s ↑1) H; rw [subst_formula_equal, lift_term1_subst_term, subst_term_var0],
@@ -778,7 +800,7 @@ def equal_preterms (T : set formula) {l} (t₁ t₂ : preterm l) : Prop :=
 def equal_preterms_app {T : set formula} {l} {t t' : preterm (l+1)} {s s' : term} 
   (Ht : equal_preterms T t t') (Hs : T ⊢ s ≃ s') : equal_preterms T (app t s) (app t' s') :=
 begin
-  intro xs, 
+  intro xs,
   apply trans (Ht (xs.cons s)),
   have h := congr (apps (t' ↑1) (&0 :: xs.map lift_term1)) Hs, 
   simp [dvector.map_congr (λt, lift_term1_subst_term t s')] at h,
@@ -1096,6 +1118,8 @@ def s_imp (f₁ f₂ : sentence) : sentence := ⟨f₁.fst ⟹ f₂.fst, b_imp _
 infix ` ⟹ `:62 := _root_.fol.s_imp -- input \==>
 def s_not (f : sentence) : sentence := f ⟹ ⊥
 prefix `∼`:max := _root_.fol.s_not -- input \~, the ASCII character ~ has too low precedence
+def s_and (f₁ f₂ : sentence) : sentence := ∼(f₁ ⟹ ∼f₂)
+infixr ` ⊓ ` := _root_.fol.s_and -- input: \sqcap
 def s_all (f : formula) (hf : formula_below 1 f) : sentence := ⟨∀' f, b_all f hf⟩
 def s_ex (f : formula) (hf : formula_below 1 f) : sentence := 
 ∼ (s_all (∼ f) (b_imp _ _ hf b_falsum))
@@ -1125,6 +1149,43 @@ infix ` ⊢ `:51 := _root_.fol.sprovable -- input: \|- or \vdash
 
 def saxm {T : Theory} {A : sentence} (H : A ∈ T) : T ⊢ A := 
 by apply axm; apply mem_image_of_mem _ H
+
+def simpI {T : Theory} {A B : sentence} (H : insert A T ⊢ B) : T ⊢ A ⟹ B
+:= begin
+apply impI,
+simp[sprovable] at H, simp[Theory.fst] at H, simp[Theory.fst], 
+rw[<-image_insert_eq], assumption
+end
+
+@[reducible] lemma fst_commutes_with_imp {T : Theory} (A B : sentence) : (A ⟹ B).fst = A.fst ⟹ B.fst := by refl
+
+def sfalseE {T : Theory} {A : sentence} (H : insert ∼A T ⊢ s_falsum) : T ⊢ A :=
+begin
+apply falseE,
+simp[sprovable, Theory.fst] at H, simp[Theory.fst, not],
+have lemma1 := fst_commutes_with_imp A s_falsum, swap, exact T,
+simp[sentence.fst, s_falsum] at lemma1, rw[<-lemma1],
+rw[<-image_insert_eq], assumption
+end
+
+-- have fst_lemma : (sentence.fst A) ⟹ falsum = sentence.fst (A ⟹ s_falsum),
+-- by refl,
+
+def sandI {T : Theory} {A B : sentence} (H1 : T ⊢ A) (H2 : T ⊢ B) : T ⊢ A ⊓ B :=
+begin
+apply andI,
+simp[sprovable] at H1, assumption, simp[sprovable] at H2, assumption
+end
+
+def snot_and_self {T : Theory} {A : sentence} (H : T ⊢ A ⊓ ∼ A) : T ⊢ s_falsum :=
+begin
+cases A with A and hA,
+fapply not_and_self,
+exact A, simp[sprovable] at H,
+exact H
+end
+
+
 
 def sprovable_of_provable {T : Theory} {f : sentence} (h : T.fst ⊢ f.fst) : T ⊢ f := h
 def provable_of_sprovable {T : Theory} {f : sentence} (h : T ⊢ f) : T.fst ⊢ f.fst := h
