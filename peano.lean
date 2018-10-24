@@ -1,4 +1,4 @@
-import .language_term_n2
+import .language_term_n2 tactic.tidy
 
 open fol
 
@@ -119,7 +119,7 @@ def quantifier_count_preformula {L : Language} : Π n, preformula L n → ℕ
 
 
 def free_var_count {L : Language} (n : ℕ) : preformula L n → ℕ :=
-λ ψ, (var_list_preformula n ψ).length - quantifier_count_preformula n ψ
+λ ψ, max 0 $ (var_list_preformula n ψ).length - quantifier_count_preformula n ψ
 
 --sanity check
 
@@ -134,15 +134,45 @@ def free_var_count {L : Language} (n : ℕ) : preformula L n → ℕ :=
 #reduce free_var_count 0 p_times_succ.fst -- yes!!
 
 /-- Given a nat k and a 0-formula ψ, return ψ with ∀' applied k times to it --/
-def alls {L : Language} : Π n : ℕ, formula L → formula L
+@[simp]def alls {L : Language} : Π n : ℕ, formula L → formula L
 | 0 ψ := ψ
-| (n+1) ψ := ∀' alls n ψ
+| (n+1) ψ := ∀' (alls n ψ)
 
 /-- Return the highest variable in ψ --/
 def highest_variable {L : Language} : Π n, preformula L n → ℕ :=
 begin
 intros n ψ,
 exact list.foldr max 0 (var_list_preformula n ψ)
+end
+
+@[simp] lemma alls_0 {L : Language} (ψ : formula L) : alls 0 ψ = ψ := by refl
+
+@[simp] def b_alls_1 {L : Language} {n : ℕ} {f : formula L} (hf :  formula_below (n+1) f)  : formula_below n $ alls 1 f := begin
+constructor, simp*, assumption
+end
+
+@[simp] lemma alls_succ_k {L : Language} (f : formula L) {k : ℕ} : alls (k + 1) f = ∀' alls k f := by constructor
+
+@[simp] lemma alls_all_commute {L : Language} (f : formula L) {k : ℕ} : (alls k ∀' f) = (∀' alls k f) :=
+begin
+induction k with k ih,
+simp*,
+simp* -- is this idiomatic?
+end
+
+@[simp] def b_alls_k {L : Language} {n : ℕ} {k: ℕ} :  ∀ f : formula L, formula_below (n + k) f → formula_below n (alls k f) :=
+begin
+-- induction n with n ih, induction k with k ih,
+induction k with k ih,
+intros f hf, exact hf,
+intros f hf, 
+have H := alls_succ_k,
+
+have hf_rw : formula_below (n + nat.succ k) f → formula_below (n+k) ∀'f, by {apply b_alls_1},
+let hf2 := hf_rw hf,
+
+have hooray := ih (∀'f) hf2,
+rw[alls_all_commute, <-H] at hooray, exact hooray --hooray!!
 end
 
 /- The induction schema instance at ψ is the following formula (up to the fixed ordering of variables given by the de Bruijn indexing):
@@ -152,14 +182,24 @@ end
 return (k - 1 ∀∀s)[(ψ(...,0) ∧ (k ∀∀s) (ψ → ψ(...,S(x)))) → (k ∀∀s) ψ]
 -/
 
+set_option trace.app_builder true
+
 def p_induction_schema (ψ : formula L_peano) : @sentence L_peano :=
 begin
+  let k := free_var_count 0 ψ,
 split,swap,
   begin
-  let k := free_var_count 0 ψ, let x := highest_variable 0 ψ,
   apply alls (k-1), apply imp, apply fol.and, refine ψ[_//0], apply func, exact peano_f0.zero, apply all, apply imp, exact ψ, refine ψ[_//0], apply app, apply func, exact peano_f1.succ, exact &(highest_variable 0 ψ), apply alls (k), exact ψ
   end,
-sorry
+dsimp[k],
+simp[free_var_count],
+apply b_alls_k,
+simp*,
+repeat{constructor},
+{sorry},
+{sorry},
+{sorry},
+{sorry}
 end
 
 end
