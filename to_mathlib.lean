@@ -37,16 +37,16 @@ variables {α : Type u} {β : Type v} {γ : Type w} {n : ℕ}
 | _ []      := []
 | _ (x::xs) := f x :: map xs
 
-@[simp] protected def map_id : ∀{n : ℕ} (xs : dvector α n), xs.map (λx, x) = xs
+@[simp] protected lemma map_id : ∀{n : ℕ} (xs : dvector α n), xs.map (λx, x) = xs
 | _ []      := rfl
 | _ (x::xs) := by dsimp; simp*
 
-@[simp] protected def map_congr {f g : α → β} (h : ∀x, f x = g x) : 
+@[simp] protected lemma map_congr {f g : α → β} (h : ∀x, f x = g x) : 
   ∀{n : ℕ} (xs : dvector α n), xs.map f = xs.map g
 | _ []      := rfl
 | _ (x::xs) := by dsimp; simp*
 
-@[simp] protected def map_map (g : β → γ) (f : α → β): ∀{n : ℕ} (xs : dvector α n), 
+@[simp] protected lemma map_map (g : β → γ) (f : α → β): ∀{n : ℕ} (xs : dvector α n), 
   (xs.map f).map g = xs.map (λx, g (f x))
   | _ []      := rfl
   | _ (x::xs) := by dsimp; simp*
@@ -89,16 +89,16 @@ subset.antisymm
   (image_preimage_subset f s)
   (λ x hx, begin rcases h hx with ⟨a, ha, rfl⟩, apply mem_image_of_mem f, exact hx end)
 
-def subset_union_left_of_subset {s t : set α} (h : s ⊆ t) (u : set α) : s ⊆ t ∪ u :=
+lemma subset_union_left_of_subset {s t : set α} (h : s ⊆ t) (u : set α) : s ⊆ t ∪ u :=
 subset.trans h (subset_union_left t u)
 
-def subset_union_right_of_subset {s u : set α} (h : s ⊆ u) (t : set α) : s ⊆ t ∪ u :=
+lemma subset_union_right_of_subset {s u : set α} (h : s ⊆ u) (t : set α) : s ⊆ t ∪ u :=
 subset.trans h (subset_union_right t u)
 
-def subset_sUnion {s : set α} {t : set (set α)} (h : s ∈ t) : s ⊆ ⋃₀ t :=
+lemma subset_sUnion {s : set α} {t : set (set α)} (h : s ∈ t) : s ⊆ ⋃₀ t :=
 by exact λx hx, ⟨s, ⟨h, hx⟩⟩
 
-def subset_sUnion_of_subset {s : set α} (t : set (set α)) (u : set α) (h₁ : s ⊆ u) 
+lemma subset_sUnion_of_subset {s : set α} (t : set (set α)) (u : set α) (h₁ : s ⊆ u) 
   (h₂ : u ∈ t) : s ⊆ ⋃₀ t :=
 subset.trans h₁ (subset_sUnion h₂)
 
