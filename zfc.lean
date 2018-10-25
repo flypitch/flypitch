@@ -110,13 +110,27 @@ end
 
 def axiom_of_emptyset : @sentence L_ZFC' := -- for all x, x is not in the constant emptyset.
 begin
+split, swap,
+  begin
+  apply all, apply fol.not, apply apprel, apply apprel, apply rel, exact rel_is_rel ZFC'_rel.ϵ, exact &0, apply func, exact ZFC'_f0.emptyset
+  end,
 repeat {constructor}
 end
 
 def axiom_of_subset : @sentence L_ZFC' := -- for all x, for all z, x ⊆ y (if and only if) , z ∈ x → z ∈ y.
 begin
+split, swap,
+  begin
+  apply all, apply all, apply all, apply biimp, apply apprel, apply apprel, apply rel, exact ZFC'_rel.subset, exact &2, exact &1, apply imp, apply apprel, apply apprel, apply rel, exact ZFC'_rel.ϵ, exact &0, exact &2, apply apprel, apply apprel, apply rel, exact ZFC'_rel.ϵ, exact &0, exact &1
+--&2 ⊆ &1 iff &0 ∈ &2 → &0 ∈ &1
+  end,
 repeat {constructor} -- thanks Floris!
 end
+
+def test := axiom_of_emptyset.fst
+
+#reduce test
+
 
 def axiom_of_extensionality : @sentence L_ZFC' := -- for all x for all y for all z, z in x iff z in y implies x = y
 begin
