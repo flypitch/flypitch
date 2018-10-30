@@ -1,4 +1,4 @@
-import .language_term_n2 tactic.tidy
+import .fol tactic.tidy
 
 open fol
 
@@ -21,9 +21,9 @@ def quantifier_count_preformula {L : Language} : Π n, preformula L n → ℕ
 
 --sanity check
 
-#reduce quantifier_count_preformula 0 p_times_succ.fst
+-- #reduce quantifier_count_preformula 0 p_times_succ.fst
 
-#reduce quantifier_count_preformula 0 p_zero_of_times_zero.fst  -- ok
+-- #reduce quantifier_count_preformula 0 p_zero_of_times_zero.fst  -- ok
 
 /-- Given a nat k and a 0-formula ψ, return ψ with ∀' applied k times to it --/ 
 @[simp]def alls {L : Language}  :  Π n : ℕ, formula L → formula L
@@ -62,10 +62,10 @@ rw[alls_all_commute, <-H] at hooray, exact hooray --hooray!!
 end
 
 
-lemma term_below_coe {L : Language} : ∀ {l}, Π n m : ℕ, (n ≤ m) → Π t :(preterm L l), (@term_below L n l t) → (@term_below L m l t)
-  | _ n m _ &k _       := term_below.b_var k begin dedup, cases _x_1, fapply lt_of_lt_of_le, exact n, repeat{assumption}  end
+lemma term_below_coe {L : Language} : ∀ {l}, Π n m : ℕ, (n ≤ m) → Π t :(preterm L l), (term_below n t) → (term_below m t)
+  | _ n m _ &k _       := b_var' k begin dedup, cases _x_1, fapply lt_of_lt_of_le, exact n, repeat{assumption}  end
   | _ n m _ (func f) _                := term_below.b_func f
-  | l n m _ (app t1 t2) _  :=  term_below.b_app t1 t2 
+  | l n m _ (app t1 t2) _  :=  b_app' t1 t2 
                                begin
                                fapply term_below_coe, exact n, assumption, cases _x, assumption
                                end
@@ -76,7 +76,7 @@ lemma term_below_coe {L : Language} : ∀ {l}, Π n m : ℕ, (n ≤ m) → Π t 
 
 lemma formula_below_coe {L : Language} : ∀ {l}, Π n m : ℕ, (n ≤ m) → Π f : preformula L l, formula_below n f → formula_below m f
 | _ n m _ falsum h := b_falsum
-| _ n m _ (t1 ≃ t2) h := b_equal t1 t2
+| _ n m _ (t1 ≃ t2) h := b_equal' t1 t2
                                   begin 
                                   cases h, fapply term_below_coe, exact n,
                                   repeat{assumption},
@@ -88,7 +88,7 @@ lemma formula_below_coe {L : Language} : ∀ {l}, Π n m : ℕ, (n ≤ m) → Π
                                   end
 
 | _ n m _ (rel R) h := b_rel R
-| l n m _ (apprel f1 f2) h := b_apprel f1 f2 
+| l n m _ (apprel f1 f2) h := b_apprel' f1 f2 
                                   begin 
                                   cases h, fapply formula_below_coe, exact n,
                                   swap, repeat{assumption}
@@ -99,7 +99,7 @@ lemma formula_below_coe {L : Language} : ∀ {l}, Π n m : ℕ, (n ≤ m) → Π
                                   swap, repeat{assumption}
                                   end
 
-| _ n m _ (f1 ⟹ f2) h := b_imp f1 f2
+| _ n m _ (f1 ⟹ f2) h := b_imp' f1 f2
                                   begin 
                                   cases h, fapply formula_below_coe, exact n,
                                   swap, repeat{assumption}
@@ -110,7 +110,7 @@ lemma formula_below_coe {L : Language} : ∀ {l}, Π n m : ℕ, (n ≤ m) → Π
                                   swap, repeat{assumption}
                                   end
 
-| _ n m _ (∀' f) h := b_all f
+| _ n m _ (∀' f) h := b_all' f
                                   begin 
                                   cases h, fapply formula_below_coe, exact n+1,
                                   swap, repeat{assumption}, simp*
@@ -129,8 +129,9 @@ simp[subst_term],
 simp[subst_realize],
 by_cases hf_t₁_1 < 0,
 exfalso, fapply nat.not_lt_zero, exact hf_t₁_1, assumption,
-simp*, cases hf_t₁_1, simp*, refine term_below_coe t 0 n begin simp* end ht, have hzerolt : 0 < nat.succ hf_t₁_1, by apply nat.zero_lt_succ, simp*, simp* at hf_ht₁, cases hf_ht₁,
-have : hf_t₁_1 < n, sorry -- yuck, need to reorganize
+simp*, cases hf_t₁_1, simp*, refine term_below_coe 0 n (nat.zero_le n) t ht, have hzerolt : 0 < nat.succ hf_t₁_1, by apply nat.zero_lt_succ, simp*, simp* at hf_ht₁, cases hf_ht₁,
+have : hf_t₁_1 < n, sorry, -- yuck, need to reorganize
+repeat {sorry}
 end
 
 def b_subst2 {L : Language} {n : ℕ} {f : formula L} (hf : formula_below n f) {t : term L} (ht : term_below n t) : formula_below n (f[t //0]) := sorry
@@ -255,7 +256,7 @@ split,swap,
   
   begin
   simp, apply b_subst, by_cases n = 0, simp*,
-  rw[h] at hψ, fapply formula_below_coe, exact 0, simpa,
+  rw[h] at hψ, fapply formula_below_coe, exact 0, apply nat.zero_le, assumption,
   simp*, have : (1 + (n - 1)) = n,
   cases n, exfalso, finish, simp*, rw[this], assumption,
   constructor
@@ -263,14 +264,14 @@ split,swap,
 
   begin 
   by_cases n = 0, simp*,
-  rw[h] at hψ, fapply formula_below_coe, exact 0, simpa, simp*, have : (1 + (n - 1)) = n,
+  rw[h] at hψ, fapply formula_below_coe, exact 0, apply nat.zero_le, assumption, simp*, have : (1 + (n - 1)) = n,
   cases n, exfalso, finish, simp*, rw[this], assumption,
   end,
 
   begin
   simp, apply b_subst2, by_cases n = 0, simp*,
   rw[h] at hψ, fapply formula_below_coe, exact 1, simp,
-  fapply formula_below_coe, exact 0, simp, assumption, have : (1 + (n - 1)) = n,
+  fapply formula_below_coe, exact 0, apply nat.zero_le, assumption, have : (1 + (n - 1)) = n,
   cases n, exfalso, finish, simp*, rw[this], assumption,
   constructor, constructor, constructor,
   cases n, tidy
@@ -278,7 +279,7 @@ split,swap,
 
   begin
   apply b_alls_k, by_cases n = 0, rw[h], rw[h] at hψ, assumption,
-  fapply formula_below_coe, exact n, simp*, assumption
+  fapply formula_below_coe, exact n, simp, apply nat.zero_le, assumption
   end
 end
 

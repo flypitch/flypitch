@@ -1,6 +1,6 @@
 /- Show that every theory can be extended to a complete theory -/
 
-import .language_term_n2 order.zorn order.filter logic.basic data.finset
+import .fol order.zorn order.filter logic.basic data.finset
 local attribute [instance] classical.prop_decidable
 open fol
 
@@ -45,7 +45,7 @@ apply X.property,
 exact h
 end
 
-lemma can_extend {L : Language} (T : @Theory L) (ψ : @sentence L) (h : is_consistent T): (is_consistent (T ∪ {ψ})) ∨ (is_consistent (T ∪ {∼ ψ}))
+lemma can_extend {L : Language} (T : Theory L) (ψ : sentence L) (h : is_consistent T): (is_consistent (T ∪ {ψ})) ∨ (is_consistent (T ∪ {∼ ψ}))
 :=
 begin
 by_contra,
@@ -64,7 +64,7 @@ exact @snot_and_self L T ∼ψ hc_tres,
 end
 
 /- Given a consistent theory T and sentence ψ, return whichever one of T ∪ ψ or T ∪ ∼ ψ is consistent.  We will need `extend` to show that the maximal theory given by Zorn's lemma is complete. -/
-noncomputable def extend {L : Language} (T : @Theory L) (ψ : @sentence L) (h : is_consistent T) : Σ' T : @Theory L, is_consistent T :=
+noncomputable def extend {L : Language} (T : Theory L) (ψ : sentence L) (h : is_consistent T) : Σ' T : Theory L, is_consistent T :=
 dite (is_consistent $ T ∪ {ψ}) -- dependent if
      begin intro h1, exact psigma.mk (T ∪ {ψ}) h1 end -- then
      begin intro, have := can_extend T ψ h, rename this that, --else
@@ -120,22 +120,22 @@ exfalso, assumption,
 contradiction
 end
 
-def Theory_over {L : Language} (T : @Theory L) (hT : is_consistent T): Type := {T' : @Theory L // T ⊆ T' ∧ is_consistent T'}
+def Theory_over {L : Language} (T : Theory L) (hT : is_consistent T): Type := {T' : Theory L // T ⊆ T' ∧ is_consistent T'}
 
 /- Every theory T is trivially a theory over itself -/
-def over_self {L : Language} (T : @Theory L) (hT : is_consistent T): Theory_over T hT:=
+def over_self {L : Language} (T : Theory L) (hT : is_consistent T): Theory_over T hT:=
 begin
 refine ⟨T, _⟩,
-split, trivial, trivial
+split, trivial, assumption
 end
 
 
-def Theory_over_subset {L : Language} {T : @Theory L} {hT : is_consistent T} : Theory_over T hT → Theory_over T hT→ Prop
+def Theory_over_subset {L : Language} {T : Theory L} {hT : is_consistent T} : Theory_over T hT → Theory_over T hT→ Prop
 := λ T1 T2, T1.val ⊆ T2.val
 
-instance {T : @Theory L} {hT : is_consistent T} : has_subset (Theory_over T hT) := ⟨Theory_over_subset⟩
+instance {T : Theory L} {hT : is_consistent T} : has_subset (Theory_over T hT) := ⟨Theory_over_subset⟩
 
-instance {T : @Theory L} {hT : is_consistent T} : nonempty (Theory_over T hT) := ⟨over_self T hT⟩
+instance {T : Theory L} {hT : is_consistent T} : nonempty (Theory_over T hT) := ⟨over_self T hT⟩
 
 /- Given a set of theories over T and a proof that they form a chain under set-inclusion,
 return their union and a proof that this contains every theory in the chain
@@ -147,7 +147,7 @@ We need an extra case to handle the case where the chain is empty. This is the t
 
 
 
-def proof_finite_support {L : Language} (T : @Theory L) (ψ : @sentence L) (hψ : T ⊢ ψ) : Σ' Γ : finset (@sentence L), {ϕ : @sentence L | ϕ ∈ Γ} ⊢ ψ ∧ {ϕ : @sentence L | ϕ ∈ Γ} ⊆ T:=
+noncomputable def proof_finite_support {L : Language} (T : Theory L) (ψ : sentence L) (hψ : T ⊢' ψ) : Σ' Γ : finset (sentence L), {ϕ : sentence L | ϕ ∈ Γ} ⊢' ψ ∧ {ϕ : sentence L | ϕ ∈ Γ} ⊆ T:=
 begin
 rw[sprovable] at hψ,
 simp[sentence] at ψ,
@@ -156,30 +156,27 @@ cases ψ,
 simp[sentence.fst] at hψ,
 cases ψ_fst,
 exact (list.nil).to_finset,
-sorry
+repeat {sorry}
 end
 
-def provable_of_provable_from_subset {L : Language} (T : @Theory L) (T' : @Theory L) (h_sub : T' ⊆ T) (ψ : @sentence L) (hψ : T' ⊢ ψ) : T ⊢ ψ :=
+def provable_of_provable_from_subset {L : Language} (T : Theory L) (T' : Theory L) (h_sub : T' ⊆ T) (ψ : sentence L) (hψ : T' ⊢' ψ) : T ⊢' ψ :=
 begin
 rw[sprovable],
-cases ψ, cases ψ_fst,
-simp[sprovable] at hψ,
-apply exfalso,
 sorry
 end
 
 
-lemma consis_limit {L : Language} {T : @Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : is_consistent (T ∪ set.sUnion (subtype.val '' Ts)) :=
+lemma consis_limit {L : Language} {T : Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : is_consistent (T ∪ set.sUnion (subtype.val '' Ts)) :=
 begin -- so _here_ is where we need that proofs are finitely supported
-unfold is_consistent,
+apply is_consistent_intro,
 intro h_inconsis,
 let Γpair := proof_finite_support (T ∪ ⋃₀(subtype.val '' Ts)) ⊥ h_inconsis,
-have h_bad : ∃ T' : (@Theory L), (T' ∈ (subtype.val '' Ts)) ∧ {ψ | ψ ∈ Γpair.fst} ⊆ T',
+have h_bad : ∃ T' : (Theory L), (T' ∈ (subtype.val '' Ts)) ∧ {ψ | ψ ∈ Γpair.fst} ⊆ T',
 {
 fapply exists.intro,
-sorry --- need to show that, given a finset in the union, can exhibit it has a subset of a single theory in the union. find such a theory for each element and take their union.
+repeat {sorry} --- need to show that, given a finset in the union, can exhibit it has a subset of a single theory in the union. find such a theory for each element and take their union.
 },
-let T_bad := @strong_indefinite_description (@Theory L) (λ S, S ∈ (subtype.val '' Ts) ∧ ({ϕ | ϕ ∈ Γpair.fst} ⊆ S))  begin apply_instance end,
+let T_bad := @strong_indefinite_description (Theory L) (λ S, S ∈ (subtype.val '' Ts) ∧ ({ϕ | ϕ ∈ Γpair.fst} ⊆ S))  begin apply_instance end,
 have T_bad_inconsis : sprovable T_bad.val ⊥,
 fapply provable_of_provable_from_subset T_bad.val {ϕ | ϕ ∈ Γpair.fst},
 exact (T_bad.property h_bad).right,
@@ -191,7 +188,7 @@ simp[set.image] at almost_done,
 cases almost_done,
 exact almost_done_w.right
 },
-contradiction
+induction T_bad_inconsis, exact T_bad_consis T_bad_inconsis
 end
 
 --refine @exists.elim ( T ⊆ T_bad.val ∧ is_consistent (T_bad.val)) (λ x :  T ⊆ T_bad.val ∧ is_consistent (T_bad.val), ⟨_, x⟩ ∈ Ts), swap},
@@ -200,12 +197,12 @@ end
 
 /-- Given a chain of consistent extensions of a theory T, return the union of those theories and a proof that this is a consistent extension of T --/
 
-def limit_theory2 {L : Language} {T : @Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : Σ' T : Theory_over T hT, ∀ T' ∈ Ts, T' ⊆ T :=
+def limit_theory2 {L : Language} {T : Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : Σ' T : Theory_over T hT, ∀ T' ∈ Ts, T' ⊆ T :=
 begin
 refine ⟨⟨T ∪ set.sUnion (subtype.val '' Ts), _⟩, _⟩,
 simp*,
 intro,
-exact @consis_limit L T hT Ts h_chain begin simp* end,
+exact @consis_limit L T hT Ts h_chain begin simpa* end,
 intros T' hT' ψ hψ,
 right, split, swap,
 exact T'.val,
@@ -216,7 +213,7 @@ end
 
 /- Given a theory T, show that the poset of theories over T satisfies the hypotheses of Zorn's lemma -/
 
-lemma can_use_zorn2 {L : Language} {T : @Theory L} {hT : is_consistent T}  : (∀c, @chain (Theory_over T hT) Theory_over_subset c → ∃ub, ∀a∈c, a ⊆ ub) ∧ (∀(a b c : Theory_over T hT), a ⊆ b → b ⊆ c → a ⊆ c) :=
+lemma can_use_zorn2 {L : Language} {T : Theory L} {hT : is_consistent T}  : (∀c, @chain (Theory_over T hT) Theory_over_subset c → ∃ub, ∀a∈c, a ⊆ ub) ∧ (∀(a b c : Theory_over T hT), a ⊆ b → b ⊆ c → a ⊆ c) :=
 begin
   split,
   intro Ts, intro h_chain, let S := limit_theory2 Ts h_chain,
@@ -241,7 +238,7 @@ end
 
 
 /- Given a consistent theory T, return a maximal extension of it given by Zorn's lemma, along with the proof that it is consistent and maximal -/
-noncomputable def maximal_extension2 (L : Language) (T : @Theory L) (hT : is_consistent T)  : Σ' (T_max : Theory_over T hT), ∀ T' : Theory_over T hT, T_max ⊆ T' → T' ⊆ T_max :=
+noncomputable def maximal_extension2 (L : Language) (T : Theory L) (hT : is_consistent T)  : Σ' (T_max : Theory_over T hT), ∀ T' : Theory_over T hT, T_max ⊆ T' → T' ⊆ T_max :=
 begin
 let X := strong_indefinite_description (λ T_max : Theory_over T hT, ∀ T' : Theory_over T hT, T_max ⊆ T' → T' ⊆ T_max ) begin apply_instance end,
 have := @can_use_zorn2 L T, rename this h_can_use,
@@ -253,7 +250,7 @@ exact T_max,
 exact H h_zorn
 end
 
-lemma cannot_extend_maximal_extension2 {L : Language} {T : @Theory L} {hT : is_consistent T} (T_max' : Σ' (T_max : Theory_over T hT), ∀ T' : @Theory_over L T hT, T_max ⊆ T' → T' ⊆ T_max) (ψ : @sentence L) (H : is_consistent (T_max'.fst.val ∪ {ψ}))(H1 : ψ ∉ T_max'.fst.val) : false :=
+lemma cannot_extend_maximal_extension2 {L : Language} {T : Theory L} {hT : is_consistent T} (T_max' : Σ' (T_max : Theory_over T hT), ∀ T' : Theory_over T hT, T_max ⊆ T' → T' ⊆ T_max) (ψ : sentence L) (H : is_consistent (T_max'.fst.val ∪ {ψ}))(H1 : ψ ∉ T_max'.fst.val) : false :=
 begin
   let T_bad : Theory_over T hT,
   {refine ⟨T_max'.fst.val ∪ {ψ}, _⟩,
@@ -284,7 +281,7 @@ end
 
 lemma q_of_not_p (p q : Prop) (h1 : p ∨ q) (h2 : ¬ p) : q := by tauto
 /- Given a maximal consistent extension of consistent theory T, show it is complete -/
-lemma complete_maximal_extension2_of_consis {L : Language} {T : @Theory L} {hT : is_consistent T}: @is_complete L (@maximal_extension2 L T hT).fst.val :=
+lemma complete_maximal_extension2_of_consis {L : Language} {T : Theory L} {hT : is_consistent T}: @is_complete L (@maximal_extension2 L T hT).fst.val :=
 begin
 split,
 exact (@maximal_extension2 L T hT).fst.property.right,
@@ -312,7 +309,7 @@ end
 
 
 /- Given a consistent theory, return a complete extension of it -/
-noncomputable def completion_theory3 : Π ( T : @Theory L) (h_consis : is_consistent T), Σ' T' : (@Theory_over L T h_consis), is_complete T'.val :=
+noncomputable def completion_theory3 : Π ( T : Theory L) (h_consis : is_consistent T), Σ' T' : (Theory_over T h_consis), is_complete T'.val :=
 begin
 intro T,
 intro h_consis,

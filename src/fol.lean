@@ -997,7 +997,7 @@ inductive term_below (n : ℕ) : ∀{l}, preterm l → Type
 | b_app' {l} (t₁ : preterm (l+1)) (t₂ : term) (ht₁ : term_below t₁) (ht₂ : term_below t₂) : 
     term_below (app t₁ t₂)
 
-open term_below 
+export term_below 
 
 @[reducible, simp] def b_var {n k : ℕ} (hk : k < n) : term_below n &k := b_var' k hk
 @[reducible, simp] def b_app {n l : ℕ} {t₁ : preterm (l+1)} {t₂ : term} (ht₁ : term_below n t₁) 
@@ -1071,7 +1071,6 @@ inductive formula_below : ∀{l}, ℕ → preformula l → Type
 | b_imp' {n} (f₁ f₂ : formula) (hf₁ : formula_below n f₁) (hf₂ : formula_below n f₂) :
     formula_below n (f₁ ⟹ f₂)
 | b_all' {n} (f : formula) (hf : formula_below (n+1) f) : formula_below n (∀' f)
-open formula_below
 export formula_below
 
 @[reducible, simp] def b_equal {n : ℕ} {t₁ t₂ : term} (ht₁ : term_below n t₁) 
@@ -1150,8 +1149,10 @@ lemma realize_formula_below_eq {S : Structure} : ∀{n} {v₁ : fin n → S} {v�
     apply subst_fin_realize_eq hv
   end
 
+parameter (L)
 def presentence (l : ℕ) := Σ(f : preformula l), formula_below 0 f
 def sentence := Σ(f : formula), formula_below 0 f
+parameter {L}
 
 def sentence.eq {f₁ f₂ : sentence} (h : f₁.fst = f₂.fst) : f₁ = f₂ :=
 sigma.eq h (subsingleton.elim _ _)
@@ -1208,7 +1209,9 @@ lemma ssatisfied_in_iff_satisfied_in {S : Structure} [HS : nonempty S] {f : sent
 
 /- theories -/
 
+parameter (L)
 @[reducible] def Theory := set sentence
+parameter {L}
 
 @[reducible] def Theory.fst (T : Theory) : set formula := sigma.fst '' T
 
@@ -1307,6 +1310,9 @@ is_consistent T ∧ ∀(f : sentence), f ∈ T ∨ ∼ f ∈ T
 def has_enough_constants (T : Theory) :=
 ∃(C : Π(f : formula), formula_below 1 f → L.constants), 
 ∀(f : formula) (hf : formula_below 1 f), T.fst ⊢' ∃' f ⟹ f[func (C f hf) // 0]
+
+def is_consistent_intro {T : Theory} (H : ¬ T ⊢' (⊥ : sentence)) : is_consistent T :=
+λH', H ⟨H'⟩
 
 def of_sprovable_of_is_complete {T : Theory} (H : is_complete T) (f : sentence) 
   (Hf : T ⊢ f) : f ∈ T :=

@@ -1,4 +1,4 @@
-import .language_term_n2
+import .fol
 
 open fol
 
