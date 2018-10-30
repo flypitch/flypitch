@@ -1385,7 +1385,7 @@ local attribute [instance] nonempty_completeness_Structure
 def completeness_Structure_ssatisfies_iff {l} (f : preformula l) (ts : dvector term l) : 
   T.fst ⊢' apps_rel f ts ↔ completeness_Structure ⊨ apps_rel f ts :=
 begin
-  haveI : nonempty completeness_Structure.carrier := ⟨quotient.mk sorry⟩,
+  --haveI : nonempty completeness_Structure.carrier := ⟨quotient.mk sorry⟩,
   induction f; try {simp only [apps_rel_nil] },
   { sorry },
   { sorry },
@@ -1395,7 +1395,7 @@ begin
   { split,
     { intro H, intros v, apply quotient.ind, intro t,
       refine (f_ih ([])).mp _ _, 
-      apply nonempty.map (λx, allE _ _ x _) H,
+      --apply nonempty.map (λx, allE _ _ x _) H,
       sorry
        },
     { sorry }}
