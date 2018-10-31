@@ -3,6 +3,7 @@ import .fol tactic.tidy
 open fol
 
 local attribute [instance, priority 0] classical.prop_decidable
+--local attribute [instance] classical.prop_decidable
 
 namespace peano
 section
@@ -26,7 +27,7 @@ def quantifier_count_preformula {L : Language} : Π n, preformula L n → ℕ
 -- #reduce quantifier_count_preformula 0 p_zero_of_times_zero.fst  -- ok
 
 /-- Given a nat k and a 0-formula ψ, return ψ with ∀' applied k times to it --/ 
-@[simp]def alls {L : Language}  :  Π n : ℕ, formula L → formula L
+@[simp] def alls {L : Language}  :  Π n : ℕ, formula L → formula L
 --:= nat.iterate all n
 | 0 f := f
 | (n+1) f := ∀' alls n f
@@ -118,23 +119,24 @@ lemma formula_below_coe {L : Language} : ∀ {l}, Π n m : ℕ, (n ≤ m) → Π
 
 
 
-/- both b_subst and b_subst2 are defined, but i will refactor later -/
+/- both b_subst and b_subst2 are consequences of formula_below_subst in fol.lean -/
 def b_subst {L : Language} {n : ℕ} {f : formula L} (hf : formula_below (n+1) f) {t : term L} (ht : term_below 0 t) : formula_below n (f[t //0]) :=
 begin
-cases hf,
-constructor,
-constructor,
-cases hf_t₁,
-simp[subst_term],
-simp[subst_realize],
-by_cases hf_t₁_1 < 0,
-exfalso, fapply nat.not_lt_zero, exact hf_t₁_1, assumption,
-simp*, cases hf_t₁_1, simp*, refine term_below_coe 0 n (nat.zero_le n) t ht, have hzerolt : 0 < nat.succ hf_t₁_1, by apply nat.zero_lt_succ, simp*, simp* at hf_ht₁, cases hf_ht₁,
-have : hf_t₁_1 < n, sorry, -- yuck, need to reorganize
-repeat {sorry}
+have P := @formula_below_subst L 0 n 0 f begin simp, exact hf end t,
+have t' : term_below n t,
+  fapply term_below_coe,
+  exact 0,
+  finish,
+  exact ht,
+have Q := P t',
+simp at Q, assumption
 end
 
-def b_subst2 {L : Language} {n : ℕ} {f : formula L} (hf : formula_below n f) {t : term L} (ht : term_below n t) : formula_below n (f[t //0]) := sorry
+def b_subst2 {L : Language} {n : ℕ} {f : formula L} (hf : formula_below n f) {t : term L} (ht : term_below n t) : formula_below n (f[t //0]) :=
+begin
+have P := @formula_below_subst L 0 n 0 f begin simp, fapply formula_below_coe, exact n, simpa end t,
+have P' := P ht, simp at P', assumption
+end
 
 
 /- The induction schema instance at ψ is the following formula (up to the fixed ordering of variables given by the de Bruijn indexing):
@@ -147,67 +149,88 @@ return (k - 1 ∀∀s)[(ψ(...,0) ∧ (k ∀∀s) (ψ → ψ(...,S(x)))) → (k 
 /- END LEMMAS -/
 
 /- The language of PA -/
-inductive peano_f0
-| zero
-| one
+inductive L_peano_funct : ℕ → Type -- thanks Floris!
+| zero : L_peano_funct 0
+| succ : L_peano_funct 1
+| plus : L_peano_funct 2
+| mult : L_peano_funct 2
 
-inductive peano_f1
-| succ
-
-inductive peano_f2
-| plus
-| mult
+--notation t ` ↑' `:90 n ` # `:90 m:90 := _root_.fol.lift_term_at t n m -- input ↑ with \u or \upa
 
 
 def L_peano : Language := 
 begin
 split,
 intro arityf,
-exact if arityf = 0 then peano_f0
-                else if arityf = 1 then peano_f1
-                else if arityf = 2 then peano_f2
-                else empty,
+exact L_peano_funct arityf,
 exact λ n, empty
 end
 
-@[reducible] lemma duh : peano_f1 = L_peano.functions 1 := by refl
-
-#reduce (all (&0 ≃ &1))[begin apply app, apply func, exact eq.mp duh peano_f1.succ, exact &0 end // 0]
+#check (L_peano.functions 0)
 
 
+@[reducible] lemma peano_eq_mp_h {k : ℕ} : L_peano_funct k = L_peano.functions k := by refl
+
+def L_peano_zero : L_peano.functions 0 := begin
+fapply eq.mp, exact L_peano_funct 0, swap,
+ exact L_peano_funct.zero, exact peano_eq_mp_h
+end
+
+def L_peano_succ : L_peano.functions 1 :=  begin
+fapply eq.mp, exact L_peano_funct 1, swap,
+ exact L_peano_funct.succ, exact peano_eq_mp_h
+end
+
+def L_peano_plus : L_peano.functions 2 :=  begin
+fapply eq.mp, exact L_peano_funct 2, swap,
+ exact L_peano_funct.plus, exact peano_eq_mp_h
+end
+
+def L_peano_mult : L_peano.functions 2 :=  begin
+fapply eq.mp, exact L_peano_funct 2, swap,
+ exact L_peano_funct.mult, exact peano_eq_mp_h
+end
+
+
+infix  ` +' `:100 := arity_of_preterm (_root_.fol.preterm.func _root_.peano.L_peano_plus)
+
+infix ` ×' `:150 := arity_of_preterm (_root_.fol.preterm.func _root_.peano.L_peano_mult)
+
+prefix ` succ `:160 := arity_of_preterm (_root_.fol.preterm.func _root_.peano.L_peano_succ)
+
+def zero := preterm.func L_peano_zero
+
+def one := succ (zero)
+
+#check (fol.preterm.func L_peano_funct.zero) +' (fol.preterm.func begin fapply eq.mp, exact L_peano_funct 0, swap, exact L_peano_funct.zero, exact peano_eq_mp_h end)
+
+/- for all x, zero not equal to succ x -/
 def p_zero_not_succ : @sentence L_peano :=
 begin
 split, swap,
   begin
-  apply all, apply fol.not, apply equal, apply func, exact peano_f0.zero,
-  apply app, apply func, exact peano_f1.succ, exact &0
+exact ∀'(zero ≃ succ( &0) ⟹ ⊥)
   end,
 repeat{constructor}
 end
 
 def test1 := p_zero_not_succ.fst
 
-#reduce test1
-
 
 def p_succ_inj : @sentence L_peano :=
 begin
 split,swap,
   begin
-  apply all, apply all, apply imp, apply equal, apply app, apply func, exact peano_f1.succ, exact &1, apply app, apply func, exact peano_f1.succ, exact &0, apply equal, exact &1, exact &0
+exact ∀'∀'(succ &1 ≃ succ &0 ⟹ &1 ≃ &0)
   end,
 repeat{constructor}
 end
-
-def hewwo := p_succ_inj.fst
-
-#reduce hewwo
 
 def p_zero_is_identity : @sentence L_peano :=
 begin
 split, swap,
   begin
-  apply all, apply equal, apply app, apply app, apply func, exact peano_f2.plus, exact &0, apply func, exact peano_f0.zero, exact &0
+exact ∀'(&0 +' zero ≃ &0)
   end,
 repeat{constructor}
 end
@@ -217,7 +240,7 @@ def p_succ_plus : @sentence L_peano :=
 begin
 split, swap,
   begin
-  apply all, apply all, apply equal, apply app, apply app, apply func, exact peano_f2.plus, exact &1, apply app, apply func, exact peano_f1.succ, exact &0, apply app, apply func, exact peano_f1.succ, apply app, apply app, apply func, exact peano_f2.plus, exact &1, exact &0
+exact ∀'∀'(&1 +' (succ &0) ≃ succ (&1 +' &0))
   end,
 repeat{constructor}
 end
@@ -227,20 +250,24 @@ def p_zero_of_times_zero : @sentence L_peano :=
 begin
 split, swap,
   begin
-  apply all, apply equal, apply app, apply app, apply func, exact peano_f2.mult, exact &0, apply func, exact peano_f0.zero, apply func, exact peano_f0.zero
+exact ∀'(&0 ×' zero ≃ zero)
   end,
 repeat{constructor}
 end
 
 /- ∀ x y, (x ⬝ succ y = (x ⬝ y) + x -/
+/- ∀'∀'(app (app (func L_peano_funct.mult) &1) (app (func L_peano_funct.succ) &0) ≃
+       app (app (func L_peano_funct.plus) (app (app (func L_peano_funct.mult) &1) &0)) &1)
+-/
 def p_times_succ  : @sentence L_peano :=
 begin
 split, swap,
   begin
-  apply all, apply all, apply equal, apply app, apply app, apply func, exact peano_f2.mult, exact &1, apply app, apply func, exact peano_f1.succ, exact &1, apply app, apply app, apply func, exact peano_f2.plus, apply app, apply app, apply func, exact peano_f2.mult, exact &1, exact &0, exact &1
+exact ∀' ∀' (&1 ×' (succ &0) ≃ (&1 ×' &0) +' &1)
   end,
 repeat{constructor}
 end
+
 
 def p_induction_schema (n : ℕ) (ψ : formula L_peano) (hψ : formula_below n ψ)  : @sentence L_peano := -- add a hypothesis that ψ is in formula_below k and then do k_foralls
 begin
@@ -248,92 +275,31 @@ begin
 split,swap,
 
   begin
-  apply alls (n-1), apply imp, apply fol.and, refine ψ[_//0], apply func, exact peano_f0.zero, apply all, apply imp, exact ψ, refine ψ[_ //0], apply app, apply func, exact peano_f1.succ, exact &0, apply alls (n), exact ψ
+  apply alls (n-1), apply imp, apply fol.and, refine ψ[_//0], apply func, exact L_peano_funct.zero, apply all, apply imp, exact ψ, refine ψ[_ //0], apply app, apply func, exact L_peano_funct.succ, exact &0, apply alls (n), exact ψ
   end,
   
   apply b_alls_k,
   repeat{constructor},
   
   begin
-  simp, apply b_subst, by_cases n = 0, simp*,
-  rw[h] at hψ, fapply formula_below_coe, exact 0, apply nat.zero_le, assumption,
-  simp*, have : (1 + (n - 1)) = n,
-  cases n, exfalso, finish, simp*, rw[this], assumption,
-  constructor
+     simp, apply b_subst, cases n, fapply formula_below_coe 0, finish, assumption,
+     simp, exact hψ, apply b_func,
   end,
 
   begin 
-  by_cases n = 0, simp*,
-  rw[h] at hψ, fapply formula_below_coe, exact 0, apply nat.zero_le, assumption, simp*, have : (1 + (n - 1)) = n,
-  cases n, exfalso, finish, simp*, rw[this], assumption,
+    cases n, fapply formula_below_coe 0, repeat{constructor}, assumption, simp, exact hψ
   end,
 
   begin
-  simp, apply b_subst2, by_cases n = 0, simp*,
-  rw[h] at hψ, fapply formula_below_coe, exact 1, simp,
-  fapply formula_below_coe, exact 0, apply nat.zero_le, assumption, have : (1 + (n - 1)) = n,
-  cases n, exfalso, finish, simp*, rw[this], assumption,
-  constructor, constructor, constructor,
-  cases n, tidy
+    simp, apply b_subst2, cases n, tidy, fapply formula_below_coe 0,
+    repeat{constructor}, assumption, tidy, exact hψ,
+    cases n, repeat{constructor}, simp, fapply nat.zero_lt_succ
   end,
 
   begin
-  apply b_alls_k, by_cases n = 0, rw[h], rw[h] at hψ, assumption,
-  fapply formula_below_coe, exact n, simp, apply nat.zero_le, assumption
+    apply b_alls_k, simp, cases n, tidy, assumption, tidy, fapply formula_below_coe, exact nat.succ n, simp, assumption
   end
 end
-
---   apply b_alls_k,
---   apply b_imp, apply b_and, swap, apply b_all, apply b_imp, swap,
-  
---   begin
---   simp, apply b_apply_at_variable,/-b_subst2-/
---   by_cases n = 0,
---   rw[h] at hψ, fapply formula_below_coe, exact 0, simpa,
---   have : (1 + (n - 1)) = n,
---     by
---       begin
--- --      simp,
---       cases n,
---       finish,
---       tidy
---       end,
---   rw[this],
---   fapply formula_below_coe, exact n, simpa,
-
---   -- apply term_below.b_app, apply term_below.b_func,
---   -- apply term_below.b_var, cases n,
---   -- simp*,
---   end,
-
---   begin
---   by_cases n = 0,
---   rw[h], rw[h] at hψ,
---   simp*, fapply formula_below_coe, exact 0, simpa,
-
---   simp*, assumption
---   end,
-
---   begin
---   by_cases n = 0,
---   apply b_subst,
---   simp*, rw[h] at hψ,
---   fapply formula_below_coe, exact 0, simpa,
-  
---   constructor,
---   apply b_subst,
---   simp*, assumption,
-
---   constructor
---   end,
-
---   begin
---   apply b_alls_k, simp*, fapply formula_below_coe, exact n, simp*, assumption
---   end
--- end
-
-
-
 
 end
 end peano

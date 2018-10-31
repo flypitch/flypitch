@@ -693,6 +693,9 @@ impE A (weakening1 H) axm1
 def exfalso {Γ} {A : formula} (H : Γ ⊢ falsum) : prf Γ A :=
 falseE (weakening1 H)
 
+def notI {Γ} {A : formula} (H : Γ ⊢ A ⟹ falsum) : prf Γ (not A) :=
+  by {rw[not], assumption}
+
 def andI {Γ} {f₁ f₂ : formula} (H₁ : Γ ⊢ f₁) (H₂ : Γ ⊢ f₂) : Γ ⊢ f₁ ⊓ f₂ :=
 begin 
   apply impI, apply impE f₂,
@@ -1234,6 +1237,11 @@ end
 def sfalseE {T : Theory} {A : sentence} (H : insert ∼A T ⊢ s_falsum) : T ⊢ A :=
 begin
   apply falseE, simp[sprf, Theory.fst, image_insert_eq] at H, assumption
+end
+
+def snotI {T : Theory} {A : sentence} (H : T ⊢ A ⟹ s_falsum) : T ⊢ (s_not A) :=
+begin
+  apply notI, simp[sprf, Theory.fst, image_insert_eq] at H, assumption
 end
 
 def sandI {T : Theory} {A B : sentence} (H1 : T ⊢ A) (H2 : T ⊢ B) : T ⊢ A ⊓ B :=

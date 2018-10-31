@@ -45,19 +45,32 @@ apply X.property,
 exact h
 end
 
+noncomputable lemma dne4 {α : Type} (h : ¬(α → false)) : α :=
+begin
+by_cases nonempty α,
+exact classical.choice h,
+dedup, have p := not.elim h_1, swap, exact false,
+have f := λ x : α, p (nonempty.intro x),
+contradiction
+end
+
+
 lemma can_extend {L : Language} (T : Theory L) (ψ : sentence L) (h : is_consistent T): (is_consistent (T ∪ {ψ})) ∨ (is_consistent (T ∪ {∼ ψ}))
 :=
 begin
+simp[is_consistent],
 by_contra,
 rename a hc,
-simp[is_consistent, not_or_distrib] at hc,
+rw[not_or_distrib] at hc,
 cases hc with hc1 hc2,
 apply h,
 have hc_uno : T ⊢  ψ ⟹ s_falsum,
-  apply simpI hc1,
+  fapply simpI, fapply dne4, assumption,
+  have hc_ein := @not.elim _ false hc1,
 have hc_dos : T ⊢ ∼ψ ⟹ s_falsum,
-  apply simpI hc2,
-rw[<-s_not] at hc_uno, rw[<-s_not] at hc_dos,
+  fapply simpI, fapply dne4, assumption,
+  have : ψ ⟹ s_falsum = s_not ψ, by refl, rw[this] at hc_uno,
+  have : (s_not ψ) ⟹ s_falsum = s_not (s_not ψ), by refl, rw[this] at hc_dos,
 have hc_tres : T ⊢ (∼ ψ) ⊓ (∼ ∼ ψ),
   apply sandI hc_uno hc_dos,
 exact @snot_and_self L T ∼ψ hc_tres,
@@ -84,7 +97,6 @@ private lemma ex_coe {α : Type} (P : α → Prop) : (∃ x, P x) → (∃ x : �
 | ⟨a, b⟩ := ⟨a, trivial⟩
 
 /- Given a set of theories and a proof that they form a chain under set-inclusion, return their union and a proof that this contains every theory in the chain
-
 -/
 
 lemma subset_is_transitive {α : Type} : ∀ a b c : set α, a ⊆ b → b ⊆ c → a ⊆ c :=
