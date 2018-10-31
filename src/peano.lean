@@ -301,6 +301,16 @@ split,swap,
   end
 end
 
+/- The theory of Peano arithmetic -/
+def PA : Theory L_peano :=
+{p_zero_not_succ, p_succ_inj} ∪ {p_zero_is_identity} ∪ {p_succ_plus} ∪ {p_zero_of_times_zero} ∪{p_times_succ} ∪ begin
+
+fapply set.Union, exact ℕ, intro n,
+fapply set.image, exact Σ ψ : formula L_peano, formula_below n ψ,
+intro p, exact p_induction_schema n p.fst p.snd,
+exact λ x, true,
+end
+
 end
 end peano
 
