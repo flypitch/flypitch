@@ -213,12 +213,26 @@ begin
          end
 end
 
-def proof_finite_support3 : Π{L : Language}, Π {ψ : formula L}, Π {T : set $ formula L},  Π (pψ : T ⊢ ψ), Σ Γ : list (formula L), Σ' p : {ϕ : formula L | ϕ ∈ Γ} ⊢ ψ, {ϕ : formula L | ϕ ∈ Γ} ⊆ T
-| L ψ T (axm a) := begin split, swap, exact [ψ],have : {ϕ : formula L | ϕ ∈ [ψ]} = {ψ},
+noncomputable lemma proof_finite_support3 {L : Language} : Π {ψ : formula L}, Π {T : set $ formula L},  Π (pψ : T ⊢ ψ), Σ Γ : list (formula L), Σ' p : {ϕ : formula L | ϕ ∈ Γ} ⊢ ψ, {ϕ : formula L | ϕ ∈ Γ} ⊆ T
+| ψ T (axm a) := begin split, swap, exact [ψ],have : {ϕ : formula L | ϕ ∈ [ψ]} = {ψ},
                    by refl, split, rw[this],
                    fapply axm, simp, rw[this], simp, exact a
                    end
-| L (f1 ⟹ f2) T (impI P) :=
+| B T (impE A P_AB P_A) :=
+    begin
+      have S1 := proof_finite_support3 P_AB,
+      have S2 := proof_finite_support3 P_A,
+      split, swap, exact S1.fst ∪ S2.fst,
+
+      let T1 := {ϕ | ϕ ∈ S1.fst}, let T2 := {ϕ | ϕ ∈ S2.fst},
+      have hT1 : T1 ⊢ A ⟹ B, have := S1.snd.fst, exact this,
+      have hT2 : T2 ⊢ A, have := S2.snd.fst, exact this,
+      have : (T1 ∪ T2) ⊢ (A ⟹ B) × T1 ∪ T2 ⊢ A,
+        fapply weakening', exact hT1, exact hT2,
+      
+      split, simp* at this, simp*,fapply impE, exact A, exact this.fst, exact this.snd, simp*, intro ψ, intro hψ, cases hψ, fapply S1.snd.snd, exact hψ, fapply S2.snd.snd, exact hψ,
+    end
+| (f1 ⟹ f2) T (impI P) :=
   begin
     have S := (proof_finite_support3 P),
     let S' := --Σ' (ys : list (formula L)), {ϕ : formula L | ϕ ∈ ys} ⊆ T ∧ ∀ (y : formula L), y ∈ ys → y ≠ f1,
@@ -233,25 +247,11 @@ def proof_finite_support3 : Π{L : Language}, Π {ψ : formula L}, Π {T : set $
     
     {fapply weakening, exact {ϕ : formula L | ϕ ∈ S.fst}, exact h_weakening, exact S.snd.fst}
   end
-| L B T (impE A P_AB P_A) :=
-    begin
-      let S1 := proof_finite_support3 P_AB,
-      let S2 := proof_finite_support3 P_A,
-      split, swap, exact S1.fst ∪ S2.fst,
-
-      let T1 := {ϕ | ϕ ∈ S1.fst}, let T2 := {ϕ | ϕ ∈ S2.fst},
-      have hT1 : T1 ⊢ A ⟹ B, have := S1.snd.fst, exact this,
-      have hT2 : T2 ⊢ A, have := S2.snd.fst, exact this,
-      have : (T1 ∪ T2) ⊢ (A ⟹ B) × T1 ∪ T2 ⊢ A,
-        fapply weakening', exact hT1, exact hT2,
-      
-      split, simp* at this, simp*,fapply impE, exact A, exact this.fst, exact this.snd, simp*, intro ψ, intro hψ, cases hψ, fapply S1.snd.snd, exact hψ, fapply S2.snd.snd, exact hψ,
-    end
-| L A T (falseE _) := sorry -- this will be a pain like impI
-| L  (∀' _) T (allI _) := sorry
-| L (_ ≃ _) T  (refl _ _) := sorry
-| L .(_[_ // 0]) T (allE' _ _ _) := sorry
-| L  .(_[_ // 0]) T (subst' _ _ _ _ _) := sorry
+| A T (falseE _) := sorry -- this will be a pain like impI
+|  (∀' _) T (allI _) := sorry
+| (_ ≃ t) T (refl _ _) := begin dedup, refine ⟨[], _⟩, split, fapply fol.prf.refl, intro ψ, intro hψ, exfalso, exact hψ end
+| .(_[_ // 0]) T (allE' _ _ _) := sorry
+| .(_[_ // 0]) T (subst' _ _ _ _ _) := sorry
 
 -- def proof_finite_support2 {L : Language} (T : Theory L) (ψ : sentence L) (pψ : T ⊢ ψ) : Σ Γ : list (sentence L), Σ' p :{ϕ : sentence L | ϕ ∈ Γ} ⊢ ψ, {ϕ : sentence L | ϕ ∈ Γ} ⊆ T :=
 -- begin
