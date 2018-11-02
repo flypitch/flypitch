@@ -1,7 +1,7 @@
 /- Show that every theory can be extended to a complete theory -/
 
 import .fol order.zorn order.filter logic.basic data.finset data.set tactic.tidy
-local attribute [instance] classical.prop_decidable
+local attribute [instance, priority 0] classical.prop_decidable
 open fol
 
 section
@@ -213,19 +213,6 @@ begin
          end
 end
 
-lemma list_except_either_or {α : Type} (xs : list α) (x : α) (T : set α) (h1 : ∀ y ∈ xs, y ≠ x → y ∈ T) (y : α) (h2 : y ∈ xs) : y ≠ x → y ∈ (list_except xs x T h1).fst :=
-begin
-  intro h_neq, induction xs,
-  unfold list_except, simp*,
-  
-  cases h2,
-  by_cases xs_hd = x,
-    have : y = x, by cc, contradiction,
-
-  unfold list_except, simp*, 
-  
-end
-
 def proof_finite_support3 : Π{L : Language}, Π {ψ : formula L}, Π {T : set $ formula L},  Π (pψ : T ⊢ ψ), Σ Γ : list (formula L), Σ' p : {ϕ : formula L | ϕ ∈ Γ} ⊢ ψ, {ϕ : formula L | ϕ ∈ Γ} ⊆ T
 | L ψ T (axm a) := begin split, swap, exact [ψ],have : {ϕ : formula L | ϕ ∈ [ψ]} = {ψ},
                    by refl, split, rw[this],
@@ -246,27 +233,40 @@ def proof_finite_support3 : Π{L : Language}, Π {ψ : formula L}, Π {T : set $
     
     {fapply weakening, exact {ϕ : formula L | ϕ ∈ S.fst}, exact h_weakening, exact S.snd.fst}
   end
-| _ _ _ (impE _ _ _) := sorry
-| _ _ _ (falseE _) := sorry
-| _ _ (∀' _) (allI _) := sorry
-| _ _ (_ ≃ _) (refl _ _) := sorry
-| _ _ .(_[_ // 0]) (allE' _ _ _) := sorry
-| _ _ .(_[_ // 0]) (subst' _ _ _ _ _) := sorry
+| L B T (impE A P_AB P_A) :=
+    begin
+      let S1 := proof_finite_support3 P_AB,
+      let S2 := proof_finite_support3 P_A,
+      split, swap, exact S1.fst ∪ S2.fst,
 
-def proof_finite_support2 {L : Language} (T : Theory L) (ψ : sentence L) (pψ : T ⊢ ψ) : Σ Γ : list (sentence L), Σ' p :{ϕ : sentence L | ϕ ∈ Γ} ⊢ ψ, {ϕ : sentence L | ϕ ∈ Γ} ⊆ T :=
-begin
-  split, swap,
-  unfold sprf at pψ, have ψ_1 := ψ.fst, have ψ_2 := ψ.snd, induction pψ generalizing ψ,
-  {exact [ψ],},
-  {sorry},
-  {sorry},
-  {sorry},
-  {sorry},
-  {sorry},
-  {sorry},
-  {sorry},
-  {sorry}
-end
+      let T1 := {ϕ | ϕ ∈ S1.fst}, let T2 := {ϕ | ϕ ∈ S2.fst},
+      have hT1 : T1 ⊢ A ⟹ B, have := S1.snd.fst, exact this,
+      have hT2 : T2 ⊢ A, have := S2.snd.fst, exact this,
+      have : (T1 ∪ T2) ⊢ (A ⟹ B) × T1 ∪ T2 ⊢ A,
+        fapply weakening', exact hT1, exact hT2,
+      
+      split, simp* at this, simp*,fapply impE, exact A, exact this.fst, exact this.snd, simp*, intro ψ, intro hψ, cases hψ, fapply S1.snd.snd, exact hψ, fapply S2.snd.snd, exact hψ,
+    end
+| L A T (falseE _) := sorry -- this will be a pain like impI
+| L  (∀' _) T (allI _) := sorry
+| L (_ ≃ _) T  (refl _ _) := sorry
+| L .(_[_ // 0]) T (allE' _ _ _) := sorry
+| L  .(_[_ // 0]) T (subst' _ _ _ _ _) := sorry
+
+-- def proof_finite_support2 {L : Language} (T : Theory L) (ψ : sentence L) (pψ : T ⊢ ψ) : Σ Γ : list (sentence L), Σ' p :{ϕ : sentence L | ϕ ∈ Γ} ⊢ ψ, {ϕ : sentence L | ϕ ∈ Γ} ⊆ T :=
+-- begin
+--   split, swap,
+--   unfold sprf at pψ, have ψ_1 := ψ.fst, have ψ_2 := ψ.snd, induction pψ generalizing ψ,
+--   {exact [ψ],},
+--   {sorry},
+--   {sorry},
+--   {sorry},
+--   {sorry},
+--   {sorry},
+--   {sorry},
+--   {sorry},
+--   {sorry}
+-- end
 
 /- Given a sentence and the knowledge that there is a proof of ψ from T, return a list of sentences from T and a proof that this list proves ψ -/
 def proof_finite_support {L : Language} (T : Theory L) (ψ : sentence L) (hψ : T ⊢' ψ) : Σ' Γ : list (sentence L), {ϕ : sentence L | ϕ ∈ Γ} ⊢' ψ ∧ {ϕ : sentence L | ϕ ∈ Γ} ⊆ T:=
