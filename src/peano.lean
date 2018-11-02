@@ -63,7 +63,7 @@ rw[alls_all_commute, <-H] at hooray, exact hooray --hooray!!
 end
 
 
-lemma term_below_coe {L : Language} : ∀ {l}, Π n m : ℕ, (n ≤ m) → Π t :(preterm L l), (term_below n t) → (term_below m t)
+def term_below_coe {L : Language} : ∀ {l}, Π n m : ℕ, (n ≤ m) → Π t :(preterm L l), (term_below n t) → (term_below m t)
   | _ n m _ &k _       := b_var' k begin dedup, cases _x_1, fapply lt_of_lt_of_le, exact n, repeat{assumption}  end
   | _ n m _ (func f) _                := term_below.b_func f
   | l n m _ (app t1 t2) _  :=  b_app' t1 t2 
@@ -75,7 +75,7 @@ lemma term_below_coe {L : Language} : ∀ {l}, Π n m : ℕ, (n ≤ m) → Π t 
                                fapply term_below_coe, exact n, assumption, cases _x, assumption
                                end
 
-lemma formula_below_coe {L : Language} : ∀ {l}, Π n m : ℕ, (n ≤ m) → Π f : preformula L l, formula_below n f → formula_below m f
+def formula_below_coe {L : Language} : ∀ {l}, Π n m : ℕ, (n ≤ m) → Π f : preformula L l, formula_below n f → formula_below m f
 | _ n m _ falsum h := b_falsum
 | _ n m _ (t1 ≃ t2) h := b_equal' t1 t2
                                   begin 
@@ -139,13 +139,6 @@ have P' := P ht, simp at P', assumption
 end
 
 
-/- The induction schema instance at ψ is the following formula (up to the fixed ordering of variables given by the de Bruijn indexing):
-
- - let k be the number of free vars of k,
-
-return (k - 1 ∀∀s)[(ψ(...,0) ∧ (k ∀∀s) (ψ → ψ(...,S(x)))) → (k ∀∀s) ψ]
--/
-
 /- END LEMMAS -/
 
 /- The language of PA -/
@@ -157,7 +150,6 @@ inductive L_peano_funct : ℕ → Type -- thanks Floris!
 
 --notation t ` ↑' `:90 n ` # `:90 m:90 := _root_.fol.lift_term_at t n m -- input ↑ with \u or \upa
 
-
 def L_peano : Language := 
 begin
 split,
@@ -165,9 +157,6 @@ intro arityf,
 exact L_peano_funct arityf,
 exact λ n, empty
 end
-
-#check (L_peano.functions 0)
-
 
 @[reducible] lemma peano_eq_mp_h {k : ℕ} : L_peano_funct k = L_peano.functions k := by refl
 
@@ -268,6 +257,12 @@ exact ∀' ∀' (&1 ×' (succ &0) ≃ (&1 ×' &0) +' &1)
 repeat{constructor}
 end
 
+/- The induction schema instance at ψ is the following formula (up to the fixed ordering of variables given by the de Bruijn indexing):
+
+ - let k be the number of free vars of k,
+
+return (k - 1 ∀∀s)[(ψ(...,0) ∧ ∀' (ψ → ψ(...,S(x)))) → (k ∀∀s) ψ]
+-/
 
 def p_induction_schema (n : ℕ) (ψ : formula L_peano) (hψ : formula_below n ψ)  : @sentence L_peano := -- add a hypothesis that ψ is in formula_below k and then do k_foralls
 begin
@@ -275,7 +270,8 @@ begin
 split,swap,
 
   begin
-  apply alls (n-1), apply imp, apply fol.and, refine ψ[_//0], apply func, exact L_peano_funct.zero, apply all, apply imp, exact ψ, refine ψ[_ //0], apply app, apply func, exact L_peano_funct.succ, exact &0, apply alls (n), exact ψ
+exact alls (n - 1) (ψ[zero//0] ⊓ (∀' (ψ ⟹ ψ[succ(&0)//0])) ⟹ (alls n ψ))
+  -- apply alls (n-1), apply imp, apply fol.and, refine ψ[_//0], apply func, exact L_peano_funct.zero, apply all, apply imp, exact ψ, refine ψ[_ //0], apply app, apply func, exact L_peano_funct.succ, exact &0, apply alls (n), exact ψ
   end,
   
   apply b_alls_k,
@@ -287,7 +283,7 @@ split,swap,
   end,
 
   begin 
-    cases n, fapply formula_below_coe 0, repeat{constructor}, assumption, simp, exact hψ
+    cases n, fapply formula_below_coe 0, repeat{constructor}, assumption, simp, assumption
   end,
 
   begin
@@ -310,6 +306,16 @@ fapply set.image, exact Σ ψ : formula L_peano, formula_below n ψ,
 intro p, exact p_induction_schema n p.fst p.snd,
 exact λ x, true,
 end
+
+def is_even : formula L_peano :=
+∃' (&0 +' &0 ≃ &1)
+
+def his_even : formula_below 1 is_even :=
+begin
+repeat{constructor},
+end
+
+def hewwo := (p_induction_schema 1 is_even his_even).fst
 
 end
 end peano

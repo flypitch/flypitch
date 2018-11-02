@@ -665,6 +665,17 @@ begin
   { apply subst', apply H₂_ih_a, assumption, apply H₂_ih_a_1, assumption },
 end
 
+def weakening2 : ∀{Γ Δ}, Π{f : formula}, Π(H₁ : Γ ⊆ Δ), Π (H₂ : Γ ⊢ f), Δ ⊢ f
+| Γ Δ _ H₁ (axm a) := sorry
+| _ _ .(_ ⟹ _) _ (fol.prf.impI _) := sorry
+| _ _ _ _ (fol.prf.impE _ _ _) := sorry
+| _ _ _ _ (fol.prf.falseE _) := sorry
+| _ _ (∀' _) _ (fol.prf.allI _) := sorry
+--| _ _ _ [_ // 0] _ (fol.prf.allE' _ _ _) := sorry
+--| _ _ (_ ≃ _) _ (fol.prf.refl _ _)
+--| _ _ _[_ // 0] _ (fol.prf.subst' _ _ _ _ _) := sorry
+
+
 def substitution {Γ} {f : formula} {t n} (H : Γ ⊢ f) : (λx, x[t // n]) '' Γ ⊢ f[t // n] :=
 begin
   induction H generalizing n,
