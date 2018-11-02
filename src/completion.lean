@@ -169,12 +169,12 @@ lemma weakening' {L : Language} {S_1 S_2 : set $ formula L} {ψ_1 ψ_2 : formula
     fapply @weakening L S_2 (S_1 ∪ S_2), simpa,
   end
 
-/- Given an xs : list α, an x : α, a set T on α such that everything in xs which is not x is in T, return the sublist which excludes x and a proof that this list is now a subset of T.
+/- Given an xs : list α, an x : α, a set T on α such that everything in xs which is not x is in T, return the sublist which excludes x, a proof that this list is now a subset of T, and a proof that everything in this list was not the forbidden element x..
 
 Annoyingly, I seem to need this to handle impI case below.
 -/
 
-noncomputable def list_except {α : Type} (xs : list α) (x : α) (T : set α) (h : ∀ y ∈ xs, y ≠ x → y ∈ T) : Σ' ys : list α, {ϕ | ϕ ∈ ys} ⊆ T ∧ (∀ y ∈ ys, y ≠ x) :=
+noncomputable def list_except {α : Type} (xs : list α) (x : α) (T : set α) (h : ∀ y ∈ xs, y ≠ x → y ∈ T) : Σ' ys : list α, ({ϕ | ϕ ∈ ys} ⊆ T ∧ (∀ y ∈ ys, y ≠ x)) ∧ (∀ y ∈ xs, y ≠ x → y ∈ ys) :=
 begin
   induction xs generalizing h,
     split, swap, exact list.nil, simp,
@@ -182,28 +182,49 @@ begin
     {exact xs_hd = x,},
     {apply_instance,},
     {refine (xs_ih _).fst, intros, fapply h, simp, exact or.inr H, assumption},
-    {refine _::((xs_ih _).fst), exact xs_hd, intros, fapply h, simp, exact or.inr H, assumption},
-  split, -- finish ite statement
+    {refine _::((xs_ih _).fst), exact xs_hd, intros, fapply h, simp, exact or.inr H, assumption},  -- finish ite statement
+  split, split,
   
   by_cases xs_hd = x; simp*; intros a ha; simp[*, -ha] at ha,
-     {dedup, refine (xs_ih _).snd.left _, intros, fapply h, simp, exact or.inr H, assumption, assumption,},
+     {dedup, refine (xs_ih _).snd.left.left _, intros, fapply h, simp, exact or.inr H, assumption, assumption,},
      {dedup, cases ha, swap,
-     refine (xs_ih _).snd.left _, intros, fapply h, simp, exact or.inr H, assumption, assumption, fapply h, fapply or.inl, assumption, cc},
+     refine (xs_ih _).snd.left.left _, intros, fapply h, simp, exact or.inr H, assumption, assumption, fapply h, fapply or.inl, assumption, cc},
 
     by_cases (xs_hd = x);
-      simp*, intros y H, refine ((xs_ih _).snd).right _ _,
+      simp*, intros y H, refine ((xs_ih _).snd).left.right _ _,
       intros, dedup, fapply h, simp, apply or.inr, assumption,
       assumption, assumption,
       
-      intros y H, refine ((xs_ih _).snd).right _ _,
+      intros y H, refine ((xs_ih _).snd).left.right _ _,
       intros, dedup, fapply h, simp, apply or.inr, assumption,
-      assumption, assumption
+      assumption, assumption, 
+
+    intro y, intro hy, by_cases xs_hd = x, simp*, 
+    cases hy, intro h_bad, have : y = x, by cc, contradiction,
+      
+         begin
+         intro h_good, fapply (xs_ih _).snd.right y,
+           exact hy, exact h_good, 
+         end,
+             
+         begin
+         intro h_good, simp*, cases hy, exact or.inl hy, fapply or.inr, fapply (xs_ih _).snd.right y,
+           exact hy, exact h_good,
+         end
 end
 
--- lemma list_except_either_or {α : Type} (xs : list α) (x : α) (T : set α) (h1 : ∀ y ∈ xs, y ≠ x → y ∈ T) (y : α) (h2 : y ∈ xs) : y ≠ x → y ∈ (list_except xs x T h1).fst :=
--- begin
---   sorry
--- end
+lemma list_except_either_or {α : Type} (xs : list α) (x : α) (T : set α) (h1 : ∀ y ∈ xs, y ≠ x → y ∈ T) (y : α) (h2 : y ∈ xs) : y ≠ x → y ∈ (list_except xs x T h1).fst :=
+begin
+  intro h_neq, induction xs,
+  unfold list_except, simp*,
+  
+  cases h2,
+  by_cases xs_hd = x,
+    have : y = x, by cc, contradiction,
+
+  unfold list_except, simp*, 
+  
+end
 
 def proof_finite_support3 : Π{L : Language}, Π {ψ : formula L}, Π {T : set $ formula L},  Π (pψ : T ⊢ ψ), Σ Γ : list (formula L), Σ' p : {ϕ : formula L | ϕ ∈ Γ} ⊢ ψ, {ϕ : formula L | ϕ ∈ Γ} ⊆ T
 | L ψ T (axm a) := begin split, swap, exact [ψ],have : {ϕ : formula L | ϕ ∈ [ψ]} = {ψ},
@@ -217,23 +238,13 @@ def proof_finite_support3 : Π{L : Language}, Π {ψ : formula L}, Π {T : set $
       begin { refine (list_except S.fst f1 T _),
       have := (S.snd).snd, intros y H a, have := this H, cases this, exfalso, contradiction, assumption}, end,
     split, swap,  exact S'.fst, have hS' := S'.snd, 
-    split, swap, exact hS'.left,
+    split, swap, exact hS'.left.left,
     fapply impI,
-    have : {ϕ : formula L | ϕ ∈ S.fst} ⊆ insert f1 {ϕ : formula L | ϕ ∈ S'.fst},
-      intro x, intro hx, simp,
-      by_cases x = f1, exact or.inl h,
-      fapply or.inr, simp* at S', simp* at hS', have := hS' x, tidy, simp*, unfold list_except, 
-        
-      
---      by_contra, simp[not_or_distrib] at a,
-      -- have := a.right,
-      -- have almost_there := ((hS').right x),
-      -- rename almost_there a2,
-      --   have : ¬ x ∈ S'.fst → x = f1, have := dne5 a2,
-      --   simp[ne] at this, assumption,
-      --   dedup, have := this_1 this, contradiction,
+    have h_weakening : {ϕ : formula L | ϕ ∈ S.fst} ⊆ insert f1 {ϕ : formula L | ϕ ∈ S'.fst},
+      {intro x, intro hx, simp, by_cases x = f1,
+        exact or.inl h, simp*, fapply hS'.right, assumption, assumption},
     
-    {fapply weakening, exact {ϕ : formula L | ϕ ∈ S.fst}, assumption, exact S.snd.fst}
+    {fapply weakening, exact {ϕ : formula L | ϕ ∈ S.fst}, exact h_weakening, exact S.snd.fst}
   end
 | _ _ _ (impE _ _ _) := sorry
 | _ _ _ (falseE _) := sorry
