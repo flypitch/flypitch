@@ -278,6 +278,7 @@ begin
                                    fapply nonempty_of_exists, exact λ x, x ∈ S ∧ f x = xs_hd,
                                    exact Himage_lift
                                   end;
+
            have h_almost := (xs_ih Hxs_ih).snd;
            have h_exists : x ∈ f '' {y : α | y ∈ (xs_ih Hxs_ih).fst},
               rw[h_almost.right], assumption, unfold set.image at h_exists;
@@ -288,15 +289,15 @@ end
 
 set_option eqn_compiler.lemmas false
 
-noncomputable def proof_finite_support3 {L : Language} : Π {ψ : formula L}, Π {T : set $ formula L},  Π (pψ : T ⊢ ψ), Σ Γ : list (formula L), Σ' p : {ϕ : formula L | ϕ ∈ Γ} ⊢ ψ, {ϕ : formula L | ϕ ∈ Γ} ⊆ T
+noncomputable def proof_compactness {L : Language} : Π {ψ : formula L}, Π {T : set $ formula L},  Π (pψ : T ⊢ ψ), Σ Γ : list (formula L), Σ' p : {ϕ : formula L | ϕ ∈ Γ} ⊢ ψ, {ϕ : formula L | ϕ ∈ Γ} ⊆ T
 | ψ T (axm a) := begin split, swap, exact [ψ],have : {ϕ : formula L | ϕ ∈ [ψ]} = {ψ},
                    by refl, split, rw[this],
                    fapply axm, simp, rw[this], simp, exact a
                    end
 | B T (impE A P_AB P_A) :=
     begin
-      have S1 := proof_finite_support3 P_AB,
-      have S2 := proof_finite_support3 P_A,
+      have S1 := proof_compactness P_AB,
+      have S2 := proof_compactness P_A,
       split, swap, exact S1.fst ∪ S2.fst,
 
       let T1 := {ϕ | ϕ ∈ S1.fst}, let T2 := {ϕ | ϕ ∈ S2.fst},
@@ -311,7 +312,7 @@ noncomputable def proof_finite_support3 {L : Language} : Π {ψ : formula L}, Π
     end
 | (f1 ⟹ f2) T (impI P) :=
   begin
-    have S := (proof_finite_support3 P),
+    have S := (proof_compactness P),
     let S' := --Σ' (ys : list (formula L)), {ϕ : formula L | ϕ ∈ ys} ⊆ T ∧ ∀ (y : formula L), y ∈ ys → y ≠ f1,
       begin { refine (list_except S.fst f1 T _),
       have := (S.snd).snd, intros y H a, have := this H, cases this, exfalso, contradiction, assumption}, end,
@@ -326,7 +327,7 @@ noncomputable def proof_finite_support3 {L : Language} : Π {ψ : formula L}, Π
   end
 | A T (falseE P) :=
   begin
-    have S := (proof_finite_support3 P),
+    have S := (proof_compactness P),
     let S' := --Σ' (ys : list (formula L)), {ϕ : formula L | ϕ ∈ ys} ⊆ T ∧ ∀ (y : formula L), y ∈ ys → y ≠ f1,
       begin { refine (list_except S.fst (∼A) T _),
       have := (S.snd).snd, intros y H a, have := this H, cases this, exfalso, contradiction, assumption}, end,
@@ -341,15 +342,34 @@ noncomputable def proof_finite_support3 {L : Language} : Π {ψ : formula L}, Π
   end
 |  (∀' A) T (allI P) :=
   begin
-    have S  := (proof_finite_support3 P), have h_subset := S.snd.snd,
+    have S  := (proof_compactness P), have h_subset := S.snd.snd,
     have preS' := image_lift_list h_subset, let S' := preS'.fst, have hS' := preS'.snd,
     refine ⟨S', _⟩, refine ⟨_, hS'.left⟩, fapply allI,
     rw[hS'.right], exact S.snd.fst,
   end
 
 | (_ ≃ t) T (refl _ _) := begin dedup, refine ⟨[], _⟩, split, fapply fol.prf.refl, intro ψ, intro hψ, exfalso, exact hψ end
-| .(_[_ // 0]) T (allE' _ _ _) := sorry
-| .(_[_ // 0]) T (subst' _ _ _ _ _) := sorry
+| .(_[_ // 0]) T (allE' A t P) :=
+        begin
+          have preS := proof_compactness P, split, swap, exact preS.fst,
+          split, fapply allE', exact preS.snd.fst, exact preS.snd.snd
+        end
+| .(_[_ // 0]) T (subst' s t A P1 P2) :=
+    begin
+      have S1 := proof_compactness P1,
+      have S2 := proof_compactness P2,
+      split, swap, exact S1.fst ∪ S2.fst,
+
+      let T1 := {ϕ | ϕ ∈ S1.fst}, let T2 := {ϕ | ϕ ∈ S2.fst},
+      have hT1 : T1 ⊢ s ≃ t, have := S1.snd.fst, exact this,
+      have hT2 : T2 ⊢ A[s // 0], have := S2.snd.fst, exact this,
+      have : (T1 ∪ T2) ⊢ s ≃ t × T1 ∪ T2 ⊢ A[s // 0],
+        fapply weakening', exact hT1, exact hT2,
+      
+      split, simp* at this, simp*,fapply subst, exact s, exact t, exact A,
+      exact this.fst, exact this.snd, simp*, intro ψ, intro hψ, simp[*,-hψ] at hψ,
+      cases hψ, fapply S1.snd.snd, exact hψ, fapply S2.snd.snd, exact hψ,
+    end
 
 -- def proof_finite_support2 {L : Language} (T : Theory L) (ψ : sentence L) (pψ : T ⊢ ψ) : Σ Γ : list (sentence L), Σ' p :{ϕ : sentence L | ϕ ∈ Γ} ⊢ ψ, {ϕ : sentence L | ϕ ∈ Γ} ⊆ T :=
 -- begin
@@ -368,21 +388,7 @@ noncomputable def proof_finite_support3 {L : Language} : Π {ψ : formula L}, Π
 
 /- Given a sentence and the knowledge that there is a proof of ψ from T, return a list of sentences from T and a proof that this list proves ψ -/
 def proof_finite_support {L : Language} (T : Theory L) (ψ : sentence L) (hψ : T ⊢' ψ) : Σ' Γ : list (sentence L), {ϕ : sentence L | ϕ ∈ Γ} ⊢' ψ ∧ {ϕ : sentence L | ϕ ∈ Γ} ⊆ T:=
-begin
-  repeat{sorry},   
-  -- rw[sprovable] at hψ,
-  -- simp[sentence] at ψ,
-  -- fapply psigma.mk,
-  -- cases ψ,
-  -- simp[sentence.fst] at hψ,
-  -- cases ψ_fst,
-  -- exact (list.nil).to_finset,
-  -- repeat {constructor},
-  -- swap, exact {}, simp,
-  -- swap, exact {}, simp,
-  -- swap, 
-
-end
+sorry
 
 lemma in_theory_of_fst_in_theory {L : Language} {T : Theory L} {ψ : sentence L} (h : ψ.fst ∈ T.fst) : ψ ∈ T :=
 begin
