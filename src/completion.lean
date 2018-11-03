@@ -151,8 +151,6 @@ instance {T : Theory L} {hT : is_consistent T} : nonempty (Theory_over T hT) := 
 
 /- Given a set of theories over T and a proof that they form a chain under set-inclusion,
 return their union and a proof that this contains every theory in the chain
-
-We need an extra case to handle the case where the chain is empty. This is the third argument, which will be the default return value.
 -/
 
 /-- Given T ⊢ ψ, return the finite context from T required to prove ψ, a proof of that, and a proof that the finite conte
@@ -169,7 +167,7 @@ lemma weakening' {L : Language} {S_1 S_2 : set $ formula L} {ψ_1 ψ_2 : formula
     fapply @weakening L S_2 (S_1 ∪ S_2), simpa,
   end
 
-/- Given an xs : list α, an x : α, a set T on α such that everything in xs which is not x is in T, return the sublist which excludes x, a proof that this list is now a subset of T, and a proof that everything in this list was not the forbidden element x..
+/- Given an xs : list α, an x : α, a set T on α such that everything in xs which is not x is in T, return the sublist which excludes x, a proof that this list is now a subset of T, and a proof that everything in this list was not the forbidden element x.
 
 Annoyingly, I seem to need this to handle impI case below.
 -/
@@ -210,10 +208,87 @@ begin
          begin
          intro h_good, simp*, cases hy, exact or.inl hy, fapply or.inr, fapply (xs_ih _).snd.right y,
            exact hy, exact h_good,
-         end
+         end,
 end
 
-noncomputable lemma proof_finite_support3 {L : Language} : Π {ψ : formula L}, Π {T : set $ formula L},  Π (pψ : T ⊢ ψ), Σ Γ : list (formula L), Σ' p : {ϕ : formula L | ϕ ∈ Γ} ⊢ ψ, {ϕ : formula L | ϕ ∈ Γ} ⊆ T
+/- Couldn't find this def in set.basic... sure it's around somewhere-/
+/-- Given x ∈ f '' S, choose a lift x' in the preimage of x; return x' and a proof that x' is a lift --/
+noncomputable def image_lift {α β : Type} {f : α → β} {S : set α} (x ∈ f '' S) : Σ' (x' : α), x' ∈ S ∧ f x' = x :=
+begin
+  simp[*,-H] at H,
+  have := strong_indefinite_description, swap, exact α,
+  have prelift : {x_1 // (∃ (y : α), (λ (y : α), y ∈ S ∧ f y = x) y) → (λ (y : α), y ∈ S ∧ f y = x) x_1},
+  fapply this (λ y, y ∈ S ∧ f y = x), fapply nonempty_of_exists, exact (λ y, y ∈ S ∧ f y = x),
+  exact H, have snd := prelift.property, simp[*,-snd] at snd,
+  refine ⟨prelift.val, _⟩, exact snd,
+end
+
+/-- Given a list xs : list β, a set S : set α, a proof that {x | x ∈ xs} ⊆ f '' S, return a list of lifts ys : list α, a proof that ys ⊆ S and a proof that f '' ys = xs --/
+noncomputable def image_lift_list {α β : Type} {f : α → β} {S : set α} {xs : list β} (h_sub : {x | x ∈ xs} ⊆ f '' S) : Σ' (ys : list α), ({y' | y' ∈ ys} ⊆ S) ∧ f '' {y | y ∈ ys} = {x | x ∈ xs} :=
+begin
+  induction xs generalizing h_sub,
+    split, swap,
+      {exact list.nil},
+      {fapply and.intro, repeat{simp}},
+  
+          let Hxs_ih : {x : β | x ∈ xs_tl} ⊆ f '' S :=
+            begin intros x hx, fapply h_sub, exact or.inr hx end,
+          let Himage_lift : xs_hd ∈ (f '' S) :=
+            begin fapply h_sub, simp end, simp[*, -Himage_lift] at Himage_lift,
+          split;
+      
+      let x_image_lift := begin fapply @image_lift α β f S xs_hd, exact Himage_lift end,
+                        
+    swap,
+      have : {x : β | x ∈ xs_tl} ⊆ f '' S,
+        {intros x hx, fapply h_sub, fapply or.inr, exact hx},
+      have actual_ih := xs_ih this,
+      let zs := actual_ih.fst, let h_zs := actual_ih.snd,
+      refine _::zs, exact x_image_lift.fst,
+
+      split,
+        intros y Hy, cases Hy, rw[Hy], exact x_image_lift.snd.left,
+        
+        refine (xs_ih Hxs_ih).snd.left _,
+          exact Hy,
+
+        simp*, fapply funext, intro x, fapply propext,
+
+        split,
+          intro hx, cases hx with hx_witness hx_hypothesis,
+
+            cases hx_hypothesis with h1 h2,
+            cases h1,
+              have := (image_lift xs_hd Himage_lift).snd;
+              fapply or.inl, rw[<-h2, h1], exact this.right,
+              
+              fapply or.inr, rw[<-h2],
+              have h_final : f hx_witness ∈ f '' {y : α | y ∈ (xs_ih Hxs_ih).fst},
+              fapply exists.intro, exact hx_witness, simpa,
+              rw[(xs_ih Hxs_ih).snd.right] at h_final,
+              exact h_final,
+
+        intro hx, cases hx with h_hd h_tl,
+           fapply exists.intro, exact x_image_lift.fst, rw[h_hd], simp,
+           exact x_image_lift.snd.right, unfold set.image,
+           
+           have strong_lift := begin
+                                   fapply strong_indefinite_description, exact α,
+                                   exact λ a, a ∈ {y : α | y ∈ (xs_ih Hxs_ih).fst} ∧ f a = x,
+                                   fapply nonempty_of_exists, exact λ x, x ∈ S ∧ f x = xs_hd,
+                                   exact Himage_lift
+                                  end;
+           have h_almost := (xs_ih Hxs_ih).snd;
+           have h_exists : x ∈ f '' {y : α | y ∈ (xs_ih Hxs_ih).fst},
+              rw[h_almost.right], assumption, unfold set.image at h_exists;
+           fapply exists.intro, 
+                       
+              exact strong_lift.val, fapply and.intro, fapply or.inr, refine (strong_lift.property _).left, exact h_exists, refine (strong_lift.property _).right, exact h_exists
+end
+
+set_option eqn_compiler.lemmas false
+
+noncomputable def proof_finite_support3 {L : Language} : Π {ψ : formula L}, Π {T : set $ formula L},  Π (pψ : T ⊢ ψ), Σ Γ : list (formula L), Σ' p : {ϕ : formula L | ϕ ∈ Γ} ⊢ ψ, {ϕ : formula L | ϕ ∈ Γ} ⊆ T
 | ψ T (axm a) := begin split, swap, exact [ψ],have : {ϕ : formula L | ϕ ∈ [ψ]} = {ψ},
                    by refl, split, rw[this],
                    fapply axm, simp, rw[this], simp, exact a
@@ -230,7 +305,9 @@ noncomputable lemma proof_finite_support3 {L : Language} : Π {ψ : formula L}, 
       have : (T1 ∪ T2) ⊢ (A ⟹ B) × T1 ∪ T2 ⊢ A,
         fapply weakening', exact hT1, exact hT2,
       
-      split, simp* at this, simp*,fapply impE, exact A, exact this.fst, exact this.snd, simp*, intro ψ, intro hψ, cases hψ, fapply S1.snd.snd, exact hψ, fapply S2.snd.snd, exact hψ,
+      split, simp* at this, simp*,fapply impE, exact A,
+      exact this.fst, exact this.snd, simp*, intro ψ, intro hψ,
+      cases hψ, fapply S1.snd.snd, exact hψ, fapply S2.snd.snd, exact hψ,
     end
 | (f1 ⟹ f2) T (impI P) :=
   begin
@@ -247,8 +324,29 @@ noncomputable lemma proof_finite_support3 {L : Language} : Π {ψ : formula L}, 
     
     {fapply weakening, exact {ϕ : formula L | ϕ ∈ S.fst}, exact h_weakening, exact S.snd.fst}
   end
-| A T (falseE _) := sorry -- this will be a pain like impI
-|  (∀' _) T (allI _) := sorry
+| A T (falseE P) :=
+  begin
+    have S := (proof_finite_support3 P),
+    let S' := --Σ' (ys : list (formula L)), {ϕ : formula L | ϕ ∈ ys} ⊆ T ∧ ∀ (y : formula L), y ∈ ys → y ≠ f1,
+      begin { refine (list_except S.fst (∼A) T _),
+      have := (S.snd).snd, intros y H a, have := this H, cases this, exfalso, contradiction, assumption}, end,
+    split, swap,  exact S'.fst, have hS' := S'.snd, 
+    split, swap, exact hS'.left.left,
+    fapply falseE,
+    have h_weakening : {ϕ : formula L | ϕ ∈ S.fst} ⊆ insert ∼A {ϕ : formula L | ϕ ∈ S'.fst},
+      {intro x, intro hx, simp, by_cases x = ∼A,
+        exact or.inl h, simp*, fapply hS'.right, assumption, assumption},
+ 
+    {fapply weakening, exact {ϕ : formula L | ϕ ∈ S.fst}, exact h_weakening, exact S.snd.fst}  
+  end
+|  (∀' A) T (allI P) :=
+  begin
+    have S  := (proof_finite_support3 P), have h_subset := S.snd.snd,
+    have preS' := image_lift_list h_subset, let S' := preS'.fst, have hS' := preS'.snd,
+    refine ⟨S', _⟩, refine ⟨_, hS'.left⟩, fapply allI,
+    rw[hS'.right], exact S.snd.fst,
+  end
+
 | (_ ≃ t) T (refl _ _) := begin dedup, refine ⟨[], _⟩, split, fapply fol.prf.refl, intro ψ, intro hψ, exfalso, exact hψ end
 | .(_[_ // 0]) T (allE' _ _ _) := sorry
 | .(_[_ // 0]) T (subst' _ _ _ _ _) := sorry
