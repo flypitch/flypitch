@@ -12,7 +12,6 @@ lemma dne {p : Prop} (H : ¬¬p) : p := --- from TPIL, is this elsewhere?
                   (assume Hp : p, Hp)
                   (assume Hnp : ¬p, absurd Hnp H)
 
-
 @[reducible] lemma dne2 {p : Prop} : p = ¬ ¬ p :=
 begin
 refine propext _,
@@ -347,8 +346,11 @@ noncomputable def proof_compactness {L : Language} : Π {ψ : formula L}, Π {T 
     refine ⟨S', _⟩, refine ⟨_, hS'.left⟩, fapply allI,
     rw[hS'.right], exact S.snd.fst,
   end
-
-| (_ ≃ t) T (refl _ _) := begin dedup, refine ⟨[], _⟩, split, fapply fol.prf.refl, intro ψ, intro hψ, exfalso, exact hψ end
+| (_ ≃ t) T (refl _ _) :=
+  begin
+    dedup, refine ⟨[], _⟩, split, fapply fol.prf.refl,
+    intro ψ, intro hψ, exfalso, exact hψ
+  end
 | .(_[_ // 0]) T (allE' A t P) :=
         begin
           have preS := proof_compactness P, split, swap, exact preS.fst,
@@ -387,8 +389,16 @@ noncomputable def proof_compactness {L : Language} : Π {ψ : formula L}, Π {T 
 -- end
 
 /- Given a sentence and the knowledge that there is a proof of ψ from T, return a list of sentences from T and a proof that this list proves ψ -/
-def proof_finite_support {L : Language} (T : Theory L) (ψ : sentence L) (hψ : T ⊢' ψ) : Σ' Γ : list (sentence L), {ϕ : sentence L | ϕ ∈ Γ} ⊢' ψ ∧ {ϕ : sentence L | ϕ ∈ Γ} ⊆ T:=
-sorry
+noncomputable def proof_finite_support {L : Language} (T : Theory L) (ψ : sentence L) (hψ : T ⊢' ψ) : Σ' Γ : list (sentence L), {ϕ : sentence L | ϕ ∈ Γ} ⊢' ψ ∧ {ϕ : sentence L | ϕ ∈ Γ} ⊆ T :=
+begin
+  have P := classical.choice hψ,
+  have P' := proof_compactness P,
+  cases P' with S hS,
+  have lift_list := begin fapply @image_lift_list, exact sentence L, exact formula L, exact sigma.fst, exact T, exact S, exact hS.snd end,
+  refine ⟨lift_list.fst, _⟩,
+  refine and.intro _ lift_list.snd.left, fapply nonempty.intro,
+  unfold Theory.fst, rw[lift_list.snd.right], exact hS.fst
+end
 
 lemma in_theory_of_fst_in_theory {L : Language} {T : Theory L} {ψ : sentence L} (h : ψ.fst ∈ T.fst) : ψ ∈ T :=
 begin
