@@ -501,7 +501,7 @@ lemma in_chain_of_finite_union
 }
  end :=
   begin
- unfold image_list, tidy, repeat{sorry}
+simp*,
     -- induction as, tidy, unfold image_list, simp,
     -- unfold set.union list.foldr, 
   end
@@ -529,11 +529,103 @@ lemma finite_sup : Π(L : Language), Π(T : Theory L), Π(hT : is_consistent T),
 (sup_list T (subtype.val '' Ts) _ ((proof_finite_support (T ∪ ⋃₀(subtype.val '' Ts)) ⊥ h_inconsis).fst) _).fst ∈ subtype.val '' Ts ∧
     {ψ : sentence L | ψ ∈ (proof_finite_support (T ∪ ⋃₀(subtype.val '' Ts)) ⊥ h_inconsis).fst} ⊆ (sup_list T (subtype.val '' Ts) _ ((proof_finite_support (T ∪ ⋃₀(subtype.val '' Ts)) ⊥ h_inconsis).fst) _).fst := sorry
 
+/--Given a chain and two elements from this chain, return their maximum. --/
+noncomputable def max_in_chain {α : Type} {R : α → α → Prop} {Ts : set α} {nonempty_Ts : nonempty Ts} (h_chain : chain R Ts) (S1 S2 : α) (h_S1 : S1 ∈ Ts) (h_S2 : S2 ∈ Ts) : Σ' (S : α), (S = S1 ∧ (R S2 S1 ∨ S1 = S2)) ∨ (S = S2 ∧ (R S1 S2 ∨ S1 = S2)) :=
+begin
+  unfold chain set.pairwise_on at h_chain,
+  have := h_chain S1 h_S1 S2 h_S2,
+  by_cases S1 = S2,
 
+    refine ⟨S1, _ ⟩, fapply or.inl, fapply and.intro, exact rfl, exact or.inr h,
+    
+    have H := this h,
+    by_cases R S1 S2,
+      refine ⟨S2, _⟩, fapply or.inr, refine and.intro rfl _, exact or.inl h,
+
+      tactic.unfreeze_local_instances, dedup, simp[*, -H] at H, refine ⟨S1, _⟩, fapply or.inl,
+      refine and.intro rfl _, exact or.inl H
+end
+
+/--Given a chain under a transitive relation over a fixed A and a list of elements from this chain, return an upper bound, with the empty maximum defined to be A--/
+noncomputable def max_of_list_in_chain {α : Type} {R : α → α → Prop} {trans : ∀{a b c}, R a b → R b c → R a c} {Ts : set α} -- {nonempty_Ts : nonempty Ts}
+(A : α) (h_chain : chain R Ts) (Ss : list α) -- {nonempty_Ss : nonempty {S | S ∈ Ss}}
+(h_fs : ∀ S ∈ Ss, S ∈ Ts) : Σ' (S : α), (S ∈ Ss ∧ ∀ S' ∈ Ss, S' = S ∨ R S' S) :=
+begin
+  tactic.unfreeze_local_instances,
+  induction Ss,
+    split, swap, exact A, 
+
+    by_cases nonempty {S | S ∈ Ss_tl},
+      swap, simp[*,-h] at h, refine ⟨Ss_hd, _⟩, fapply and.intro, constructor, refl,
+      intros S' hS', cases hS', fapply or.inl, assumption, exfalso, have := h S', contradiction,
+
+      have actual_ih := @Ss_ih h,
+      let tl_max :=
+        begin refine actual_ih _, intros S hS, fapply h_fs, fapply or.inr, assumption end,
+      have pairwise_max := max_in_chain h_chain Ss_hd tl_max.fst begin fapply h_fs, constructor, refl end begin have := tl_max.snd.left, fapply h_fs, fapply or.inr, assumption  end,
+      
+      split, swap, exact pairwise_max.fst, fapply and.intro,
+      have h_max := pairwise_max.snd, cases h_max with h_max1 h_max2,
+      simp*, fapply or.inr, simp*, exact tl_max.snd.left,
+      swap, assumption,
+      intros S' hS', cases hS' with h_left h_right,
+      have h_max := pairwise_max.snd, cases h_max with h_max1 h_max2,
+      fapply or.inl, have := h_max1.left, cc,
+      have := h_max2.right, cases this with h1 h2,
+      repeat{simp*},
+      have h_max := pairwise_max.snd, cases h_max with h_max1 h_max2,
+      all_goals{simp*},
+      swap,
+      have this1 : S' = tl_max.fst ∨ R S' tl_max.fst,
+        have this2 := tl_max.snd.right S' h_right,
+        cases this2 with this2_left this2_right,
+        exact or.inl this2_left,
+        exact or.inr this2_right,
+      exact this1,
+
+      have : ∀(S : α), S ∈ Ss_tl → S ∈ Ts,
+        begin
+          intros S hS, fapply h_fs, exact or.inr hS
+        end,
+      
+      have almost_there := (actual_ih this).snd.right S' h_right,
+      cases almost_there with almost_there_1 almost_there_2,
+      simp*, cases h_max1 with H1 H2, simp[*, -H2] at H2,
+        cases H2, exact or.inr H2, rw[H2], finish,
+
+      cases h_max1 with H1 H2, simp[*,-H2] at H2, fapply or.inr,
+      have H_ab : R S' tl_max.fst, exact almost_there_2,
+      cases H2 with A1 A2,
+        exact trans H_ab A1,
+        rw[A2], exact H_ab
+end 
+
+/--Given a consistent theory T and a chain Ts of consistent theories over T, and a finite list of formulas in ⋃Ts which prove ⊥, return the assertion that there exists a theory T' from Ts ∪ {T} and a proof that T' ⊢ ⊥. (This probably should be refactored through nonempty.intro) --/
 def finite_sup_T  {L : Language} {T : Theory L}  {hT : is_consistent T} {Ts : set (Theory_over T hT)} {h_chain : chain Theory_over_subset Ts} {h_inconsis: T ∪ ⋃₀(subtype.val '' Ts) ⊢' s_falsum} (Γpair : Σ' (Γ : list (sentence L)),
     {ϕ : sentence L | ϕ ∈ Γ} ⊢' (⊥ : sentence L) ∧ {ϕ : sentence L | ϕ ∈ Γ} ⊆ T ∪ ⋃₀(subtype.val '' Ts)) : ∃ (T' : Theory L), T' ∈ subtype.val '' Ts ∧ {ψ : sentence L | ψ ∈ Γpair.fst} ⊆ T' :=
 begin
-fapply exists.intro, repeat{sorry} -- now we need to define a function which, given a list of sentences in the union, picks out a theory containing each member, and then takes their union (and then relativize this to over T)
+  cases Γpair with fs Hfs, fapply exists.intro,
+  have Ss : list (Theory_over T hT),
+    begin
+      fapply image_list, exact {f | f ∈ fs},
+      swap, simp*, sorry,
+    
+      intro F, cases F with f hf, have h2f : f ∈ T ∪ ⋃₀ (subtype.val '' Ts), by exact Hfs.right hf, simp[*,-h2f] at h2f,
+      by_cases f ∈ T,
+        exact over_self T hT,
+        simp[*,-h2f] at h2f, 
+        have sid_witness := strong_indefinite_description, repeat{sorry},
+        
+    end,
+  
+  have max_of_list_in_chain := max_of_list_in_chain h_chain,
+
+
+  have T_bad : Σ' (T_bad : Theory_over T hT), {ϕ | ϕ ∈ fs} ⊆ (T_bad).val,
+    {repeat{sorry}},
+
+  exact T_bad.fst.val,
+  unfold Theory_over_subset, intros a b c, fapply subset_is_transitive,
 end
 
 -- example : ∀{L}, ((∅ : Theory L) ⊢ s_falsum → false) :=
