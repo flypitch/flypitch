@@ -546,25 +546,26 @@ begin
       refine and.intro rfl _, exact or.inl H
 end
 
-/--Given a nonempty chain under a transitive relation and a list of elements from this chain, return an upper bound, with the empty maximum defined to be the witness to the nonempty --/
+/--Given a nonempty chain under a transitive relation and a list of elements from this chain, return an upper bound, with the maximum of the empty list defined to be the witness to the nonempty --/
 noncomputable def max_of_list_in_chain {α : Type} {R : α → α → Prop} {trans : ∀{a b c}, R a b → R b c → R a c} {Ts : set α} {nonempty_Ts : nonempty Ts} (h_chain : chain R Ts) (Ss : list α) -- {nonempty_Ss : nonempty {S | S ∈ Ss}}
-(h_fs : ∀ S ∈ Ss, S ∈ Ts) : Σ' (S : α), ∀ S' ∈ Ss, S' = S ∨ R S' S :=
+(h_fs : ∀ S ∈ Ss, S ∈ Ts) : Σ' (S : α), S ∈ Ts ∧ (∀ S' ∈ Ss, S' = S ∨ R S' S) :=
 begin
   tactic.unfreeze_local_instances,
-  induction Ss, have := classical.choice nonempty_Ts, split, simp, exact this.val,
+  induction Ss, have := classical.choice nonempty_Ts, split, simp, swap, exact this.val, exact this.property, 
 
-    -- by_cases nonempty {S | S ∈ Ss_tl},
-    --   swap, simp[*,-h] at h, refine ⟨Ss_hd, _⟩, fapply and.intro, constructor, refl,
-    --   intros S' hS', cases hS', fapply or.inl, assumption, exfalso, have := h S', contradiction,
+    by_cases nonempty {S | S ∈ Ss_tl},
+      swap, simp[*,-h] at h, refine ⟨Ss_hd, _⟩, simp*, --  fapply and.intro, constructor, refl,
+      -- intros S' hS', cases hS', fapply or.inl, assumption, exfalso, have := h S', contradiction,
 
       have actual_ih := Ss_ih,
       let tl_max :=
         begin refine actual_ih _, intros S hS, fapply h_fs, fapply or.inr, assumption end,
-      have pairwise_max := max_in_chain h_chain Ss_hd tl_max.fst begin fapply h_fs, constructor, refl end begin have := tl_max.snd.left, fapply h_fs, fapply or.inr, assumption  end,
+      have pairwise_max := max_in_chain h_chain Ss_hd tl_max.fst
+begin fapply h_fs, constructor, refl end begin have := tl_max.snd, exact this.left  end,
       
       split, swap, exact pairwise_max.fst, fapply and.intro,
       have h_max := pairwise_max.snd, cases h_max with h_max1 h_max2,
-      simp*, fapply or.inr, simp*, exact tl_max.snd.left,
+      simp*, rw[h_max2.left], exact tl_max.snd.left, 
       swap, assumption,
       intros S' hS', cases hS' with h_left h_right,
       have h_max := pairwise_max.snd, cases h_max with h_max1 h_max2,
