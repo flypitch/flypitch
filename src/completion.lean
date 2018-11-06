@@ -623,9 +623,54 @@ have witness_property := witness.property, cases witness_property with case1 cas
 exact case2,
 end
 
-def finite_sup_T_lemma_2 {L : Language} (T : Theory L) (hT : is_consistent T) (Ts : set (Theory_over T hT)) (hTs : nonempty Ts) (h_chain : chain Theory_over_subset Ts) (h_inconsis : T ∪ ⋃₀(subtype.val '' Ts) ⊢' (⊥ : sentence L)) (fs : list (sentence L)) (Hfs : {ϕ : sentence L | ϕ ∈ fs} ⊢' (⊥ : sentence L) ∧ {ϕ : sentence L | ϕ ∈ fs} ⊆ T ∪ ⋃₀(subtype.val '' Ts)) (dSs : Π (f : sentence L), f ∈ fs → (Σ' (S_f : Theory_over T hT), set.mem S_f Ts ∧ set.mem f (S_f.val))) :  Σ' (T_max : Theory_over T hT), T_max ∈ Ts ∧ ∀ (ψ : sentence L), ψ ∈ fs → ψ ∈ T_max.val :=
+@[reducible]def list_is_list_of_subtype (L : Language) (fs : list (sentence L)) -- (Hfs : {ϕ : sentence L | ϕ ∈ fs} ⊢' (⊥ : sentence L) ∧ {ϕ : sentence L | ϕ ∈ fs} ⊆ T ∪ ⋃₀(subtype.val '' Ts))
+-- (dSs : Π (f : sentence L), f ∈ fs → (Σ' (S_f : Theory_over T hT), set.mem S_f Ts ∧ set.mem f (S_f.val)))
+: list ↥{f : sentence L | f ∈ fs} :=
 begin
+  induction fs,
+  exact [],
 
+  refine _::_,
+  split, swap, exact fs_hd, simp,
+  have : {f | f ∈ fs_tl} → {f | f ∈ list.cons fs_hd fs_tl},
+  intro f, split, swap, exact f.val, exact or.inr f.property,
+  fapply list.map this, exact fs_ih
+end
+
+noncomputable def finite_sup_T_lemma_2 {L : Language} (T : Theory L) (hT : is_consistent T) (Ts : set (Theory_over T hT)) (hTs : nonempty Ts) (h_chain : chain Theory_over_subset Ts) (h_inconsis : T ∪ ⋃₀(subtype.val '' Ts) ⊢' (⊥ : sentence L)) (fs : list (sentence L)) (Hfs : {ϕ : sentence L | ϕ ∈ fs} ⊢' (⊥ : sentence L) ∧ {ϕ : sentence L | ϕ ∈ fs} ⊆ T ∪ ⋃₀(subtype.val '' Ts)) (dSs : Π (f : sentence L), f ∈ fs → (Σ' (S_f : Theory_over T hT), set.mem S_f Ts ∧ set.mem f (S_f.val))) :  Σ' (T_max : Theory_over T hT), T_max ∈ Ts ∧ ∀ (ψ : sentence L), ψ ∈ fs → ψ ∈ T_max.val :=
+begin
+  let F : {f | f ∈ fs} → Theory_over T hT :=
+    begin intro f, exact (dSs f.val f.property).fst end,
+ let fs_list_subtype := list_is_list_of_subtype L fs,
+ let T_list : list (Theory_over T hT) :=
+    begin fapply list.map F, exact fs_list_subtype end,
+  have T_list_subset_Ts : (∀ (S : Theory_over T hT), S ∈ T_list → S ∈ Ts),
+    intro S, simp, intros x h1 h2, simp[*,-h2] at h2, rw[<-h2.right],
+    have := (dSs x h1).snd.left, assumption,
+
+  have max_of_list := max_of_list_in_chain h_chain T_list T_list_subset_Ts,
+  split, swap,
+    {exact max_of_list.fst},
+    {split, exact max_of_list.snd.left, 
+      {intros f hf,
+        have almost_there : f ∈ (F ⟨f, begin simpa end⟩).val, simp*, exact (dSs f hf).snd.right,
+        have nearly_there : (F ⟨f, begin simpa end⟩) ⊆ max_of_list.fst,
+          have := max_of_list.snd.right (F ⟨f, begin simpa end⟩),
+          have so_close : F ⟨f, _⟩ = max_of_list.fst ∨ Theory_over_subset (F ⟨f, _⟩) (max_of_list.fst),
+            begin
+            refine this _, simp*, fapply exists.intro, exact f, fapply exists.intro,
+            exact hf, fapply and.intro, unfold has_mem.mem list.mem,
+            {sorry},
+            {refl},
+            end,
+        cases so_close with case1 case2,
+        rw[case1], intros a h, exact h,
+        exact case2,
+        exact nearly_there almost_there,
+        },
+      },
+    {intros a b c, unfold Theory_over_subset, fapply subset_is_transitive},
+    {assumption},
 end
 
 /--Given a consistent theory T and a chain Ts of consistent theories over T, and a finite list of formulas in ⋃Ts which prove ⊥, return the assertion that there exists a theory T' from Ts ∪ {T} and a proof that T' ⊢ ⊥. (This probably should be refactored through nonempty.intro) --/
