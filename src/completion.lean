@@ -37,7 +37,7 @@ exact id
 end
 
 open classical
-noncomputable def instantiate_existential {α : Type} {P : α → Prop} (h : ∃ x : α, P x) : nonempty α → {x // P x} :=
+noncomputable def instantiate_existential {α : Type*} {P : α → Prop} (h : ∃ x : α, P x) : nonempty α → {x // P x} :=
 begin
 intro h_nonempty,
 let X := (@strong_indefinite_description α P h_nonempty),
