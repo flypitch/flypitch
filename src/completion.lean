@@ -546,20 +546,18 @@ begin
       refine and.intro rfl _, exact or.inl H
 end
 
-/--Given a chain under a transitive relation over a fixed A and a list of elements from this chain, return an upper bound, with the empty maximum defined to be A--/
-noncomputable def max_of_list_in_chain {α : Type} {R : α → α → Prop} {trans : ∀{a b c}, R a b → R b c → R a c} {Ts : set α} -- {nonempty_Ts : nonempty Ts}
-(A : α) (h_chain : chain R Ts) (Ss : list α) -- {nonempty_Ss : nonempty {S | S ∈ Ss}}
-(h_fs : ∀ S ∈ Ss, S ∈ Ts) : Σ' (S : α), (S ∈ Ss ∧ ∀ S' ∈ Ss, S' = S ∨ R S' S) :=
+/--Given a nonempty chain under a transitive relation and a list of elements from this chain, return an upper bound, with the empty maximum defined to be the witness to the nonempty --/
+noncomputable def max_of_list_in_chain {α : Type} {R : α → α → Prop} {trans : ∀{a b c}, R a b → R b c → R a c} {Ts : set α} {nonempty_Ts : nonempty Ts} (h_chain : chain R Ts) (Ss : list α) -- {nonempty_Ss : nonempty {S | S ∈ Ss}}
+(h_fs : ∀ S ∈ Ss, S ∈ Ts) : Σ' (S : α), ∀ S' ∈ Ss, S' = S ∨ R S' S :=
 begin
   tactic.unfreeze_local_instances,
-  induction Ss,
-    split, swap, exact A, 
+  induction Ss, have := classical.choice nonempty_Ts, split, simp, exact this.val,
 
-    by_cases nonempty {S | S ∈ Ss_tl},
-      swap, simp[*,-h] at h, refine ⟨Ss_hd, _⟩, fapply and.intro, constructor, refl,
-      intros S' hS', cases hS', fapply or.inl, assumption, exfalso, have := h S', contradiction,
+    -- by_cases nonempty {S | S ∈ Ss_tl},
+    --   swap, simp[*,-h] at h, refine ⟨Ss_hd, _⟩, fapply and.intro, constructor, refl,
+    --   intros S' hS', cases hS', fapply or.inl, assumption, exfalso, have := h S', contradiction,
 
-      have actual_ih := @Ss_ih h,
+      have actual_ih := Ss_ih,
       let tl_max :=
         begin refine actual_ih _, intros S hS, fapply h_fs, fapply or.inr, assumption end,
       have pairwise_max := max_in_chain h_chain Ss_hd tl_max.fst begin fapply h_fs, constructor, refl end begin have := tl_max.snd.left, fapply h_fs, fapply or.inr, assumption  end,
@@ -600,32 +598,48 @@ begin
         rw[A2], exact H_ab
 end 
 
+noncomputable def finite_sup_T_lemma_1 {L : Language} {T : Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (hTs : nonempty Ts) (h_chain : chain Theory_over_subset Ts) (h_inconsis : T ∪ ⋃₀(subtype.val '' Ts) ⊢' (⊥ : sentence L)) (fs : list (sentence L)) (Hfs : {ϕ : sentence L | ϕ ∈ fs} ⊢' (⊥ : sentence L) ∧ {ϕ : sentence L | ϕ ∈ fs} ⊆ T ∪ ⋃₀(subtype.val '' Ts)) : Π (f : sentence L), f ∈ fs → (Σ' (S_f : Theory_over T hT), set.mem S_f Ts ∧ set.mem f (S_f.val)) :=
+begin
+  intros f hf,
+  have H := Hfs.right,
+  unfold set.image set.sUnion set.subset set.mem list.mem at H,
+  have H' := H hf,
+  by_cases f ∈ T,
+  split, swap,
+  {exact (classical.choice hTs).val},
+  {fapply and.intro, exact (choice hTs).property,
+    have H := (choice hTs).val.property.left,
+    exact H h},
+ 
+
+    simp[*, -H'] at H',
+    have witness := instantiate_existential H' begin fapply nonempty.intro, exact T end, simp* at witness,
+    split, swap, split, swap, exact witness.val, cases witness.property with case1 case2, cases case1 with case1' case1'', exact case1',
+
+split, have witness_property := witness.property, cases witness_property with case1 case2, cases case1 with case1' case1'', exact case1'',
+
+have witness_property := witness.property, cases witness_property with case1 case2,
+exact case2,
+end
+
+def finite_sup_T_lemma_2 {L : Language} (T : Theory L) (hT : is_consistent T) (Ts : set (Theory_over T hT)) (hTs : nonempty Ts) (h_chain : chain Theory_over_subset Ts) (h_inconsis : T ∪ ⋃₀(subtype.val '' Ts) ⊢' (⊥ : sentence L)) (fs : list (sentence L)) (Hfs : {ϕ : sentence L | ϕ ∈ fs} ⊢' (⊥ : sentence L) ∧ {ϕ : sentence L | ϕ ∈ fs} ⊆ T ∪ ⋃₀(subtype.val '' Ts)) (dSs : Π (f : sentence L), f ∈ fs → (Σ' (S_f : Theory_over T hT), set.mem S_f Ts ∧ set.mem f (S_f.val))) :  Σ' (T_max : Theory_over T hT), T_max ∈ Ts ∧ ∀ (ψ : sentence L), ψ ∈ fs → ψ ∈ T_max.val :=
+begin
+
+end
+
 /--Given a consistent theory T and a chain Ts of consistent theories over T, and a finite list of formulas in ⋃Ts which prove ⊥, return the assertion that there exists a theory T' from Ts ∪ {T} and a proof that T' ⊢ ⊥. (This probably should be refactored through nonempty.intro) --/
-def finite_sup_T  {L : Language} {T : Theory L}  {hT : is_consistent T} {Ts : set (Theory_over T hT)} {h_chain : chain Theory_over_subset Ts} {h_inconsis: T ∪ ⋃₀(subtype.val '' Ts) ⊢' s_falsum} (Γpair : Σ' (Γ : list (sentence L)),
+def finite_sup_T  {L : Language} {T : Theory L}  {hT : is_consistent T} {Ts : set (Theory_over T hT)} {hTs : nonempty Ts} {h_chain : chain Theory_over_subset Ts} {h_inconsis: T ∪ ⋃₀(subtype.val '' Ts) ⊢' s_falsum} (Γpair : Σ' (Γ : list (sentence L)),
     {ϕ : sentence L | ϕ ∈ Γ} ⊢' (⊥ : sentence L) ∧ {ϕ : sentence L | ϕ ∈ Γ} ⊆ T ∪ ⋃₀(subtype.val '' Ts)) : ∃ (T' : Theory L), T' ∈ subtype.val '' Ts ∧ {ψ : sentence L | ψ ∈ Γpair.fst} ⊆ T' :=
 begin
-  cases Γpair with fs Hfs, fapply exists.intro,
-  have Ss : list (Theory_over T hT),
-    begin
-      fapply image_list, exact {f | f ∈ fs},
-      swap, simp*, sorry,
-    
-      intro F, cases F with f hf, have h2f : f ∈ T ∪ ⋃₀ (subtype.val '' Ts), by exact Hfs.right hf, simp[*,-h2f] at h2f,
-      by_cases f ∈ T,
-        exact over_self T hT,
-        simp[*,-h2f] at h2f, 
-        have sid_witness := strong_indefinite_description, repeat{sorry},
-        
-    end,
+  cases Γpair with fs Hfs, 
+  have dSs : Π f ∈ fs, Σ' S_f : (Theory_over T hT), set.mem S_f Ts ∧ (set.mem (f) (S_f.val)), -- to each f in fs, associate an S_f containing f from the chain
+    {fapply finite_sup_T_lemma_1, repeat{assumption}},
+  have T_max : Σ' (T_max : Theory_over T hT), (T_max ∈ Ts) ∧ ∀ ψ ∈ fs, (ψ) ∈ T_max.val,  -- get the theory and a proof that it contains all the f
+    {fapply finite_sup_T_lemma_2, repeat{assumption}},
   
-  have max_of_list_in_chain := max_of_list_in_chain h_chain,
-
-
-  have T_bad : Σ' (T_bad : Theory_over T hT), {ϕ | ϕ ∈ fs} ⊆ (T_bad).val,
-    {repeat{sorry}},
-
-  exact T_bad.fst.val,
-  unfold Theory_over_subset, intros a b c, fapply subset_is_transitive,
+  fapply exists.intro, exact T_max.fst.val,
+  fapply and.intro, fapply set.mem_image_of_mem, exact T_max.snd.left,
+  have := T_max.snd.right, intros ψ hψ, exact this ψ hψ,
 end
 
 -- example : ∀{L}, ((∅ : Theory L) ⊢ s_falsum → false) :=
@@ -637,6 +651,9 @@ end
 lemma consis_limit {L : Language} {T : Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : is_consistent (T ∪ set.sUnion (subtype.val '' Ts)) :=
 begin -- so _here_ is where we need that proofs are finitely supported
   apply is_consistent_intro, intro h_inconsis,
+  by_cases nonempty Ts, swap,
+    { simp* at h, simp[*, -h_inconsis] at h_inconsis, unfold is_consistent at hT, exact hT (classical.choice h_inconsis)},
+
   have Γpair := proof_finite_support (T ∪ ⋃₀(subtype.val '' Ts)) ⊥ h_inconsis,
   have h_bad : ∃ T' : (Theory L), (T' ∈ (subtype.val '' Ts)) ∧ {ψ | ψ ∈ Γpair.fst} ⊆ T',
 
