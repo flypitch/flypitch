@@ -438,23 +438,6 @@ cases a with a_val a_property, unfold set.sUnion at a_property, simp at a_proper
 cases a_property with A hA, simp, fapply exists.intro, exact A, exact hA.left
 end
 
-/- Given a chain on α over a fixed T and a list of elements of the union over T, return a set which contains all elements of the list, and, if the list is nonempty, a proof that this set was in the chain -/
-def sup_list {α : Type} (T : set α) (A_i : set $ set α) (h_chain : chain set.subset A_i) (as : list α)
-(h_as : ∀ a ∈ as, a ∈ T ∪ set.sUnion A_i) : Σ' A_n : set α, ∀ a ∈ as, a ∈ A_n  → A_n ∈ insert T A_i :=
-begin
-induction as, split, swap, exact T,
-simp*,
-split, swap,
-
---  have h_nonempty : nonempty A_i, fapply nonempty_chain_of_nonempty_union, assumption, apply nonempty.intro, 
-end
-
-def sup_list2 {α : Type} (T : set α) (A_i : set $ set α) (h_chain : chain set.subset A_i) (h_over_T : ∀ A ∈ A_i, T ⊆ A) (as : list α) (h_as : ∀ a ∈ as, a ∈ T ∪ set.sUnion A_i) : Σ' A_n : set α, ∀ a ∈ as, a ∈ A_n → nonempty A_n → A_n ∈ A_i :=
-begin
-induction as with as ih,
-  simp*, exact ⟨T, trivial⟩,
-  
-end
 
 /- Given two elements in a chain of sets over T, their union over T is in the chain -/
 lemma in_chain_of_union {α : Type} (T : set α) (A_i : set $ set α) (h_chain : chain set.subset A_i) (as : list A_i) (h_over_T : ∀ A ∈ A_i, T ⊆ A) (A1 A2 ∈ A_i) : A1 ∪ A2 = A1 ∨ A1 ∪ A2 = A2 :=
@@ -473,62 +456,6 @@ by_cases A1 = A2,
   intro hx, have : A1 x ∨ A2 x, by assumption, fapply or.elim, exact A2 x, exact A1 x, finish, intro h2x, dedup, unfold set.subset at this, exact this h2x, finish,
 intro h3x, apply or.inl, assumption}
 end
-
-def image_list {α β : Type} (f : α → β) (xs : list α) : list β :=
-  begin
-    induction xs,
-    exact list.nil,
-    exact (f xs_hd) :: xs_ih
-  end
-
-/- Given a list of elements in a chain of sets over T, their union over T is in the chain -/
-lemma in_chain_of_finite_union
-{α : Type}
-(T : set α)
-(A_i : set $ set α)
-(h_chain : chain set.subset A_i)
-(as : Σ' (xs : list $ set α), ∀ a ∈ xs, (A_i a)) :
---(as : list $ Σ' ( A : set α), A_i A) :
-  begin
-    refine _ ∈ insert T A_i,
-    fapply @list.foldr (set α) (set α),
-    exact λ a b, set.union T $ set.union a b, exact T, fapply image_list, exact Σ' ( A : set α), A_i A,
-    intro pair, cases pair, exact pair_fst, 
-
-  {
-    cases as, induction as_fst,
-    exact list.nil, have h_hd := as_snd as_fst_hd begin simp* end, have p_hd := psigma.mk as_fst_hd h_hd, apply list.cons, exact p_hd, have : (∀ (a : set α), a ∈ as_fst_tl → A_i a), intro a, intro ha,
-    have h2 := as_snd a, simp at h2, have : a = as_fst_hd ∨ a ∈ as_fst_tl, apply or.inr, exact ha, exact h2 this, exact as_fst_ih this
-}
- end :=
-  begin
-simp*,
-    -- induction as, tidy, unfold image_list, simp,
-    -- unfold set.union list.foldr, 
-  end
- -- A_i (@set.Union α {a // a ∈ as} (begin intro, cases a, exact a_val.fst end)) :=
--- begin
--- induction as,
---   simp*, 
--- end
-
-/- the image of a chain of Theory_over T's under subtype.val is a chain -/
-lemma val_chain {L : Language} {T : Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : chain set.subset (subtype.val '' Ts) :=
-begin
-repeat{sorry},
--- simp[Theory_over_subset] at h_chain, 
-    -- simp[*, chain, set.pairwise_on, -h_chain] at h_chain,
-    -- intros T1  hT1  T2  hT2  H,
-    -- unfold set.image at hT1 hT2,
-    -- simp[*, -hT2, -hT1]  at hT2 hT1,
-    -- apply classical.choice, apply nonempty_of_exists,
-end
-
-
-lemma finite_sup : Π(L : Language), Π(T : Theory L), Π(hT : is_consistent T), Π(Ts : set (Theory_over T hT)), Π(h_chain : chain Theory_over_subset Ts),
-Π(h_inconsis : T ∪ ⋃₀(subtype.val '' Ts) ⊢' s_falsum),
-(sup_list T (subtype.val '' Ts) _ ((proof_finite_support (T ∪ ⋃₀(subtype.val '' Ts)) ⊥ h_inconsis).fst) _).fst ∈ subtype.val '' Ts ∧
-    {ψ : sentence L | ψ ∈ (proof_finite_support (T ∪ ⋃₀(subtype.val '' Ts)) ⊥ h_inconsis).fst} ⊆ (sup_list T (subtype.val '' Ts) _ ((proof_finite_support (T ∪ ⋃₀(subtype.val '' Ts)) ⊥ h_inconsis).fst) _).fst := sorry
 
 /--Given a chain and two elements from this chain, return their maximum. --/
 noncomputable def max_in_chain {α : Type} {R : α → α → Prop} {Ts : set α} {nonempty_Ts : nonempty Ts} (h_chain : chain R Ts) (S1 S2 : α) (h_S1 : S1 ∈ Ts) (h_S2 : S2 ∈ Ts) : Σ' (S : α), (S = S1 ∧ (R S2 S1 ∨ S1 = S2)) ∨ (S = S2 ∧ (R S1 S2 ∨ S1 = S2)) :=
