@@ -1,6 +1,7 @@
 /- Show that every theory can be extended to a complete theory -/
 
-import .fol order.zorn order.filter logic.basic data.finset data.set tactic.tidy
+import .fol order.zorn order.filter logic.basic data.finset data.set tactic.tidy data.list
+
 local attribute [instance, priority 0] classical.prop_decidable
 open fol
 
@@ -623,19 +624,46 @@ have witness_property := witness.property, cases witness_property with case1 cas
 exact case2,
 end
 
-@[reducible]def list_is_list_of_subtype (L : Language) (fs : list (sentence L)) -- (Hfs : {ϕ : sentence L | ϕ ∈ fs} ⊢' (⊥ : sentence L) ∧ {ϕ : sentence L | ϕ ∈ fs} ⊆ T ∪ ⋃₀(subtype.val '' Ts))
--- (dSs : Π (f : sentence L), f ∈ fs → (Σ' (S_f : Theory_over T hT), set.mem S_f Ts ∧ set.mem f (S_f.val)))
-: list ↥{f : sentence L | f ∈ fs} :=
-begin
-  induction fs,
-  exact [],
+@[reducible]def list_is_list_of_subtype (L : Language) (fs : list (sentence L))
+: Σ' xs : list ↥{f : sentence L | f ∈ fs}, ∀ f, ∀ h : f ∈ fs, (⟨f,h⟩ : ↥{f : sentence L | f ∈ fs}) ∈ xs
 
-  refine _::_,
-  split, swap, exact fs_hd, simp,
-  have : {f | f ∈ fs_tl} → {f | f ∈ list.cons fs_hd fs_tl},
-  intro f, split, swap, exact f.val, exact or.inr f.property,
-  fapply list.map this, exact fs_ih
-end
+
+-- begin
+--   induction fs, split, swap,
+--   exact [], simp,
+
+--   split, swap, refine _::_,
+--   split, swap, exact fs_hd, simp,
+--   have : {f | f ∈ fs_tl} → {f | f ∈ list.cons fs_hd fs_tl},
+--   intro f, split, swap, exact f.val, exact or.inr f.property,
+  
+--   induction fs_tl,
+--     exact [],
+--     refine _::_,
+--     refine ⟨fs_tl_hd, _⟩, finish,
+    
+    
+-- --  fapply list.map this, exact fs_ih.fst,
+  
+--   intros f hf, cases hf, fapply or.inl, simp*, fapply or.inr,
+--   have := fs_ih.snd f hf, have hf2 : f ∈ fs_tl, exact hf,
+  
+--   have : list.mem (⟨f, _⟩ : ↥{f : sentence L | f ∈ fs_tl}) (list.map (λ (f : ↥{f : sentence L | f ∈ fs_tl}), ⟨f.val, _⟩) (fs_ih.fst)) = ((⟨f, _⟩ : ↥{f : sentence L | f ∈ fs_tl}) ∈ (list.map (λ (f : ↥{f : sentence L | f ∈ fs_tl}), (⟨f.val, _⟩ : ↥{f : sentence L | f ∈ fs_tl})) (fs_ih.fst))),
+--   simp*, fapply propext, split, intro, exact this, intro, unfold has_mem.mem at this, repeat{sorry},
+  
+--   -- have : list.mem (⟨f, _⟩: ↥{f : sentence L | f ∈ fs_tl})) (list.map (λ (f : ↥{f : sentence L | f ∈ fs_tl}), (⟨f.val, _⟩ : ↥{f : sentence L | f ∈ fs_tl}))) (fs_ih.fst)) = ⟨f, _⟩ ∈ (list.map (λ (f : ↥{f : sentence L | f ∈ fs_tl}), ⟨f.val, _⟩) (fs_ih.fst)),
+
+
+--   -- fapply @list.mem_map_of_mem ↥{f : sentence L | f ∈ fs_tl} ↥{f : sentence L | f ∈ fs_tl} (λ (f : ↥{f : sentence L | f ∈ fs_tl}),
+-- --   have H := @list.mem_map_of_mem  ↥{f : sentence L | f ∈ fs_tl}  ↥{f : sentence L | f ∈ fs_tl} (λ (f : ↥{f : sentence L | f ∈ fs_tl}), ((subtype.mk f.val _) : ↥{f : sentence L | f ∈ fs_tl})) ⟨f,_⟩ fs_ih.fst this, unfold has_mem.mem at H,
+-- --   have : (⟨f, hf⟩ : ↥{f : sentence L | f ∈ fs_tl}).val = f, by refl, simp[*, -H] at H, assumption,
+  
+-- -- begin dedup, exact f_1.property end,
+
+-- --fapply list.mem_map_of_mem,
+
+
+-- end
 
 noncomputable def finite_sup_T_lemma_2 {L : Language} (T : Theory L) (hT : is_consistent T) (Ts : set (Theory_over T hT)) (hTs : nonempty Ts) (h_chain : chain Theory_over_subset Ts) (h_inconsis : T ∪ ⋃₀(subtype.val '' Ts) ⊢' (⊥ : sentence L)) (fs : list (sentence L)) (Hfs : {ϕ : sentence L | ϕ ∈ fs} ⊢' (⊥ : sentence L) ∧ {ϕ : sentence L | ϕ ∈ fs} ⊆ T ∪ ⋃₀(subtype.val '' Ts)) (dSs : Π (f : sentence L), f ∈ fs → (Σ' (S_f : Theory_over T hT), set.mem S_f Ts ∧ set.mem f (S_f.val))) :  Σ' (T_max : Theory_over T hT), T_max ∈ Ts ∧ ∀ (ψ : sentence L), ψ ∈ fs → ψ ∈ T_max.val :=
 begin
@@ -643,7 +671,7 @@ begin
     begin intro f, exact (dSs f.val f.property).fst end,
  let fs_list_subtype := list_is_list_of_subtype L fs,
  let T_list : list (Theory_over T hT) :=
-    begin fapply list.map F, exact fs_list_subtype end,
+    begin fapply list.map F, exact fs_list_subtype.fst end,
   have T_list_subset_Ts : (∀ (S : Theory_over T hT), S ∈ T_list → S ∈ Ts),
     intro S, simp, intros x h1 h2, simp[*,-h2] at h2, rw[<-h2.right],
     have := (dSs x h1).snd.left, assumption,
@@ -660,7 +688,7 @@ begin
             begin
             refine this _, simp*, fapply exists.intro, exact f, fapply exists.intro,
             exact hf, fapply and.intro, unfold has_mem.mem list.mem,
-            {sorry},
+            {apply fs_list_subtype.snd},
             {refl},
             end,
         cases so_close with case1 case2,
