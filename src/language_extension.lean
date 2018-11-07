@@ -12,7 +12,7 @@ def language_id_morphism : Π L : Language, language_morphism L L :=
 begin
   intro L, intro n, exact ⟨id, id⟩
 
-def Theory_induced {L L' : Language} (F : language_morphism L L') (T : Theory L) : Theory L' := sorry
+def Theory_induced {L L' : Language} (F : language_morphism L L') (T : Theory L) : (Theory L' : Type) := begin sorry end
 
 parameter L : Language
 

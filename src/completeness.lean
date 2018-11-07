@@ -14,10 +14,7 @@ begin
 end
 
 lemma hard_direction_completeness (L : Language) (T : Theory L) : is_consistent T → (∃ (M : Structure L), nonempty ↥M ∧ M ⊨ T) :=
-begin
-intro hT, fapply exists.intro,
 sorry
-end
 
 /- Note: in the not-easy direction, the term model of a complete Henkin theory will contain a constant witnessing "∃ x, x = x" or something like that, and so will not be empty. -/
 theorem completeness {L : Language} (T : Theory L) : is_consistent T ↔ (∃ M : Structure L, (nonempty M) ∧ M ⊨ T) :=

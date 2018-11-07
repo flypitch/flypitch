@@ -6,4 +6,7 @@ open fol
 
 #check language_morphism
 
-def henkinization {L : Language} {T : Theory L} (hT : is_consistent T) : Σ (L' : Language_over L), Theory_over (Theory_induced L'.snd T) sorry := sorry
+def henkin_Theory_over {L : Language} (T : Theory L) (hT : is_consistent T) : Type := Σ' T' : Theory_over T hT, has_enough_constants T'.val
+
+/- Given an L-theory T, return a larger language L' and a Henkin theory T' extending T viewed as an L'-theory -/
+def henkinization {L : Language} {T : Theory L} (hT : is_consistent T) : Σ (L' : Language_over L), henkin_Theory_over (Theory_induced L'.snd T) sorry := sorry
