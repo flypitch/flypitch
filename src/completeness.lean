@@ -4,36 +4,17 @@ local attribute [instance, priority 0] classical.prop_decidable
 
 open fol
 
-lemma false_of_nonempty_model_of_inconsis {L : Language} {T: Theory L} (P_inconsis : T ⊢ (⊥ : sentence L)) (M : Structure L) (hM : M ⊨ T) (h_empty : ¬ nonempty M) : false :=
+lemma easy_direction_completeness (L : Language)
+(T : Theory L) : (∃ (M : Structure L), nonempty ↥M ∧ M ⊨ T) → is_consistent T :=
 begin
-have P_exists : sprf T begin split, swap, exact ∃' (&0 ≃ &0), repeat{constructor} end,
-apply exfalso, apply P_inconsis,
-
+  intros H1 H2, cases H1 with M hM, cases hM with h_nonempty hM,
+  have inconsis : M ⊨ (⊥ : sentence L),
+    fapply soundness,
+    repeat{assumption}
 end
 
-lemma easy_direction_completeness (L : Language) (T : Theory L) : (∃ (M : Structure L), M ⊨ T) → is_consistent T :=
-begin
-  intro H,
-  have witness := @instantiate_existential (Structure L) (λ M, M ⊨ T) H begin fapply nonempty_of_exists, exact λ M, M ⊨ T, exact H end,
-  cases witness with M hM,
-  unfold all_ssatisfied_in at hM,
-  by_contra, rename a h_contra,
-  unfold is_consistent at h_contra,
-  have proof_of_false : T ⊢ (⊥ : sentence L),
-    exact dne4 h_contra,
-
-  have inconsis_model : M ⊨ (⊥ : sentence L),
-    {fapply soundness, exact T, assumption, swap, exact hM,
-      by_cases nonempty M, assumption, -- why do we need nonempty M to apply soundness?
-         sorry -- yikes
-        },
-  
-  unfold ssatisfied_in realize_formula_below at inconsis_model,
-  tidy,
-end
-
-
-theorem completeness {L : Language} (T : Theory L) : is_consistent T ↔ (∃ M : Structure L, M ⊨ T) :=
+/- Note: in the not-easy direction, the term model of a complete Henkin theory will contain a constant witnessing "∃ x, x = x" or something like that, and so will not be empty. -/
+theorem completeness {L : Language} (T : Theory L) : is_consistent T ↔ (∃ M : Structure L, (nonempty M) ∧ M ⊨ T) :=
 begin
   split, swap,
   {apply easy_direction_completeness},
