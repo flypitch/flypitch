@@ -184,32 +184,27 @@ fapply eq.mp, exact L_peano_funct 2, swap,
  exact L_peano_funct.mult, exact peano_eq_mp_h
 end
 
-
-local infix  ` +' `:100 := bounded_term_of_function L_peano_plus
-
+local infix ` +' `:100 := bounded_term_of_function L_peano_plus
 local infix ` ×' `:150 := bounded_term_of_function L_peano_mult
 
-local notation `succ`:160 := bounded_term_of_function L_peano_succ
-
+def succ {n} : bounded_term n → bounded_term n := bounded_term_of_function L_peano_succ
 def zero {n} : bounded_term n := bd_const L_peano_zero
-
 def one {n} : bounded_term n := succ zero
 
 -- #check (fol.preterm.func L_peano_funct.zero) +' (fol.preterm.func begin fapply eq.mp, exact L_peano_funct 0, swap, exact L_peano_funct.zero, exact peano_eq_mp_h end)
 
 /- for all x, zero not equal to succ x -/
 def p_zero_not_succ : sentence L_peano :=
-∀'(zero ≃ succ( &0) ⟹ ⊥)
+∀'(zero ≃ succ &0 ⟹ ⊥)
 
 def test1 := p_zero_not_succ.fst
-
 
 def p_succ_inj : sentence L_peano := ∀' ∀'(succ &1 ≃ succ &0 ⟹ &1 ≃ &0)
 
 def p_zero_is_identity : sentence L_peano := ∀'(&0 +' zero ≃ &0)
 
 /- ∀ x ∀ y,  x + succ y = succ( x + y) -/
-def p_succ_plus : sentence L_peano := ∀' ∀'(&1 +' (succ &0) ≃ succ (&1 +' &0))
+def p_succ_plus : sentence L_peano := ∀' ∀'(&1 +' succ &0 ≃ succ (&1 +' &0))
 
 /- ∀ x, x ⬝ 0 = 0 -/
 def p_zero_of_times_zero : sentence L_peano := ∀'(&0 ×' zero ≃ zero)
@@ -218,23 +213,20 @@ def p_zero_of_times_zero : sentence L_peano := ∀'(&0 ×' zero ≃ zero)
 /- ∀'∀'(app (app (func L_peano_funct.mult) &1) (app (func L_peano_funct.succ) &0) ≃
        app (app (func L_peano_funct.plus) (app (app (func L_peano_funct.mult) &1) &0)) &1)
 -/
-def p_times_succ  : sentence L_peano := ∀' ∀' (&1 ×' (succ &0) ≃ (&1 ×' &0) +' &1)
+def p_times_succ  : sentence L_peano := ∀' ∀' (&1 ×' succ &0 ≃ (&1 ×' &0) +' &1)
 
 /- The induction schema instance at ψ is the following formula (up to the fixed ordering of variables given by the de Bruijn indexing):
 
- - let k be the number of free vars of k,
+ - let k+1 be the number of free vars of ψ,
 
-return (k - 1 ∀∀s)[(ψ(...,0) ∧ ∀' (ψ → ψ(...,S(x)))) → ∀' ψ]
+return (k ∀∀s)[(ψ(...,0) ∧ ∀' (ψ → ψ(...,S(x)))) → ∀' ψ]
 -/
---ψ[succ(&0)/0]
-def p_induction_schema {n : ℕ} (ψ : bounded_formula L_peano (n+1)) : sentence L_peano := -- add a hypothesis that ψ is in formula_below k and then do k_foralls
+def p_induction_schema {n : ℕ} (ψ : bounded_formula L_peano (n+1)) : sentence L_peano :=
 bd_alls n (ψ[zero/0] ⊓ (∀' (ψ ⟹ (ψ ↑' 1 # 1)[succ &0/0])) ⟹ ∀' ψ)
-#print ⋃ 
-#print set.Union
+
 /- The theory of Peano arithmetic -/
 def PA : Theory L_peano :=
 {p_zero_not_succ, p_succ_inj, p_zero_is_identity, p_succ_plus, p_zero_of_times_zero, p_times_succ} ∪  ⋃ (n : ℕ), (λ(ψ : bounded_formula L_peano (n+1)), p_induction_schema ψ) '' set.univ
-
 
 def is_even : bounded_formula L_peano 1 :=
 ∃' (&0 +' &0 ≃ &1)
