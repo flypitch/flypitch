@@ -189,7 +189,7 @@ local notation `succ`:160 := arity_of_function L_peano_succ
 
 def zero := preterm.func L_peano_zero
 
-def one := succ (zero)
+def one := succ zero
 
 #check (fol.preterm.func L_peano_funct.zero) +' (fol.preterm.func begin fapply eq.mp, exact L_peano_funct 0, swap, exact L_peano_funct.zero, exact peano_eq_mp_h end)
 

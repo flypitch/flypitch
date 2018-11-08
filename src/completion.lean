@@ -556,7 +556,7 @@ def list_is_list_of_subtype : Π(L : Language.{u}), Π (fs : list (sentence L)),
     have ih_image := list.map F ih.fst,
     refine _::(ih_image),
     split, swap, exact hd, exact or.inl rfl,
-    intros f hf, simp*,
+    intros f hf, simp [*, -sigma.exists],
     cases hf, exact or.inl hf,
     fapply or.inr, fapply exists.intro, exact hf, exact (list_is_list_of_subtype L tl).snd f hf
   end
@@ -569,7 +569,7 @@ begin
  let T_list : list (Theory_over T hT) :=
     begin fapply list.map F, exact fs_list_subtype.fst end,
   have T_list_subset_Ts : (∀ (S : Theory_over T hT), S ∈ T_list → S ∈ Ts),
-    intro S, simp, intros x h1 h2, simp[*,-h2] at h2, rw[<-h2.right],
+    intro S, simp [-sigma.exists, -sigma.forall], intros x h1 h2, simp [*,-h2] at h2, rw[<-h2.right],
     have := (dSs x h1).snd.left, assumption,
 
   have max_of_list := max_of_list_in_chain h_chain T_list T_list_subset_Ts,
@@ -582,7 +582,7 @@ begin
           have := max_of_list.snd.right (F ⟨f, begin simpa end⟩),
           have so_close : F ⟨f, _⟩ = max_of_list.fst ∨ Theory_over_subset (F ⟨f, _⟩) (max_of_list.fst),
             begin
-            refine this _, simp*, fapply exists.intro, exact f, fapply exists.intro,
+            refine this _, simp [*, -sigma.exists], fapply exists.intro, exact f, fapply exists.intro,
             exact hf, fapply and.intro, unfold has_mem.mem list.mem,
             {apply fs_list_subtype.snd},
             {refl},
