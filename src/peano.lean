@@ -32,6 +32,10 @@ def quantifier_count_preformula {L : Language} : Π n, preformula L n → ℕ
 | 0 f := f
 | (n+1) f := ∀' alls n f
 
+@[simp] def bd_alls {L : Language}  : Π n : ℕ, bounded_formula L n → bounded_formula L 0
+| 0     f := f
+| (n+1) f := bd_alls n (∀' f)
+
 @[simp] lemma alls_0 {L : Language} (ψ : formula L) : alls 0 ψ = ψ := by refl
 
 @[simp] def b_alls_1 {L : Language} {n : ℕ} {f : formula L} (hf :  formula_below (n+1) f)  : formula_below n $ alls 1 f := begin
@@ -181,141 +185,61 @@ fapply eq.mp, exact L_peano_funct 2, swap,
 end
 
 
-local infix  ` +' `:100 := arity_of_function L_peano_plus
+local infix  ` +' `:100 := bounded_term_of_function L_peano_plus
 
-local infix ` ×' `:150 := arity_of_function L_peano_mult
+local infix ` ×' `:150 := bounded_term_of_function L_peano_mult
 
-local notation `succ`:160 := arity_of_function L_peano_succ
+local notation `succ`:160 := bounded_term_of_function L_peano_succ
 
-def zero := preterm.func L_peano_zero
+def zero {n} : bounded_term n := bd_const L_peano_zero
 
-def one := succ zero
+def one {n} : bounded_term n := succ zero
 
-#check (fol.preterm.func L_peano_funct.zero) +' (fol.preterm.func begin fapply eq.mp, exact L_peano_funct 0, swap, exact L_peano_funct.zero, exact peano_eq_mp_h end)
+-- #check (fol.preterm.func L_peano_funct.zero) +' (fol.preterm.func begin fapply eq.mp, exact L_peano_funct 0, swap, exact L_peano_funct.zero, exact peano_eq_mp_h end)
 
 /- for all x, zero not equal to succ x -/
-def p_zero_not_succ : @sentence L_peano :=
-begin
-split, swap,
-  begin
-exact ∀'(zero ≃ succ( &0) ⟹ ⊥)
-  end,
-repeat{constructor}
-end
+def p_zero_not_succ : sentence L_peano :=
+∀'(zero ≃ succ( &0) ⟹ ⊥)
 
 def test1 := p_zero_not_succ.fst
 
 
-def p_succ_inj : @sentence L_peano :=
-begin
-split,swap,
-  begin
-exact ∀'∀'(succ &1 ≃ succ &0 ⟹ &1 ≃ &0)
-  end,
-repeat{constructor}
-end
+def p_succ_inj : sentence L_peano := ∀' ∀'(succ &1 ≃ succ &0 ⟹ &1 ≃ &0)
 
-def p_zero_is_identity : @sentence L_peano :=
-begin
-split, swap,
-  begin
-exact ∀'(&0 +' zero ≃ &0)
-  end,
-repeat{constructor}
-end
+def p_zero_is_identity : sentence L_peano := ∀'(&0 +' zero ≃ &0)
 
 /- ∀ x ∀ y,  x + succ y = succ( x + y) -/
-def p_succ_plus : @sentence L_peano :=
-begin
-split, swap,
-  begin
-exact ∀'∀'(&1 +' (succ &0) ≃ succ (&1 +' &0))
-  end,
-repeat{constructor}
-end
+def p_succ_plus : sentence L_peano := ∀' ∀'(&1 +' (succ &0) ≃ succ (&1 +' &0))
 
 /- ∀ x, x ⬝ 0 = 0 -/
-def p_zero_of_times_zero : @sentence L_peano :=
-begin
-split, swap,
-  begin
-exact ∀'(&0 ×' zero ≃ zero)
-  end,
-repeat{constructor}
-end
+def p_zero_of_times_zero : sentence L_peano := ∀'(&0 ×' zero ≃ zero)
 
 /- ∀ x y, (x ⬝ succ y = (x ⬝ y) + x -/
 /- ∀'∀'(app (app (func L_peano_funct.mult) &1) (app (func L_peano_funct.succ) &0) ≃
        app (app (func L_peano_funct.plus) (app (app (func L_peano_funct.mult) &1) &0)) &1)
 -/
-def p_times_succ  : @sentence L_peano :=
-begin
-split, swap,
-  begin
-exact ∀' ∀' (&1 ×' (succ &0) ≃ (&1 ×' &0) +' &1)
-  end,
-repeat{constructor}
-end
+def p_times_succ  : sentence L_peano := ∀' ∀' (&1 ×' (succ &0) ≃ (&1 ×' &0) +' &1)
 
 /- The induction schema instance at ψ is the following formula (up to the fixed ordering of variables given by the de Bruijn indexing):
 
  - let k be the number of free vars of k,
 
-return (k - 1 ∀∀s)[(ψ(...,0) ∧ ∀' (ψ → ψ(...,S(x)))) → (k ∀∀s) ψ]
+return (k - 1 ∀∀s)[(ψ(...,0) ∧ ∀' (ψ → ψ(...,S(x)))) → ∀' ψ]
 -/
-
-def p_induction_schema (n : ℕ) (ψ : formula L_peano) (hψ : formula_below n ψ)  : @sentence L_peano := -- add a hypothesis that ψ is in formula_below k and then do k_foralls
-begin
---  let k := free_var_count 0 ψ,
-split,swap,
-
-  begin
-exact alls (n - 1) (ψ[zero//0] ⊓ (∀' (ψ ⟹ ψ[succ(&0)//0])) ⟹ (alls n ψ))
-  -- apply alls (n-1), apply imp, apply fol.and, refine ψ[_//0], apply func, exact L_peano_funct.zero, apply all, apply imp, exact ψ, refine ψ[_ //0], apply app, apply func, exact L_peano_funct.succ, exact &0, apply alls (n), exact ψ
-  end,
-  
-  apply b_alls_k,
-  repeat{constructor},
-  
-  begin
-     simp, apply b_subst, cases n, fapply formula_below_coe 0, finish, assumption,
-     simp, exact hψ, apply b_func,
-  end,
-
-  begin 
-    cases n, fapply formula_below_coe 0, repeat{constructor}, assumption, simp, assumption
-  end,
-
-  begin
-    simp, apply b_subst2, cases n, tidy, fapply formula_below_coe 0,
-    repeat{constructor}, assumption, tidy, exact hψ,
-    cases n, repeat{constructor}, simp, fapply nat.zero_lt_succ
-  end,
-
-  begin
-    apply b_alls_k, simp, cases n, tidy, assumption, tidy, fapply formula_below_coe, exact nat.succ n, simp, assumption
-  end
-end
-
+--ψ[succ(&0)/0]
+def p_induction_schema {n : ℕ} (ψ : bounded_formula L_peano (n+1)) : sentence L_peano := -- add a hypothesis that ψ is in formula_below k and then do k_foralls
+bd_alls n (ψ[zero/0] ⊓ (∀' (ψ ⟹ (ψ ↑' 1 # 1)[succ &0/0])) ⟹ ∀' ψ)
+#print ⋃ 
+#print set.Union
 /- The theory of Peano arithmetic -/
 def PA : Theory L_peano :=
-{p_zero_not_succ, p_succ_inj} ∪ {p_zero_is_identity} ∪ {p_succ_plus} ∪ {p_zero_of_times_zero} ∪{p_times_succ} ∪ begin
+{p_zero_not_succ, p_succ_inj, p_zero_is_identity, p_succ_plus, p_zero_of_times_zero, p_times_succ} ∪  ⋃ (n : ℕ), (λ(ψ : bounded_formula L_peano (n+1)), p_induction_schema ψ) '' set.univ
 
-fapply set.Union, exact ℕ, intro n,
-fapply set.image, exact Σ ψ : formula L_peano, formula_below n ψ,
-intro p, exact p_induction_schema n p.fst p.snd,
-exact λ x, true,
-end
 
-def is_even : formula L_peano :=
+def is_even : bounded_formula L_peano 1 :=
 ∃' (&0 +' &0 ≃ &1)
 
-def his_even : formula_below 1 is_even :=
-begin
-repeat{constructor},
-end
-
-def hewwo := (p_induction_schema 1 is_even his_even).fst
+def hewwo := (p_induction_schema is_even).fst
 
 end
 end peano

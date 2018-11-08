@@ -2,6 +2,12 @@ import .fol
 
 open fol
 
+/- 
+  note from Mario: we can write formulae in ZFC directly, without extending the language.
+  To encode "terms" of ZFC, we encode them as bounded_formula 1 (formulae with 1 free variable),
+  and a formula A should be interpreted as "&0 ∈ A"
+-/
+
 section zfc
 
 inductive ZFC_rel
@@ -106,7 +112,6 @@ end
 -- have := formula_below.b_falsum,
 -- assumption
 -- end
-
 
 def axiom_of_emptyset : @sentence L_ZFC' := -- for all x, x is not in the constant emptyset.
 begin

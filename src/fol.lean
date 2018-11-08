@@ -166,7 +166,7 @@ prefix `&`:max := _root_.fol.preterm.var
 @[simp] lemma apps_zero (t : term) (ts : dvector term 0) : apps t ts = t :=
 by cases ts; refl
 
-def arity_of_function {l} (f : L.functions l) : arity term term l :=
+def term_of_function {l} (f : L.functions l) : arity term term l :=
 arity.of_dvector_map $ apps (func f)
 
 /- lift_term_at _ t n m raises variables in t which are at least m by n -/
@@ -447,7 +447,7 @@ def apps_rel : ∀{l} (f : preformula l) (ts : dvector term l), formula
 @[simp] lemma apps_rel_zero (f : formula) (ts : dvector term 0) : apps_rel f ts = f :=
 by cases ts; refl
 
-def arity_of_relation {l} (R : L.relations l) : arity term formula l :=
+def formula_of_relation {l} (R : L.relations l) : arity term formula l :=
 arity.of_dvector_map $ apps_rel (rel R)
 
 def formula.rec {C : formula → Sort v}
@@ -1186,8 +1186,12 @@ def c_app {l} (t₁ : closed_preterm (l+1)) (t₂ : closed_term) : closed_preter
 | _ t []       := t
 | _ t (t'::ts) := bd_apps (bd_app t t') ts
 
-def c_apps : ∀{l}, closed_preterm l → dvector closed_term l → closed_term :=
-λl, bd_apps
+def c_apps {l} : closed_preterm l → dvector closed_term l → closed_term :=
+bd_apps
+
+def bounded_term_of_function {l n} (f : L.functions l) : 
+  arity (bounded_term n) (bounded_term n) l :=
+arity.of_dvector_map $ bd_apps (bd_func f)
 
 def bounded_preterm.rec {n} {C : Πl, bounded_preterm n l → Sort v}
   (Hvar : Πk, C 0 &k)
@@ -1358,6 +1362,22 @@ lemma realize_formula_below_eq {S : Structure} : ∀{n} {v₁ : dvector S n} {v�
     apply subst_fin_realize_eq hv
   end
 
+def formula_below_lift : ∀{n} (n' m) {l} {f : preformula l} (hf : formula_below n f), 
+  formula_below (n + n') (f ↑' n' # m)
+| n n' m _ _ b_falsum                 := b_falsum
+| n n' m _ _ (b_equal' t₁ t₂ ht₁ ht₂) := 
+  b_equal (term_below_lift n' m ht₁) (term_below_lift n' m ht₂)
+| n n' m _ _ (b_rel R)                := b_rel R
+| n n' m _ _ (b_apprel' f t hf ht)    := 
+  b_apprel (formula_below_lift n' m hf) (term_below_lift n' m ht)
+| n n' m _ _ (b_imp' f g hf hg)       := 
+  b_imp (formula_below_lift n' m hf) (formula_below_lift n' m hg)
+| n n' m _ _ (b_all' f hf)            := 
+  begin 
+    apply b_all, refine cast _ (@formula_below_lift (n+1) n' (m+1) 0 f (cast _ hf));
+      simp only [add_comm, add_left_comm, eq_self_iff_true]
+  end
+
 def formula_below_subst : ∀{n n' l} {f : preformula l} (hf : formula_below (n+n'+1) f) 
   {s : term} (hs : term_below n' s), formula_below (n+n') (f[s // n])
 | n n' _ _ b_falsum                 s hs := b_falsum
@@ -1506,6 +1526,10 @@ by cases ts; refl
 @[simp] def s_apps_rel {l} (f : presentence l) (ts : dvector closed_term l) : sentence :=
 bd_apps_rel f ts
 
+def bounded_formula_of_relation {l n} (f : L.relations l) : 
+  arity (bounded_term n) (bounded_formula n) l :=
+arity.of_dvector_map $ bd_apps_rel (bd_rel f)
+
 def bounded_preformula.rec {C : Πn l, bounded_preformula n l → Sort v}
   (H0 : Π {n}, C n 0 ⊥)
   (H1 : Π {n} (t₁ t₂ : bounded_term n), C n 0 (t₁ ≃ t₂))
@@ -1541,6 +1565,20 @@ begin
   exact himp (ih₁ ([])) (ih₂ ([])), exact hall (ih ([]))
 end,
 h f ([])
+
+
+def lift_bounded_formula_at {n' l} (f : bounded_preformula n' l) (n m : ℕ) : 
+  bounded_preformula (n'+n) l :=
+⟨f.fst ↑' n # m, formula_below_lift n m f.snd⟩
+notation t ` ↑' `:90 n ` # `:90 m:90 := _root_.fol.lift_bounded_formula_at t n m -- input ↑ with \u or \upa
+
+@[reducible] def lift_bounded_formula {n' l} (f : bounded_preformula n' l) (n : ℕ) : 
+  bounded_preformula (n'+n) l := 
+f ↑' n # 0
+infix ` ↑ `:100 := _root_.fol.lift_bounded_formula -- input ↑' with \u or \upa
+@[reducible, simp] def lift_bounded_formula1 {n' l} (f : bounded_preformula n' l) : 
+  bounded_preformula (n'+1) l := 
+f ↑ 1
 
 def substmax_bounded_formula {n l} (f : bounded_preformula (n+1) l) (t : closed_term) :
   bounded_preformula n l :=
@@ -2155,31 +2193,5 @@ true_arithmetic := (ℕ, +, ⬝, 0, 1)
 -/
 
 end
-
-structure Lhom (L L' : Language) :=
-(on_functions : ∀{n}, L.functions n → L'.functions n) 
-(on_relations : ∀{n}, L.relations n → L'.relations n)
-
-local infix ` →ᴸ `:10 := Lhom -- \^L
-
-namespace Lhom
-
-variables {L : Language} {L' : Language} (ϕ : L →ᴸ L')
-
-protected def on_terms : ∀{l}, preterm L l → preterm L' l
-| _ &k          := &k
-| _ (func f)    := func $ ϕ.on_functions f
-| _ (app t₁ t₂) := app (on_terms t₁) (on_terms t₂)
-
-protected def on_formulae : ∀{l}, preformula L l → preformula L' l
-| _ falsum       := falsum
-| _ (t₁ ≃ t₂)    := ϕ.on_terms t₁ ≃ ϕ.on_terms t₂
-| _ (rel R)      := rel $ ϕ.on_relations R
-| _ (apprel f t) := apprel (on_formulae f) $ ϕ.on_terms t
-| _ (f₁ ⟹ f₂)   := on_formulae f₁ ⟹ on_formulae f₂
-| _ (∀' f)       := ∀' on_formulae f
-
-end Lhom
-
 
 end fol
