@@ -9,7 +9,7 @@
 import .to_mathlib tactic.squeeze data.quot
 
 open nat set
-universe variable u
+universe variables u v
 
 local notation h :: t  := dvector.cons h t
 local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`:0) := l
@@ -138,17 +138,17 @@ end
   S → (S → ... → (S → Prop)...)
   with n occurrences of S. If S : Type u, then this type lives in `Type u` for n ≥ 1 and in Type 0 for n = 0, which is super inconvenient/impossible to work with
 -/
-structure Language : Type 2 := 
-(functions : ℕ → Type) (relations : ℕ → Type)
+structure Language : Type (u+1) := 
+(functions : ℕ → Type u) (relations : ℕ → Type u)
 
 def Language.constants (L : Language) := L.functions 0
 section
-parameter (L : Language)
+parameter (L : Language.{u})
 
 /- preterm l is a partially applied term. if applied to n terms, it becomes a term.
 * Every element of preterm 0 is well typed. 
 * We use this encoding to avoid mutual or nested inductive types, since those are not too convenient to work with in Lean. -/
-inductive preterm : ℕ → Type
+inductive preterm : ℕ → Type u
 | var {} : ∀ (k : ℕ), preterm 0
 | func : ∀ {l : ℕ} (f : L.functions l), preterm l
 | app : ∀ {l : ℕ} (t : preterm (l + 1)) (s : preterm 0), preterm l
@@ -414,7 +414,7 @@ subst_is_lift : (forall N T A n j, N [n ← T]=A↑' 1#j->j<n->exists M,N=M↑' 
   * We could make `falsum` and `equal` into elements of rel. However, if we do that, then we cannot make the interpretation of them in a model definitionally what we want.
 -/
 parameter (L)
-inductive preformula : ℕ → Type
+inductive preformula : ℕ → Type u
 | falsum {} : preformula 0
 | equal (t₁ t₂ : term) : preformula 0
 | rel {l : ℕ} (R : L.relations l) : preformula l
@@ -648,7 +648,7 @@ by cases f; refl
 * We use natural deduction as our deduction system, since that is most convenient to work with.
 * All rules are motivated to work well with backwards reasoning.
 -/
-inductive prf : set formula → formula → Type
+inductive prf : set formula → formula → Type u
 | axm     : ∀{Γ A}, A ∈ Γ → prf Γ A
 | impI    : ∀{Γ : set formula} {A B}, prf (insert A Γ) B → prf Γ (A ⟹ B)
 | impE    : ∀{Γ} (A) {B}, prf Γ (A ⟹ B) → prf Γ A → prf Γ B
@@ -857,7 +857,7 @@ begin
   apply andE1 _ H₁, apply andE1 _ H₂, apply andE2 _ H₂, apply andE2 _ H₁
 end
 
-def equal_preterms (T : set formula) {l} (t₁ t₂ : preterm l) : Type :=
+def equal_preterms (T : set formula) {l} (t₁ t₂ : preterm l) : Type u :=
 ∀(ts : dvector term l), T ⊢ apps t₁ ts ≃ apps t₂ ts
 
 def equal_preterms_app {T : set formula} {l} {t t' : preterm (l+1)} {s s' : term} 
@@ -873,7 +873,7 @@ end
 @[refl] def equal_preterms_refl (T : set formula) {l} (t : preterm l) : equal_preterms T t t :=
 λxs, refl T (apps t xs)
 
-def equiv_preformulae (T : set formula) {l} (f₁ f₂ : preformula l) : Type :=
+def equiv_preformulae (T : set formula) {l} (f₁ f₂ : preformula l) : Type u :=
 ∀(ts : dvector term l), T ⊢ apps_rel f₁ ts ⇔ apps_rel f₂ ts
 
 def equiv_preformulae_apprel {T : set formula} {l} {f f' : preformula (l+1)} {s s' : term} 
@@ -897,12 +897,12 @@ end
 /- an L-structure is a type S with interpretations of the functions and relations on S -/
 parameter (L)
 structure Structure :=
-(carrier : Type) 
+(carrier : Type u) 
 (fun_map : ∀{n}, L.functions n → dvector carrier n → carrier)
 (rel_map : ∀{n}, L.relations n → dvector carrier n → Prop) 
 parameter {L}
 instance has_coe_Structure : has_coe_to_sort (@_root_.fol.Structure L) :=
-⟨Type, Structure.carrier⟩
+⟨Type u, Structure.carrier⟩
 
 /- realization of terms -/
 @[simp] def realize_term {S : Structure} (v : ℕ → S) : 
@@ -1046,7 +1046,7 @@ begin
 end
 
 /- sentences and theories -/
-inductive term_below (n : ℕ) : ∀{l}, preterm l → Type
+inductive term_below (n : ℕ) : ∀{l}, preterm l → Type u
 | b_var' (k) (hk : k < n) : term_below &k
 | b_func {} {l} (f : L.functions l) : term_below (func f)
 | b_app' {l} (t₁ : preterm (l+1)) (t₂ : term) (ht₁ : term_below t₁) (ht₂ : term_below t₂) : 
@@ -1175,7 +1175,7 @@ def c_app {l} (t₁ : closed_preterm (l+1)) (t₂ : closed_term) : closed_preter
 def c_apps : ∀{l}, closed_preterm l → dvector closed_term l → closed_term :=
 λl, bd_apps
 
-def bounded_preterm.rec {n} {C : Πl, bounded_preterm n l → Sort u}
+def bounded_preterm.rec {n} {C : Πl, bounded_preterm n l → Sort v}
   (Hvar : Πk, C 0 &k)
   (Hfun : Π {l} (f : L.functions l), C l (bd_func f))
   (Happ : Π {l} {t : bounded_preterm n (l+1)} {s : bounded_term n} (ih_t : C (l+1) t) 
@@ -1265,7 +1265,7 @@ end
 --   (v : dvector (bounded_term n') n) : bounded_preterm n' l :=
 -- substitute_term_below v t.snd
 
-inductive formula_below : ∀{l}, ℕ → preformula l → Type
+inductive formula_below : ∀{l}, ℕ → preformula l → Type u
 | b_falsum {n} : formula_below n falsum
 | b_equal' {n} (t₁ t₂) (ht₁ : term_below n t₁) (ht₂ : term_below n t₂) : 
     formula_below n (t₁ ≃ t₂)
@@ -1480,7 +1480,7 @@ def s_biimp (f₁ f₂ : sentence) : sentence := f₁ ⇔ f₂
 def s_all (f : bounded_formula 1) : sentence := ∀' f
 def s_ex (f : bounded_formula 1) : sentence := ∃' f
 
-def bounded_preformula.rec {C : Πn l, bounded_preformula n l → Sort u}
+def bounded_preformula.rec {C : Πn l, bounded_preformula n l → Sort v}
   (H0 : Π {n}, C n 0 ⊥)
   (H1 : Π {n} (a a_1 : bounded_term n), C n 0 (a ≃ a_1))
   (H2 : Π {n l : ℕ} (R : L.relations l), C n l (bd_rel R))
@@ -1877,7 +1877,7 @@ def term_setoid : setoid closed_term :=
 ⟨term_rel, λt, ⟨refl _ _⟩, λt t' H, H.map symm, λt₁ t₂ t₃ H₁ H₂, H₁.map2 trans H₂⟩
 local attribute [instance] term_setoid
 
-def term_model' : Type :=
+def term_model' : Type u :=
 quotient term_setoid
 -- set_option pp.all true
 -- #print term_setoid
@@ -2099,7 +2099,7 @@ true_arithmetic := (ℕ, +, ⬝, 0, 1)
 
 end
 
-structure Lhom (L L' : Language) : Type :=
+structure Lhom (L L' : Language) :=
 (on_functions : ∀{n}, L.functions n → L'.functions n) 
 (on_relations : ∀{n}, L.relations n → L'.relations n)
 
@@ -2107,7 +2107,7 @@ local infix ` →ᴸ `:10 := Lhom -- \^L
 
 namespace Lhom
 
-variables {L L' : Language} (ϕ : L →ᴸ L')
+variables {L : Language} {L' : Language} (ϕ : L →ᴸ L')
 
 protected def on_terms : ∀{l}, preterm L l → preterm L' l
 | _ &k          := &k

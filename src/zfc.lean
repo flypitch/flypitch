@@ -16,7 +16,7 @@ exact empty},
 exact if arityr = 2 then ZFC_rel else empty},
 end
 
-#print L_ZFC -- good
+-- #print L_ZFC -- good
 
 
 inductive ZFC'_f0 : Type

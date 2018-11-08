@@ -180,7 +180,7 @@ end
 instance setoid [setoid α] : setoid (dvector α n) :=
 ⟨dvector.rel, dvector.rel_refl, dvector.rel_symm, dvector.rel_trans⟩
 
-def quotient_lift {α β : Type u} {R : setoid α} : ∀{n} (f : dvector α n → β) 
+def quotient_lift {α : Type u} {β : Sort v} {R : setoid α} : ∀{n} (f : dvector α n → β) 
   (h : ∀{{xs xs'}}, xs ≈ xs' → f xs = f xs') (xs : dvector (quotient R) n), β
 | _     f h []      := f ([])
 | (n+1) f h (x::xs) := 
@@ -190,7 +190,7 @@ def quotient_lift {α β : Type u} {R : setoid α} : ∀{n} (f : dvector α n �
     intros x x' hx, dsimp, congr, apply funext, intro xs, apply h, exact rcons hx xs.rel_refl
   end
 
-def quotient_beta {α β : Type u} {R : setoid α} {n} (f : dvector α n → β) 
+def quotient_beta {α : Type u} {β : Sort v} {R : setoid α} {n} (f : dvector α n → β) 
   (h : ∀{{xs xs'}}, xs ≈ xs' → f xs = f xs') (xs : dvector α n) :
   (xs.map quotient.mk).quotient_lift f h = f xs :=
 begin

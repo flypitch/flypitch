@@ -5,8 +5,9 @@ import .fol order.zorn order.filter logic.basic data.finset data.set tactic.tidy
 local attribute [instance, priority 0] classical.prop_decidable
 open fol
 
+universe variables u v
 section
-parameter L : Language
+parameter L : Language.{u}
 
 lemma dne {p : Prop} (H : ¬¬p) : p := --- from TPIL, is this elsewhere?
 classical.by_contradiction H
@@ -44,7 +45,7 @@ apply X.property,
 exact h
 end
 
-noncomputable lemma dne4 {α : Type} (h : ¬(α → false)) : α :=
+noncomputable lemma dne4 {α : Type u} (h : ¬(α → false)) : α :=
 begin
 by_cases nonempty α,
 exact classical.choice h,
@@ -72,7 +73,7 @@ exact hc_dos.map2 (impE _) hc_uno
 end
 
 /- Given a consistent theory T and sentence ψ, return whichever one of T ∪ ψ or T ∪ ∼ ψ is consistent.  We will need `extend` to show that the maximal theory given by Zorn's lemma is complete. -/
-noncomputable def extend {L : Language} (T : Theory L) (ψ : sentence L) (h : is_consistent T) : Σ' T : Theory L, is_consistent T :=
+noncomputable def extend {L : Language.{u}} (T : Theory L) (ψ : sentence L) (h : is_consistent T) : Σ' T : Theory L, is_consistent T :=
 dite (is_consistent $ T ∪ {ψ}) -- dependent if
      begin intro h1, exact psigma.mk (T ∪ {ψ}) h1 end -- then
      begin intro, have := can_extend T ψ h, rename this that, --else
@@ -88,13 +89,13 @@ Now, we have to show that given an arbitrary chain in this poset, we can obtain 
 -/
 
 open zorn
-private lemma ex_coe {α : Type} (P : α → Prop) : (∃ x, P x) → (∃ x : α, true)
+private lemma ex_coe {α : Type u} (P : α → Prop) : (∃ x, P x) → (∃ x : α, true)
 | ⟨a, b⟩ := ⟨a, trivial⟩
 
 /- Given a set of theories and a proof that they form a chain under set-inclusion, return their union and a proof that this contains every theory in the chain
 -/
 
-lemma subset_is_transitive {α : Type} : ∀ a b c : set α, a ⊆ b → b ⊆ c → a ⊆ c :=
+lemma subset_is_transitive {α : Type u} : ∀ a b c : set α, a ⊆ b → b ⊆ c → a ⊆ c :=
 begin intros a b c, intro a_sub_b, intro b_sub_c,
     intro,
     intro,
@@ -103,14 +104,14 @@ begin intros a b c, intro a_sub_b, intro b_sub_c,
     assumption
 end
 
-private def subset_is_transitive_map {α : Type} (a b c : set α) (h_ab : a ⊆ b) (h_bc : b ⊆ c) (x : α) (h : x ∈ a) : (x ∈ c) :=
+private def subset_is_transitive_map {α : Type u} (a b c : set α) (h_ab : a ⊆ b) (h_bc : b ⊆ c) (x : α) (h : x ∈ a) : (x ∈ c) :=
 begin
 rename h x_in_a,
 have := subset_is_transitive a b c h_ab h_bc,
 have := this x_in_a, assumption
 end
 
-lemma nonempty_of_not_empty {α : Type} (a : set α) (h : ¬ a = ∅) : nonempty a :=
+lemma nonempty_of_not_empty {α : Type u} (a : set α) (h : ¬ a = ∅) : nonempty a :=
 begin
   simp*,
   by_contra,
@@ -127,7 +128,8 @@ begin
   contradiction
 end
 
-def Theory_over {L : Language} (T : Theory L) (hT : is_consistent T): Type := {T' : Theory L // T ⊆ T' ∧ is_consistent T'}
+def Theory_over {L : Language.{u}} (T : Theory L) (hT : is_consistent T): Type u := 
+{T' : Theory L // T ⊆ T' ∧ is_consistent T'}
 
 /- Every theory T is trivially a theory over itself -/
 def over_self {L : Language} (T : Theory L) (hT : is_consistent T): Theory_over T hT:=
@@ -135,7 +137,7 @@ def over_self {L : Language} (T : Theory L) (hT : is_consistent T): Theory_over 
 
 
 
-def Theory_over_subset {L : Language} {T : Theory L} {hT : is_consistent T} : Theory_over T hT → Theory_over T hT→ Prop
+def Theory_over_subset {L : Language.{u}} {T : Theory L} {hT : is_consistent T} : Theory_over T hT → Theory_over T hT→ Prop
 := λ T1 T2, T1.val ⊆ T2.val
 
 instance {T : Theory L} {hT : is_consistent T} : has_subset (Theory_over T hT) := ⟨Theory_over_subset⟩
@@ -148,13 +150,13 @@ return their union and a proof that this contains every theory in the chain
 
 /-- Given T ⊢ ψ, return the finite context from T required to prove ψ, a proof of that, and a proof that the finite conte
 xt was a subset of T --/
-def finsubset {α : Type} (S : set α) := Σ' Γ : finset α, {γ | γ ∈ Γ} ⊆ S
+def finsubset {α : Type u} (S : set α) := Σ' Γ : finset α, {γ | γ ∈ Γ} ⊆ S
 
 -- def proof_formula_finite_support : ∀{L}, ∀{T : set $ formula L}, ∀{ψ : formula L}, Π proof : prf T ψ, Σ Γ : finsubset T, prf {γ | γ ∈ Γ.fst} ψ
 -- | L T falsum proof := begin destruct proof, introv, intros h1 h2 h3, simp*, split, swap, split, swap, exact {falsum}, have : falsum ∈ T, rw[h1, h2], assumption, intro ele, intro h_ele, cases h_ele, finish, cases h_ele, apply exfalso, apply axm, simp, introv, intros h1 h2 h3, cases h2, introv, intros h1 h2 h3, split, swap, split, swap, exact (proof_formula_finite_support a).fst.fst ∪ (proof_formula_finite_support a_1).fst.fst, simp*, intro, intro, cases a_3,  repeat{sorry} end -- yuck
 
 /- A simple consequence of weakening, needed for recursion below  -/
-lemma weakening' {L : Language} {S_1 S_2 : set $ formula L} {ψ_1 ψ_2 : formula L} (p1 : S_1 ⊢ ψ_1) (p2 : S_2 ⊢ ψ_2) : (S_1 ∪ S_2 ⊢ ψ_1) × (S_1 ∪ S_2 ⊢ ψ_2) :=
+lemma weakening' {L : Language.{u}} {S_1 S_2 : set $ formula L} {ψ_1 ψ_2 : formula L} (p1 : S_1 ⊢ ψ_1) (p2 : S_2 ⊢ ψ_2) : (S_1 ∪ S_2 ⊢ ψ_1) × (S_1 ∪ S_2 ⊢ ψ_2) :=
   begin
     split, fapply @weakening L S_1 (S_1 ∪ S_2), simpa,
     fapply @weakening L S_2 (S_1 ∪ S_2), simpa,
@@ -165,7 +167,7 @@ lemma weakening' {L : Language} {S_1 S_2 : set $ formula L} {ψ_1 ψ_2 : formula
 Annoyingly, I seem to need this to handle impI case below.
 -/
 
-noncomputable def list_except {α : Type} (xs : list α) (x : α) (T : set α) (h : ∀ y ∈ xs, y ≠ x → y ∈ T) : Σ' ys : list α, ({ϕ | ϕ ∈ ys} ⊆ T ∧ (∀ y ∈ ys, y ≠ x)) ∧ (∀ y ∈ xs, y ≠ x → y ∈ ys) :=
+noncomputable def list_except {α : Type u} (xs : list α) (x : α) (T : set α) (h : ∀ y ∈ xs, y ≠ x → y ∈ T) : Σ' ys : list α, ({ϕ | ϕ ∈ ys} ⊆ T ∧ (∀ y ∈ ys, y ≠ x)) ∧ (∀ y ∈ xs, y ≠ x → y ∈ ys) :=
 begin
   induction xs generalizing h,
     split, swap, exact list.nil, simp,
@@ -206,7 +208,7 @@ end
 
 /- Couldn't find this def in set.basic... sure it's around somewhere-/
 /-- Given x ∈ f '' S, choose a lift x' in the preimage of x; return x' and a proof that x' is a lift --/
-noncomputable def image_lift {α β : Type} {f : α → β} {S : set α} (x ∈ f '' S) : Σ' (x' : α), x' ∈ S ∧ f x' = x :=
+noncomputable def image_lift {α : Type u} {β : Type v} {f : α → β} {S : set α} (x ∈ f '' S) : Σ' (x' : α), x' ∈ S ∧ f x' = x :=
 begin
   simp[*,-H] at H,
   have := strong_indefinite_description, swap, exact α,
@@ -217,7 +219,7 @@ begin
 end
 
 /-- Given a list xs : list β, a set S : set α, a proof that {x | x ∈ xs} ⊆ f '' S, return a list of lifts ys : list α, a proof that ys ⊆ S and a proof that f '' ys = xs --/
-noncomputable def image_lift_list {α β : Type} {f : α → β} {S : set α} {xs : list β} (h_sub : {x | x ∈ xs} ⊆ f '' S) : Σ' (ys : list α), ({y' | y' ∈ ys} ⊆ S) ∧ f '' {y | y ∈ ys} = {x | x ∈ xs} :=
+noncomputable def image_lift_list {α : Type u} {β : Type v} {f : α → β} {S : set α} {xs : list β} (h_sub : {x | x ∈ xs} ⊆ f '' S) : Σ' (ys : list α), ({y' | y' ∈ ys} ⊆ S) ∧ f '' {y | y ∈ ys} = {x | x ∈ xs} :=
 begin
   induction xs generalizing h_sub,
     split, swap,
@@ -282,7 +284,7 @@ end
 
 set_option eqn_compiler.lemmas false
 
-noncomputable def proof_compactness {L : Language} : Π {ψ : formula L}, Π {T : set $ formula L},  Π (pψ : T ⊢ ψ), Σ Γ : list (formula L), Σ' p : {ϕ : formula L | ϕ ∈ Γ} ⊢ ψ, {ϕ : formula L | ϕ ∈ Γ} ⊆ T
+noncomputable def proof_compactness {L : Language.{u}} : Π {ψ : formula L}, Π {T : set $ formula L},  Π (pψ : T ⊢ ψ), Σ Γ : list (formula L), Σ' p : {ϕ : formula L | ϕ ∈ Γ} ⊢ ψ, {ϕ : formula L | ϕ ∈ Γ} ⊆ T
 | ψ T (axm a) := begin split, swap, exact [ψ],have : {ϕ : formula L | ϕ ∈ [ψ]} = {ψ},
                    by refl, split, rw[this],
                    fapply axm, simp, rw[this], simp, exact a
@@ -424,7 +426,7 @@ assumption
 end
 
 /- Given a chain of sets with nonempty union, conclude that the chain is nonempty-/
-def nonempty_chain_of_nonempty_union {α : Type} {A_i : set $ set α} {h_chain : chain set.subset A_i} (h : nonempty $ set.sUnion A_i) : nonempty A_i :=
+def nonempty_chain_of_nonempty_union {α : Type u} {A_i : set $ set α} {h_chain : chain set.subset A_i} (h : nonempty $ set.sUnion A_i) : nonempty A_i :=
 begin
 have a := classical.choice h,
 cases a with a_val a_property, unfold set.sUnion at a_property, simp at a_property,
@@ -432,7 +434,7 @@ cases a_property with A hA, simp, fapply exists.intro, exact A, exact hA.left
 end
 
 /- Given two elements in a chain of sets over T, their union over T is in the chain -/
-lemma in_chain_of_union {α : Type} (T : set α) (A_i : set $ set α) (h_chain : chain set.subset A_i) (as : list A_i) (h_over_T : ∀ A ∈ A_i, T ⊆ A) (A1 A2 ∈ A_i) : A1 ∪ A2 = A1 ∨ A1 ∪ A2 = A2 :=
+lemma in_chain_of_union {α : Type u} (T : set α) (A_i : set $ set α) (h_chain : chain set.subset A_i) (as : list A_i) (h_over_T : ∀ A ∈ A_i, T ⊆ A) (A1 A2 ∈ A_i) : A1 ∪ A2 = A1 ∨ A1 ∪ A2 = A2 :=
 begin
 dedup,
 unfold has_union.union set.union has_mem.mem set.mem,
@@ -450,7 +452,7 @@ intro h3x, apply or.inl, assumption}
 end
 
 /--Given a chain and two elements from this chain, return their maximum. --/
-noncomputable def max_in_chain {α : Type} {R : α → α → Prop} {Ts : set α} {nonempty_Ts : nonempty Ts} (h_chain : chain R Ts) (S1 S2 : α) (h_S1 : S1 ∈ Ts) (h_S2 : S2 ∈ Ts) : Σ' (S : α), (S = S1 ∧ (R S2 S1 ∨ S1 = S2)) ∨ (S = S2 ∧ (R S1 S2 ∨ S1 = S2)) :=
+noncomputable def max_in_chain {α : Type u} {R : α → α → Prop} {Ts : set α} {nonempty_Ts : nonempty Ts} (h_chain : chain R Ts) (S1 S2 : α) (h_S1 : S1 ∈ Ts) (h_S2 : S2 ∈ Ts) : Σ' (S : α), (S = S1 ∧ (R S2 S1 ∨ S1 = S2)) ∨ (S = S2 ∧ (R S1 S2 ∨ S1 = S2)) :=
 begin
   unfold chain set.pairwise_on at h_chain,
   have := h_chain S1 h_S1 S2 h_S2,
@@ -467,7 +469,7 @@ begin
 end
 
 /--Given a nonempty chain under a transitive relation and a list of elements from this chain, return an upper bound, with the maximum of the empty list defined to be the witness to the nonempty --/
-noncomputable def max_of_list_in_chain {α : Type} {R : α → α → Prop} {trans : ∀{a b c}, R a b → R b c → R a c} {Ts : set α} {nonempty_Ts : nonempty Ts} (h_chain : chain R Ts) (Ss : list α) -- {nonempty_Ss : nonempty {S | S ∈ Ss}}
+noncomputable def max_of_list_in_chain {α : Type u} {R : α → α → Prop} {trans : ∀{a b c}, R a b → R b c → R a c} {Ts : set α} {nonempty_Ts : nonempty Ts} (h_chain : chain R Ts) (Ss : list α) -- {nonempty_Ss : nonempty {S | S ∈ Ss}}
 (h_fs : ∀ S ∈ Ss, S ∈ Ts) : Σ' (S : α), S ∈ Ts ∧ (∀ S' ∈ Ss, S' = S ∨ R S' S) :=
 begin
   tactic.unfreeze_local_instances,
@@ -543,7 +545,7 @@ have witness_property := witness.property, cases witness_property with case1 cas
 exact case2,
 end
 
-def list_is_list_of_subtype : Π(L : Language), Π (fs : list (sentence L)),  Σ' xs : list ↥{f : sentence L | f ∈ fs}, ∀ f, ∀ h : f ∈ fs, (⟨f,h⟩ : ↥{f : sentence L | f ∈ fs}) ∈ xs
+def list_is_list_of_subtype : Π(L : Language.{u}), Π (fs : list (sentence L)),  Σ' xs : list ↥{f : sentence L | f ∈ fs}, ∀ f, ∀ h : f ∈ fs, (⟨f,h⟩ : ↥{f : sentence L | f ∈ fs}) ∈ xs
 | L [] := begin simp*,  split, exact [], trivial end
 | L (list.cons hd tl) :=
   begin
@@ -656,7 +658,7 @@ apply exists.intro, swap, exact hψ, simp*, exact T'.property
 end
 
 /- Given a theory T, show that the poset of theories over T satisfies the hypotheses of Zorn's lemma -/
-lemma can_use_zorn2 {L : Language} {T : Theory L} {hT : is_consistent T}  : (∀c, @chain (Theory_over T hT) Theory_over_subset c → ∃ub, ∀a∈c, a ⊆ ub) ∧ (∀(a b c : Theory_over T hT), a ⊆ b → b ⊆ c → a ⊆ c) :=
+lemma can_use_zorn2 {L : Language.{u}} {T : Theory L} {hT : is_consistent T}  : (∀c, @chain (Theory_over T hT) Theory_over_subset c → ∃ub, ∀a∈c, a ⊆ ub) ∧ (∀(a b c : Theory_over T hT), a ⊆ b → b ⊆ c → a ⊆ c) :=
 begin
   split,
   intro Ts, intro h_chain, let S := limit_theory2 Ts h_chain,
@@ -681,7 +683,8 @@ end
 
 
 /- Given a consistent theory T, return a maximal extension of it given by Zorn's lemma, along with the proof that it is consistent and maximal -/
-noncomputable def maximal_extension2 (L : Language) (T : Theory L) (hT : is_consistent T)  : Σ' (T_max : Theory_over T hT), ∀ T' : Theory_over T hT, T_max ⊆ T' → T' ⊆ T_max :=
+noncomputable def maximal_extension2 (L : Language.{u}) (T : Theory L) (hT : is_consistent T) : 
+  Σ' (T_max : Theory_over T hT), ∀ T' : Theory_over T hT, T_max ⊆ T' → T' ⊆ T_max :=
 begin
 let X := strong_indefinite_description (λ T_max : Theory_over T hT, ∀ T' : Theory_over T hT, T_max ⊆ T' → T' ⊆ T_max ) begin apply_instance end,
 have := @can_use_zorn2 L T, rename this h_can_use,
