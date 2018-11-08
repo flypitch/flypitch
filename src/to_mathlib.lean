@@ -287,6 +287,10 @@ def arity_constant {α β : Type u} : ∀{n : ℕ}, β → arity α β n
 | 0     b := b
 | (n+1) b := λ_, arity_constant b
 
+@[simp] def of_dvector_map {α β : Type u} : ∀{l} (f : dvector α l → β), arity α β l
+| 0     f := f ([])
+| (l+1) f := λx, of_dvector_map $ λxs, f $ x::xs
+
 @[simp] def arity_app {α β : Type u} : ∀{l}, arity α β l → dvector α l → β
 | _ b []      := b
 | _ f (x::xs) := arity_app (f x) xs

@@ -126,7 +126,7 @@ have P := @formula_below_subst L 0 n 0 f begin simp, exact hf end t,
 have t' : term_below n t,
   fapply term_below_coe,
   exact 0,
-  finish,
+  exact n.zero_le,
   exact ht,
 have Q := P t',
 simp at Q, assumption
@@ -181,11 +181,11 @@ fapply eq.mp, exact L_peano_funct 2, swap,
 end
 
 
-infix  ` +' `:100 := arity_of_preterm (_root_.fol.preterm.func _root_.peano.L_peano_plus)
+local infix  ` +' `:100 := arity_of_function L_peano_plus
 
-infix ` ×' `:150 := arity_of_preterm (_root_.fol.preterm.func _root_.peano.L_peano_mult)
+local infix ` ×' `:150 := arity_of_function L_peano_mult
 
-prefix ` succ `:160 := arity_of_preterm (_root_.fol.preterm.func _root_.peano.L_peano_succ)
+local notation `succ`:160 := arity_of_function L_peano_succ
 
 def zero := preterm.func L_peano_zero
 

@@ -146,8 +146,8 @@ end
 
 -- etc
 
-inductive ZFC' : (@sentence L_ZFC') → Prop -- should this be Type-valued instead?
-:= sorry
+-- inductive ZFC' : (@sentence L_ZFC') → Prop -- should this be Type-valued instead?
+-- := sorry
 
 end zfc
 

@@ -166,6 +166,9 @@ prefix `&`:max := _root_.fol.preterm.var
 @[simp] lemma apps_zero (t : term) (ts : dvector term 0) : apps t ts = t :=
 by cases ts; refl
 
+def arity_of_function {l} (f : L.functions l) : arity term term l :=
+arity.of_dvector_map $ apps (func f)
+
 /- lift_term_at _ t n m raises variables in t which are at least m by n -/
 @[simp] def lift_term_at : ∀ {l}, preterm l → ℕ → ℕ → preterm l
 | _ &k          n m := if m ≤ k then &(k+n) else &k
@@ -443,6 +446,9 @@ def apps_rel : ∀{l} (f : preformula l) (ts : dvector term l), formula
 
 @[simp] lemma apps_rel_zero (f : formula) (ts : dvector term 0) : apps_rel f ts = f :=
 by cases ts; refl
+
+def arity_of_relation {l} (R : L.relations l) : arity term formula l :=
+arity.of_dvector_map $ apps_rel (rel R)
 
 @[simp] def lift_formula_at : ∀ {l}, preformula l → ℕ → ℕ → preformula l
 | _ falsum       n m := falsum

@@ -9,9 +9,7 @@ section
 parameter L : Language
 
 lemma dne {p : Prop} (H : ¬¬p) : p := --- from TPIL, is this elsewhere?
-                  or.elim (classical.em p)
-                  (assume Hp : p, Hp)
-                  (assume Hnp : ¬p, absurd Hnp H)
+classical.by_contradiction H
 
 @[reducible] lemma dne2 {p : Prop} : p = ¬ ¬ p :=
 begin
@@ -65,17 +63,12 @@ by_contra,
 rename a hc,
 rw[not_or_distrib] at hc,
 cases hc with hc1 hc2,
-apply h,
-have hc_uno : T ⊢  ψ ⟹ s_falsum,
-  fapply simpI, fapply dne4, assumption,
-  have hc_ein := @not.elim _ false hc1,
-have hc_dos : T ⊢ ∼ψ ⟹ s_falsum,
-  fapply simpI, fapply dne4, assumption,
-  have : ψ ⟹ s_falsum = s_not ψ, by refl, rw[this] at hc_uno,
-  have : (s_not ψ) ⟹ s_falsum = s_not (s_not ψ), by refl, rw[this] at hc_dos,
-have hc_tres : T ⊢ (∼ ψ) ⊓ (∼ ∼ ψ),
-  apply sandI hc_uno hc_dos,
-exact @snot_and_self L T ∼ψ hc_tres,
+apply h, rw [dne2.symm] at hc1, rw [dne2.symm] at hc2,
+have hc_uno : T ⊢'  ψ ⟹ s_falsum,
+  exact hc1.map simpI,
+have hc_dos : T ⊢' ∼ψ ⟹ s_falsum,
+  exact hc2.map simpI,
+exact hc_dos.map2 (impE _) hc_uno
 end
 
 /- Given a consistent theory T and sentence ψ, return whichever one of T ∪ ψ or T ∪ ∼ ψ is consistent.  We will need `extend` to show that the maximal theory given by Zorn's lemma is complete. -/
@@ -325,7 +318,7 @@ noncomputable def proof_compactness {L : Language} : Π {ψ : formula L}, Π {T 
     
     {fapply weakening, exact {ϕ : formula L | ϕ ∈ S.fst}, exact h_weakening, exact S.snd.fst}
   end
-| A T (falseE P) :=
+| A T (falsumE P) :=
   begin
     have S := (proof_compactness P),
     let S' := --Σ' (ys : list (formula L)), {ϕ : formula L | ϕ ∈ ys} ⊆ T ∧ ∀ (y : formula L), y ∈ ys → y ≠ f1,
@@ -333,7 +326,7 @@ noncomputable def proof_compactness {L : Language} : Π {ψ : formula L}, Π {T 
       have := (S.snd).snd, intros y H a, have := this H, cases this, exfalso, contradiction, assumption}, end,
     split, swap,  exact S'.fst, have hS' := S'.snd, 
     split, swap, exact hS'.left.left,
-    fapply falseE,
+    fapply falsumE,
     have h_weakening : {ϕ : formula L | ϕ ∈ S.fst} ⊆ insert ∼A {ϕ : formula L | ϕ ∈ S'.fst},
       {intro x, intro hx, simp, by_cases x = ∼A,
         exact or.inl h, simp*, fapply hS'.right, assumption, assumption},
@@ -437,7 +430,6 @@ have a := classical.choice h,
 cases a with a_val a_property, unfold set.sUnion at a_property, simp at a_property,
 cases a_property with A hA, simp, fapply exists.intro, exact A, exact hA.left
 end
-
 
 /- Given two elements in a chain of sets over T, their union over T is in the chain -/
 lemma in_chain_of_union {α : Type} (T : set α) (A_i : set $ set α) (h_chain : chain set.subset A_i) (as : list A_i) (h_over_T : ∀ A ∈ A_i, T ⊆ A) (A1 A2 ∈ A_i) : A1 ∪ A2 = A1 ∨ A1 ∪ A2 = A2 :=
@@ -626,9 +618,9 @@ end
 /- The limit theory of a chain of consistent theories over T is consistent -/
 lemma consis_limit {L : Language} {T : Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : is_consistent (T ∪ set.sUnion (subtype.val '' Ts)) :=
 begin -- so _here_ is where we need that proofs are finitely supported
-  apply is_consistent_intro, intro h_inconsis,
+  intro h_inconsis,
   by_cases nonempty Ts, swap,
-    { simp* at h, simp[*, -h_inconsis] at h_inconsis, unfold is_consistent at hT, exact hT (classical.choice h_inconsis)},
+    { simp* at h, simp[*, -h_inconsis] at h_inconsis, unfold is_consistent at hT, exact hT h_inconsis},
 
   have Γpair := proof_finite_support (T ∪ ⋃₀(subtype.val '' Ts)) ⊥ h_inconsis,
   have h_bad : ∃ T' : (Theory L), (T' ∈ (subtype.val '' Ts)) ∧ {ψ | ψ ∈ Γpair.fst} ⊆ T',
@@ -646,8 +638,7 @@ begin -- so _here_ is where we need that proofs are finitely supported
     simp[set.image] at almost_done,
     cases almost_done,
     exact almost_done_w.right},
-
-    induction T_bad_inconsis, exact T_bad_consis T_bad_inconsis, 
+    exact T_bad_consis T_bad_inconsis, 
 end
 
 --refine @exists.elim ( T ⊆ T_bad.val ∧ is_consistent (T_bad.val)) (λ x :  T ⊆ T_bad.val ∧ is_consistent (T_bad.val), ⟨_, x⟩ ∈ Ts), swap},
@@ -659,7 +650,7 @@ end
 def limit_theory2 {L : Language} {T : Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : Σ' T : Theory_over T hT, ∀ T' ∈ Ts, T' ⊆ T :=
 begin
 refine ⟨⟨T ∪ set.sUnion (subtype.val '' Ts), _⟩, _⟩, simp*, intro,
-exact @consis_limit L T hT Ts h_chain begin simpa* end,
+exact @consis_limit L T hT Ts h_chain begin simp* end,
 intros T' hT' ψ hψ, right, split, swap, exact T'.val,
 apply exists.intro, swap, exact hψ, simp*, exact T'.property
 end
