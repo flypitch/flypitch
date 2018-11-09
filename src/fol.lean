@@ -1875,6 +1875,8 @@ def all_satisfied_sentences_iff {T T' : Theory} : T ⊨ T' ↔ T.fst ⊨ T'.fst 
 def ssatisfied_snot {S : Structure} {f : sentence} (hS : ¬(S ⊨ f)) : S ⊨ ∼ f := 
 by exact hS
 
+def Model (T : Theory) : Type (u+1) := Σ' (S : Structure), S ⊨ T
+
 lemma soundness {T : Theory} {A : sentence} (H : T ⊢ A) : T ⊨ A :=
 ssatisfied_of_satisfied $ formula_soundness H
 

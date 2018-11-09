@@ -138,5 +138,37 @@ def is_even : bounded_formula L_peano 1 :=
 
 def hewwo := (p_induction_schema is_even).fst
 
+def L_peano_structure_of_nat : Structure L_peano :=
+begin
+  refine ⟨ℕ, _, _⟩,
+  {intros n F, cases F with zero succ plus mult, exact λv, 0,
+   {intro v, cases v, exact nat.succ v_x},
+   {intro v, cases v, exact v_x + (v_xs.nth 0 $ by constructor)},
+   {intro v, cases v, exact v_x * (v_xs.nth 0 $ by constructor)},
+   },
+  {intro v, intro R, cases R},
+end
+
+local notation ℕ := L_peano_structure_of_nat
+
+lemma nat_models_p_not_succ : ℕ ⊨ p_zero_not_succ := by {tidy, cases a}
+
+#print nat_models_p_not_succ
+
+def PA_standard_model : Model PA :=
+begin
+  refine ⟨ℕ, _⟩,
+  unfold all_realize_sentence, intros f hf, cases hf with not_induct induct,
+  repeat{cases not_induct},
+  {tidy}, {tidy}, {tidy}, {tidy}, {tidy},
+  {tidy, cases a},
+  {cases induct with induction_schemas ih, cases ih, tidy,
+    rw[ih_w_h] at ih_h, unfold set.range at *, cases ih_h, unfold p_induction_schema at *, simp* at *, induction ih_w_w, simp* at *, sorry
+    }
+
+end -- can i perform pattern matching on all these cases? yikes
+
+--{p_zero_not_succ, p_succ_inj, p_zero_is_identity, p_succ_plus, p_zero_of_times_zero, p_times_succ} ∪  ⋃ (n : ℕ), (λ(ψ : bounded_formula L_peano (n+1)), p_induction_schema ψ) '' set.univ
+
 end
 end peano
