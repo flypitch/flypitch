@@ -7,10 +7,8 @@ local attribute [instance, priority 0] classical.prop_decidable
 
 namespace peano
 section
-
  
 def quantifier_count_preterm {L : Language} : Π n, preterm L n → ℕ := λ n, λ t, 0
-
 
 def quantifier_count_preformula {L : Language} : Π n, preformula L n → ℕ
 | 0 falsum := 0
@@ -19,12 +17,6 @@ def quantifier_count_preformula {L : Language} : Π n, preformula L n → ℕ
 | n (apprel t1 t2) := quantifier_count_preformula _ t1 + quantifier_count_preterm _ t2
 | 0 (f1 ⟹ f2) := quantifier_count_preformula _ f1 + quantifier_count_preformula _ f2
 | 0 (∀' f) := quantifier_count_preformula _ f + 1
-
---sanity check
-
--- #reduce quantifier_count_preformula 0 p_times_succ.fst
-
--- #reduce quantifier_count_preformula 0 p_zero_of_times_zero.fst  -- ok
 
 /-- Given a nat k and a 0-formula ψ, return ψ with ∀' applied k times to it --/ 
 @[simp] def alls {L : Language}  :  Π n : ℕ, formula L → formula L
@@ -45,8 +37,8 @@ end
 @[simp] lemma alls_all_commute {L : Language} (f : formula L) {k : ℕ} : (alls k ∀' f) = (∀' alls k f) :=
 begin
 induction k with k ih,
-simp*,
-simp* -- is this idiomatic?
+simp only [peano.alls, nat.nat_zero_eq_zero, peano.alls_0, eq_self_iff_true],
+simpa only [peano.alls, eq_self_iff_true] -- is this idiomatic?
 end
 
 @[simp] lemma alls_succ_k {L : Language} (f : formula L) {k : ℕ} : alls (k + 1) f = ∀' alls k f := by constructor
@@ -66,80 +58,23 @@ have hooray := ih (∀'f) hf2,
 rw[alls_all_commute, <-H] at hooray, exact hooray --hooray!!
 end
 
-
-def term_below_coe {L : Language} : ∀ {l}, Π n m : ℕ, (n ≤ m) → Π t :(preterm L l), (term_below n t) → (term_below m t)
-  | _ n m _ &k _       := b_var' k begin dedup, cases _x_1, fapply lt_of_lt_of_le, exact n, repeat{assumption}  end
-  | _ n m _ (func f) _                := term_below.b_func f
-  | l n m _ (app t1 t2) _  :=  b_app' t1 t2 
-                               begin
-                               fapply term_below_coe, exact n, assumption, cases _x, assumption
-                               end
-
-                               begin
-                               fapply term_below_coe, exact n, assumption, cases _x, assumption
-                               end
-
-def formula_below_coe {L : Language} : ∀ {l}, Π n m : ℕ, (n ≤ m) → Π f : preformula L l, formula_below n f → formula_below m f
-| _ n m _ falsum h := b_falsum
-| _ n m _ (t1 ≃ t2) h := b_equal' t1 t2
-                                  begin 
-                                  cases h, fapply term_below_coe, exact n,
-                                  repeat{assumption},
-                                  end
-
-                                  begin 
-                                  cases h, fapply term_below_coe, exact n,
-                                  repeat{assumption},
-                                  end
-
-| _ n m _ (rel R) h := b_rel R
-| l n m _ (apprel f1 f2) h := b_apprel' f1 f2 
-                                  begin 
-                                  cases h, fapply formula_below_coe, exact n,
-                                  swap, repeat{assumption}
-                                  end
-
-                                  begin 
-                                  cases h, fapply term_below_coe, exact n,
-                                  swap, repeat{assumption}
-                                  end
-
-| _ n m _ (f1 ⟹ f2) h := b_imp' f1 f2
-                                  begin 
-                                  cases h, fapply formula_below_coe, exact n,
-                                  swap, repeat{assumption}
-                                  end
-
-                                  begin 
-                                  cases h, fapply formula_below_coe, exact n,
-                                  swap, repeat{assumption}
-                                  end
-
-| _ n m _ (∀' f) h := b_all' f
-                                  begin 
-                                  cases h, fapply formula_below_coe, exact n+1,
-                                  swap, repeat{assumption}, simp*
-                                  end
-
-
-
 /- both b_subst and b_subst2 are consequences of formula_below_subst in fol.lean -/
 def b_subst {L : Language} {n : ℕ} {f : formula L} (hf : formula_below (n+1) f) {t : term L} (ht : term_below 0 t) : formula_below n (f[t //0]) :=
 begin
-have P := @formula_below_subst L 0 n 0 f begin simp, exact hf end t,
+have P := @formula_below_subst L 0 n 0 f begin rw[zero_add], exact hf end t,
 have t' : term_below n t,
-  fapply term_below_coe,
+  fapply term_below_of_le,
   exact 0,
   exact n.zero_le,
   exact ht,
 have Q := P t',
-simp at Q, assumption
+simp only [fol.subst_formula, zero_add] at Q, assumption
 end
 
 def b_subst2 {L : Language} {n : ℕ} {f : formula L} (hf : formula_below n f) {t : term L} (ht : term_below n t) : formula_below n (f[t //0]) :=
 begin
-have P := @formula_below_subst L 0 n 0 f begin simp, fapply formula_below_coe, exact n, simpa end t,
-have P' := P ht, simp at P', assumption
+have P := @formula_below_subst L 0 n 0 f begin rw[zero_add], fapply formula_below_of_le, exact n, simpa end t,
+have P' := P ht, simp only [fol.subst_formula, zero_add] at P', assumption
 end
 
 
@@ -205,4 +140,3 @@ def hewwo := (p_induction_schema is_even).fst
 
 end
 end peano
-
