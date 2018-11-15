@@ -9,67 +9,33 @@ universe variables u v
 section
 parameter L : Language.{u}
 
-lemma dne {p : Prop} (H : ¬¬p) : p := --- from TPIL, is this elsewhere?
+lemma dne {p : Prop} (H : ¬¬p) : p :=
 classical.by_contradiction H
 
-@[reducible] lemma dne2 {p : Prop} : p = ¬ ¬ p :=
-begin
-refine propext _,
-split,
-{intro,
-{exact (λ (h : ¬ p), absurd a h)}},
-{intro a, exact dne a}
-end
+lemma dne2 {p : Prop} : p = ¬ ¬ p :=
+by {refine propext _, split, intro, exact (λ (h : ¬ p), absurd a h), intro a, exact dne a}
 
 lemma dne3 {p q : Prop} (h : ¬ p) : (p ∨ q) = q :=
-begin
-refine propext _,
-split,
-swap,
-intro,
-exact or.inr a,
-intro,
-refine or.elim a _ _,
-intro, refine absurd h _,
-exact absurd a_1 h,
-exact id
-end
+by {apply propext, split, swap, intro a, exact or.inr a, intro,
+  fapply or.elim a, intro a', refine absurd h _, exact absurd a' h, exact id}
 
 open classical
 noncomputable def instantiate_existential {α : Type*} {P : α → Prop} (h : ∃ x : α, P x) : nonempty α → {x // P x} :=
-begin
-intro h_nonempty,
-let X := (@strong_indefinite_description α P h_nonempty),
-refine ⟨X.val, _⟩,
-apply X.property,
-exact h
-end
+  by {intro h_nonempty, let X := (@strong_indefinite_description α P h_nonempty), refine ⟨X.val, _⟩, apply X.property, exact h}
 
-noncomputable lemma dne4 {α : Type u} (h : ¬(α → false)) : α :=
-begin
-by_cases nonempty α,
-exact classical.choice h,
-dedup, have p := not.elim h_1, swap, exact false,
-have f := λ x : α, p (nonempty.intro x),
-contradiction
-end
 
-lemma dne5 {p q} (h : p → q) : ¬ q → ¬ p := by tauto
-
+/-- Given a theory T and a sentence ψ, either T ∪ {ψ} or T ∪ {∼ ψ} is consistent.--/
 lemma can_extend {L : Language} (T : Theory L) (ψ : sentence L) (h : is_consistent T): (is_consistent (T ∪ {ψ})) ∨ (is_consistent (T ∪ {∼ ψ}))
 :=
 begin
-simp[is_consistent],
-by_contra,
-rename a hc,
-rw[not_or_distrib] at hc,
-cases hc with hc1 hc2,
-apply h, rw [dne2.symm] at hc1, rw [dne2.symm] at hc2,
-have hc_uno : T ⊢'  ψ ⟹ s_falsum,
-  exact hc1.map simpI,
-have hc_dos : T ⊢' ∼ψ ⟹ s_falsum,
-  exact hc2.map simpI,
-exact hc_dos.map2 (impE _) hc_uno
+  simp[is_consistent],  by_contra,  rename a hc, rw[not_or_distrib] at hc,
+  cases hc with hc1 hc2,
+  apply h, rw [dne2.symm] at hc1, rw [dne2.symm] at hc2,
+  have hc_uno : T ⊢'  ψ ⟹ s_falsum,
+    exact hc1.map simpI,
+  have hc_dos : T ⊢' ∼ψ ⟹ s_falsum,
+    exact hc2.map simpI,
+  exact hc_dos.map2 (impE _) hc_uno
 end
 
 /- Given a consistent theory T and sentence ψ, return whichever one of T ∪ ψ or T ∪ ∼ ψ is consistent.  We will need `extend` to show that the maximal theory given by Zorn's lemma is complete. -/
@@ -80,8 +46,7 @@ dite (is_consistent $ T ∪ {ψ}) -- dependent if
                   have := @dne3 (is_consistent (T ∪ {ψ})) (is_consistent (T ∪ {∼ψ})) a,
                   refine psigma.mk (T ∪ {∼ ψ}) _,
                   rw[<-this],
-                  assumption
-                  end
+                  assumption end
 
 
 /-
@@ -89,8 +54,6 @@ Now, we have to show that given an arbitrary chain in this poset, we can obtain 
 -/
 
 open zorn
-private lemma ex_coe {α : Type u} (P : α → Prop) : (∃ x, P x) → (∃ x : α, true)
-| ⟨a, b⟩ := ⟨a, trivial⟩
 
 /- Given a set of theories and a proof that they form a chain under set-inclusion, return their union and a proof that this contains every theory in the chain
 -/
@@ -113,30 +76,20 @@ end
 
 lemma nonempty_of_not_empty {α : Type u} (a : set α) (h : ¬ a = ∅) : nonempty a :=
 begin
-  simp*,
-  by_contra,
-  simp[not_exists_not] at a_1,
-  have : a = ∅,
-  refine funext _,
-  intro x,
-  refine propext _,
-  split,
-  apply a_1,
-  intro,
-  simp[has_emptyc.emptyc] at a_2,
-  exfalso, assumption,
-  contradiction
+  by_contra, simp[not_exists_not] at a_1,  have : a = ∅,  refine funext _,  intro x,
+  refine propext _,  split,  apply a_1,  intro, 
+  exfalso, assumption,  contradiction
 end
 
+/-- Theory_over T is the subtype of Theory L consisting of consistent theories T' such that T' ⊇ T--/
 def Theory_over {L : Language.{u}} (T : Theory L) (hT : is_consistent T): Type u := 
 {T' : Theory L // T ⊆ T' ∧ is_consistent T'}
 
-/- Every theory T is trivially a theory over itself -/
+/-- Every theory T is trivially a theory over itself --/
 def over_self {L : Language} (T : Theory L) (hT : is_consistent T): Theory_over T hT:=
   by {refine ⟨T, _⟩, split, trivial, assumption}
 
-
-
+/-- Given two consistent theories T₁ and T₂ over T, say that T₁ ⊆ T₂ if T₁ ⊆ T₂--/
 def Theory_over_subset {L : Language.{u}} {T : Theory L} {hT : is_consistent T} : Theory_over T hT → Theory_over T hT→ Prop
 := λ T1 T2, T1.val ⊆ T2.val
 
@@ -148,12 +101,7 @@ instance {T : Theory L} {hT : is_consistent T} : nonempty (Theory_over T hT) := 
 return their union and a proof that this contains every theory in the chain
 -/
 
-/-- Given T ⊢ ψ, return the finite context from T required to prove ψ, a proof of that, and a proof that the finite conte
-xt was a subset of T --/
-def finsubset {α : Type u} (S : set α) := Σ' Γ : finset α, {γ | γ ∈ Γ} ⊆ S
-
--- def proof_formula_finite_support : ∀{L}, ∀{T : set $ formula L}, ∀{ψ : formula L}, Π proof : prf T ψ, Σ Γ : finsubset T, prf {γ | γ ∈ Γ.fst} ψ
--- | L T falsum proof := begin destruct proof, introv, intros h1 h2 h3, simp*, split, swap, split, swap, exact {falsum}, have : falsum ∈ T, rw[h1, h2], assumption, intro ele, intro h_ele, cases h_ele, finish, cases h_ele, apply exfalso, apply axm, simp, introv, intros h1 h2 h3, cases h2, introv, intros h1 h2 h3, split, swap, split, swap, exact (proof_formula_finite_support a).fst.fst ∪ (proof_formula_finite_support a_1).fst.fst, simp*, intro, intro, cases a_3,  repeat{sorry} end -- yuck
+/-- Given T ⊢ ψ, return the finite context from T required to prove ψ, a proof of that, and a proof that the finite context was a subset of T --/
 
 /- A simple consequence of weakening, needed for recursion below  -/
 lemma weakening' {L : Language.{u}} {S_1 S_2 : set $ formula L} {ψ_1 ψ_2 : formula L} (p1 : S_1 ⊢ ψ_1) (p2 : S_2 ⊢ ψ_2) : (S_1 ∪ S_2 ⊢ ψ_1) × (S_1 ∪ S_2 ⊢ ψ_2) :=

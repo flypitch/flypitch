@@ -1743,10 +1743,9 @@ begin
       {intro H, have := @not.elim _ (S ⊨ f₁) H, finish},
   rw[this], refl
 end
--- @[simp] lemma realize_sentence_all {S : Structure} {f : bounded_formula 1} : S ⊨ ∀'f ↔ ∀ x : S, S ⊨ f[x /0] :=
--- begin
---   sorry
--- end
+@[simp] lemma realize_sentence_all {S : Structure} {f : bounded_formula 1} :
+  (S ⊨ ∀'f) ↔ ∀ x : S, realize_bounded_formula([x]) f([]) :=
+by refl
 
 lemma realize_bounded_formula_bd_apps_rel {S : Structure}
   {n l} (xs : dvector S n) (f : bounded_preformula n l) (ts : dvector (bounded_term n) l) :

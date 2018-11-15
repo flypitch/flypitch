@@ -167,8 +167,8 @@ begin
     cases ih_right with ψ h_ψ, rw[<-h_ψ], unfold p_induction_schema,
     -- phew, finally got the goal to be, literally show some instance of the induction schema
     induction index, simp*, intros H1 H2,
-    sorry,
-    sorry
+    {intro x, have := H2 x, simp[realize_bounded_formula, realize_formula_below] at *, },
+    {sorry},
   }
 end
 
