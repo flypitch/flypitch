@@ -45,17 +45,16 @@ end
 
 @[simp] def b_alls_k {L : Language} {n : ℕ} {k: ℕ} :  ∀ f : formula L, formula_below (n + k) f → formula_below n (alls k f) :=
 begin
--- induction n with n ih, induction k with k ih,
-induction k with k ih,
-intros f hf, exact hf,
-intros f hf, 
-have H := alls_succ_k,
+  induction k with k ih,
+  intros f hf, exact hf,
+  intros f hf, 
+  have H := alls_succ_k,
 
-have hf_rw : formula_below (n + nat.succ k) f → formula_below (n+k) ∀'f, by {apply b_alls_1},
-let hf2 := hf_rw hf,
+  have hf_rw : formula_below (n + nat.succ k) f → formula_below (n+k) ∀'f, by {apply b_alls_1},
+  let hf2 := hf_rw hf,
 
-have hooray := ih (∀'f) hf2,
-rw[alls_all_commute, <-H] at hooray, exact hooray --hooray!!
+  have hooray := ih (∀'f) hf2,
+  rw[alls_all_commute, <-H] at hooray, exact hooray --hooray!!
 end
 
 /- both b_subst and b_subst2 are consequences of formula_below_subst in fol.lean -/
@@ -73,8 +72,8 @@ end
 
 def b_subst2 {L : Language} {n : ℕ} {f : formula L} (hf : formula_below n f) {t : term L} (ht : term_below n t) : formula_below n (f[t //0]) :=
 begin
-have P := @formula_below_subst L 0 n 0 f begin rw[zero_add], fapply formula_below_of_le, exact n, simpa end t,
-have P' := P ht, simp only [fol.subst_formula, zero_add] at P', assumption
+  have P := @formula_below_subst L 0 n 0 f begin rw[zero_add], fapply formula_below_of_le, exact n, simpa end t,
+  have P' := P ht, simp only [fol.subst_formula, zero_add] at P', assumption
 end
 
 
@@ -99,9 +98,9 @@ def L_peano_mult : L_peano.functions 2 := L_peano_funct.mult
 local infix ` +' `:100 := bounded_term_of_function L_peano_plus
 local infix ` ×' `:150 := bounded_term_of_function L_peano_mult
 
-def succ {n} : bounded_term n → bounded_term n := bounded_term_of_function L_peano_succ
-def zero {n} : bounded_term n := bd_const L_peano_zero
-def one {n} : bounded_term n := succ zero
+def succ {n} : bounded_term L_peano n → bounded_term L_peano  n := bounded_term_of_function L_peano_succ
+def zero {n} : bounded_term L_peano n := bd_const L_peano_zero
+def one {n} : bounded_term L_peano n := succ zero
 
 /- for all x, zero not equal to succ x -/
 def p_zero_not_succ : sentence L_peano :=
@@ -151,9 +150,10 @@ end
 
 local notation ℕ := L_peano_structure_of_nat
 
-lemma nat_models_p_not_succ : ℕ ⊨ p_zero_not_succ := by {tidy, cases a}
+example : ℕ ⊨ p_zero_not_succ := begin
+  unfold realize_sentence p_zero_not_succ realize_bounded_formula bd_all bd_imp bd_falsum bd_equal, simp*, intro x, intro h, cases h end -- so this is what tidy is doing...
 
-#print nat_models_p_not_succ
+-- TODO, try proving the induction schema for a simple case.
 
 def PA_standard_model : Model PA :=
 begin
@@ -162,13 +162,17 @@ begin
   repeat{cases not_induct},
   {tidy}, {tidy}, {tidy}, {tidy}, {tidy},
   {tidy, cases a},
-  {cases induct with induction_schemas ih, cases ih, tidy,
-    rw[ih_w_h] at ih_h, unfold set.range at *, cases ih_h, unfold p_induction_schema at *, simp* at *, induction ih_w_w, simp* at *, sorry
-    }
+  {cases induct with induction_schemas ih, simp[*, -ih] at ih, cases ih with ih_left ih_right,
+    cases ih_left with index h_eq, rw[h_eq] at ih_right, unfold set.range at ih_right,
+    cases ih_right with ψ h_ψ, rw[<-h_ψ], unfold p_induction_schema,
+    -- phew, finally got the goal to be, literally show some instance of the induction schema
+    induction index, simp*, intros H1 H2,
+    sorry,
+    sorry
+  }
+end
 
-end -- can i perform pattern matching on all these cases? yikes
-
---{p_zero_not_succ, p_succ_inj, p_zero_is_identity, p_succ_plus, p_zero_of_times_zero, p_times_succ} ∪  ⋃ (n : ℕ), (λ(ψ : bounded_formula L_peano (n+1)), p_induction_schema ψ) '' set.univ
+local notation ℕ := PA_standard_model
 
 end
 end peano

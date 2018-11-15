@@ -1732,6 +1732,21 @@ by refl
 @[simp] lemma realize_sentence_imp {S : Structure} {f₁ f₂ : sentence} : 
   S ⊨ f₁ ⟹ f₂ ↔ (S ⊨ f₁ → S ⊨ f₂) :=
 by refl
+@[simp] lemma realize_sentence_not {S : Structure} {f : sentence} : S ⊨ ∼f ↔ ¬ S ⊨ f :=
+by refl
+@[simp] lemma realize_sentence_and {S : Structure} {f₁ f₂ : sentence} :
+  S ⊨ f₁ ⊓ f₂ ↔ (S ⊨ f₁ ∧ S ⊨ f₂) :=
+begin
+  have : S ⊨ f₁ ∧ S ⊨ f₂ ↔ ¬(S ⊨ f₁ → ¬ S ⊨ f₂),
+    split,
+      {intro H, fapply not.intro, tauto},
+      {intro H, have := @not.elim _ (S ⊨ f₁) H, finish},
+  rw[this], refl
+end
+-- @[simp] lemma realize_sentence_all {S : Structure} {f : bounded_formula 1} : S ⊨ ∀'f ↔ ∀ x : S, S ⊨ f[x /0] :=
+-- begin
+--   sorry
+-- end
 
 lemma realize_bounded_formula_bd_apps_rel {S : Structure}
   {n l} (xs : dvector S n) (f : bounded_preformula n l) (ts : dvector (bounded_term n) l) :
