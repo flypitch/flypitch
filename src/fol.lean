@@ -1532,6 +1532,25 @@ def bounded_formula_of_relation {l n} (f : L.relations l) :
   arity (bounded_term n) (bounded_formula n) l :=
 arity.of_dvector_map $ bd_apps_rel (bd_rel f)
 
+def bounded_preformula.rec1 {C : Πn l, bounded_preformula (n+1) l → Sort v}
+  (H0 : Π {n}, C n 0 ⊥)
+  (H1 : Π {n} (t₁ t₂ : bounded_term (n+1)), C n 0 (t₁ ≃ t₂))
+  (H2 : Π {n l : ℕ} (R : L.relations l), C n l (bd_rel R))
+  (H3 : Π {n l : ℕ} (f : bounded_preformula (n+1) (l + 1)) (t : bounded_term (n+1)) 
+    (ih : C n (l + 1) f), C n l (bd_apprel f t))
+  (H4 : Π {n} (f₁ f₂ : bounded_formula (n+1)) (ih₁ : C n 0 f₁) (ih₂ : C n 0 f₂), C n 0 (f₁ ⟹ f₂))
+  (H5 : Π {n} (f : bounded_formula (n+2)) (ih : C (n+1) 0 f), C n 0 (∀' f)) 
+  {{n l : ℕ}} (f : bounded_preformula (n+1) l) : C n l f :=
+begin
+  induction f with f hf, induction f generalizing n; cases hf,
+  apply H0, 
+  exact H1 ⟨f_t₁, hf_ht₁⟩ ⟨f_t₂, hf_ht₂⟩, 
+  apply H2,
+  exact H3 ⟨f_f, hf_hf⟩ ⟨f_t, hf_ht⟩ (f_ih _),
+  exact H4 ⟨f_f₁, hf_hf₁⟩ ⟨f_f₂, hf_hf₂⟩ (f_ih_f₁ _) (f_ih_f₂ _), 
+  exact H5 ⟨f_f, hf_hf⟩ (f_ih _)
+end
+
 def bounded_preformula.rec {C : Πn l, bounded_preformula n l → Sort v}
   (H0 : Π {n}, C n 0 ⊥)
   (H1 : Π {n} (t₁ t₂ : bounded_term n), C n 0 (t₁ ≃ t₂))
@@ -1550,6 +1569,23 @@ begin
   exact H4 ⟨hf_f₁, hf_hf₁⟩ ⟨hf_f₂, hf_hf₂⟩ hf_ih_hf₁ hf_ih_hf₂, 
   exact H5 ⟨hf_f, hf_hf⟩ hf_ih
 end
+
+@[elab_as_eliminator] def bounded_formula.rec1 {C : Πn, bounded_formula (n+1) → Sort v}
+  (hfalsum : Π {n}, C n ⊥)
+  (hequal : Π {n} (t₁ t₂ : bounded_term (n+1)), C n (t₁ ≃ t₂))
+  (hrel : Π {n l : ℕ} (R : L.relations l) (ts : dvector (bounded_term (n+1)) l), 
+    C n (bd_apps_rel (bd_rel R) ts))
+  (himp : Π {n} {f₁ f₂ : bounded_formula (n+1)} (ih₁ : C n f₁) (ih₂ : C n f₂), C n (f₁ ⟹ f₂))
+  (hall : Π {n} {f : bounded_formula (n+2)} (ih : C (n+1) f), C n (∀' f)) 
+  {{n : ℕ}} (f : bounded_formula (n+1)) : C n f :=
+have h : ∀{n l} (f : bounded_preformula (n+1) l) (ts : dvector (bounded_term (n+1)) l), 
+  C n (bd_apps_rel f ts),
+begin
+  refine bounded_preformula.rec1 _ _ _ _ _ _; intros; try {rw ts.zero_eq},
+  apply hfalsum, apply hequal, apply hrel, apply ih (t::ts),
+  exact himp (ih₁ ([])) (ih₂ ([])), exact hall (ih ([]))
+end,
+h f ([])
 
 def bounded_formula.rec {C : Πn, bounded_formula n → Sort v}
   (hfalsum : Π {n}, C n ⊥)
@@ -1600,6 +1636,10 @@ def subst0_bounded_formula {n l} (f : bounded_preformula (n+1) l) (t : bounded_t
 ⟨f.fst[t.fst // 0], formula_below_subst0 f.snd t.snd⟩
 
 notation f `[`:max s ` /0]`:0 := _root_.fol.subst0_bounded_formula f s
+
+@[simp] def substmax_eq_subst0 {l} (f : bounded_preformula 1 l) (t : closed_term) :
+  f[t/0] = substmax_bounded_formula f t :=
+by refl
 
 def subst0_closed_formula {n l} (f : bounded_preformula (n+1) l) (t : closed_term) :
   bounded_preformula n l :=
@@ -1897,8 +1937,6 @@ def Model (T : Theory) : Type (u+1) := Σ' (S : Structure), S ⊨ T
 lemma soundness {T : Theory} {A : sentence} (H : T ⊢ A) : T ⊨ A :=
 ssatisfied_of_satisfied $ formula_soundness H
 
-def Th (S : Structure) : Theory := { f : sentence | S ⊨ f }
-
 def is_consistent (T : Theory) := ¬(T ⊢' (⊥ : sentence))
 
 protected def is_consistent.intro {T : Theory} (H : ¬ T ⊢' (⊥ : sentence)) : is_consistent T :=
@@ -2055,10 +2093,9 @@ end
 by apply realize_closed_preterm_term_model ([]) t
 
 lemma realize_subst_preterm {S : Structure} {n l} (t : bounded_preterm (n+1) l)
-  (xs : dvector S l) (s : closed_term) (v : dvector closed_term n) :
-  realize_bounded_term (v.map $ realize_closed_term S) 
-    (substmax_bounded_term t s) xs =
-  realize_bounded_term ((v.concat s).map $ realize_closed_term S) t xs :=
+  (xs : dvector S l) (s : closed_term) (v : dvector S n) :
+  realize_bounded_term v (substmax_bounded_term t s) xs =
+  realize_bounded_term (v.concat (realize_closed_term S s)) t xs :=
 begin
   induction t with t ht, induction t generalizing n; cases ht,
   { by_cases h : t < n,
@@ -2078,67 +2115,35 @@ begin
     congr1, apply t_ih_s ([]) }
 end
 
-lemma realize_subst_term {S : Structure} {n} (v : dvector closed_term n) (s : closed_term) 
+lemma realize_subst_term {S : Structure} {n} (v : dvector S n) (s : closed_term) 
   (t : bounded_term (n+1))  :
-  realize_bounded_term (v.map $ realize_closed_term S) (substmax_bounded_term t s) ([]) =
-  realize_bounded_term ((v.concat s).map $ realize_closed_term S) t ([]) :=
+  realize_bounded_term v (substmax_bounded_term t s) ([]) =
+  realize_bounded_term (v.concat (realize_closed_term S s)) t ([]) :=
 by apply realize_subst_preterm t ([]) s v
 
-lemma realize_subst_formula (S : Structure) {n l} (f : bounded_preformula (n+1) l)
-  (ts : dvector (bounded_term (n+1)) l) (t : closed_term) (v : dvector closed_term n) 
-  (HS : ∀(x : S), ∃(t : closed_term), realize_closed_term S t = x) :
-  realize_bounded_formula (v.map $ realize_closed_term S) (substmax_bounded_formula (bd_apps_rel f ts) t) ([]) ↔
-  realize_bounded_formula ((v.concat t).map $ realize_closed_term S) (bd_apps_rel f ts) ([]) :=
+lemma realize_subst_formula (S : Structure) {n} (f : bounded_formula (n+1))
+  (t : closed_term) (v : dvector S n) :
+  realize_bounded_formula v (substmax_bounded_formula f t) ([]) ↔
+  realize_bounded_formula (v.concat (realize_closed_term S t)) f ([]) :=
 begin
-  induction f with f hf, induction f generalizing n; cases hf,
-  { simp [realize_bounded_formula], exact λh, h },
-  { simp [realize_bounded_formula, -dvector.map_concat], apply eq.congr, 
-    exact realize_subst_term v t ⟨f_t₁, hf_ht₁⟩,
-    exact realize_subst_term v t ⟨f_t₂, hf_ht₂⟩ },
+  revert n f v, refine bounded_formula.rec1 _ _ _ _ _; intros,
+  { simp [realize_bounded_formula, substmax_bounded_formula, bd_falsum], exact λh, h },
+  { apply eq.congr, exact realize_subst_term v t t₁, exact realize_subst_term v t t₂ },
   { rw [substmax_bounded_formula_bd_apps_rel, realize_bounded_formula_bd_apps_rel, 
         realize_bounded_formula_bd_apps_rel], 
-    simp [dvector.map, -dvector.map_concat],
-    simp only [ts.map_congr (realize_subst_term _ _)],
+    simp [dvector.map, -dvector.map_concat], simp only [ts.map_congr (realize_subst_term _ _)],
     apply realize_formula_below_irrel, apply b_rel }, 
-  { apply f_ih (⟨f_t, hf_ht⟩::ts) v hf_hf },
-  { simp [realize_bounded_formula, -dvector.map_concat], apply imp_congr, 
-    apply f_ih_f₁ ([]) v hf_hf₁, apply f_ih_f₂ ([]) v hf_hf₂ },
-  { simp [realize_bounded_formula, -dvector.map_concat], apply forall_congr, intro x, 
-    cases HS x with t' ht', subst ht', apply f_ih ([]) (t'::v) hf_hf }
+  { apply imp_congr, apply ih₁ v, apply ih₂ v },
+  { apply forall_congr, intro x, apply ih (x::v) }
 end
 
-/- same lemma, trying to prove it with formula.rec -/
--- lemma realize_subst_formula' (S : Structure) {n} (f : bounded_formula (n+1))
---   (t : closed_term) (v : dvector closed_term n) 
---   (HS : ∀(x : S), ∃(t : closed_term), realize_closed_term S t = x) :
---   realize_bounded_formula (v.map $ realize_closed_term S) (substmax_bounded_formula f t) ([]) ↔
---   realize_bounded_formula ((v.concat t).map $ realize_closed_term S) f ([]) :=
--- begin
---   induction f with f hf, 
---   revert f n, refine formula.rec _ _ _ _ _; intros; try {cases hf},
---   --induction f generalizing n; cases hf,
---   { simp [realize_bounded_formula], exact λh, h },
---   { simp [realize_bounded_formula, -dvector.map_concat], apply eq.congr, 
---     exact realize_subst_term v t ⟨t₁, hf_ht₁⟩,
---     exact realize_subst_term v t ⟨t₂, hf_ht₂⟩ },
---   { rw [substmax_bounded_formula_bd_apps_rel, realize_bounded_formula_bd_apps_rel, 
---         realize_bounded_formula_bd_apps_rel], 
---     simp [dvector.map, -dvector.map_concat],
---     simp only [ts.map_congr (realize_subst_term _ _)],
---     apply realize_formula_below_irrel, apply b_rel }, 
---   { apply f_ih (⟨f_t, hf_ht⟩::ts) v hf_hf },
---   { simp [realize_bounded_formula, -dvector.map_concat], apply imp_congr, 
---     apply f_ih_f₁ ([]) v hf_hf₁, apply f_ih_f₂ ([]) v hf_hf₂ },
---   { simp [realize_bounded_formula, -dvector.map_concat], apply forall_congr, intro x, 
---     cases HS x with t' ht', subst ht', apply f_ih ([]) (t'::v) hf_hf }
--- end
+lemma realize_subst_formula0 (S : Structure) (f : bounded_formula 1) (t : closed_term) :
+  S ⊨ f[t/0] ↔ realize_bounded_formula ([realize_closed_term S t]) f ([]) :=
+by apply realize_subst_formula S f t ([])
 
 lemma term_model_subst0 (f : bounded_formula 1) (t : closed_term) :
   term_model ⊨ f[t/0] ↔ realize_bounded_formula ([term_mk t]) f ([]) :=
-begin
-  refine (realize_subst_formula term_model f ([]) t ([]) _).trans (by simp),
-  apply quotient.ind, intro t, exact ⟨t, realize_closed_term_term_model t⟩
-end
+(realize_subst_formula0 term_model f t).trans (by simp)
 
 include H₂
 instance nonempty_term_model : nonempty term_model :=
@@ -2199,6 +2204,7 @@ end
 
 end completeness
 
+def Th (S : Structure) : Theory := { f : sentence | S ⊨ f }
 
 lemma realize_sentence_Th (S : Structure) : S ⊨ Th S :=
 λf hf, hf
