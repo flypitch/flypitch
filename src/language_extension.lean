@@ -1,7 +1,7 @@
 import .fol
 
 open set function
-
+universe variable u
 namespace fol
 
 namespace Language
@@ -54,8 +54,8 @@ structure Lhom (L L' : Language) :=
 local infix ` →ᴸ `:10 := Lhom -- \^L
 
 namespace Lhom
-
-variables {L : Language} {L' : Language} (ϕ : L →ᴸ L')
+/- -/
+variables {L : Language.{u}} {L' : Language.{u}} (ϕ : L →ᴸ L')
 
 protected def id (L : Language) : L →ᴸ L :=
 ⟨λn, id, λ n, id⟩
@@ -179,7 +179,7 @@ begin
   induction h generalizing Γ f; try {subst hΓ}; try {subst hf},
   { apply axm, exact (mem_image_of_injective $ on_formula_inj hϕ).mp h_h, },
   { cases f; cases hf, apply impI, apply h_ih, rw [image_insert_eq], refl },
-  { sorry },
+  { sorry }, -- we need something like a reduced proof tree here.
   { sorry },
   { sorry },
   { sorry },
@@ -187,6 +187,23 @@ begin
   { sorry }, 
   exact this _ _ rfl rfl
 end
+
+variable (ϕ)
+def pullback (S : Structure L') : Structure L :=
+have x : Type*, from S.carrier,
+⟨ S.carrier, λn f, S.fun_map $ ϕ.on_function f, λn R, S.rel_map $ ϕ.on_relation R⟩ 
+
+variable {ϕ}
+
+
+def pullback_ssatisfied {S : Structure L'} {f : sentence L} (h : S ⊨ ϕ.on_sentence f) :
+  ϕ.pullback S ⊨ f :=
+sorry
+
+
+def pullback_all_ssatisfied {S : Structure L'} {T : Theory L} (h : S ⊨ ϕ.on_sentence '' T) :
+  ϕ.pullback S ⊨ T :=
+λf hf, pullback_ssatisfied $ h $ mem_image_of_mem _ hf
 
 
 end Lhom
