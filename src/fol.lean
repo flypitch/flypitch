@@ -663,14 +663,14 @@ by cases f; refl
 * All rules are motivated to work well with backwards reasoning.
 -/
 inductive prf : set formula → formula → Type u
-| axm     : ∀{Γ A}, A ∈ Γ → prf Γ A
-| impI    : ∀{Γ : set formula} {A B}, prf (insert A Γ) B → prf Γ (A ⟹ B)
-| impE    : ∀{Γ} (A) {B}, prf Γ (A ⟹ B) → prf Γ A → prf Γ B
-| falsumE : ∀{Γ : set formula} {A}, prf (insert ∼A Γ) falsum → prf Γ A
-| allI    : ∀{Γ A}, prf (lift_formula1 '' Γ) A → prf Γ (∀' A)
-| allE'   : ∀{Γ} A t, prf Γ (∀' A) → prf Γ (A[t // 0])
-| refl    : ∀Γ t, prf Γ (t ≃ t)
-| subst'  : ∀{Γ} s t f, prf Γ (s ≃ t) → prf Γ (f[s // 0]) → prf Γ (f[t // 0])
+| axm     {Γ A} (h : A ∈ Γ) : prf Γ A
+| impI    {Γ : set formula} {A B} (h : prf (insert A Γ) B) : prf Γ (A ⟹ B)
+| impE    {Γ} (A) {B} (h₁ : prf Γ (A ⟹ B)) (h₂ : prf Γ A) : prf Γ B
+| falsumE {Γ : set formula} {A} (h : prf (insert ∼A Γ) falsum) : prf Γ A
+| allI    {Γ A} (h : prf (lift_formula1 '' Γ) A) : prf Γ (∀' A)
+| allE'   {Γ} A t (h : prf Γ (∀' A)) : prf Γ (A[t // 0])
+| refl    (Γ t) : prf Γ (t ≃ t)
+| subst'  {Γ} (s t f) (h₁ : prf Γ (s ≃ t)) (h₂ : prf Γ (f[s // 0])) : prf Γ (f[t // 0])
 
 export prf
 infix ` ⊢ `:51 := _root_.fol.prf -- input: \|- or \vdash
@@ -692,46 +692,46 @@ by apply axm; right; left; refl
 def weakening {Γ Δ} {f : formula} (H₁ : Γ ⊆ Δ) (H₂ : Γ ⊢ f) : Δ ⊢ f :=
 begin
   induction H₂ generalizing Δ,
-  { apply axm, exact H₁ H₂_a, },
+  { apply axm, exact H₁ H₂_h, },
   { apply impI, apply H₂_ih, apply insert_subset_insert, apply H₁ },
-  { apply impE, apply H₂_ih_a, assumption, apply H₂_ih_a_1, assumption },
+  { apply impE, apply H₂_ih_h₁, assumption, apply H₂_ih_h₂, assumption },
   { apply falsumE, apply H₂_ih, apply insert_subset_insert, apply H₁ },
   { apply allI, apply H₂_ih, apply image_subset _ H₁ },
   { apply allE', apply H₂_ih, assumption },
   { apply refl },
-  { apply subst', apply H₂_ih_a, assumption, apply H₂_ih_a_1, assumption },
+  { apply subst', apply H₂_ih_h₁, assumption, apply H₂_ih_h₂, assumption },
 end
 
 def prf_lift {Γ} {f : formula} (n m : ℕ) (H : Γ ⊢ f) : (λf', f' ↑' n # m) '' Γ ⊢ f ↑' n # m :=
 begin
   induction H generalizing m,
-  { apply axm, apply mem_image_of_mem _ H_a },
+  { apply axm, apply mem_image_of_mem _ H_h },
   { apply impI, have h := @H_ih m, rw [image_insert_eq] at h, exact h },
-  { apply impE, apply H_ih_a, apply H_ih_a_1 },
+  { apply impE, apply H_ih_h₁, apply H_ih_h₂ },
   { apply falsumE, have h := @H_ih m, rw [image_insert_eq] at h, exact h },
   { apply allI, rw [←image_comp], have h := @H_ih (m+1), rw [←image_comp] at h, 
     apply cast _ h, congr1, apply image_congr', intro f', symmetry,
     exact lift_formula_at2_small f' _ _ m.zero_le },
   { apply allE _ _ (H_ih m), apply lift_at_subst_formula_small0 },
   { apply refl },
-  { apply subst _ (H_ih_a m), 
-    { have h := @H_ih_a_1 m, rw [←lift_at_subst_formula_small0] at h, exact h},
+  { apply subst _ (H_ih_h₁ m), 
+    { have h := @H_ih_h₂ m, rw [←lift_at_subst_formula_small0] at h, exact h},
     rw [lift_at_subst_formula_small0] },
 end
 
 def substitution {Γ} {f : formula} {t n} (H : Γ ⊢ f) : (λx, x[t // n]) '' Γ ⊢ f[t // n] :=
 begin
   induction H generalizing n,
-  { apply axm, apply mem_image_of_mem _ H_a },
+  { apply axm, apply mem_image_of_mem _ H_h },
   { apply impI, have h := @H_ih n, rw [image_insert_eq] at h, exact h },
-  { apply impE, apply H_ih_a, apply H_ih_a_1 },
+  { apply impE, apply H_ih_h₁, apply H_ih_h₂ },
   { apply falsumE, have h := @H_ih n, rw [image_insert_eq] at h, exact h },
   { apply allI, rw [←image_comp], have h := @H_ih (n+1), rw [←image_comp] at h, 
     apply cast _ h, congr1, apply image_congr', intro,
     apply lift_subst_formula_large },
   { apply allE _ _ H_ih, symmetry, apply subst_formula2_zero },
   { apply refl },
-  { apply subst _ H_ih_a, { have h := @H_ih_a_1 n, rw [subst_formula2_zero] at h, exact h}, 
+  { apply subst _ H_ih_h₁, { have h := @H_ih_h₂ n, rw [subst_formula2_zero] at h, exact h}, 
     rw [subst_formula2_zero] },
 end
 
@@ -1046,17 +1046,17 @@ def sweakening {T T' : set formula} (H : T ⊆ T') {f : formula} (HT : T ⊨ f) 
 lemma formula_soundness {Γ : set formula} {A : formula} (H : Γ ⊢ A) : Γ ⊨ A :=
 begin
   intro S, induction H; intros v h,
-  { apply h, apply H_a },
+  { apply h, apply H_h },
   { intro ha, apply H_ih, intros f hf, induction hf, { subst hf, assumption }, apply h f hf },
-  { exact H_ih_a v h (H_ih_a_1 v h) },
+  { exact H_ih_h₁ v h (H_ih_h₂ v h) },
   { apply classical.by_contradiction, intro ha, 
     apply H_ih v, intros f hf, induction hf, { cases hf, exact ha }, apply h f hf },
   { intro x, apply H_ih, intros f hf, cases (mem_image _ _ _).mp hf with f' hf', induction hf', 
     induction hf'_right, rw [realize_formula_subst_lift v x 0 f'], exact h f' hf'_left },
   { rw [←realize_formula_subst0], apply H_ih v h (realize_term v H_t ([])) },
   { dsimp, refl },
-  { have h' := H_ih_a v h, dsimp at h', rw [←realize_formula_subst0, ←h', realize_formula_subst0],
-    apply H_ih_a_1 v h },
+  { have h' := H_ih_h₁ v h, dsimp at h', rw [←realize_formula_subst0, ←h', realize_formula_subst0],
+    apply H_ih_h₂ v h },
 end
 
 /- sentences and theories -/
@@ -1156,10 +1156,12 @@ def term_below_of_le : ∀ {l} {t : preterm l} {n m : ℕ}, n ≤ m → term_bel
 def term_below_of_zero {l} {t : preterm l} {n : ℕ} (ht : term_below 0 t) : term_below n t :=
 term_below_of_le n.zero_le ht
 
+parameter (L)
 def bounded_preterm (n l) := Σ(t : preterm l), term_below n t
 def bounded_term    (n)   := Σ(t : term),      term_below n t
 def closed_preterm  (l)   := Σ(t : preterm l), term_below 0 t
 def closed_term           := Σ(t : term),      term_below 0 t
+parameter {L}
 
 def closed_term.eq {n l} {t₁ t₂ : bounded_preterm n l} (h : t₁.fst = t₂.fst) : t₁ = t₂ :=
 sigma.eq h (subsingleton.elim _ _)
@@ -1322,7 +1324,7 @@ def b_biimp {n : ℕ} {f g : formula} (hf : formula_below n f) (hg : formula_bel
   formula_below n (f ⇔ g) :=
 b_and (b_imp hf hg) (b_imp hg hf)
 
-lemma lift_formula_below : ∀{n l} {f : preformula l} (ht : formula_below n f) (n') 
+lemma lift_formula_below : ∀{n l} {f : preformula l} (hf : formula_below n f) (n') 
   {m : ℕ} (h : n ≤ m), f ↑' n' # m = f
 | n _ _ b_falsum                 n' m h := by refl
 | n _ _ (b_equal' t₁ t₂ ht₁ ht₂) n' m h := 
