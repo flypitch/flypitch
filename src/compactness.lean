@@ -1,4 +1,4 @@
-import .fol order.zorn order.filter logic.basic data.finset data.set tactic.tidy data.list .completeness
+import .fol order.zorn order.filter logic.basic data.finset data.set data.list .completeness
 local attribute [instance, priority 0] classical.prop_decidable
 open fol
 
@@ -7,8 +7,9 @@ universes u v
 /- A simple consequence of weakening, needed for recursion below  -/
 lemma weakening' {L : Language.{u}} {S_1 S_2 : set $ formula L} {ψ_1 ψ_2 : formula L} (p1 : S_1 ⊢ ψ_1) (p2 : S_2 ⊢ ψ_2) : (S_1 ∪ S_2 ⊢ ψ_1) × (S_1 ∪ S_2 ⊢ ψ_2) :=
   begin
-    split, fapply @weakening L S_1 (S_1 ∪ S_2), simpa,
-    fapply @weakening L S_2 (S_1 ∪ S_2), simpa,
+    split, fapply @weakening L S_1 (S_1 ∪ S_2),
+    simpa only [set.subset_union_left],
+    fapply @weakening L S_2 (S_1 ∪ S_2), simpa only [set.subset_union_right]
   end
 
 /-- Given an xs : list α, an x : α, a set T on α such that everything in xs which is not x is in T, return the sublist which excludes x, a proof that this list is now a subset of T, and a proof that everything in this list was not the forbidden element x. --/
@@ -23,15 +24,19 @@ begin
     {refine _::((xs_ih _).fst), exact xs_hd, intros, fapply h, simp, exact or.inr H, assumption},  -- finish ite statement
   split, split,
   
-  by_cases xs_hd = x; simp*; intros a ha; simp[*, -ha] at ha,
+  by_cases xs_hd = x; simp only [*, list.mem_cons_iff, if_false]; intros a ha;
+simp only [*, -ha, list.mem_cons_iff, set.mem_set_of_eq] at ha,
+simp only [*, -ha, if_true, list.mem_cons_iff, eq_self_iff_true, set.mem_set_of_eq] at ha,
      {dedup, refine (xs_ih _).snd.left.left _, intros, fapply h, simp, exact or.inr H, assumption, assumption,},
      {dedup, cases ha, swap,
      refine (xs_ih _).snd.left.left _, intros, fapply h, simp, exact or.inr H, assumption, assumption, fapply h, fapply or.inl, assumption, cc},
 
     by_cases (xs_hd = x);
-      simp*, intros y H, refine ((xs_ih _).snd).left.right _ _,
-      intros, dedup, fapply h, simp, apply or.inr, assumption,
-      assumption, assumption,
+      simp only [*, true_and, list.mem_cons_iff, list.forall_mem_cons', if_false, ne.def, not_false_iff],
+      intros y H, refine ((xs_ih _).snd).left.right _ _,
+      intros, dedup, fapply h, simp only [list.mem_cons_iff], apply or.inr,
+      repeat{assumption},
+      simp only [if_true, list.mem_cons_iff, eq_self_iff_true] at H, assumption,
       
       intros y H, refine ((xs_ih _).snd).left.right _ _,
       intros, dedup, fapply h, simp, apply or.inr, assumption,
@@ -42,7 +47,7 @@ begin
       
          {intro h_good, fapply (xs_ih _).snd.right y,
            exact hy, exact h_good},
-         {intro h_good, simp*, cases hy, exact or.inl hy, fapply or.inr, fapply (xs_ih _).snd.right y,
+         {intro h_good, simp only [*, list.mem_cons_iff, if_false], cases hy, exact or.inl hy, fapply or.inr, fapply (xs_ih _).snd.right y,
            exact hy, exact h_good},
 end
 
@@ -52,11 +57,11 @@ open classical
 /-- Given x ∈ f '' S, choose a lift x' in the preimage of x; return x' and a proof that x' is a lift --/
 noncomputable def image_lift {α : Type u} {β : Type v} {f : α → β} {S : set α} (x ∈ f '' S) : Σ' (x' : α), x' ∈ S ∧ f x' = x :=
 begin
-  simp[*,-H] at H,
+  simp only [*, -H, set.mem_image] at H,
   have := strong_indefinite_description, swap, exact α,
   have prelift : {x_1 // (∃ (y : α), (λ (y : α), y ∈ S ∧ f y = x) y) → (λ (y : α), y ∈ S ∧ f y = x) x_1},
   fapply this (λ y, y ∈ S ∧ f y = x), fapply nonempty_of_exists, exact (λ y, y ∈ S ∧ f y = x),
-  exact H, have snd := prelift.property, simp[*,-snd] at snd,
+  exact H, have snd := prelift.property, simp only [*, -snd, forall_prop_of_true] at snd,
   refine ⟨prelift.val, _⟩, exact snd,
 end
 
@@ -71,7 +76,8 @@ begin
           let Hxs_ih : {x : β | x ∈ xs_tl} ⊆ f '' S :=
             begin intros x hx, fapply h_sub, exact or.inr hx end,
           let Himage_lift : xs_hd ∈ (f '' S) :=
-            begin fapply h_sub, simp end, simp[*, -Himage_lift] at Himage_lift,
+            begin fapply h_sub, simp end,
+            simp only [*, -Himage_lift, set.mem_image] at Himage_lift,
           split;
       
       let x_image_lift := begin fapply @image_lift α β f S xs_hd, exact Himage_lift end,
@@ -89,7 +95,7 @@ begin
         refine (xs_ih Hxs_ih).snd.left _,
           exact Hy,
 
-        simp*, fapply funext, intro x, fapply propext,
+        simp only [*, list.mem_cons_iff], fapply funext, intro x, fapply propext,
 
         split,
           intro hx, cases hx with hx_witness hx_hypothesis,
@@ -144,8 +150,9 @@ noncomputable def proof_compactness {L : Language.{u}} : Π {ψ : formula L}, Π
       have : (T1 ∪ T2) ⊢ (A ⟹ B) × T1 ∪ T2 ⊢ A,
         fapply weakening', exact hT1, exact hT2,
       
-      split, simp* at this, simp*,fapply impE, exact A,
-      exact this.fst, exact this.snd, simp*, intro ψ, intro hψ,
+      split, simp only [*, list.mem_union], fapply impE, exact A,
+      exact this.fst, exact this.snd,
+      simp only [*, list.mem_union],intro ψ, intro hψ,
       cases hψ, fapply S1.snd.snd, exact hψ, fapply S2.snd.snd, exact hψ,
     end
 | (f1 ⟹ f2) T (impI P) :=
@@ -159,7 +166,7 @@ noncomputable def proof_compactness {L : Language.{u}} : Π {ψ : formula L}, Π
     fapply impI,
     have h_weakening : {ϕ : formula L | ϕ ∈ S.fst} ⊆ insert f1 {ϕ : formula L | ϕ ∈ S'.fst},
       {intro x, intro hx, simp, by_cases x = f1,
-        exact or.inl h, simp*, fapply hS'.right, assumption, assumption},
+        exact or.inl h, simp only [*, false_or], fapply hS'.right, assumption, assumption},
     
     {fapply weakening, exact {ϕ : formula L | ϕ ∈ S.fst}, exact h_weakening, exact S.snd.fst}
   end
@@ -176,7 +183,7 @@ noncomputable def proof_compactness {L : Language.{u}} : Π {ψ : formula L}, Π
     fapply falsumE,
     have h_weakening : {ϕ : formula L | ϕ ∈ S.fst} ⊆ insert ∼A {ϕ : formula L | ϕ ∈ S'.fst},
       {intro x, intro hx, simp, by_cases x = ∼A,
-        exact or.inl h, simp*, fapply hS'.right, assumption, assumption},
+        exact or.inl h, simp only [*, false_or], fapply hS'.right, assumption, assumption},
  
     {fapply weakening, exact {ϕ : formula L | ϕ ∈ S.fst}, exact h_weakening, exact S.snd.fst}  
   end
@@ -209,8 +216,11 @@ noncomputable def proof_compactness {L : Language.{u}} : Π {ψ : formula L}, Π
       have : (T1 ∪ T2) ⊢ s ≃ t × T1 ∪ T2 ⊢ A[s // 0],
         fapply weakening', exact hT1, exact hT2,
       
-      split, simp* at this, simp*,fapply subst, exact s, exact t, exact A,
-      exact this.fst, exact this.snd, simp*, intro ψ, intro hψ, simp[*,-hψ] at hψ,
+      split, simp only [*, fol.subst_formula, list.mem_union] at *, fapply subst, exact s, exact t, exact A,
+      exact this.fst, exact this.snd,
+      simp only [*, fol.subst_formula, eq_self_iff_true],
+      intro ψ, intro hψ,
+      simp only [*, -hψ, fol.subst_formula, list.mem_union, set.mem_set_of_eq] at hψ,
       cases hψ, fapply S1.snd.snd, exact hψ, fapply S2.snd.snd, exact hψ,
     end
 
@@ -230,8 +240,6 @@ begin
   refine ⟨finite_support.fst, _⟩, refine and.intro _ finite_support.snd.snd, fapply soundness, exact finite_support.snd.fst,
   intro H, cases H with fs hFS, fapply soundness,
   have := classical.choice ((completeness {ϕ : sentence L | ϕ ∈ fs} f).mpr hFS.left),
-  fapply weakening, exact Theory.fst {ϕ : sentence L | ϕ ∈ fs},
-  tidy, exact this,
+  fapply weakening, exact Theory.fst {ϕ : sentence L | ϕ ∈ fs}, swap, assumption,
+  fapply set.image_subset, exact hFS.right,
 end
-
-
