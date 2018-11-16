@@ -150,8 +150,10 @@ end
 
 local notation ℕ := L_peano_structure_of_nat
 
+@[simp]lemma floris {L} {S : Structure L} : ↥S = S.carrier := by refl
+
 example : ℕ ⊨ p_zero_not_succ := begin
-  unfold realize_sentence p_zero_not_succ realize_bounded_formula bd_all bd_imp bd_falsum bd_equal, simp*, intro x, intro h, cases h end -- so this is what tidy is doing...
+change ∀ x : ℕ, 0 = nat.succ x → false, intro x, intro h, cases h end
 
 -- TODO, try proving the induction schema for a simple case.
 
@@ -167,7 +169,8 @@ begin
     cases ih_right with ψ h_ψ, rw[<-h_ψ], unfold p_induction_schema,
     -- phew, finally got the goal to be, literally show some instance of the induction schema
     induction index, simp*, intros H1 H2,
-    {intro x, have := H2 x, simp[realize_bounded_formula, realize_formula_below] at *, },
+    {intro x, induction x, refine (realize_subst_formula0 _ _ zero).mp _, exact H1, -- have := H2 x, simp[realize_bounded_formula, realize_formula_below] at *, 
+    },
     {sorry},
   }
 end

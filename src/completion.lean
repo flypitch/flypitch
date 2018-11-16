@@ -1,6 +1,6 @@
 /- Show that every theory can be extended to a complete theory -/
 
-import .fol order.zorn order.filter logic.basic data.finset data.set tactic.tidy data.list
+import .fol .compactness order.zorn order.filter logic.basic data.finset data.set tactic.tidy data.list
 
 local attribute [instance, priority 0] classical.prop_decidable
 open fol
@@ -58,21 +58,11 @@ open zorn
 /- Given a set of theories and a proof that they form a chain under set-inclusion, return their union and a proof that this contains every theory in the chain
 -/
 
-lemma subset_is_transitive {α : Type u} : ∀ a b c : set α, a ⊆ b → b ⊆ c → a ⊆ c :=
-begin intros a b c, intro a_sub_b, intro b_sub_c,
-    intro,
-    intro,
-    have := a_sub_b a_2,
-    have := b_sub_c this,
-    assumption
-end
+lemma subset_is_transitive {α : Type u} : ∀ a b c : set α, a ⊆ b → b ⊆ c → a ⊆ c
+:= by tidy
 
-private def subset_is_transitive_map {α : Type u} (a b c : set α) (h_ab : a ⊆ b) (h_bc : b ⊆ c) (x : α) (h : x ∈ a) : (x ∈ c) :=
-begin
-rename h x_in_a,
-have := subset_is_transitive a b c h_ab h_bc,
-have := this x_in_a, assumption
-end
+private def subset_is_transitive_map {α : Type u} (a b c : set α) (h_ab : a ⊆ b) (h_bc : b ⊆ c) (x : α) (h : x ∈ a) :(x ∈ c)
+:= by tidy
 
 lemma nonempty_of_not_empty {α : Type u} (a : set α) (h : ¬ a = ∅) : nonempty a :=
 begin
@@ -97,272 +87,15 @@ instance {T : Theory L} {hT : is_consistent T} : has_subset (Theory_over T hT) :
 
 instance {T : Theory L} {hT : is_consistent T} : nonempty (Theory_over T hT) := ⟨over_self T hT⟩
 
-/- Given a set of theories over T and a proof that they form a chain under set-inclusion,
-return their union and a proof that this contains every theory in the chain
--/
 
-/-- Given T ⊢ ψ, return the finite context from T required to prove ψ, a proof of that, and a proof that the finite context was a subset of T --/
-
-/- A simple consequence of weakening, needed for recursion below  -/
-lemma weakening' {L : Language.{u}} {S_1 S_2 : set $ formula L} {ψ_1 ψ_2 : formula L} (p1 : S_1 ⊢ ψ_1) (p2 : S_2 ⊢ ψ_2) : (S_1 ∪ S_2 ⊢ ψ_1) × (S_1 ∪ S_2 ⊢ ψ_2) :=
-  begin
-    split, fapply @weakening L S_1 (S_1 ∪ S_2), simpa,
-    fapply @weakening L S_2 (S_1 ∪ S_2), simpa,
-  end
-
-/- Given an xs : list α, an x : α, a set T on α such that everything in xs which is not x is in T, return the sublist which excludes x, a proof that this list is now a subset of T, and a proof that everything in this list was not the forbidden element x.
-
-Annoyingly, I seem to need this to handle impI case below.
--/
-
-noncomputable def list_except {α : Type u} (xs : list α) (x : α) (T : set α) (h : ∀ y ∈ xs, y ≠ x → y ∈ T) : Σ' ys : list α, ({ϕ | ϕ ∈ ys} ⊆ T ∧ (∀ y ∈ ys, y ≠ x)) ∧ (∀ y ∈ xs, y ≠ x → y ∈ ys) :=
+/- Given a sentence and the hypothesis that ψ is provable from a theory T, return a list of sentences from T and a proof that this list proves ψ -/
+noncomputable def theory_proof_compactness' {L : Language} (T : Theory L) (ψ : sentence L) (hψ : T ⊢' ψ) : Σ' Γ : list (sentence L), {ϕ : sentence L | ϕ ∈ Γ} ⊢' ψ ∧ {ϕ : sentence L | ϕ ∈ Γ} ⊆ T :=
 begin
-  induction xs generalizing h,
-    split, swap, exact list.nil, simp,
-    split, swap, refine if _ then _ else _,
-    {exact xs_hd = x,},
-    {apply_instance,},
-    {refine (xs_ih _).fst, intros, fapply h, simp, exact or.inr H, assumption},
-    {refine _::((xs_ih _).fst), exact xs_hd, intros, fapply h, simp, exact or.inr H, assumption},  -- finish ite statement
-  split, split,
-  
-  by_cases xs_hd = x; simp*; intros a ha; simp[*, -ha] at ha,
-     {dedup, refine (xs_ih _).snd.left.left _, intros, fapply h, simp, exact or.inr H, assumption, assumption,},
-     {dedup, cases ha, swap,
-     refine (xs_ih _).snd.left.left _, intros, fapply h, simp, exact or.inr H, assumption, assumption, fapply h, fapply or.inl, assumption, cc},
-
-    by_cases (xs_hd = x);
-      simp*, intros y H, refine ((xs_ih _).snd).left.right _ _,
-      intros, dedup, fapply h, simp, apply or.inr, assumption,
-      assumption, assumption,
-      
-      intros y H, refine ((xs_ih _).snd).left.right _ _,
-      intros, dedup, fapply h, simp, apply or.inr, assumption,
-      assumption, assumption, 
-
-    intro y, intro hy, by_cases xs_hd = x, simp*, 
-    cases hy, intro h_bad, have : y = x, by cc, contradiction,
-      
-         begin
-         intro h_good, fapply (xs_ih _).snd.right y,
-           exact hy, exact h_good, 
-         end,
-             
-         begin
-         intro h_good, simp*, cases hy, exact or.inl hy, fapply or.inr, fapply (xs_ih _).snd.right y,
-           exact hy, exact h_good,
-         end,
+  have proof := classical.choice hψ,
+  have proof' := theory_proof_compactness proof,
+  refine ⟨proof'.fst, _⟩, cases proof' with proof1 proof2,
+  exact and.intro (nonempty.intro proof2.fst) (proof2.snd)
 end
-
-/- Couldn't find this def in set.basic... sure it's around somewhere-/
-/-- Given x ∈ f '' S, choose a lift x' in the preimage of x; return x' and a proof that x' is a lift --/
-noncomputable def image_lift {α : Type u} {β : Type v} {f : α → β} {S : set α} (x ∈ f '' S) : Σ' (x' : α), x' ∈ S ∧ f x' = x :=
-begin
-  simp[*,-H] at H,
-  have := strong_indefinite_description, swap, exact α,
-  have prelift : {x_1 // (∃ (y : α), (λ (y : α), y ∈ S ∧ f y = x) y) → (λ (y : α), y ∈ S ∧ f y = x) x_1},
-  fapply this (λ y, y ∈ S ∧ f y = x), fapply nonempty_of_exists, exact (λ y, y ∈ S ∧ f y = x),
-  exact H, have snd := prelift.property, simp[*,-snd] at snd,
-  refine ⟨prelift.val, _⟩, exact snd,
-end
-
-/-- Given a list xs : list β, a set S : set α, a proof that {x | x ∈ xs} ⊆ f '' S, return a list of lifts ys : list α, a proof that ys ⊆ S and a proof that f '' ys = xs --/
-noncomputable def image_lift_list {α : Type u} {β : Type v} {f : α → β} {S : set α} {xs : list β} (h_sub : {x | x ∈ xs} ⊆ f '' S) : Σ' (ys : list α), ({y' | y' ∈ ys} ⊆ S) ∧ f '' {y | y ∈ ys} = {x | x ∈ xs} :=
-begin
-  induction xs generalizing h_sub,
-    split, swap,
-      {exact list.nil},
-      {fapply and.intro, repeat{simp}},
-  
-          let Hxs_ih : {x : β | x ∈ xs_tl} ⊆ f '' S :=
-            begin intros x hx, fapply h_sub, exact or.inr hx end,
-          let Himage_lift : xs_hd ∈ (f '' S) :=
-            begin fapply h_sub, simp end, simp[*, -Himage_lift] at Himage_lift,
-          split;
-      
-      let x_image_lift := begin fapply @image_lift α β f S xs_hd, exact Himage_lift end,
-                        
-    swap,
-      have : {x : β | x ∈ xs_tl} ⊆ f '' S,
-        {intros x hx, fapply h_sub, fapply or.inr, exact hx},
-      have actual_ih := xs_ih this,
-      let zs := actual_ih.fst, let h_zs := actual_ih.snd,
-      refine _::zs, exact x_image_lift.fst,
-
-      split,
-        intros y Hy, cases Hy, rw[Hy], exact x_image_lift.snd.left,
-        
-        refine (xs_ih Hxs_ih).snd.left _,
-          exact Hy,
-
-        simp*, fapply funext, intro x, fapply propext,
-
-        split,
-          intro hx, cases hx with hx_witness hx_hypothesis,
-
-            cases hx_hypothesis with h1 h2,
-            cases h1,
-              have := (image_lift xs_hd Himage_lift).snd;
-              fapply or.inl, rw[<-h2, h1], exact this.right,
-              
-              fapply or.inr, rw[<-h2],
-              have h_final : f hx_witness ∈ f '' {y : α | y ∈ (xs_ih Hxs_ih).fst},
-              fapply exists.intro, exact hx_witness, simpa,
-              rw[(xs_ih Hxs_ih).snd.right] at h_final,
-              exact h_final,
-
-        intro hx, cases hx with h_hd h_tl,
-           fapply exists.intro, exact x_image_lift.fst, rw[h_hd], simp,
-           exact x_image_lift.snd.right, unfold set.image,
-           
-           have strong_lift := begin
-                                   fapply strong_indefinite_description, exact α,
-                                   exact λ a, a ∈ {y : α | y ∈ (xs_ih Hxs_ih).fst} ∧ f a = x,
-                                   fapply nonempty_of_exists, exact λ x, x ∈ S ∧ f x = xs_hd,
-                                   exact Himage_lift
-                                  end;
-
-           have h_almost := (xs_ih Hxs_ih).snd;
-           have h_exists : x ∈ f '' {y : α | y ∈ (xs_ih Hxs_ih).fst},
-              rw[h_almost.right], assumption, unfold set.image at h_exists;
-           fapply exists.intro, 
-                       
-              exact strong_lift.val, fapply and.intro, fapply or.inr, refine (strong_lift.property _).left, exact h_exists, refine (strong_lift.property _).right, exact h_exists
-end
-
-set_option eqn_compiler.lemmas false
-
-noncomputable def proof_compactness {L : Language.{u}} : Π {ψ : formula L}, Π {T : set $ formula L},  Π (pψ : T ⊢ ψ), Σ Γ : list (formula L), Σ' p : {ϕ : formula L | ϕ ∈ Γ} ⊢ ψ, {ϕ : formula L | ϕ ∈ Γ} ⊆ T
-| ψ T (axm a) := begin split, swap, exact [ψ],have : {ϕ : formula L | ϕ ∈ [ψ]} = {ψ},
-                   by refl, split, rw[this],
-                   fapply axm, simp, rw[this], simp, exact a
-                   end
-| B T (impE A P_AB P_A) :=
-    begin
-      have S1 := proof_compactness P_AB,
-      have S2 := proof_compactness P_A,
-      split, swap, exact S1.fst ∪ S2.fst,
-
-      let T1 := {ϕ | ϕ ∈ S1.fst}, let T2 := {ϕ | ϕ ∈ S2.fst},
-      have hT1 : T1 ⊢ A ⟹ B, have := S1.snd.fst, exact this,
-      have hT2 : T2 ⊢ A, have := S2.snd.fst, exact this,
-      have : (T1 ∪ T2) ⊢ (A ⟹ B) × T1 ∪ T2 ⊢ A,
-        fapply weakening', exact hT1, exact hT2,
-      
-      split, simp* at this, simp*,fapply impE, exact A,
-      exact this.fst, exact this.snd, simp*, intro ψ, intro hψ,
-      cases hψ, fapply S1.snd.snd, exact hψ, fapply S2.snd.snd, exact hψ,
-    end
-| (f1 ⟹ f2) T (impI P) :=
-  begin
-    have S := (proof_compactness P),
-    let S' := --Σ' (ys : list (formula L)), {ϕ : formula L | ϕ ∈ ys} ⊆ T ∧ ∀ (y : formula L), y ∈ ys → y ≠ f1,
-      begin { refine (list_except S.fst f1 T _),
-      have := (S.snd).snd, intros y H a, have := this H, cases this, exfalso, contradiction, assumption}, end,
-    split, swap,  exact S'.fst, have hS' := S'.snd, 
-    split, swap, exact hS'.left.left,
-    fapply impI,
-    have h_weakening : {ϕ : formula L | ϕ ∈ S.fst} ⊆ insert f1 {ϕ : formula L | ϕ ∈ S'.fst},
-      {intro x, intro hx, simp, by_cases x = f1,
-        exact or.inl h, simp*, fapply hS'.right, assumption, assumption},
-    
-    {fapply weakening, exact {ϕ : formula L | ϕ ∈ S.fst}, exact h_weakening, exact S.snd.fst}
-  end
-| A T (falsumE P) :=
-  begin
-    have S := (proof_compactness P),
-    let S' := --Σ' (ys : list (formula L)), {ϕ : formula L | ϕ ∈ ys} ⊆ T ∧ ∀ (y : formula L), y ∈ ys → y ≠ f1,
-      begin { refine (list_except S.fst (∼A) T _),
-      have := (S.snd).snd, intros y H a, have := this H, cases this, exfalso, contradiction, assumption}, end,
-    split, swap,  exact S'.fst, have hS' := S'.snd, 
-    split, swap, exact hS'.left.left,
-    fapply falsumE,
-    have h_weakening : {ϕ : formula L | ϕ ∈ S.fst} ⊆ insert ∼A {ϕ : formula L | ϕ ∈ S'.fst},
-      {intro x, intro hx, simp, by_cases x = ∼A,
-        exact or.inl h, simp*, fapply hS'.right, assumption, assumption},
- 
-    {fapply weakening, exact {ϕ : formula L | ϕ ∈ S.fst}, exact h_weakening, exact S.snd.fst}  
-  end
-|  (∀' A) T (allI P) :=
-  begin
-    have S  := (proof_compactness P), have h_subset := S.snd.snd,
-    have preS' := image_lift_list h_subset, let S' := preS'.fst, have hS' := preS'.snd,
-    refine ⟨S', _⟩, refine ⟨_, hS'.left⟩, fapply allI,
-    rw[hS'.right], exact S.snd.fst,
-  end
-| (_ ≃ t) T (refl _ _) :=
-  begin
-    dedup, refine ⟨[], _⟩, split, fapply fol.prf.refl,
-    intro ψ, intro hψ, exfalso, exact hψ
-  end
-| .(_[_ // 0]) T (allE' A t P) :=
-        begin
-          have preS := proof_compactness P, split, swap, exact preS.fst,
-          split, fapply allE', exact preS.snd.fst, exact preS.snd.snd
-        end
-| .(_[_ // 0]) T (subst' s t A P1 P2) :=
-    begin
-      have S1 := proof_compactness P1,
-      have S2 := proof_compactness P2,
-      split, swap, exact S1.fst ∪ S2.fst,
-
-      let T1 := {ϕ | ϕ ∈ S1.fst}, let T2 := {ϕ | ϕ ∈ S2.fst},
-      have hT1 : T1 ⊢ s ≃ t, have := S1.snd.fst, exact this,
-      have hT2 : T2 ⊢ A[s // 0], have := S2.snd.fst, exact this,
-      have : (T1 ∪ T2) ⊢ s ≃ t × T1 ∪ T2 ⊢ A[s // 0],
-        fapply weakening', exact hT1, exact hT2,
-      
-      split, simp* at this, simp*,fapply subst, exact s, exact t, exact A,
-      exact this.fst, exact this.snd, simp*, intro ψ, intro hψ, simp[*,-hψ] at hψ,
-      cases hψ, fapply S1.snd.snd, exact hψ, fapply S2.snd.snd, exact hψ,
-    end
-
--- def proof_finite_support2 {L : Language} (T : Theory L) (ψ : sentence L) (pψ : T ⊢ ψ) : Σ Γ : list (sentence L), Σ' p :{ϕ : sentence L | ϕ ∈ Γ} ⊢ ψ, {ϕ : sentence L | ϕ ∈ Γ} ⊆ T :=
--- begin
---   split, swap,
---   unfold sprf at pψ, have ψ_1 := ψ.fst, have ψ_2 := ψ.snd, induction pψ generalizing ψ,
---   {exact [ψ],},
---   {sorry},
---   {sorry},
---   {sorry},
---   {sorry},
---   {sorry},
---   {sorry},
---   {sorry},
---   {sorry}
--- end
-
-/- Given a sentence and the knowledge that there is a proof of ψ from T, return a list of sentences from T and a proof that this list proves ψ -/
-noncomputable def proof_finite_support {L : Language} (T : Theory L) (ψ : sentence L) (hψ : T ⊢' ψ) : Σ' Γ : list (sentence L), {ϕ : sentence L | ϕ ∈ Γ} ⊢' ψ ∧ {ϕ : sentence L | ϕ ∈ Γ} ⊆ T :=
-begin
-  have P := classical.choice hψ,
-  have P' := proof_compactness P,
-  cases P' with S hS,
-  have lift_list := begin fapply @image_lift_list, exact sentence L, exact formula L, exact sigma.fst, exact T, exact S, exact hS.snd end,
-  refine ⟨lift_list.fst, _⟩,
-  refine and.intro _ lift_list.snd.left, fapply nonempty.intro,
-  unfold Theory.fst, rw[lift_list.snd.right], exact hS.fst
-end
-
-lemma in_theory_of_fst_in_theory {L : Language} {T : Theory L} {ψ : sentence L} (h : ψ.fst ∈ T.fst) : ψ ∈ T :=
-begin
-cases ψ,
-  unfold Theory.fst at h, unfold set.image at h,
-  have lift : ∃ (a : Σ (f : formula L), formula_below 0 f), a ∈ T ∧ a.fst = ψ_fst,
-  assumption,
-  cases lift with lift1 lift2,
-  cases lift2 with lift2 hlift2,
-  cases lift1 with lift1 hlift1,
-  have : sigma.mk lift1 hlift1 = ⟨ψ_fst, ψ_snd⟩,
-  simp*, split, assumption, finish,
-  rw[this] at lift2, assumption
-end
--- def provable_of_provable_from_subset2 : ∀{L}, Π ψ : sentence L, Π(T : Theory L), Π(T' : Theory L), T' ⊆ T → T' ⊢ ψ  → T ⊢ ψ
--- | L ψ T T' h_sub (axm a) := begin --fapply axm, unfold has_subset.subset at h_sub, fapply set.image_subset, exact T', exact h_sub, exact a end
--- sorry end
-
-
---  fapply axm, exact h_sub a 
 
 
 def provable_of_provable_from_subset {L : Language} (T : Theory L) (T' : Theory L) (h_sub : T' ⊆ T) (ψ : sentence L) (proof : T' ⊢ ψ) : (T ⊢ ψ)
@@ -469,35 +202,12 @@ begin fapply h_fs, constructor, refl end begin have := tl_max.snd, exact this.le
         rw[A2], exact H_ab
 end 
 
-noncomputable def finite_sup_T_lemma_1 {L : Language} {T : Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (hTs : nonempty Ts) (h_chain : chain Theory_over_subset Ts) (h_inconsis : T ∪ ⋃₀(subtype.val '' Ts) ⊢' (⊥ : sentence L)) (fs : list (sentence L)) (Hfs : {ϕ : sentence L | ϕ ∈ fs} ⊢' (⊥ : sentence L) ∧ {ϕ : sentence L | ϕ ∈ fs} ⊆ T ∪ ⋃₀(subtype.val '' Ts)) : Π (f : sentence L), f ∈ fs → (Σ' (S_f : Theory_over T hT), set.mem S_f Ts ∧ set.mem f (S_f.val)) :=
-begin
-  intros f hf,
-  have H := Hfs.right,
-  unfold set.image set.sUnion set.subset set.mem list.mem at H,
-  have H' := H hf,
-  by_cases f ∈ T,
-  split, swap,
-  {exact (classical.choice hTs).val},
-  {fapply and.intro, exact (choice hTs).property,
-    have H := (choice hTs).val.property.left,
-    exact H h},
- 
-
-    simp[*, -H'] at H',
-    have witness := instantiate_existential H' begin fapply nonempty.intro, exact T end, simp* at witness,
-    split, swap, split, swap, exact witness.val, cases witness.property with case1 case2, cases case1 with case1' case1'', exact case1',
-
-split, have witness_property := witness.property, cases witness_property with case1 case2, cases case1 with case1' case1'', exact case1'',
-
-have witness_property := witness.property, cases witness_property with case1 case2,
-exact case2,
-end
-
-def list_is_list_of_subtype : Π(L : Language.{u}), Π (fs : list (sentence L)),  Σ' xs : list ↥{f : sentence L | f ∈ fs}, ∀ f, ∀ h : f ∈ fs, (⟨f,h⟩ : ↥{f : sentence L | f ∈ fs}) ∈ xs
+/-- Given a xs : list α, it is naturally a list {x ∈ α | x ∈ xs} --/
+def list_is_list_of_subtype : Π(α : Type u), Π (fs : list α),  Σ' xs : list ↥{f : α | f ∈ fs}, ∀ f, ∀ h : f ∈ fs, (⟨f,h⟩ : ↥{f : α | f ∈ fs}) ∈ xs
 | L [] := begin simp*,  split, exact [], trivial end
 | L (list.cons hd tl) :=
   begin
-    split, swap,
+    refine ⟨_, _⟩,
     have ih := list_is_list_of_subtype L tl,
     have F : {f | f ∈ tl} → {f | f ∈ list.cons hd tl},
     intro f, refine ⟨f, _⟩, fapply or.inr, exact f.property,
@@ -509,11 +219,37 @@ def list_is_list_of_subtype : Π(L : Language.{u}), Π (fs : list (sentence L)),
     fapply or.inr, fapply exists.intro, exact hf, exact (list_is_list_of_subtype L tl).snd f hf
   end
 
-noncomputable def finite_sup_T_lemma_2 {L : Language} (T : Theory L) (hT : is_consistent T) (Ts : set (Theory_over T hT)) (hTs : nonempty Ts) (h_chain : chain Theory_over_subset Ts) (h_inconsis : T ∪ ⋃₀(subtype.val '' Ts) ⊢' (⊥ : sentence L)) (fs : list (sentence L)) (Hfs : {ϕ : sentence L | ϕ ∈ fs} ⊢' (⊥ : sentence L) ∧ {ϕ : sentence L | ϕ ∈ fs} ⊆ T ∪ ⋃₀(subtype.val '' Ts)) (dSs : Π (f : sentence L), f ∈ fs → (Σ' (S_f : Theory_over T hT), set.mem S_f Ts ∧ set.mem f (S_f.val))) :  Σ' (T_max : Theory_over T hT), T_max ∈ Ts ∧ ∀ (ψ : sentence L), ψ ∈ fs → ψ ∈ T_max.val :=
-begin
-  let F : {f | f ∈ fs} → Theory_over T hT :=
+/-- The limit theory of a chain of consistent theories over T is consistent --/
+lemma consis_limit {L : Language} {T : Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : is_consistent (T ∪ set.sUnion (subtype.val '' Ts)) :=
+begin -- so _here_ is where we need that proofs are finitely supported
+  intro h_inconsis,
+  by_cases nonempty Ts, swap,
+    { simp* at h, simp[*, -h_inconsis] at h_inconsis, unfold is_consistent at hT, exact hT h_inconsis},
+
+  have Γpair := theory_proof_compactness' (T ∪ ⋃₀(subtype.val '' Ts)) ⊥ h_inconsis,
+  have h_bad : ∃ T' : (Theory L), (T' ∈ (subtype.val '' Ts)) ∧ {ψ | ψ ∈ Γpair.fst} ⊆ T',
+
+ 
+ {cases Γpair with fs Hfs, rename h hTs,
+  have dSs : Π f ∈ fs, Σ' S_f : (Theory_over T hT), set.mem S_f Ts ∧ (set.mem (f) (S_f.val)), -- to each f in fs, associate an S_f containing f from the chain
+    {  intros f hf, have H := Hfs.right,
+  unfold set.image set.sUnion set.subset set.mem list.mem at H,
+  have H' := H hf,  by_cases f ∈ T,
+  split, swap, {exact (classical.choice hTs).val},
+  {fapply and.intro, exact (choice hTs).property,
+    have H := (choice hTs).val.property.left,
+    exact H h},
+ 
+    simp[*, -H'] at H',
+    have witness := instantiate_existential H' begin fapply nonempty.intro, exact T end, simp* at witness,
+    split, swap, split, swap, exact witness.val, cases witness.property with case1 case2, cases case1 with case1' case1'', exact case1',
+split, have witness_property := witness.property, cases witness_property with case1 case2, cases case1 with case1' case1'', exact case1'',
+have witness_property := witness.property, cases witness_property with case1 case2, exact case2,},
+
+  have T_max : Σ' (T_max : Theory_over T hT), (T_max ∈ Ts) ∧ ∀ ψ ∈ fs, (ψ) ∈ T_max.val,  -- get the theory and a proof that it contains all the f
+    {  let F : {f | f ∈ fs} → Theory_over T hT :=
     begin intro f, exact (dSs f.val f.property).fst end,
- let fs_list_subtype := list_is_list_of_subtype L fs,
+ let fs_list_subtype := list_is_list_of_subtype _ fs,
  let T_list : list (Theory_over T hT) :=
     begin fapply list.map F, exact fs_list_subtype.fst end,
   have T_list_subset_Ts : (∀ (S : Theory_over T hT), S ∈ T_list → S ∈ Ts),
@@ -542,40 +278,11 @@ begin
         },
       },
     {intros a b c, unfold Theory_over_subset, fapply subset_is_transitive},
-    {assumption},
-end
-
-/--Given a consistent theory T and a chain Ts of consistent theories over T, and a finite list of formulas in ⋃Ts which prove ⊥, return the assertion that there exists a theory T' from Ts ∪ {T} and a proof that T' ⊢ ⊥. (This probably should be refactored through nonempty.intro) --/
-def finite_sup_T  {L : Language} {T : Theory L}  {hT : is_consistent T} {Ts : set (Theory_over T hT)} {hTs : nonempty Ts} {h_chain : chain Theory_over_subset Ts} {h_inconsis: T ∪ ⋃₀(subtype.val '' Ts) ⊢' s_falsum} (Γpair : Σ' (Γ : list (sentence L)),
-    {ϕ : sentence L | ϕ ∈ Γ} ⊢' (⊥ : sentence L) ∧ {ϕ : sentence L | ϕ ∈ Γ} ⊆ T ∪ ⋃₀(subtype.val '' Ts)) : ∃ (T' : Theory L), T' ∈ subtype.val '' Ts ∧ {ψ : sentence L | ψ ∈ Γpair.fst} ⊆ T' :=
-begin
-  cases Γpair with fs Hfs, 
-  have dSs : Π f ∈ fs, Σ' S_f : (Theory_over T hT), set.mem S_f Ts ∧ (set.mem (f) (S_f.val)), -- to each f in fs, associate an S_f containing f from the chain
-    {fapply finite_sup_T_lemma_1, repeat{assumption}},
-  have T_max : Σ' (T_max : Theory_over T hT), (T_max ∈ Ts) ∧ ∀ ψ ∈ fs, (ψ) ∈ T_max.val,  -- get the theory and a proof that it contains all the f
-    {fapply finite_sup_T_lemma_2, repeat{assumption}},
+    {assumption},},
   
   fapply exists.intro, exact T_max.fst.val,
   fapply and.intro, fapply set.mem_image_of_mem, exact T_max.snd.left,
-  have := T_max.snd.right, intros ψ hψ, exact this ψ hψ,
-end
-
--- example : ∀{L}, ((∅ : Theory L) ⊢ s_falsum → false) :=
---   begin
---     intros L P, unfold sprf at P, destruct P,
---   end 
-
-/- The limit theory of a chain of consistent theories over T is consistent -/
-lemma consis_limit {L : Language} {T : Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : is_consistent (T ∪ set.sUnion (subtype.val '' Ts)) :=
-begin -- so _here_ is where we need that proofs are finitely supported
-  intro h_inconsis,
-  by_cases nonempty Ts, swap,
-    { simp* at h, simp[*, -h_inconsis] at h_inconsis, unfold is_consistent at hT, exact hT h_inconsis},
-
-  have Γpair := proof_finite_support (T ∪ ⋃₀(subtype.val '' Ts)) ⊥ h_inconsis,
-  have h_bad : ∃ T' : (Theory L), (T' ∈ (subtype.val '' Ts)) ∧ {ψ | ψ ∈ Γpair.fst} ⊆ T',
-
-  fapply finite_sup_T, repeat{assumption},
+  have := T_max.snd.right, intros ψ hψ, exact this ψ hψ},
 
   let T_bad := @strong_indefinite_description (Theory L) (λ S, S ∈ (subtype.val '' Ts) ∧ ({ϕ | ϕ ∈ Γpair.fst} ⊆ S))  begin apply_instance end,
   have T_bad_inconsis : sprovable T_bad.val ⊥,
@@ -596,8 +303,7 @@ end
 
 
 /-- Given a chain of consistent extensions of a theory T, return the union of those theories and a proof that this is a consistent extension of T --/
-
-def limit_theory2 {L : Language} {T : Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : Σ' T : Theory_over T hT, ∀ T' ∈ Ts, T' ⊆ T :=
+def limit_theory {L : Language} {T : Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : Σ' T : Theory_over T hT, ∀ T' ∈ Ts, T' ⊆ T :=
 begin
 refine ⟨⟨T ∪ set.sUnion (subtype.val '' Ts), _⟩, _⟩, simp*, intro,
 exact @consis_limit L T hT Ts h_chain begin simp* end,
@@ -605,46 +311,28 @@ intros T' hT' ψ hψ, right, split, swap, exact T'.val,
 apply exists.intro, swap, exact hψ, simp*, exact T'.property
 end
 
-/- Given a theory T, show that the poset of theories over T satisfies the hypotheses of Zorn's lemma -/
-lemma can_use_zorn2 {L : Language.{u}} {T : Theory L} {hT : is_consistent T}  : (∀c, @chain (Theory_over T hT) Theory_over_subset c → ∃ub, ∀a∈c, a ⊆ ub) ∧ (∀(a b c : Theory_over T hT), a ⊆ b → b ⊆ c → a ⊆ c) :=
+/-- Given a theory T, show that the poset of theories over T satisfies the hypotheses of Zorn's lemma --/
+lemma can_use_zorn {L : Language.{u}} {T : Theory L} {hT : is_consistent T}  : (∀c, @chain (Theory_over T hT) Theory_over_subset c → ∃ub, ∀a∈c, a ⊆ ub) ∧ (∀(a b c : Theory_over T hT), a ⊆ b → b ⊆ c → a ⊆ c) :=
 begin
-  split,
-  intro Ts, intro h_chain, let S := limit_theory2 Ts h_chain,
-  let T_infty := S.fst,
-  let H_infty := S.snd,
-  refine exists.intro _ _,
-  exact T_infty,
-  intro T',
-  intro H',
-  have := H_infty T' H',
-  simp[S, has_subset.subset] at this,
-  simp[S],
-  simp*,
-  unfold has_subset.subset,
-  intros a b c a_sub_b  b_sub_c,
-    simp[Theory_over_subset], simp[Theory_over_subset] at a_sub_b, simp[Theory_over_subset] at b_sub_c,
-    intros ψ hψ,
-    have := a_sub_b hψ,
-    have := b_sub_c this,
-    assumption,
+  split,  intro Ts, intro h_chain, let S := limit_theory Ts h_chain,
+  let T_infty := S.fst,  let H_infty := S.snd,
+  refine exists.intro _ _,  exact T_infty, intro T', intro H',
+  finish, tidy
 end
 
-
-/- Given a consistent theory T, return a maximal extension of it given by Zorn's lemma, along with the proof that it is consistent and maximal -/
-noncomputable def maximal_extension2 (L : Language.{u}) (T : Theory L) (hT : is_consistent T) : 
+/-- Given a consistent theory T, return a maximal extension of it given by Zorn's lemma, along with the proof that it is consistent and maximal --/
+noncomputable def maximal_extension (L : Language.{u}) (T : Theory L) (hT : is_consistent T) : 
   Σ' (T_max : Theory_over T hT), ∀ T' : Theory_over T hT, T_max ⊆ T' → T' ⊆ T_max :=
 begin
-let X := strong_indefinite_description (λ T_max : Theory_over T hT, ∀ T' : Theory_over T hT, T_max ⊆ T' → T' ⊆ T_max ) begin apply_instance end,
-have := @can_use_zorn2 L T, rename this h_can_use,
-have := zorn h_can_use.left h_can_use.right, rename this h_zorn,
-let T_max := X.val,
-let H := X.property,
-split, swap,
-exact T_max,
-exact H h_zorn
+  let X := strong_indefinite_description (λ T_max : Theory_over T hT, ∀ T' : Theory_over T hT, T_max ⊆ T' → T' ⊆ T_max ) begin apply_instance end,
+  have := @can_use_zorn L T, rename this h_can_use,
+  have := zorn h_can_use.left h_can_use.right, rename this h_zorn,
+  let T_max := X.val, let H := X.property,
+  exact ⟨T_max, H h_zorn⟩,
 end
 
-lemma cannot_extend_maximal_extension2 {L : Language} {T : Theory L} {hT : is_consistent T} (T_max' : Σ' (T_max : Theory_over T hT), ∀ T' : Theory_over T hT, T_max ⊆ T' → T' ⊆ T_max) (ψ : sentence L) (H : is_consistent (T_max'.fst.val ∪ {ψ}))(H1 : ψ ∉ T_max'.fst.val) : false :=
+/-- The maximal extension returned by maximal_extension cannot be extended. --/
+lemma cannot_extend_maximal_extension {L : Language} {T : Theory L} {hT : is_consistent T} (T_max' : Σ' (T_max : Theory_over T hT), ∀ T' : Theory_over T hT, T_max ⊆ T' → T' ⊆ T_max) (ψ : sentence L) (H : is_consistent (T_max'.fst.val ∪ {ψ}))(H1 : ψ ∉ T_max'.fst.val) : false :=
 begin
   let T_bad : Theory_over T hT,
   {refine ⟨T_max'.fst.val ∪ {ψ}, _⟩,
@@ -673,43 +361,32 @@ begin
   exact this_mp uh_oh,
 end
 
-lemma q_of_not_p (p q : Prop) (h1 : p ∨ q) (h2 : ¬ p) : q := by tauto
-/- Given a maximal consistent extension of consistent theory T, show it is complete -/
-lemma complete_maximal_extension2_of_consis {L : Language} {T : Theory L} {hT : is_consistent T}: @is_complete L (@maximal_extension2 L T hT).fst.val :=
+/-- Given a maximal consistent extension of consistent theory T, show it is complete --/
+lemma complete_maximal_extension_of_consis {L : Language} {T : Theory L} {hT : is_consistent T}: @is_complete L (@maximal_extension L T hT).fst.val :=
 begin
-split,
-exact (@maximal_extension2 L T hT).fst.property.right,
-intro ψ,
-by_cases ψ ∈ (@maximal_extension2 L T hT).fst.val,
-exact or.inl h,
-apply or.inr,
-by_contra,
-have can_extend := @can_extend L (@maximal_extension2 L T hT).fst.val ψ (@maximal_extension2 L T hT).fst.property.right,
-have h_max := (@maximal_extension2 L T hT).snd,
+  refine ⟨(@maximal_extension L T hT).fst.property.right, _⟩,
+  intro ψ, by_cases ψ ∈ (@maximal_extension L T hT).fst.val, exact or.inl h,
+  apply or.inr,
+  by_contra,
+  have can_extend := @can_extend L (@maximal_extension L T hT).fst.val ψ (@maximal_extension L T hT).fst.property.right,
+  have h_max := (@maximal_extension L T hT).snd,
 
-by_cases is_consistent ((@maximal_extension2 L T hT).fst.val ∪ {ψ}),
-  {rename h h1,
-  refine cannot_extend_maximal_extension2 _ _ _ _,
-  exact L, exact T, exact hT, exact maximal_extension2 L T hT, exact ψ,
-  exact h1, exact h
-  },
-{rename h h2,
-have h2' := q_of_not_p _ _ can_extend h2,
-  fapply cannot_extend_maximal_extension2,
-  exact L, exact T, exact hT, exact maximal_extension2 L T hT, exact ∼ψ,
-    assumption, assumption
-}
+  by_cases is_consistent ((@maximal_extension L T hT).fst.val ∪ {ψ}),
+    {rename h h1,
+      fapply cannot_extend_maximal_extension, repeat{assumption}},
+  {rename h h2,
+  have q_of_not_p : ∀ p q : Prop, ∀ h1 : p ∨ q, ∀ h2 : ¬ p, q, by tauto,
+  have h2' := q_of_not_p _ _ can_extend h2,
+  fapply cannot_extend_maximal_extension, repeat{assumption}},
 end
 
 
-/- Given a consistent theory, return a complete extension of it -/
-noncomputable def completion_theory3 : Π ( T : Theory L) (h_consis : is_consistent T), Σ' T' : (Theory_over T h_consis), is_complete T'.val :=
+/-- Given a consistent theory, return a complete extension of it --/
+noncomputable def completion_of_consis : Π ( T : Theory L) (h_consis : is_consistent T), Σ' T' : (Theory_over T h_consis), is_complete T'.val :=
 begin
-  intro T,
-  intro h_consis,
-  let T_max := maximal_extension2 L T h_consis,
-  refine ⟨T_max.fst, _⟩,
-  apply complete_maximal_extension2_of_consis
+  intros T h_consis,
+  let T_max := maximal_extension L T h_consis,
+  exact ⟨T_max.fst, by apply complete_maximal_extension_of_consis⟩,
 end
 
 end
