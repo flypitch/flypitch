@@ -4,7 +4,7 @@ local attribute [instance, priority 0] classical.prop_decidable
 
 open fol
 
-#check language_morphism
+-- #check language_morphism
 
 def henkin_Theory_over {L : Language} (T : Theory L) (hT : is_consistent T) : Type := Σ' T' : Theory_over T hT, has_enough_constants T'.val
 

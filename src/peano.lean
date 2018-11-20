@@ -30,9 +30,9 @@ def quantifier_count_preformula {L : Language} : Π n, preformula L n → ℕ
 
 @[simp] lemma alls_0 {L : Language} (ψ : formula L) : alls 0 ψ = ψ := by refl
 
-@[simp] def b_alls_1 {L : Language} {n : ℕ} {f : formula L} (hf :  formula_below (n+1) f)  : formula_below n $ alls 1 f := begin
-constructor, assumption
-end
+-- @[simp] def b_alls_1 {L : Language} {n : ℕ} {f : formula L} (hf :  formula_below (n+1) f)  : formula_below n $ alls 1 f := begin
+-- constructor, assumption
+-- end
 
 @[simp] lemma alls_all_commute {L : Language} (f : formula L) {k : ℕ} : (alls k ∀' f) = (∀' alls k f) :=
 begin
@@ -43,38 +43,38 @@ end
 
 @[simp] lemma alls_succ_k {L : Language} (f : formula L) {k : ℕ} : alls (k + 1) f = ∀' alls k f := by constructor
 
-@[simp] def b_alls_k {L : Language} {n : ℕ} {k: ℕ} :  ∀ f : formula L, formula_below (n + k) f → formula_below n (alls k f) :=
-begin
-  induction k with k ih,
-  intros f hf, exact hf,
-  intros f hf, 
-  have H := alls_succ_k,
+-- @[simp] def b_alls_k {L : Language} {n : ℕ} {k: ℕ} :  ∀ f : formula L, formula_below (n + k) f → formula_below n (alls k f) :=
+-- begin
+--   induction k with k ih,
+--   intros f hf, exact hf,
+--   intros f hf, 
+--   have H := alls_succ_k,
 
-  have hf_rw : formula_below (n + nat.succ k) f → formula_below (n+k) ∀'f, by {apply b_alls_1},
-  let hf2 := hf_rw hf,
+--   have hf_rw : formula_below (n + nat.succ k) f → formula_below (n+k) ∀'f, by {apply b_alls_1},
+--   let hf2 := hf_rw hf,
 
-  have hooray := ih (∀'f) hf2,
-  rw[alls_all_commute, <-H] at hooray, exact hooray --hooray!!
-end
+--   have hooray := ih (∀'f) hf2,
+--   rw[alls_all_commute, <-H] at hooray, exact hooray --hooray!!
+-- end
 
 /- both b_subst and b_subst2 are consequences of formula_below_subst in fol.lean -/
-def b_subst {L : Language} {n : ℕ} {f : formula L} (hf : formula_below (n+1) f) {t : term L} (ht : term_below 0 t) : formula_below n (f[t //0]) :=
-begin
-have P := @formula_below_subst L 0 n 0 f begin rw[zero_add], exact hf end t,
-have t' : term_below n t,
-  fapply term_below_of_le,
-  exact 0,
-  exact n.zero_le,
-  exact ht,
-have Q := P t',
-simp only [fol.subst_formula, zero_add] at Q, assumption
-end
+-- def b_subst {L : Language} {n : ℕ} {f : formula L} (hf : formula_below (n+1) f) {t : term L} (ht : term_below 0 t) : formula_below n (f[t //0]) :=
+-- begin
+-- have P := @formula_below_subst L 0 n 0 f begin rw[zero_add], exact hf end t,
+-- have t' : term_below n t,
+--   fapply term_below_of_le,
+--   exact 0,
+--   exact n.zero_le,
+--   exact ht,
+-- have Q := P t',
+-- simp only [fol.subst_formula, zero_add] at Q, assumption
+-- end
 
-def b_subst2 {L : Language} {n : ℕ} {f : formula L} (hf : formula_below n f) {t : term L} (ht : term_below n t) : formula_below n (f[t //0]) :=
-begin
-  have P := @formula_below_subst L 0 n 0 f begin rw[zero_add], fapply formula_below_of_le, exact n, simpa end t,
-  have P' := P ht, simp only [fol.subst_formula, zero_add] at P', assumption
-end
+-- def b_subst2 {L : Language} {n : ℕ} {f : formula L} (hf : formula_below n f) {t : term L} (ht : term_below n t) : formula_below n (f[t //0]) :=
+-- begin
+--   have P := @formula_below_subst L 0 n 0 f begin rw[zero_add], fapply formula_below_of_le, exact n, simpa end t,
+--   have P' := P ht, simp only [fol.subst_formula, zero_add] at P', assumption
+-- end
 
 
 /- END LEMMAS -/
@@ -170,6 +170,7 @@ begin
     -- phew, finally got the goal to be, literally show some instance of the induction schema
     induction index, simp*, intros H1 H2,
     {intro x, induction x, refine (realize_subst_formula0 _ _ zero).mp _, exact H1, -- have := H2 x, simp[realize_bounded_formula, realize_formula_below] at *, 
+    sorry
     },
     {sorry},
   }

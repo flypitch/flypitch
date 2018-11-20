@@ -31,9 +31,9 @@ begin
   simp[is_consistent],  by_contra,  rename a hc, rw[not_or_distrib] at hc,
   cases hc with hc1 hc2,
   apply h, rw [dne2.symm] at hc1, rw [dne2.symm] at hc2,
-  have hc_uno : T ⊢'  ψ ⟹ s_falsum,
+  have hc_uno : T ⊢'  ∼ψ,
     exact hc1.map simpI,
-  have hc_dos : T ⊢' ∼ψ ⟹ s_falsum,
+  have hc_dos : T ⊢' ∼∼ψ,
     exact hc2.map simpI,
   exact hc_dos.map2 (impE _) hc_uno
 end

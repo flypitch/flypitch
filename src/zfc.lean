@@ -10,17 +10,15 @@ open fol
 
 section zfc
 
-inductive ZFC_rel
-| ϵ
+inductive ZFC_rel : ℕ → Type
+| ϵ : ZFC_rel 2
 
 def L_ZFC : Language := 
-begin
-split,
-{ intro arityf,
-exact empty},
-{intro arityr,
-exact if arityr = 2 then ZFC_rel else empty},
-end
+⟨λ_, empty, ZFC_rel⟩
+
+def ZFC_el : L_ZFC.relations 2 := ZFC_rel.ϵ
+
+local infix ` ∈' `:100 := bounded_formula_of_relation ZFC_el
 
 -- #print L_ZFC -- good
 
@@ -113,7 +111,10 @@ end
 -- assumption
 -- end
 
-def axiom_of_emptyset : @sentence L_ZFC' := -- for all x, x is not in the constant emptyset.
+#exit -- we want to refactor all of this
+def axiom_of_emptyset : @sentence L_ZFC := -- for all x, x is not in the constant emptyset.
+∀' ∼ (_ ∈' _)
+
 begin
 split, swap,
   begin

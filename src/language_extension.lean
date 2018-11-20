@@ -114,24 +114,19 @@ structure is_injective : Prop :=
 | _ (f₁ ⟹ f₂)   s n := by simp*
 | _ (∀' f)       s n := by simp*
 
-def on_term_below {n} : ∀{l} {t : preterm L l} (ht : term_below n t), term_below n (ϕ.on_term t)
-| _ _ (b_var' k hk)          := b_var' k hk
-| _ _ (b_func f)             := b_func $ ϕ.on_function f
-| _ _ (b_app' t₁ t₂ ht₁ ht₂) := b_app (on_term_below ht₁) (on_term_below ht₂)
+def on_bounded_term {n} : ∀{l} (t : bounded_preterm L n l), bounded_preterm L' n l
+| _ &k           := &k
+| _ (bd_func f)  := bd_func $ ϕ.on_function f
+| _ (bd_app t s) := bd_app (on_bounded_term t) (on_bounded_term s)
 
-def on_formula_below : ∀{n l} {f : preformula L l} (hf : formula_below n f), 
-  formula_below n (ϕ.on_formula f)
-| n _ _ b_falsum                 := b_falsum
-| n _ _ (b_equal' t₁ t₂ ht₁ ht₂) := b_equal (ϕ.on_term_below ht₁) (ϕ.on_term_below ht₂)
-| n _ _ (b_rel R)                := b_rel $ ϕ.on_relation R
-| n _ _ (b_apprel' f t hf ht)    := b_apprel (on_formula_below hf) (ϕ.on_term_below ht)
-| n _ _ (b_imp' f₁ f₂ hf₁ hf₂)   := b_imp (on_formula_below hf₁) (on_formula_below hf₂)
-| n _ _ (b_all' f hf)            := b_all (on_formula_below hf)
+def on_bounded_formula : ∀{n l} (f : bounded_preformula L n l), bounded_preformula L' n l
+| _ _ bd_falsum       := ⊥
+| _ _ (t₁ ≃ t₂)       := ϕ.on_bounded_term t₁ ≃ ϕ.on_bounded_term t₂
+| _ _ (bd_rel R)      := bd_rel $ ϕ.on_relation R
+| _ _ (bd_apprel f t) := bd_apprel (on_bounded_formula f) $ ϕ.on_bounded_term t
+| _ _ (f₁ ⟹ f₂)      := on_bounded_formula f₁ ⟹ on_bounded_formula f₂
+| _ _ (∀' f)          := ∀' on_bounded_formula f
 
-def on_bounded_term {n l} (t : bounded_preterm L n l) : bounded_preterm L' n l :=
-⟨ϕ.on_term t.1, ϕ.on_term_below t.2⟩
-def on_bounded_formula {n l} (f : bounded_preformula L n l) : bounded_preformula L' n l :=
-⟨ϕ.on_formula f.1, ϕ.on_formula_below f.2⟩
 def on_closed_term (t : closed_term L) : closed_term L' := ϕ.on_bounded_term t
 def on_sentence (f : sentence L) : sentence L' := ϕ.on_bounded_formula f
 
@@ -208,11 +203,13 @@ def pullback_all_ssatisfied {S : Structure L'} {T : Theory L} (h : S ⊨ ϕ.on_s
 
 end Lhom
 
+def Language_over (L : Language) := Σ L' : Language, L →ᴸ L'
+def Theory_induced {L L' : Language} (F : L →ᴸ L') (T : Theory L) : Theory L' := begin sorry end
+
 end fol
 
--- def Theory_induced {L L' : Language} (F : language_morphism L L') (T : Theory L) : Theory L' := begin sorry end
 
--- def Language_over := Σ L' : Language, language_morphism L L'
+
 
 -- instance nonempty_Language_over : nonempty (Language_over) :=
 --   begin fapply nonempty.intro, exact ⟨L, language_id_morphism L⟩ end

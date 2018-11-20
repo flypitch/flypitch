@@ -227,7 +227,7 @@ noncomputable def proof_compactness {L : Language.{u}} : Π {ψ : formula L}, Π
 noncomputable def theory_proof_compactness {L : Language} {T : Theory L} {ψ : sentence L} (hψ : T ⊢ ψ) : Σ' Γ : list (sentence L), Σ' P : {ϕ : sentence L | ϕ ∈ Γ} ⊢ (ψ : sentence L), {ϕ : sentence L | ϕ ∈ Γ} ⊆ T :=
   begin
   have P := proof_compactness hψ, cases P with P hP,
-  have lift_list := begin fapply @image_lift_list, exact sentence L, exact formula L, exact sigma.fst, exact T, exact P, exact hP.snd end, 
+  have lift_list := begin fapply @image_lift_list, exact sentence L, exact formula L, exact bounded_preformula.fst, exact T, exact P, exact hP.snd end, 
   refine ⟨lift_list.fst,_, _⟩, swap, exact lift_list.snd.left,
   change Theory.fst {ϕ : sentence L | ϕ ∈ lift_list.fst} ⊢ ψ.fst,
   unfold Theory.fst, rw[lift_list.snd.right], exact hP.fst
