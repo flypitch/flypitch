@@ -8,7 +8,7 @@ theorem completeness {L : Language} (T : Theory L) (ψ : sentence L) : T ⊢' ψ
 begin
   split,
   {intro H, fapply soundness, exact classical.choice H},
-  {sorry}
+  {sorry} 
 end
 
 lemma easy_direction_completeness' (L : Language)
@@ -22,7 +22,13 @@ begin
 end
 
 lemma hard_direction_completeness' (L : Language) (T : Theory L) : is_consistent T → (∃ (M : Structure L), nonempty ↥M ∧ M ⊨ T) :=
-sorry
+begin
+  by_contra, simp[*, -a] at a, cases a,
+  have  : ¬ T ⊢' (⊥ : sentence L) → ¬ T ⊨ (⊥ : sentence L),
+  by simp only [completeness T ⊥, imp_self], have H := this a_left, unfold ssatisfied at H,
+  simp only [*, -H, fol.realize_sentence_false, nonempty.forall] at H,
+  fapply absurd, exact ∀ ⦃S : Structure L⦄, S.carrier → S ⊨ T → false, repeat{assumption}
+end
 
 /- Note: in the not-easy direction, the term model of a complete Henkin theory will contain a constant witnessing "∃ x, x = x" or something like that, and so will not be empty. -/
 theorem completeness'' {L : Language} (T : Theory L) : is_consistent T ↔ (∃ M : Structure L, (nonempty M) ∧ M ⊨ T) :=

@@ -40,7 +40,7 @@ def interpolation : ∀{Γ : set $ formula L} {f : formula L} (P : Γ ⊢ f),
   Σ' (f' : formula L) (P₁ : Γ ⊢ f') (P₂ : {f'} ⊢ f), 
     symbols_in_prf P₁ ⊆ ⋃₀ (symbols_in_formula '' Γ) ∧ 
     symbols_in_prf P₂ ⊆ symbols_in_formula f ∧ 
-    symbols_in_formula f' ⊆ ⋃₀ (symbols_in_formula '' Γ) ∩ symbols_in_formula f :=
+    symbols_in_formula f' ⊆ ⋃₀ (symbols_in_formula '' Γ) ∩ symbols_in_formula f := 
 sorry -- probably the last property follows automatically
   
 
@@ -205,6 +205,8 @@ end Lhom
 
 def Language_over (L : Language) := Σ L' : Language, L →ᴸ L'
 def Theory_induced {L L' : Language} (F : L →ᴸ L') (T : Theory L) : Theory L' := begin sorry end
+
+lemma consis_Theory_induced_of_consis {L L' : Language} (F : L →ᴸ L') (T : Theory L) {hT : is_consistent T} : is_consistent (Theory_induced F T) := sorry
 
 end fol
 
