@@ -75,9 +75,16 @@ variables {α : Type u} {β : Type v} {γ : Type w} {n : ℕ}
 | _ (x::xs) 0     h := x
 | _ (x::xs) (m+1) h := nth xs m (lt_of_add_lt_add_right h)
 
+protected def nth' {n : ℕ} (xs : dvector α n) (m : fin n) : α :=
+xs.nth m.1 m.2
+
 protected def mem : ∀{n : ℕ} (x : α) (xs : dvector α n), Prop
 | _ x []       := false
 | _ x (x'::xs) := x = x' ∨ mem x xs
+
+protected def pmem : ∀{n : ℕ} (x : α) (xs : dvector α n), Type
+| _ x []       := empty
+| _ x (x'::xs) := psum (x = x') (pmem x xs)
 
 instance {n : ℕ} : has_mem α (dvector α n) := ⟨dvector.mem⟩
 
