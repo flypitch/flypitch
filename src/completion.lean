@@ -377,7 +377,7 @@ begin
   {rename h h2,
   have q_of_not_p : ∀ p q : Prop, ∀ h1 : p ∨ q, ∀ h2 : ¬ p, q, by tauto,
   have h2' := q_of_not_p _ _ can_extend h2,
-  fapply cannot_extend_maximal_extension, repeat{assumption}},
+  fapply cannot_extend_maximal_extension, exact L, exact T, exact hT, exact maximal_extension L T hT, exact ∼ψ, repeat{assumption}},
 end
 
 

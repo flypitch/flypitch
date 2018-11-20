@@ -194,9 +194,9 @@ noncomputable def proof_compactness {L : Language.{u}} : Π {ψ : formula L}, Π
     refine ⟨S', _⟩, refine ⟨_, hS'.left⟩, fapply allI,
     rw[hS'.right], exact S.snd.fst,
   end
-| (_ ≃ t) T (refl _ _) :=
+| (_ ≃ t) T (ref _ _) :=
   begin
-    dedup, refine ⟨[], _⟩, split, fapply fol.prf.refl,
+    dedup, refine ⟨[], _⟩, split, fapply fol.prf.ref,
     intro ψ, intro hψ, exfalso, exact hψ
   end
 | .(_[_ // 0]) T (allE' A t P) :=

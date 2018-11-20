@@ -33,7 +33,7 @@ def symbols_in_prf : ∀{Γ : set $ formula L} {f : formula L} (P : Γ ⊢ f), s
 | Γ f (falsumE P)          := symbols_in_prf P ∪ symbols_in_formula f
 | Γ (∀' f) (allI P)        := symbols_in_prf P
 | Γ _ (allE' f t P)        := symbols_in_prf P ∪ symbols_in_term t
-| Γ (_ ≃ t) (refl _ _)     := symbols_in_term t
+| Γ (_ ≃ t) (ref _ _)     := symbols_in_term t
 | Γ _ (subst' s t f P₁ P₂) := symbols_in_prf P₁ ∪ symbols_in_prf P₂
 
 def interpolation : ∀{Γ : set $ formula L} {f : formula L} (P : Γ ⊢ f), 
@@ -145,7 +145,7 @@ begin
   { apply allI, rw [←image_comp] at h_ih ⊢, simp [image_congr' (on_formula_lift ϕ 1)] at h_ih, 
     exact h_ih },
   { apply allE _ _ h_ih, symmetry, apply on_formula_subst },
-  { apply prf.refl },
+  { apply prf.ref },
   { simp at h_ih_h₂, apply subst _ h_ih_h₁ h_ih_h₂, simp }
 end
 
@@ -170,7 +170,7 @@ begin
   { rw [x_ih hxy'] }
 end
 
-def reflect_prf {Γ : set $ formula L} {f : formula L} (hϕ : ϕ.is_injective) : 
+def refect_prf {Γ : set $ formula L} {f : formula L} (hϕ : ϕ.is_injective) : 
   ϕ.on_formula '' Γ ⊢ ϕ.on_formula f → Γ ⊢ f :=
 begin
   have : ∀(Δ : set $ formula L') (g : formula L'), 
@@ -183,7 +183,7 @@ begin
   { sorry },
   { sorry },
   { sorry },
-  { cases f; injection hf with hf₁ hf₂, subst hf₂, cases on_term_inj hϕ hf₁, apply prf.refl },
+  { cases f; injection hf with hf₁ hf₂, subst hf₂, cases on_term_inj hϕ hf₁, apply prf.ref },
   { sorry }, 
   exact this _ _ rfl rfl
 end
