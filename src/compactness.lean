@@ -34,7 +34,6 @@ begin
   apply list.mem_map.symm
 end
 
-open finset
 /-- Any proof from a set of formulas is provable from a finite subformulas. --/
 lemma proof_compactness {L : Language.{u}} {ψ : formula L} {T : set $ formula L} :
   (T ⊢' ψ) → ∃Γ : finset (formula L), ↑Γ ⊢' ψ ∧ ↑Γ ⊆ T :=
@@ -45,7 +44,7 @@ begin
   { rcases P_ih_h₁ with ⟨Γ₁, H₁, K₁⟩, rcases P_ih_h₂ with ⟨Γ₂, H₂, K₂⟩,
     refine ⟨Γ₁ ∪ Γ₂, impE' _ (weakening' (by simp) H₁) (weakening' (by simp) H₂), by simp [K₁, K₂]⟩ },
   { rcases P_ih with ⟨Γ, H, K⟩, refine ⟨Γ \ {∼P_A}, falsumE' $ weakening' (by simp) H, by simp [K]⟩ },
-  { rcases P_ih with ⟨Γ, H, K⟩, rcases exists_of_subset_image K with ⟨Γ', K', hΓ⟩,
+  { rcases P_ih with ⟨Γ, H, K⟩, rcases finset.exists_of_subset_image K with ⟨Γ', K', hΓ⟩,
     subst hΓ, simp only [finset.coe_image] at H K, 
     exact ⟨Γ', allI' H, K'⟩ },
   { rcases P_ih with ⟨Γ, H, K⟩, exact ⟨Γ, allE₂' H, K⟩ },
@@ -59,7 +58,7 @@ lemma theory_proof_compactness {L : Language} {T : Theory L} {ψ : sentence L} (
   ∃Γ : finset (sentence L), ↑Γ ⊢' ψ ∧ ↑Γ ⊆ T :=
 begin
   rcases proof_compactness hψ with ⟨Γ, H, K⟩, 
-  rcases exists_of_subset_image K with ⟨Γ', K', hΓ⟩,
+  rcases finset.exists_of_subset_image K with ⟨Γ', K', hΓ⟩,
   subst hΓ, simp only [finset.coe_image] at H K, 
   exact ⟨Γ', H, K'⟩
 end

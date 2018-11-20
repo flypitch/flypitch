@@ -32,9 +32,9 @@ def symbols_in_prf : ∀{Γ : set $ formula L} {f : formula L} (P : Γ ⊢ f), s
 | Γ f₂ (impE f₁ P₁ P₂)     := symbols_in_prf P₁ ∪ symbols_in_prf P₂
 | Γ f (falsumE P)          := symbols_in_prf P ∪ symbols_in_formula f
 | Γ (∀' f) (allI P)        := symbols_in_prf P
-| Γ _ (allE' f t P)        := symbols_in_prf P ∪ symbols_in_term t
+| Γ _ (allE₂ f t P)        := symbols_in_prf P ∪ symbols_in_term t
 | Γ (_ ≃ t) (ref _ _)     := symbols_in_term t
-| Γ _ (subst' s t f P₁ P₂) := symbols_in_prf P₁ ∪ symbols_in_prf P₂
+| Γ _ (subst₂ s t f P₁ P₂) := symbols_in_prf P₁ ∪ symbols_in_prf P₂
 
 def interpolation : ∀{Γ : set $ formula L} {f : formula L} (P : Γ ⊢ f), 
   Σ' (f' : formula L) (P₁ : Γ ⊢ f') (P₂ : {f'} ⊢ f), 
