@@ -629,24 +629,24 @@ inductive prf : set (formula L) → formula L → Type u
 | axm     {Γ A} (h : A ∈ Γ) : prf Γ A
 | impI    {Γ : set $ formula L} {A B} (h : prf (insert A Γ) B) : prf Γ (A ⟹ B)
 | impE    {Γ} (A) {B} (h₁ : prf Γ (A ⟹ B)) (h₂ : prf Γ A) : prf Γ B
-| falsumE {Γ : set $ formula L} {A} (h : prf (insert ∼A Γ) falsum) : prf Γ A
+| falsumE {Γ : set $ formula L} {A} (h : prf (insert ∼A Γ) ⊥) : prf Γ A
 | allI    {Γ A} (h : prf (lift_formula1 '' Γ) A) : prf Γ (∀' A)
-| allE'   {Γ} A t (h : prf Γ (∀' A)) : prf Γ (A[t // 0])
+| allE₂   {Γ} A t (h : prf Γ (∀' A)) : prf Γ (A[t // 0])
 | ref     (Γ t) : prf Γ (t ≃ t)
-| subst'  {Γ} (s t f) (h₁ : prf Γ (s ≃ t)) (h₂ : prf Γ (f[s // 0])) : prf Γ (f[t // 0])
+| subst₂  {Γ} (s t f) (h₁ : prf Γ (s ≃ t)) (h₂ : prf Γ (f[s // 0])) : prf Γ (f[t // 0])
 
 export prf
 infix ` ⊢ `:51 := fol.prf -- input: \|- or \vdash
 
-def provable (T : set $ formula L) (f : formula L) := nonempty (prf T f)
+def provable (T : set $ formula L) (f : formula L) := nonempty (T ⊢ f)
 infix ` ⊢' `:51 := fol.provable -- input: \|- or \vdash
 
-def allE {Γ} (A : formula L) (t) {B} (H₁ : prf Γ (∀' A)) (H₂ : A[t // 0] = B) : prf Γ B :=
-by induction H₂; exact allE' A t H₁
+def allE {Γ} (A : formula L) (t) {B} (H₁ : Γ ⊢ ∀' A) (H₂ : A[t // 0] = B) : Γ ⊢ B :=
+by induction H₂; exact allE₂ A t H₁
 
-def subst {Γ} {s t} (f₁ : formula L) {f₂} (H₁ : prf Γ (s ≃ t)) (H₂ : prf Γ (f₁[s // 0])) 
-  (H₃ : f₁[t // 0] = f₂) : prf Γ f₂ :=
-by induction H₃; exact subst' s t f₁ H₁ H₂
+def subst {Γ} {s t} (f₁ : formula L) {f₂} (H₁ : Γ ⊢ s ≃ t) (H₂ : Γ ⊢ f₁[s // 0]) 
+  (H₃ : f₁[t // 0] = f₂) : Γ ⊢ f₂ :=
+by induction H₃; exact subst₂ s t f₁ H₁ H₂
 
 def axm1 {Γ : set (formula L)} {A : formula L} : insert A Γ ⊢ A := by apply axm; left; refl
 def axm2 {Γ : set (formula L)} {A B : formula L} : insert A (insert B Γ) ⊢ B := 
@@ -660,9 +660,9 @@ begin
   { apply impE, apply H₂_ih_h₁, assumption, apply H₂_ih_h₂, assumption },
   { apply falsumE, apply H₂_ih, apply insert_subset_insert, apply H₁ },
   { apply allI, apply H₂_ih, apply image_subset _ H₁ },
-  { apply allE', apply H₂_ih, assumption },
+  { apply allE₂, apply H₂_ih, assumption },
   { apply ref },
-  { apply subst', apply H₂_ih_h₁, assumption, apply H₂_ih_h₂, assumption },
+  { apply subst₂, apply H₂_ih_h₁, assumption, apply H₂_ih_h₂, assumption },
 end
 
 def prf_lift {Γ} {f : formula L} (n m : ℕ) (H : Γ ⊢ f) : (λf', f' ↑' n # m) '' Γ ⊢ f ↑' n # m :=
@@ -707,10 +707,10 @@ weakening (insert_subset_insert (subset_insert _ Γ)) H
 def deduction {Γ} {A B : formula L} (H : Γ ⊢ A ⟹ B) : insert A Γ ⊢ B :=
 impE A (weakening1 H) axm1
 
-def exfalso {Γ} {A : formula L} (H : Γ ⊢ falsum) : prf Γ A :=
+def exfalso {Γ} {A : formula L} (H : Γ ⊢ falsum) : Γ ⊢ A :=
 falsumE (weakening1 H)
 
-def notI {Γ} {A : formula L} (H : Γ ⊢ A ⟹ falsum) : prf Γ (not A) :=
+def notI {Γ} {A : formula L} (H : Γ ⊢ A ⟹ falsum) : Γ ⊢ ∼ A :=
   by {rw[not], assumption}
 
 def andI {Γ} {f₁ f₂ : formula L} (H₁ : Γ ⊢ f₁) (H₂ : Γ ⊢ f₂) : Γ ⊢ f₁ ⊓ f₂ :=
@@ -750,14 +750,11 @@ by apply andI; apply impI; assumption
 def biimpE1 {Γ} {f₁ f₂ : formula L} (H : Γ ⊢ f₁ ⇔ f₂) : insert f₁ Γ ⊢ f₂ := deduction (andE1 _ H)
 def biimpE2 {Γ} {f₁ f₂ : formula L} (H : Γ ⊢ f₁ ⇔ f₂) : insert f₂ Γ ⊢ f₁ := deduction (andE2 _ H)
 
-lemma iff_of_biimp {Γ} {f₁ f₂ : formula L} (H : Γ ⊢' f₁ ⇔ f₂) : Γ ⊢' f₁ ↔ Γ ⊢' f₂ :=
-⟨(H.map (andE1 _)).map2 (impE _), (H.map (andE2 _)).map2 (impE _)⟩ 
-
 def exI {Γ f} (t : term L) (H : Γ ⊢ f [t // 0]) : Γ ⊢ ∃' f :=
 begin
   apply impI, 
   apply impE (f[t // 0]) _ (weakening1 H),
-  apply allE' ∼f t axm1,
+  apply allE₂ ∼f t axm1,
 end
 
 def exE {Γ} {f₁ f₂ : formula L} (t : term L) (H₁ : Γ ⊢ ∃' f₁) 
@@ -776,14 +773,6 @@ end
 
 def not_and_self {Γ : set (formula L)} {f : formula L} (H : Γ ⊢ f ⊓ ∼f) : Γ ⊢ ⊥ :=
 impE f (andE2 f H) (andE1 ∼f H)
-
-lemma prf_all_iff {Γ : set (formula L)} {f} : Γ ⊢' ∀' f ↔ lift_formula1 '' Γ ⊢' f :=
-begin
-  split,
-  { intro H, rw [←lift_subst_formula_cancel f 0], 
-    apply nonempty.map (allE' _ _), apply H.map (prf_lift 1 0) },
-  { exact nonempty.map allI }
-end
 
 -- def andE1 {Γ f₁} (f₂ : formula L) (H : Γ ⊢ f₁ ⊓ f₂) : Γ ⊢ f₁ :=
 def symm {Γ} {s t : term L} (H : Γ ⊢ s ≃ t) : Γ ⊢ t ≃ s :=
@@ -815,10 +804,6 @@ def apprel_congr {Γ} {t₁ t₂ : term L} (f : preformula L 1) (H : Γ ⊢ t₁
 begin 
   apply subst (apprel (f ↑ 1) &0) H; simp, exact H₂
 end
-
-lemma apprel_congr' {Γ} {t₁ t₂ : term L} (f : preformula L 1) (H : Γ ⊢ t₁ ≃ t₂) :
-  Γ ⊢' apprel f t₁ ↔ Γ ⊢' apprel f t₂ :=
-⟨nonempty.map $ apprel_congr f H, nonempty.map $ apprel_congr f $ symm H⟩
 
 def imp_trans {Γ} {f₁ f₂ f₃ : formula L} (H₁ : Γ ⊢ f₁ ⟹ f₂) (H₂ : Γ ⊢ f₂ ⟹ f₃) : Γ ⊢ f₁ ⟹ f₃ :=
 begin
@@ -868,6 +853,40 @@ end
 @[refl] def equiv_preformulae_refl (T : set (formula L)) {l} (f : preformula L l) : 
   equiv_preformulae T f f :=
 λxs, biimp_refl T (apps_rel f xs)
+
+def impI' {Γ : set $ formula L} {A B} (h : insert A Γ ⊢' B) : Γ ⊢' (A ⟹ B) := h.map impI
+def impE' {Γ} (A : formula L) {B} (h₁ : Γ ⊢' A ⟹ B) (h₂ : Γ ⊢' A) : Γ ⊢' B := h₁.map2 (impE _) h₂
+def falsumE' {Γ : set $ formula L} {A} (h : insert ∼A Γ ⊢' ⊥ ) : Γ ⊢' A := h.map falsumE
+def allI' {Γ} {A : formula L} (h : lift_formula1 '' Γ ⊢' A) : Γ ⊢' ∀' A := h.map allI
+def allE' {Γ} (A : formula L) (t) {B} (H₁ : Γ ⊢' ∀' A) (H₂ : A[t // 0] = B) : Γ ⊢' B :=
+H₁.map (λx, allE _ _ x H₂)
+def allE₂' {Γ} {A} {t : term L} (h : Γ ⊢' ∀' A) : Γ ⊢' A[t // 0] := h.map (λx, allE _ _ x rfl)
+def ref' (Γ) (t : term L) : Γ ⊢' (t ≃ t) := ⟨ref Γ t⟩
+def subst' {Γ} {s t} (f₁ : formula L) {f₂} (H₁ : Γ ⊢' s ≃ t) (H₂ : Γ ⊢' f₁[s // 0]) 
+  (H₃ : f₁[t // 0] = f₂) : Γ ⊢' f₂ := 
+H₁.map2 (λx y, subst _ x y H₃) H₂
+def subst₂' {Γ} (s t) (f : formula L) (h₁ : Γ ⊢' s ≃ t) (h₂ : Γ ⊢' f[s // 0]) : Γ ⊢' f[t // 0] := 
+h₁.map2 (subst₂ _ _ _) h₂
+
+def weakening' {Γ Δ} {f : formula L} (H₁ : Γ ⊆ Δ) (H₂ : Γ ⊢' f) : Δ ⊢' f := H₂.map $ weakening H₁
+def weakening1' {Γ} {f₁ f₂ : formula L} (H : Γ ⊢' f₂) : insert f₁ Γ ⊢' f₂ := H.map weakening1
+def weakening2' {Γ} {f₁ f₂ f₃ : formula L} (H : insert f₁ Γ ⊢' f₂) : insert f₁ (insert f₃ Γ) ⊢' f₂ :=
+H.map weakening2
+
+lemma apprel_congr' {Γ} {t₁ t₂ : term L} (f : preformula L 1) (H : Γ ⊢ t₁ ≃ t₂) :
+  Γ ⊢' apprel f t₁ ↔ Γ ⊢' apprel f t₂ :=
+⟨nonempty.map $ apprel_congr f H, nonempty.map $ apprel_congr f $ symm H⟩
+
+lemma prf_all_iff {Γ : set (formula L)} {f} : Γ ⊢' ∀' f ↔ lift_formula1 '' Γ ⊢' f :=
+begin
+  split,
+  { intro H, rw [←lift_subst_formula_cancel f 0], 
+    apply allE₂', apply H.map (prf_lift 1 0) },
+  { exact allI' }
+end
+
+lemma iff_of_biimp {Γ} {f₁ f₂ : formula L} (H : Γ ⊢' f₁ ⇔ f₂) : Γ ⊢' f₁ ↔ Γ ⊢' f₂ :=
+⟨impE' _ $ H.map (andE1 _), impE' _ $ H.map (andE2 _)⟩ 
 
 /- model theory -/
 
@@ -1002,7 +1021,7 @@ def satisfied_trans {T₁ T₂ : set (formula L)} {f : formula L} (H' : T₁ ⊨
 def all_satisfied_trans {T₁ T₂ T₃ : set (formula L)} (H' : T₁ ⊨ T₂) (H : T₂ ⊨ T₃) : T₁ ⊨ T₃ :=
 λf hf, satisfied_trans H' $ H hf
 
-def sweakening {T T' : set (formula L)} (H : T ⊆ T') {f : formula L} (HT : T ⊨ f) : T' ⊨ f :=
+def satisfied_weakening {T T' : set (formula L)} (H : T ⊆ T') {f : formula L} (HT : T ⊨ f) : T' ⊨ f :=
 λS v h, HT S v $ λf' hf', h f' $ H hf'
 
 /- soundness for a set of formulae -/
@@ -1836,10 +1855,10 @@ end
 def impI_of_is_complete {T : Theory L} (H : is_complete T) {f₁ f₂ : sentence L}
   (H₂ : T ⊢' f₁ → T ⊢' f₂) : T ⊢' f₁ ⟹ f₂ :=
 begin
-  apply nonempty.map impI, cases H.2 f₁, 
-  { apply nonempty.map weakening1, apply H₂, exact ⟨saxm h⟩ },
-  apply nonempty.map falsumE, apply nonempty.map weakening1,
-  apply nonempty.map2 (impE _) (nonempty.map weakening1 ⟨by apply saxm h⟩) ⟨axm1⟩
+  apply impI', cases H.2 f₁, 
+  { apply weakening1', apply H₂, exact ⟨saxm h⟩ },
+  apply falsumE', apply weakening1',
+  apply impE' _ (weakening1' ⟨by apply saxm h⟩) ⟨axm1⟩
 end
 
 def notI_of_is_complete {T : Theory L} (H : is_complete T) {f : sentence L}
@@ -2056,10 +2075,10 @@ begin
       refine (n_ih n (lt.base n) (f_f[t/0]) ([]) _).mp (h.map _),
       simp, exact lt_of_succ_lt_succ hn,
       rw [bd_apps_rel_zero, subst0_bounded_formula_fst],
-      exact allE' _ _ },
+      exact allE₂ _ _ },
     { apply classical.by_contradiction, intro H,
       cases find_counterexample_of_henkin H₁ H₂ f_f H with t ht,
-      apply H₁.left, apply ht.map2 (impE _),
+      apply H₁.left, apply impE' _ ht,
       cases n with n, { exfalso, exact not_lt_zero _ hn },
       refine (n_ih n (lt.base n) (f_f[t/0]) ([]) _).mpr _,
       { simp, exact lt_of_succ_lt_succ hn },
