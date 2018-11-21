@@ -1,4 +1,4 @@
-import .fol order.zorn order.filter logic.basic data.finset data.set data.list .completeness
+import .fol order.zorn order.filter logic.basic data.finset data.set data.list
 --local attribute [instance, priority 0] classical.prop_decidable
 open fol set
 
@@ -69,9 +69,3 @@ end
 lemma theory_proof_compactness_iff {L : Language} {T : Theory L} {ψ : sentence L} : 
   T ⊢' ψ ↔ ∃Γ : finset (sentence L), ↑Γ ⊢' ψ ∧ ↑Γ ⊆ T :=
 ⟨theory_proof_compactness, λ⟨Γ, H, K⟩, weakening' (image_subset _ K) H⟩
-
-theorem compactness {L : Language} {T : Theory L} {f : sentence L} : 
-  T ⊨ f ↔ ∃ fs : finset (sentence L), ↑fs ⊨ f ∧ ↑fs ⊆ T :=
-begin
-  rw [←completeness T f, theory_proof_compactness_iff], simp [completeness]
-end

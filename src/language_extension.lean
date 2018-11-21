@@ -184,21 +184,24 @@ begin
 end
 
 variable (ϕ)
-def pullback (S : Structure L') : Structure L :=
+
+/-- Given L → L' and an L'-structure S, the reduct of S to L is the L-structure given by
+restricting interpretations from L' to L --/
+def reduct (S : Structure L') : Structure L :=
 have x : Type*, from S.carrier,
 ⟨ S.carrier, λn f, S.fun_map $ ϕ.on_function f, λn R, S.rel_map $ ϕ.on_relation R⟩ 
 
 variable {ϕ}
 
 
-def pullback_ssatisfied {S : Structure L'} {f : sentence L} (h : S ⊨ ϕ.on_sentence f) :
-  ϕ.pullback S ⊨ f :=
+def reduct_ssatisfied {S : Structure L'} {f : sentence L} (h : S ⊨ ϕ.on_sentence f) :
+  ϕ.reduct S ⊨ f :=
 sorry
 
 
-def pullback_all_ssatisfied {S : Structure L'} {T : Theory L} (h : S ⊨ ϕ.on_sentence '' T) :
-  ϕ.pullback S ⊨ T :=
-λf hf, pullback_ssatisfied $ h $ mem_image_of_mem _ hf
+def reduct_all_ssatisfied {S : Structure L'} {T : Theory L} (h : S ⊨ ϕ.on_sentence '' T) :
+  ϕ.reduct S ⊨ T :=
+λf hf, reduct_ssatisfied $ h $ mem_image_of_mem _ hf
 
 
 end Lhom
