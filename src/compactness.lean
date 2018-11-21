@@ -1,5 +1,5 @@
 import .fol order.zorn order.filter logic.basic data.finset data.set data.list .completeness
-local attribute [instance, priority 0] classical.prop_decidable
+--local attribute [instance, priority 0] classical.prop_decidable
 open fol set
 
 universes u v
@@ -38,6 +38,7 @@ end
 lemma proof_compactness {L : Language.{u}} {ψ : formula L} {T : set $ formula L} :
   (T ⊢' ψ) → ∃Γ : finset (formula L), ↑Γ ⊢' ψ ∧ ↑Γ ⊆ T :=
 begin
+  haveI : decidable_eq (formula L) := λx y, classical.prop_decidable _,
   intro P, induction P with P, induction P,
   { exact ⟨{P_A}, ⟨axm1⟩, set.singleton_subset_iff.mpr P_h⟩ },
   { rcases P_ih with ⟨Γ, H, K⟩, refine ⟨Γ \ {P_A}, impI' $ weakening' (by simp) H, by simp [K]⟩ },
@@ -57,6 +58,8 @@ end
 lemma theory_proof_compactness {L : Language} {T : Theory L} {ψ : sentence L} (hψ : T ⊢' ψ) : 
   ∃Γ : finset (sentence L), ↑Γ ⊢' ψ ∧ ↑Γ ⊆ T :=
 begin
+  haveI : decidable_eq (sentence L) := λx y, classical.prop_decidable _,
+  haveI : decidable_eq (formula L) := λx y, classical.prop_decidable _,
   rcases proof_compactness hψ with ⟨Γ, H, K⟩, 
   rcases finset.exists_of_subset_image K with ⟨Γ', K', hΓ⟩,
   subst hΓ, simp only [finset.coe_image] at H K, 
