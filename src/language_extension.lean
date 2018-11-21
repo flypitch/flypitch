@@ -203,6 +203,7 @@ def reduct_all_ssatisfied {S : Structure L'} {T : Theory L} (h : S ⊨ ϕ.on_sen
   ϕ.reduct S ⊨ T :=
 λf hf, reduct_ssatisfied $ h $ mem_image_of_mem _ hf
 
+lemma reduct_nonempty_of_nonempty {S : Structure L'} (H : nonempty S) : nonempty (reduct ϕ S) := sorry
 
 end Lhom
 

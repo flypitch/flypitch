@@ -38,7 +38,7 @@ begin
     exact L'.fst, exact L'.snd, fapply term_model, exact T'', intro H,
     /- The term model is nonempty -/
     have h_nonempty :  nonempty ↥(Lhom.reduct (L'.snd) (term_model T'')),
-      {sorry},
+      {fapply Lhom.reduct_nonempty_of_nonempty, exact fol.nonempty_term_model T''_henkin},
     /- The L-reduct of the term model of a complete Henkinization of T is a model of T -/
     have h_all_realized_of_reduct : Lhom.reduct (L'.snd) (term_model T'') ⊨ T,
       {sorry},
