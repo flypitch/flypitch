@@ -1,6 +1,6 @@
 /- theorems which we should (maybe) backport to mathlib -/
 
-import data.list.basic algebra.ordered_group data.vector2
+import data.finset algebra.ordered_group data.vector2
 
 universe variables u v w
 
@@ -24,6 +24,13 @@ end interactive
 end tactic
 
 /- logic -/
+noncomputable def psigma_of_exists {α : Type u} {p : α → Prop} (h : ∃x, p x) : Σ' x, p x :=
+begin
+  haveI : nonempty α := nonempty_of_exists h,
+  exact ⟨classical.epsilon p, classical.epsilon_spec h⟩ 
+end
+
+
 namespace eq
 protected lemma congr {α : Type u} {x₁ x₂ y₁ y₂ : α} (h₁ : x₁ = y₁) (h₂ : x₂ = y₂) : 
   (x₁ = x₂) ↔ (y₁ = y₂) :=
@@ -35,20 +42,20 @@ lemma congr_arg2 {α : Type u} {β : Type v} {γ : Type w} (f : α → β → γ
 by subst hx; subst hy
 
 namespace list
-protected def to_set {α : Type u} (l : list α) : set α := { x | x ∈ l }
+@[simp] protected def to_set {α : Type u} (l : list α) : set α := { x | x ∈ l }
 
 lemma to_set_map {α : Type u} {β : Type v} (f : α → β) (l : list α) : 
   (l.map f).to_set = f '' l.to_set :=
 by apply set.ext; intro b; simp [list.to_set]
 
 lemma exists_of_to_set_subset_image {α : Type u} {β : Type v} {f : α → β} {l : list β} 
-  {t : set α} (h : l.to_set ⊆ f '' t) : ∃(l' : list α), map f l' = l :=
+  {t : set α} (h : l.to_set ⊆ f '' t) : ∃(l' : list α), l'.to_set ⊆ t ∧ map f l' = l :=
 begin
   induction l,
-  { existsi nil, refl },
+  { exact ⟨[], set.empty_subset t, rfl⟩ },
   { rcases h (mem_cons_self _ _) with ⟨x, hx, rfl⟩,
-    rcases l_ih (λx hx, h $ mem_cons_of_mem _ hx) with ⟨xs, hxs⟩, 
-    existsi x::xs, simp* }
+    rcases l_ih (λx hx, h $ mem_cons_of_mem _ hx) with ⟨xs, hxs, hxs'⟩, 
+    exact ⟨x::xs, set.union_subset (λy hy, by induction hy; exact hx) hxs, by simp*⟩ }
 end
 
 end list
@@ -239,6 +246,23 @@ have h' : p = q, from funext h, by subst h'; refl
 namespace set
 
 variables {α : Type u} {β : Type v} 
+
+def subset_insert_diff (s t : set α) [decidable_pred (∈ t)] : s ⊆ (s \ t) ∪ t :=
+begin
+  intros x hxs, by_cases hxt : x ∈ t, { right, exact hxt }, {left, exact ⟨hxs, hxt⟩ }
+end
+
+def subset_insert_diff_singleton [h : decidable_eq α] (x : α) (s : set α) : 
+  s ⊆ insert x (s \ {x}) :=
+begin 
+haveI : decidable_pred (∈ ({x} : set α)) := λy, by simp; apply_instance,
+ rw [←union_singleton], apply subset_insert_diff 
+end
+
+@[simp] def diff_singleton_subset_iff {x : α} {s t : set α} : 
+  s \ {x} ⊆ t ↔ s ⊆ insert x t :=
+by rw [←union_singleton, union_comm]; apply diff_subset_iff
+
 -- generalizes set.image_preimage_eq
 lemma image_preimage_eq_of_subset_image {f : α → β} {s : set β} 
   {t : set α} (h : s ⊆ f '' t) : f '' (f ⁻¹' s) = s :=
@@ -263,7 +287,28 @@ lemma image_congr' {f g : α → β} {s : set α} (h : ∀ (x : α), f x = g x) 
 image_congr (λx _, h x)
 
 end set
-open nat set
+open nat
+
+namespace finset
+variables {α : Type u} {β : Type v} [decidable_eq α] [decidable_eq β]
+
+def to_set_sdiff (s t : finset α) : (s \ t).to_set = s.to_set \ t.to_set := 
+by apply finset.coe_sdiff
+
+lemma exists_of_subset_image {f : α → β} {s : finset β} {t : set α} (h : ↑s ⊆ f '' t) :
+  ∃s' : finset α, ↑s' ⊆ t ∧ s'.image f = s :=
+begin
+  induction s using finset.induction with a s has ih h,
+  { exact ⟨∅, set.empty_subset _, finset.image_empty _⟩ },
+  rw [finset.coe_insert, set.insert_subset] at h,
+  rcases ih h.2 with ⟨s', hst, hsi⟩,
+  rcases h.1 with ⟨x, hxt, rfl⟩,
+  refine ⟨insert x s', _, _⟩,
+  { rw [finset.coe_insert, set.insert_subset], exact ⟨hxt, hst⟩ },
+  rw [finset.image_insert, hsi]
+end
+
+end finset
 
 namespace nonempty
 variables {α : Type u} {β : Type v} {γ : Type w}
