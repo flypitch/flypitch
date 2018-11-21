@@ -34,10 +34,26 @@ begin
     have T' := (complete_henkinization hT), cases T' with L' T', cases T' with T'1 T'2,
     cases T'1 with T'' HT'', cases T'2 with T''_henkin T''_complete,
     have : ¬ T ⊨ ψ,
-    {unfold ssatisfied, rw[not_forall], fapply exists.intro, fapply Lhom.reduct, exact L'.fst,
-    -- getting weird universe level message here
-    -- fapply term_model, etc.
-    repeat{sorry}},
+    {unfold ssatisfied, rw[not_forall], fapply exists.intro, fapply Lhom.reduct,
+    exact L'.fst, exact L'.snd, fapply term_model, exact T'', intro H,
+    /- The term model is nonempty -/
+    have h_nonempty :  nonempty ↥(Lhom.reduct (L'.snd) (term_model T'')),
+      {sorry},
+    /- The L-reduct of the term model of a complete Henkinization of T is a model of T -/
+    have h_all_realized_of_reduct : Lhom.reduct (L'.snd) (term_model T'') ⊨ T,
+      {sorry},
+    /- Since the term model models T'' and T'' contains ∼ψ, the term model satisfies ∼ψ -/
+    have h_not_psi : Lhom.reduct (L'.snd) (term_model T'') ⊨ ∼ψ,
+      {have := @term_model_ssatisfied L'.fst T'' T''_complete T''_henkin,
+       /- Now we have to take ∼ψ, show that as an L'-sentence it's in T'', but since it was
+       an L-sentence to begin with it's satisfied by the L-reduct of the term model-/
+       have h_expansion : Lhom.on_sentence L'.snd ∼ψ ∈ T'', by sorry,
+       have := this h_expansion,
+       sorry},
+    have h_psi := H h_nonempty h_all_realized_of_reduct,
+    simp only [*, forall_prop_of_true, forall_prop_of_false, not_true,
+              fol.realize_sentence_not, not_false_iff, -h_not_psi] at h_not_psi h_psi,
+    exact h_not_psi},
     {contradiction}, 
     },
   } 
@@ -55,7 +71,7 @@ begin
     repeat{assumption},
     exact classical.choice H2},
 
-  {by_contra, simp[*, -a] at a, cases a,
+  {by_contra, simp only [*, -a, not_exists, not_imp, not_and, nonempty.forall] at a, cases a,
   have  : ¬ T ⊢' (⊥ : sentence L) → ¬ T ⊨ (⊥ : sentence L),
   by simp only [completeness T ⊥, imp_self], have H := this a_left, unfold ssatisfied at H,
   simp only [*, -H, fol.realize_sentence_false, nonempty.forall] at H,
