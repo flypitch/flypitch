@@ -198,12 +198,12 @@ def reduct_ssatisfied {S : Structure L'} {f : sentence L} (h : S ⊨ ϕ.on_sente
   ϕ.reduct S ⊨ f :=
 sorry
 
-
 def reduct_all_ssatisfied {S : Structure L'} {T : Theory L} (h : S ⊨ ϕ.on_sentence '' T) :
   ϕ.reduct S ⊨ T :=
 λf hf, reduct_ssatisfied $ h $ mem_image_of_mem _ hf
 
-lemma reduct_nonempty_of_nonempty {S : Structure L'} (H : nonempty S) : nonempty (reduct ϕ S) := sorry
+lemma reduct_nonempty_of_nonempty {S : Structure L'} (H : nonempty S) : nonempty (reduct ϕ S) :=
+by {apply nonempty.map, repeat{assumption}, exact λ x, x}
 
 end Lhom
 
