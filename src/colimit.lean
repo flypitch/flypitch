@@ -22,6 +22,8 @@ structure directed_type : Type (u+1) :=
 structure directed_diagram (D : (directed_type : Type (u+1))) : Type (max (u+1) (v+1)) :=
   (obj : D.carrier → Type v)
   (mor : ∀{x}, ∀{y}, D.rel x y → (obj x  → obj y))
+  (h_mor : ∀{x} {y} {z} {f1 : D.rel x y} {f2 : D.rel y z} {f3 : D.rel x z},
+           (mor f3) = (mor f2) ∘ (mor f1)) -- functoriality
 
 def directed_type_of_nat : directed_type :=
   begin refine ⟨ℕ, (≤), _⟩,
@@ -30,7 +32,7 @@ def directed_type_of_nat : directed_type :=
   end
 
 def constant_functor (D : directed_type) (A : Type v) : directed_diagram D :=
-  ⟨(λ x, A), λ x y h, id⟩
+  ⟨(λ x, A), λ x y h, id, by simp⟩
 
 def coproduct_of_directed_diagram {D : (directed_type : Type (u+1)) }
     (F : (directed_diagram D :  Type (max (u+1) (v+1)))) :  Type (max u v) :=
@@ -41,45 +43,34 @@ def germ_relation {D : (directed_type : Type (u+1)) }
 λ ⟨i,x⟩ ⟨j, y⟩, ∃ k : D.carrier, ∃ z : F.obj k, ∃ f_x : D.rel i k, ∃ f_y : D.rel j k,
                  (F.mor f_x) x = z ∧ (F.mor f_y) y = z
 
-example (A B : Type) (f : A → B) (a_1 a_2 : A) : a_1 = a_2 → f a_1 = f a_2 :=
-  by {intro, simp only [*, eq_self_iff_true]}
-
 lemma germ_equivalence {D : (directed_type : Type (u+1)) }
 (F : (directed_diagram D :  Type (max (u+1) (v+1)))) : equivalence (germ_relation F) :=
 begin
   split,
     {rintro ⟨i, x⟩, repeat{split}, swap, exact i, exact D.h_reflexive i},
   split,
-    {sorry},
+    {intros x y, rcases x with ⟨i, x⟩, rcases y with ⟨j, y⟩, intro h,
+    rcases h with ⟨ℓ,z,f_x,f_y,H⟩, repeat{fapply exists.intro},
+    exacts [ℓ,z,f_y,f_x, and.intro H.right H.left]},
     {unfold transitive, intros, cases x with i x, cases y with j y, cases z with k z,
-    have ℓ₁ := psigma_of_exists a, have ℓ₂ := psigma_of_exists a_1,
-    have a2 := psigma_of_exists (D.h_directed ℓ₁.fst ℓ₂.fst),
-    have f1 : D.rel i (a2.fst),
-      {fapply D.h_transitive, exact ℓ₁.fst, cases ℓ₁.snd, exact h.fst, exact a2.snd.left},
-    have f2 : D.rel j a2.fst,
-      {fapply D.h_transitive, exact ℓ₁.fst, cases ℓ₁.snd, exact h.snd.fst, exact a2.snd.left},
-    have f3 : D.rel k (a2.fst),
-      {fapply D.h_transitive, exact ℓ₂.fst, cases ℓ₂.snd, exact h.snd.fst, exact a2.snd.right},
-    have fi : D.rel i ℓ₁.fst, by {cases ℓ₁.snd, exact h.fst},
-    have fj_1 : D.rel j ℓ₁.fst, by {cases ℓ₁.snd, exact h.snd.fst},
-    have fj_2 : D.rel j ℓ₂.fst, by {cases ℓ₂.snd, exact h.fst},
-    have fk : D.rel k ℓ₂.fst, by {cases ℓ₂.snd, exact h.snd.fst},
-    have g1 : D.rel ℓ₁.fst a2.fst, by {exact a2.snd.left},
-    have g2 : D.rel ℓ₂.fst a2.fst, by {exact a2.snd.right},
-    have H1 : ∀ x, F.mor f1 x = F.mor g1 (F.mor fi x),
-      {sorry},
-    have H2_l : ∀ y, F.mor f2 y = F.mor g1 (F.mor fj_1 y),
-      {sorry},
-    have H2_r : ∀ y, F.mor f2 y = F.mor g2 (F.mor fj_2 y),
-      {sorry},
-    have H3 : ∀ z, F.mor f3 z = F.mor g2 (F.mor fk z),
-      {sorry},
-    
+    rcases a with ⟨ℓ₁, z, fi, fj_1, Hℓ₁⟩, rcases a_1 with ⟨ℓ₂, z', fj_2, fk, Hℓ₂⟩,
+    have a_2 := D.h_directed ℓ₁ ℓ₂, rcases a_2 with ⟨ℓ₃, g1, g2⟩,
+    have f1 : D.rel i (ℓ₃),
+      {fapply D.h_transitive, exacts [ℓ₁, fi, g1]},
+    have f2 : D.rel j ℓ₃,
+      {fapply D.h_transitive, exacts [ℓ₁, fj_1, g1]},
+    have f3 : D.rel k (ℓ₃),
+      {fapply D.h_transitive, exact ℓ₂, exact fk, exact g2},
+    have H1 : F.mor f1 = F.mor g1 ∘ F.mor fi; have H2_l : F.mor f2 = F.mor g1 ∘ F.mor fj_1;
+    have H2_r : F.mor f2 = F.mor g2 ∘ F.mor fj_2; have H3 : F.mor f3 = F.mor g2 ∘ F.mor fk;
+    all_goals{try{fapply F.h_mor}},
+    have H4 : (F.mor fi x) = (F.mor fj_1 y), by cc, dedup,
+    have H5 : (F.mor fk z) = (F.mor fj_2 y), by cc,
     unfold germ_relation at *, fapply exists.intro,
-    exact a2.fst, fapply exists.intro, exact (F.mor f2) y, fapply exists.intro, exact f1,
+    exact ℓ₃, fapply exists.intro, exact (F.mor f2) y, fapply exists.intro, exact f1,
     fapply exists.intro, exact f3, split,
-    {simp[H1, H2_l], sorry},
-    {simp[H2_r, H3], sorry},
+    {simp[H1, H2_l], rw[H4]},
+    {simp[H2_r, H3], rw[H5]},
     }
 end
 
