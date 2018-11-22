@@ -54,17 +54,13 @@ begin
     /- Since term_model T'' ⊨ T'' and T'' contains ∼ψ, the term model satisfies ∼ψ -/
     have h_not_psi : Lhom.reduct (L'.snd) (term_model T'') ⊨ ∼ψ,
       {have := @term_model_ssatisfied L'.fst T'' T''_complete T''_henkin,
-       /- Now we have to take ∼ψ, show that as an L'-sentence it's in T'', but since it was
-       an L-sentence to begin with it's satisfied by the L-reduct of the term model-/
-       have h_expansion : Lhom.on_sentence L'.snd ∼ψ ∈ T'',
-         {sorry},
-       have := this h_expansion,
-         {sorry}
+      refine Lhom.reduct_ssatisfied _, refine this _, fapply HT''.left,
+      simp only [Theory_induced, set.mem_insert_iff, set.mem_image, set.union_singleton],
+      exact ⟨∼ψ, by simp only [*, true_or, eq_self_iff_true, and_self]⟩
     },
-    have h_psi := H h_nonempty h_all_realized_of_reduct,
+    revert h_not_psi,
     simp only [*, forall_prop_of_true, forall_prop_of_false, not_true,
-              fol.realize_sentence_not, not_false_iff, -h_not_psi] at h_not_psi h_psi,
-    exact h_not_psi},
+              fol.realize_sentence_not, not_false_iff]},
     {contradiction}, 
     },
   } 
