@@ -36,20 +36,31 @@ begin
     have : ¬ T ⊨ ψ,
     {unfold ssatisfied, rw[not_forall], fapply exists.intro, fapply Lhom.reduct,
     exact L'.fst, exact L'.snd, fapply term_model, exact T'', intro H,
+    /- The term model of T'' models T'' -/
+    have term_model_models_T'' : term_model T'' ⊨ T'',
+      {fapply term_model_ssatisfied, repeat{assumption}},
     /- The term model is nonempty -/
     have h_nonempty :  nonempty ↥(Lhom.reduct (L'.snd) (term_model T'')),
       {fapply Lhom.reduct_nonempty_of_nonempty, exact fol.nonempty_term_model T''_henkin},
     /- The L-reduct of the term model of a complete Henkinization of T is a model of T -/
     have h_all_realized_of_reduct : Lhom.reduct (L'.snd) (term_model T'') ⊨ T,
-      {sorry},
-    /- Since the term model models T'' and T'' contains ∼ψ, the term model satisfies ∼ψ -/
+      {fapply Lhom.reduct_all_ssatisfied, have := HT''.left,
+      have h_term := term_model_ssatisfied T''_complete T''_henkin,
+      intros f hf, unfold Theory_induced at this, fapply term_model_models_T'',
+      exact this begin have : T ⊆ (T ∪ {∼ψ}),
+      by simp only [set.subset_insert, set.union_singleton],
+        fapply set.image_subset, repeat{assumption} end
+        },
+    /- Since term_model T'' ⊨ T'' and T'' contains ∼ψ, the term model satisfies ∼ψ -/
     have h_not_psi : Lhom.reduct (L'.snd) (term_model T'') ⊨ ∼ψ,
       {have := @term_model_ssatisfied L'.fst T'' T''_complete T''_henkin,
        /- Now we have to take ∼ψ, show that as an L'-sentence it's in T'', but since it was
        an L-sentence to begin with it's satisfied by the L-reduct of the term model-/
-       have h_expansion : Lhom.on_sentence L'.snd ∼ψ ∈ T'', by sorry,
+       have h_expansion : Lhom.on_sentence L'.snd ∼ψ ∈ T'',
+         {sorry},
        have := this h_expansion,
-       sorry},
+         {sorry}
+    },
     have h_psi := H h_nonempty h_all_realized_of_reduct,
     simp only [*, forall_prop_of_true, forall_prop_of_false, not_true,
               fol.realize_sentence_not, not_false_iff, -h_not_psi] at h_not_psi h_psi,
@@ -81,5 +92,5 @@ end
 theorem compactness {L : Language} {T : Theory L} {f : sentence L} : 
   T ⊨ f ↔ ∃ fs : finset (sentence L), ↑fs ⊨ f ∧ ↑fs ⊆ T :=
 begin
-  rw [←completeness T f, theory_proof_compactness_iff], simp [completeness]
+  rw [←completeness T f, theory_proof_compactness_iff], simp only [completeness]
 end

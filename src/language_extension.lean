@@ -208,7 +208,8 @@ by {apply nonempty.map, repeat{assumption}, exact λ x, x}
 end Lhom
 
 def Language_over (L : Language) := Σ L' : Language, L →ᴸ L'
-def Theory_induced {L L' : Language} (F : L →ᴸ L') (T : Theory L) : Theory L' := begin sorry end
+def Theory_induced {L L' : Language} (F : L →ᴸ L') (T : Theory L) : Theory L' :=
+  (Lhom.on_sentence F) '' T
 
 lemma consis_Theory_induced_of_consis {L L' : Language} (F : L →ᴸ L') (T : Theory L) {hT : is_consistent T} : is_consistent (Theory_induced F T) := sorry
 
