@@ -193,21 +193,33 @@ have x : Type*, from S.carrier,
 
 variable {ϕ}
 
+def reduct_id {S : Structure L'} : S → reduct ϕ S := id
 
 def reduct_ssatisfied {S : Structure L'} {f : sentence L} (h : S ⊨ ϕ.on_sentence f) :
   ϕ.reduct S ⊨ f :=
-sorry
+begin
+  rcases f,
+  {exact h},
+  {unfold on_sentence on_bounded_formula on_bounded_term realize_sentence realize_bounded_formula at h, unfold realize_sentence realize_bounded_formula realize_bounded_term,
+  fapply @eq.rec, fapply @reduct_id L L' ϕ, exact realize_bounded_term dvector.nil (on_bounded_term ϕ f_t₁) dvector.nil, unfold reduct_id, rcases f_t₁, repeat{sorry},
+  -- seems like here we need to show that induced interpretation on terms is literally equal to the reduct interpretation
+  },
+  {sorry},
+  {sorry},
+  {sorry},
+  {sorry},
+end
 
 def reduct_all_ssatisfied {S : Structure L'} {T : Theory L} (h : S ⊨ ϕ.on_sentence '' T) :
   ϕ.reduct S ⊨ T :=
 λf hf, reduct_ssatisfied $ h $ mem_image_of_mem _ hf
 
 lemma reduct_nonempty_of_nonempty {S : Structure L'} (H : nonempty S) : nonempty (reduct ϕ S) :=
-by {apply nonempty.map, repeat{assumption}, exact λ x, x}
+by {apply nonempty.map, repeat{assumption}, exact reduct_id}
 
 end Lhom
 
-def Language_over (L : Language) := Σ L' : Language, L →ᴸ L'
+--def Language_over (L : Language) := Σ L' : Language, L →ᴸ L'
 def Theory_induced {L L' : Language} (F : L →ᴸ L') (T : Theory L) : Theory L' :=
   (Lhom.on_sentence F) '' T
 

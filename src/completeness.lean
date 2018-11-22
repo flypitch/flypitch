@@ -22,8 +22,7 @@ end
 
 theorem completeness {L : Language} (T : Theory L) (ψ : sentence L) : T ⊢' ψ ↔ T ⊨ ψ :=
 begin
-  split,
-  {intro H, fapply soundness, exact classical.choice H},
+  refine ⟨by {intro H, fapply soundness, exact classical.choice H}, _⟩,
   {by_cases is_consistent T, swap,
             {intro, fapply nonempty.intro, fapply exfalso, fapply classical.choice,
             unfold is_consistent at h, have : T ⊢' (⊥ : sentence L),
@@ -57,13 +56,13 @@ begin
       refine Lhom.reduct_ssatisfied _, refine this _, fapply HT''.left,
       simp only [Theory_induced, set.mem_insert_iff, set.mem_image, set.union_singleton],
       exact ⟨∼ψ, by simp only [*, true_or, eq_self_iff_true, and_self]⟩
-    },
+      },
     revert h_not_psi,
     simp only [*, forall_prop_of_true, forall_prop_of_false, not_true,
               fol.realize_sentence_not, not_false_iff]},
     {contradiction}, 
     },
-  } 
+  }
 end
 
 /- Note: in the not-easy direction, the term model of a complete Henkin theory will contain a constant witnessing "∃ x, x = x" or something like that, and so will not be empty. -/
