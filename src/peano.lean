@@ -153,7 +153,7 @@ local notation ℕ := L_peano_structure_of_nat
 @[simp]lemma floris {L} {S : Structure L} : ↥S = S.carrier := by refl
 
 example : ℕ ⊨ p_zero_not_succ := begin
-change ∀ x : ℕ, 0 = nat.succ x → false, intro x, intro h, cases h end
+change ∀ x : ℕ, 0 = nat.succ x → false, intros x h, cases h end
 
 -- TODO, try proving the induction schema for a simple case.
 
