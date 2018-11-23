@@ -30,7 +30,7 @@ begin
     {by_contra, simp[*, -a] at a, cases a with H2 H1, 
     
     have hT : is_consistent (T ∪ {∼ψ}), by {fapply consis_not_of_not_provable, repeat{assumption}},
-    have T' := (complete_henkinization hT), cases T' with L' T', cases T' with T'1 T'2,
+    have T' := (complete_henkinization' hT), cases T' with L' T', cases T' with T'1 T'2,
     cases T'1 with T'' HT'', cases T'2 with T''_henkin T''_complete,
     have : ¬ T ⊨ ψ,
     {unfold ssatisfied, rw[not_forall], fapply exists.intro, fapply Lhom.reduct,
@@ -41,7 +41,7 @@ begin
     /- The term model is nonempty -/
     have h_nonempty :  nonempty ↥(Lhom.reduct (L'.snd) (term_model T'')),
       {fapply Lhom.reduct_nonempty_of_nonempty, exact fol.nonempty_term_model T''_henkin},
-    /- The L-reduct of the term model of a complete Henkinization of T is a model of T -/
+    /- The L-reduct of the term model of a complete Henkinization' of T is a model of T -/
     have h_all_realized_of_reduct : Lhom.reduct (L'.snd) (term_model T'') ⊨ T,
       {fapply Lhom.reduct_all_ssatisfied, have := HT''.left,
       have h_term := term_model_ssatisfied T''_complete T''_henkin,
