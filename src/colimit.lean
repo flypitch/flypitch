@@ -26,8 +26,8 @@ structure directed_diagram (D : (directed_type : Type (u+1))) : Type (max (u+1) 
            (mor f3) = (mor f2) ∘ (mor f1)) -- functoriality
 
 def directed_type_of_nat : directed_type :=
-  begin refine ⟨ℕ, (≤), _⟩,
-  intros x y, fapply exists.intro, exact x + y,
+  begin refine ⟨ℕ, (≤), _, _, _⟩, intro, refl,
+  fapply le_trans, intros, fapply exists.intro, exact x + y,
   simp only [*, zero_le, le_add_iff_nonneg_right, and_self, le_add_iff_nonneg_left]
   end
 
@@ -68,16 +68,12 @@ begin
     have H5 : (F.mor fk z) = (F.mor fj_2 y), by cc,
     unfold germ_relation at *, fapply exists.intro,
     exact ℓ₃, fapply exists.intro, exact (F.mor f2) y, fapply exists.intro, exact f1,
-    fapply exists.intro, exact f3, split,
-    {simp[H1, H2_l], rw[H4]},
-    {simp[H2_r, H3], rw[H5]},
+    fapply exists.intro, exact f3, fapply and.intro,
+    {simp[H1, H2_l], rw[H4]}, {simp[H2_r, H3], rw[H5]},
     }
 end
 
 def colimit {D : (directed_type : Type (u+1)) } (F : (directed_diagram D :  Type (max (u+1) (v+1)))) : Type (max u v) :=
-begin
-  fapply quotient, exact coproduct_of_directed_diagram F,
-  exact ⟨germ_relation F, germ_equivalence F⟩
-end
+  @quotient (coproduct_of_directed_diagram F) ⟨germ_relation F, germ_equivalence F⟩
 
 end colimit

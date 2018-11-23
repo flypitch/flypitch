@@ -51,7 +51,7 @@ structure Lhom (L L' : Language) :=
 (on_function : ∀{n}, L.functions n → L'.functions n) 
 (on_relation : ∀{n}, L.relations n → L'.relations n)
 
-local infix ` →ᴸ `:10 := Lhom -- \^L
+infix ` →ᴸ `:10 := Lhom -- \^L
 
 namespace Lhom
 /- -/
