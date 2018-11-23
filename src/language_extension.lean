@@ -51,7 +51,7 @@ structure Lhom (L L' : Language) :=
 (on_function : ∀{n}, L.functions n → L'.functions n) 
 (on_relation : ∀{n}, L.relations n → L'.relations n)
 
-infix ` →ᴸ `:10 := Lhom -- \^L
+local infix ` →ᴸ `:10 := Lhom -- \^L
 
 namespace Lhom
 /- -/
@@ -219,7 +219,7 @@ by {apply nonempty.map, repeat{assumption}, exact reduct_id}
 
 end Lhom
 
---def Language_over (L : Language) := Σ L' : Language, L →ᴸ L'
+
 def Theory_induced {L L' : Language} (F : L →ᴸ L') (T : Theory L) : Theory L' :=
   (Lhom.on_sentence F) '' T
 
