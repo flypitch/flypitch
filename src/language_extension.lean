@@ -66,6 +66,25 @@ variables {L : Language.{u}} {L' : Language.{u}} (ϕ : L →ᴸ L')
 protected def id (L : Language) : L →ᴸ L :=
 ⟨λn, id, λ n, id⟩
 
+
+@[reducible]def comp {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2) : L1 →ᴸ L3 :=
+begin
+--  rcases g with ⟨g1, g2⟩, rcases f with ⟨f1,f2⟩,
+--  exact ⟨λn, g1 ∘ f1, λn, g2 ∘ f2⟩
+split, 
+  all_goals{intro n},
+  let g1 := g.on_function, let f1 := f.on_function,-- Lean's not letting me "@" g.on_function etc
+    exact (@g1 n) ∘ (@f1 n),
+  let g2 := g.on_relation, let f2 := f.on_relation,
+    exact (@g2 n) ∘ (@f2 n)
+end
+
+local infix ` ∘ `:60 := Lhom.comp
+
+lemma id_is_left_identity {L1 L2} {F : L1 →ᴸ L2} : (Lhom.id L2) ∘ F = F := by {cases F, refl}
+
+lemma id_is_right_identity {L1 L2} {F : L1 →ᴸ L2} : F ∘ (Lhom.id L1) = F := by {cases F, refl}
+
 structure is_injective : Prop := 
 (on_function {n} : injective (on_function ϕ : L.functions n → L'.functions n))
 (on_relation {n} : injective (on_relation ϕ : L.relations n → L'.relations n))

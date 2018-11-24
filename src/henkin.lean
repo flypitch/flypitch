@@ -1,6 +1,6 @@
-import .fol order.zorn order.filter logic.basic data.finset data.set tactic.tidy .completion .language_extension .colimit .to_mathlib
+import .fol order.zorn order.filter logic.basic data.finset data.set tactic.tidy .completion .language_extension .colimit .to_mathlib tactic.linarith
 
-local attribute [instance, priority 0] classical.prop_decidable
+-- local attribute [instance] classical.prop_decidable
 
 open fol
 
@@ -11,31 +11,19 @@ local infix ` →ᴸ `:10 := Lhom -- \^L
 namespace colimit
 
 export directed_type
-
 /- Below we define colimits of languages. These are just fieldwise (and then indexwise)
    colimits of types, so the proofs are very similar. -/
-@[reducible]def Lhom_comp {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2) : L1 →ᴸ L3 :=
-begin
---  rcases g with ⟨g1, g2⟩, rcases f with ⟨f1,f2⟩,
---  exact ⟨λn, g1 ∘ f1, λn, g2 ∘ f2⟩
-split, 
-  all_goals{intro n},
-  let g1 := g.on_function, let f1 := f.on_function,-- Lean's not letting me "@" g.on_function etc
-    exact (@g1 n) ∘ (@f1 n),
-  let g2 := g.on_relation, let f2 := f.on_relation,
-    exact (@g2 n) ∘ (@f2 n)
-end 
 
-local infix ` ∘ `:60 := Lhom_comp
+local infix ` ∘ `:60 := Lhom.comp
 
 /- on_function and on_relation are functors to Type* -/
-lemma Lhom_comp_on_function {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
+lemma Lhom.comp_on_function {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
       (g ∘ f).on_function =
       begin intro n, let g1 := g.on_function, let f1 := f.on_function,
       exact function.comp (@g1 n) (@f1 n) end
       := by refl
 
-lemma Lhom_comp_on_relation {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
+lemma Lhom.comp_on_relation {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
       (g ∘ f).on_relation =
       begin intro n, let g1 := g.on_relation, let f1 := f.on_relation,
       exact function.comp (@g1 n) (@f1 n) end
@@ -82,7 +70,8 @@ def colimit_language {D : (directed_type : Type (u+1)) } (F : (directed_diagram_
 /- The canonical map of languages is the pointwise canonical map of colimits of types -/
 def canonical_map_language {D} {F : directed_diagram_language D} (i : D.carrier) :
                            (F.obj i) →ᴸ colimit_language F :=
-⟨λ n, function.comp (by apply quotient.mk) (@canonical_inclusion_coproduct D (diagram_functions n) i), λ n, function.comp (by apply quotient.mk) (@canonical_inclusion_coproduct D (diagram_relations n) i)⟩
+⟨λ n, function.comp (by apply quotient.mk) (@canonical_inclusion_coproduct D (diagram_functions n) i),
+λ n, function.comp (by apply quotient.mk) (@canonical_inclusion_coproduct D (diagram_relations n) i)⟩
 
 end colimit
 
@@ -133,7 +122,15 @@ def henkin_language_chain_objects {L : Language} : ℕ → Language
   | 0 := L
   | (n+1) := henkin_language_step (henkin_language_chain_objects n)
 
-local infix ` ∘ `:60 := Lhom_comp
+local infix ` ∘ `:60 := Lhom.comp
+
+def henkin_language_chain_maps (L : Language): Π x y, x ≤ y → (@henkin_language_chain_objects L x →ᴸ @henkin_language_chain_objects L y)
+| x 0 H := by {have : x = 0, apply nat.eq_zero_of_le_zero, exact H, rw[this], apply Lhom.id}
+| x (y+1) H := by {by_cases x = y + 1, rw[h], fapply Lhom.id,
+               refine @henkin_language_inclusion (@henkin_language_chain_objects L y) ∘ _,
+               fapply henkin_language_chain_maps,
+               simp only [*, nat.lt_of_le_and_ne, nat.le_of_lt_succ, ne.def, not_false_iff]}
+
 
 /- Given a language, iterate henkin_language_step, returning this data in the form
    of a directed diagram of types indexed by ℕ' -/
@@ -143,17 +140,36 @@ begin
   {exact @henkin_language_chain_objects L},
   {change Π {x y : ℕ},
     x ≤ y → (henkin_language_chain_objects x →ᴸ henkin_language_chain_objects y),
-    intros x y H, induction y with y ih,
-      {have : x = 0, fapply nat.eq_zero_of_le_zero, exact H, rw[this],
-      apply Lhom.id},
-      {by_cases x = nat.succ y, rw[h], apply Lhom.id,
-       refine henkin_language_inclusion ∘ ih _,
-       by simp only [*, nat.lt_of_le_and_ne, nat.le_of_lt_succ, ne.def, not_false_iff]}
-  },
-  {sorry} -- need to refactor the above proof to avoid by_cases, probably
-  -- or maybe also, try doing it beforehand with the equation compiler?
-  -- otherwise looks like there are too many .recs to finish efficiently
+    intros x y H, fapply henkin_language_chain_maps, exact H},
+  {change ∀ {x y z : ℕ} {f1 :  x ≤ y} {f2 :  y ≤ z}
+  {f3 :  x ≤ z},
+    henkin_language_chain_maps L x z _ =
+    henkin_language_chain_maps L y z _ ∘
+    henkin_language_chain_maps L x y _,
+    intros x y z f1 f2 f3,
+    change henkin_language_chain_maps L x z _= henkin_language_chain_maps L y z _ ∘ henkin_language_chain_maps L x y _,
+    induction z,
+      {have this1 : x = 0, by exact nat.eq_zero_of_le_zero f3,
+      have this2 : y = 0, by exact nat.eq_zero_of_le_zero f2,
+       subst this1, subst this2, refl},
+      { unfold henkin_language_chain_maps, by_cases y = z_n + 1, simp*, subst h, by_cases x = z_n+1, simp*, subst h,
+       unfold henkin_language_chain_maps, simp, refl,
+       {simp*,
+       have : eq.mpr _ (Lhom.id (henkin_language_chain_objects (z_n + 1))) ∘ henkin_language_chain_maps L x (z_n + 1) f1 = (Lhom.id (henkin_language_chain_objects (z_n + 1))) ∘ henkin_language_chain_maps L x (z_n + 1) f1, by refl, rw[this],
+       have : Lhom.id (henkin_language_chain_objects (z_n + 1)) ∘ henkin_language_chain_maps L x (z_n + 1) f1 =  henkin_language_chain_maps L x (z_n + 1) f1,
+       by simp only [eq_self_iff_true, fol.Lhom.id_is_left_identity],
+       rw[this], unfold henkin_language_chain_maps, simp*,
+         },
+       {by_cases x = z_n+1,
+         {simp*, have : y < z_n+1, by {fapply nat.lt_of_le_and_ne,
+         repeat{assumption}}, exfalso, linarith},
+         {simp*, have Hxy : x ≤ z_n ∧ y ≤ z_n, by simp[*,nat.le_of_lt_succ, nat.lt_of_le_and_ne],
+         simp only [*, eq_self_iff_true, not_false_iff]}
+       }
+    }
+}
 end
+
 
 def L_infty (L) : Language :=
    colimit_language $ @henkin_language_chain L
