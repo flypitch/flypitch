@@ -149,20 +149,19 @@ begin
 end,
 λt, h t ([]) ([])
 
--- @[elab_as_eliminator] def term.elim_beta {C : Type v}
---   (hvar : ∀(k : ℕ), C)
---   (hfunc : Π {{l}} (f : L.functions l) (ts : dvector (term L) l) (ih_ts : dvector C l), C) : 
---   ∀{l} (f : L.functions l) (ts : dvector (term L) l), 
---   @term.elim L C hvar hfunc (apps (func f) ts) = hfunc f ts (ts.map $ @term.elim L C hvar hfunc) :=
--- have h : ∀{l l'} (f : L.functions (l+l')) (ts' : dvector (term L) l') (ts : dvector (term L) l) (ih_ts : dvector C l),
---   @term.elim L C hvar hfunc (apps (apps' (func f) ts') ts) = hfunc f (ts'.append ts) 
---   ((ts'.append ts).map $ @term.elim L C hvar hfunc),
--- begin
---   intros, induction l generalizing l'; try {rw ts.zero_eq},
---   { simp, },
--- end,
--- λt, h t ([]) ([])
-
+@[elab_as_eliminator] def term.elim_beta {C : Type v}
+  (hvar : ∀(k : ℕ), C)
+  (hfunc : Π {{l}} (f : L.functions l) (ts : dvector (term L) l) (ih_ts : dvector C l), C) : 
+  ∀{l} (f : L.functions l) (ts : dvector (term L) l), 
+  @term.elim L C hvar hfunc (apps (func f) ts) = hfunc f ts (ts.map $ @term.elim L C hvar hfunc) :=
+begin
+  intros l f ts,
+  generalize ht : apps (func f) ts = t, revert ht,
+  refine term.rec _ _ t; clear t; intros,
+  { exfalso, induction ts;[cases ht,dsimp at ht],
+    revert ht, generalize hf : func f = t', 
+    induction ts_x },
+end
 
 /- lift_term_at _ t n m raises variables in t which are at least m by n -/
 @[simp] def lift_term_at : ∀ {l}, preterm L l → ℕ → ℕ → preterm L l
@@ -1390,6 +1389,11 @@ export bounded_preformula
 @[reducible] def sentence                     := presentence L 0
 variable {L}
 
+-- @[reducible, simp] def bd_falsum' {n} : bounded_formula L n := bd_falsum
+-- @[reducible, simp] def bd_equal' {n} (t₁ t₂ : bounded_term L n) : bounded_formula L n := 
+-- bd_equal t₁ t₂ 
+-- @[reducible, simp] def bd_imp' {n} (f₁ f₂ : bounded_formula L n) : bounded_formula L n := 
+-- bd_imp f₁ f₂
 notation `⊥` := fol.bounded_preformula.bd_falsum -- input: \bot
 infix ` ≃ `:88 := fol.bounded_preformula.bd_equal -- input \~- or \simeq
 infix ` ⟹ `:62 := fol.bounded_preformula.bd_imp -- input \==>

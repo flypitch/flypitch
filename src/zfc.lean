@@ -111,46 +111,41 @@ end
 -- assumption
 -- end
 
-#exit -- we want to refactor all of this
-def axiom_of_emptyset : @sentence L_ZFC := -- for all x, x is not in the constant emptyset.
-∀' ∼ (_ ∈' _)
+def Class : Type := bounded_formula L_ZFC 1
+def small {n} (c : bounded_formula L_ZFC (n+1)) : bounded_formula L_ZFC n := 
+∃' ∀' (&0 ∈' &1 ⇔ (c ↑' 1 # 1))
+def subclass (c₁ c₂ : Class) : sentence L_ZFC := ∀' (c₁ ⟹ c₂)
+def functional {n} (c : bounded_formula L_ZFC (n+2)) : bounded_formula L_ZFC n := 
+-- ∀x ∃y ∀z, c z x ↔ z = y
+∀' ∃' ∀' (c ↑' 1 # 1 ⇔ &0 ≃ &1)
+def subset : bounded_formula L_ZFC 2 := ∀' (&0 ∈' &1 ⟹ &0 ∈' &2)
+def pair : bounded_formula L_ZFC 3 := bd_equal &0 &1 ⊔ bd_equal &0 &2
+def singl : bounded_formula L_ZFC 2 := &0 ≃ &1
+def binary_union : bounded_formula L_ZFC 3 := &0 ∈' &1 ⊔ &0 ∈' &2
+def succ : bounded_formula L_ZFC 2 := bd_equal &0 &1 ⊔ &0 ∈' &1
+--∀x∃y(x ∈ y ∧ ∀z(z ∈ y → ∃w(z ∈ w ∧ w ∈ y)))
 
-begin
-split, swap,
-  begin
-  apply all, apply fol.not, apply apprel, apply apprel, apply rel, exact rel_is_rel ZFC'_rel.ϵ, exact &0, apply func, exact ZFC'_f0.emptyset
-  end,
-repeat {constructor}
-end
+def axiom_of_extensionality : sentence L_ZFC := ∀' ∀' (∀' (&0 ∈' &1 ⇔ &0 ∈' &2) ⟹ &0 ≃ &1)
+def axiom_of_union : sentence L_ZFC := ∀' (small ∃' (&1 ∈' &0 ⊓ &0 ∈' &2))
+-- todo: c can have free variables. Note that c y x is interpreted as y is the image of x
+def axiom_of_replacement (c : bounded_formula L_ZFC 2) : sentence L_ZFC := 
+-- ∀α small (λy, ∃x, x ∈ α ∧ c y x)
+functional c ⟹ ∀' (small ∃' (&0 ∈' &2 ⊓ c.cast1))
+def axiom_of_powerset : sentence L_ZFC := 
+-- the class of all subsets of x is small
+∀' small subset
+def axiom_of_infinity : sentence L_ZFC := 
+--∀x∃y(x ∈ y ∧ ∀z(z ∈ y → ∃w(z ∈ w ∧ w ∈ y)))
+∀' ∃' (&1 ∈' &0 ⊓ ∀'(&0 ∈' &1 ⟹ ∃' (bd_and (&1 ∈' &0) (&0 ∈' &2))))
+def axiom_of_choice : sentence L_ZFC := sorry
 
-def axiom_of_subset : @sentence L_ZFC' := -- for all x, for all z, x ⊆ y (if and only if) , z ∈ x → z ∈ y.
-begin
-split, swap,
-  begin
-  apply all, apply all, apply all, apply biimp, apply apprel, apply apprel, apply rel, exact ZFC'_rel.subset, exact &2, exact &1, apply imp, apply apprel, apply apprel, apply rel, exact ZFC'_rel.ϵ, exact &0, exact &2, apply apprel, apply apprel, apply rel, exact ZFC'_rel.ϵ, exact &0, exact &1
---&2 ⊆ &1 iff &0 ∈ &2 → &0 ∈ &1
-  end,
-repeat {constructor} -- thanks Floris!
-end
+-- the following axioms follow from the other axioms
+def axiom_of_emptyset : sentence L_ZFC := small ⊥
+-- todo: c can have free variables
+def axiom_of_separation (c : Class) : sentence L_ZFC := ∀' (small $ &0 ∈' &1 ⊓ c.cast1)
+-- the class consisting of the unordered pair {x, y}
+def axiom_of_pairing : sentence L_ZFC := ∀' ∀' small pair
 
-def test := axiom_of_emptyset.fst
-
-#reduce test
-
-
-def axiom_of_extensionality : @sentence L_ZFC' := -- for all x for all y for all z, z in x iff z in y implies x = y
-begin
-split,
-{sorry},
-{
-simp[formula],
-{exact sorry}
-}
-end
-
-
-
--- etc
 
 -- inductive ZFC' : (@sentence L_ZFC') → Prop -- should this be Type-valued instead?
 -- := sorry
