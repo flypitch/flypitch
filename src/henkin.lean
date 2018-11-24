@@ -1,4 +1,4 @@
-import .fol order.zorn order.filter logic.basic data.finset data.set tactic.tidy .completion .language_extension .colimit
+import .fol order.zorn order.filter logic.basic data.finset data.set tactic.tidy .completion .language_extension .colimit .to_mathlib
 
 local attribute [instance, priority 0] classical.prop_decidable
 
@@ -9,7 +9,6 @@ local infix ` →ᴸ `:10 := Lhom -- \^L
 
 /- Temporarily putting this here because I can't get Lean to recognize Lhom in colimit.lean -/
 namespace colimit
-#print directed_diagram
 
 export directed_type
 
@@ -79,6 +78,12 @@ def colimit_language {D : (directed_type : Type (u+1)) } (F : (directed_diagram_
   ⟨germ_relation (diagram_functions n), germ_equivalence (diagram_functions n)⟩,
 λn, @quotient (coproduct_of_directed_diagram (@diagram_relations D F n))
   ⟨germ_relation (diagram_relations n), germ_equivalence (diagram_relations n)⟩⟩
+
+/- The canonical map of languages is the pointwise canonical map of colimits of types -/
+def canonical_map_language {D} {F : directed_diagram_language D} (i : D.carrier) :
+                           (F.obj i) →ᴸ colimit_language F :=
+⟨λ n, function.comp (by apply quotient.mk) (@canonical_inclusion_coproduct D (diagram_functions n) i), λ n, function.comp (by apply quotient.mk) (@canonical_inclusion_coproduct D (diagram_relations n) i)⟩
+
 end colimit
 
 open colimit
@@ -124,28 +129,67 @@ end
 
 local notation `ℕ'` := (ulift.{(u+2)} directed_type_of_nat)
 
+def henkin_language_chain_objects {L : Language} : ℕ → Language
+  | 0 := L
+  | (n+1) := henkin_language_step (henkin_language_chain_objects n)
+
+local infix ` ∘ `:60 := Lhom_comp
+
 /- Given a language, iterate henkin_language_step, returning this data in the form
    of a directed diagram of types indexed by ℕ' -/
-def henkin_language_chain {L : (Language : Type(u+1))} : (directed_diagram_language directed_type_of_nat) := 
+def henkin_language_chain {L : Language} : (directed_diagram_language directed_type_of_nat) := 
 begin
   refine ⟨_, _, _⟩,
-  {intro n, induction n with n ih,
-    {exact L}, -- case n = 0
-    {exact henkin_language_step ih},
+  {exact @henkin_language_chain_objects L},
+  {change Π {x y : ℕ},
+    x ≤ y → (henkin_language_chain_objects x →ᴸ henkin_language_chain_objects y),
+    intros x y H, induction y with y ih,
+      {have : x = 0, fapply nat.eq_zero_of_le_zero, exact H, rw[this],
+      apply Lhom.id},
+      {by_cases x = nat.succ y, rw[h], apply Lhom.id,
+       refine henkin_language_inclusion ∘ ih _,
+       by simp only [*, nat.lt_of_le_and_ne, nat.le_of_lt_succ, ne.def, not_false_iff]}
   },
-  {sorry},
-  {sorry}
+  {sorry} -- need to refactor the above proof to avoid by_cases, probably
+  -- or maybe also, try doing it beforehand with the equation compiler?
+  -- otherwise looks like there are too many .recs to finish efficiently
+end
+
+def L_infty (L) : Language :=
+   colimit_language $ @henkin_language_chain L
+
+/- For every n : ℕ, return the canonical inclusion L_n → L_infty  -/
+def henkin_language_canonical_map {L : Language} (m : ℕ) : (@henkin_language_chain L).obj m →ᴸ (@L_infty L) := by apply canonical_map_language
+
+/- Not really a chain, since we haven't set up interpretations of theories yet -/
+def henkin_theory_chain {L : Language} {T : Theory L}: Π(n : ℕ), (Theory (obj (@henkin_language_chain L) n))
+| 0 := T
+| (n+1) := henkin_theory_step (henkin_theory_chain n)
+
+/- Now we have to push all these theories into Theory L_∞, so that they literally become a chain
+   of sets. -/
+
+/- Given T_n from henkin_theory_chain, ι T_n is the expansion of T_n to an L_infty theory -/
+@[reducible]def ι {L : Language} {T : Theory L} (m : ℕ) :  Theory (L_infty L) :=
+(Lhom.on_sentence (@henkin_language_canonical_map L m)) '' (@henkin_theory_chain L T m)
+
+/- T_infty is the henkinization of T; we define it to be the union ⋃ (n : ℕ), ι(T n). -/
+
+def T_infty {L : Language} (T : Theory L) : Theory (L_infty L) := set.Union (@ι L T)
+
+def henkin_language {L} {T : Theory L} {hT : is_consistent T} : Language := L_infty L
+
+local infix ` →ᴸ `:10 := Lhom -- \^L
+
+/- I dislike this proof, but I don't know how apply canonical_map_language otherwise... -/
+lemma henkin_language_over {L} {T : Theory L} {hT : is_consistent T} : L →ᴸ (@henkin_language L T hT) := begin
+change (henkin_language_chain.obj (0 : ℕ)) →ᴸ colimit_language henkin_language_chain,
+apply canonical_map_language
 end
 
 def complete_henkin_Theory_over {L : Language} (T : Theory L) (hT : is_consistent T) : Type u := Σ' T' : Theory_over T hT, has_enough_constants T'.val ∧ is_complete T'.val
 
-def henkin_language {L} {T : Theory L} {hT : is_consistent T} : Language := sorry
-
-local infix ` →ᴸ `:10 := Lhom -- \^L
-
-lemma henkin_language_over {L} {T : Theory L} {hT : is_consistent T} : L →ᴸ (@henkin_language L T hT) := sorry
-
-def henkinization {L : Language} {T : Theory L} {hT : is_consistent T} : Theory (@henkin_language L T hT) := sorry
+def henkinization {L : Language} {T : Theory L} {hT : is_consistent T} : Theory (@henkin_language L T hT) := T_infty T
 
 lemma henkinization_is_henkin {L : Language} {T : Theory L} {hT : is_consistent T} : has_enough_constants (@henkinization L T hT) := sorry
 

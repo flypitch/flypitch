@@ -31,12 +31,17 @@ def directed_type_of_nat : directed_type :=
   simp only [*, zero_le, le_add_iff_nonneg_right, and_self, le_add_iff_nonneg_left]
   end
 
+@[simp]lemma jesse : directed_type_of_nat.carrier = ℕ := by refl
+
 def constant_functor (D : directed_type) (A : Type v) : directed_diagram D :=
   ⟨(λ x, A), λ x y h, id, by simp⟩
 
 def coproduct_of_directed_diagram {D : (directed_type : Type (u+1)) }
     (F : (directed_diagram D :  Type (max (u+1) (v+1)))) :  Type (max u v) :=
     Σ a : D.carrier, F.obj a
+
+def canonical_inclusion_coproduct {D : directed_type} {F : directed_diagram D} (i : D.carrier) :
+                                  F.obj i → coproduct_of_directed_diagram F := λ x, ⟨i,x⟩
 
 def germ_relation {D : (directed_type : Type (u+1)) }
 (F : (directed_diagram D :  Type (max (u+1) (v+1)))) : coproduct_of_directed_diagram F → coproduct_of_directed_diagram F  → Prop :=
@@ -75,6 +80,9 @@ end
 
 def colimit {D : (directed_type : Type (u+1)) } (F : (directed_diagram D :  Type (max (u+1) (v+1)))) : Type (max u v) :=
   @quotient (coproduct_of_directed_diagram F) ⟨germ_relation F, germ_equivalence F⟩
+
+def canonical_map {D : directed_type} {F : directed_diagram D} (i : D.carrier) :
+                  F.obj i → colimit F := (by apply quotient.mk) ∘ canonical_inclusion_coproduct i
 
 end colimit
 
