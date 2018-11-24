@@ -112,12 +112,18 @@ structure is_injective : Prop :=
 | _ (f₁ ⟹ f₂)   s n := by simp*
 | _ (∀' f)       s n := by simp*
 
-def on_bounded_term {n} : ∀{l} (t : bounded_preterm L n l), bounded_preterm L' n l
+@[simp] def on_bounded_term {n} : ∀{l} (t : bounded_preterm L n l), bounded_preterm L' n l
 | _ &k           := &k
 | _ (bd_func f)  := bd_func $ ϕ.on_function f
 | _ (bd_app t s) := bd_app (on_bounded_term t) (on_bounded_term s)
 
-def on_bounded_formula : ∀{n l} (f : bounded_preformula L n l), bounded_preformula L' n l
+@[simp] def on_bounded_term_fst {n} : ∀{l} (t : bounded_preterm L n l), 
+  (ϕ.on_bounded_term t).fst = ϕ.on_term t.fst
+| _ &k           := by refl
+| _ (bd_func f)  := by refl
+| _ (bd_app t s) := by dsimp; simp*
+
+@[simp] def on_bounded_formula : ∀{n l} (f : bounded_preformula L n l), bounded_preformula L' n l
 | _ _ bd_falsum       := ⊥
 | _ _ (t₁ ≃ t₂)       := ϕ.on_bounded_term t₁ ≃ ϕ.on_bounded_term t₂
 | _ _ (bd_rel R)      := bd_rel $ ϕ.on_relation R
@@ -125,8 +131,17 @@ def on_bounded_formula : ∀{n l} (f : bounded_preformula L n l), bounded_prefor
 | _ _ (f₁ ⟹ f₂)      := on_bounded_formula f₁ ⟹ on_bounded_formula f₂
 | _ _ (∀' f)          := ∀' on_bounded_formula f
 
-def on_closed_term (t : closed_term L) : closed_term L' := ϕ.on_bounded_term t
-def on_sentence (f : sentence L) : sentence L' := ϕ.on_bounded_formula f
+@[simp] def on_bounded_formula_fst : ∀{n l} (f : bounded_preformula L n l), 
+  (ϕ.on_bounded_formula f).fst = ϕ.on_formula f.fst
+| _ _ bd_falsum       := by refl
+| _ _ (t₁ ≃ t₂)       := by simp
+| _ _ (bd_rel R)      := by refl
+| _ _ (bd_apprel f t) := by simp*
+| _ _ (f₁ ⟹ f₂)      := by simp*
+| _ _ (∀' f)          := by simp*
+
+@[simp] def on_closed_term (t : closed_term L) : closed_term L' := ϕ.on_bounded_term t
+@[simp] def on_sentence (f : sentence L) : sentence L' := ϕ.on_bounded_formula f
 
 def on_prf {Γ : set $ formula L} {f : formula L} (h : Γ ⊢ f) : ϕ.on_formula '' Γ ⊢ ϕ.on_formula f :=
 begin
@@ -141,6 +156,12 @@ begin
   { apply prf.ref },
   { simp at h_ih_h₂, apply subst _ h_ih_h₁ h_ih_h₂, simp }
 end
+
+def on_sprf {Γ : set $ sentence L} {f : sentence L} (h : Γ ⊢ f) : 
+  ϕ.on_sentence '' Γ ⊢ ϕ.on_sentence f :=
+by simp only [sprf, Theory.fst, (image_comp bounded_preformula.fst _ _).symm, comp, 
+  on_bounded_formula_fst, image_comp ϕ.on_formula bounded_preformula.fst, on_sentence]; 
+  exact ϕ.on_prf h
 
 variable {ϕ}
 lemma on_term_inj (h : ϕ.is_injective) {l} : injective (ϕ.on_term : preterm L l → preterm L' l) :=
@@ -163,7 +184,7 @@ begin
   { rw [x_ih hxy'] }
 end
 
-def refect_prf {Γ : set $ formula L} {f : formula L} (hϕ : ϕ.is_injective) : 
+def reflect_prf {Γ : set $ formula L} {f : formula L} (hϕ : ϕ.is_injective) : 
   ϕ.on_formula '' Γ ⊢ ϕ.on_formula f → Γ ⊢ f :=
 begin
   have : ∀(Δ : set $ formula L') (g : formula L'), 
@@ -193,8 +214,8 @@ variable {ϕ}
 
 def reduct_id {S : Structure L'} : S → reduct ϕ S := id
 
-def reduct_ssatisfied {S : Structure L'} {f : sentence L} (h : S ⊨ ϕ.on_sentence f) :
-  ϕ.reduct S ⊨ f :=
+def reduct_ssatisfied {S : Structure L'} {f : sentence L} (hϕ : ϕ.is_injective) 
+  (h : S ⊨ ϕ.on_sentence f) : ϕ.reduct S ⊨ f :=
 begin
   rcases f,
   {exact h},
@@ -211,6 +232,10 @@ end
 def reduct_all_ssatisfied {S : Structure L'} {T : Theory L} (h : S ⊨ ϕ.on_sentence '' T) :
   ϕ.reduct S ⊨ T :=
 λf hf, reduct_ssatisfied $ h $ mem_image_of_mem _ hf
+
+def reduct_ssatisfied' {T : Theory L} (f : sentence L) (h : T ⊨ f) :
+  ϕ.on_sentence '' T ⊨ ϕ.on_sentence f :=
+λS hS h, ϕ.on_prf _
 
 lemma reduct_nonempty_of_nonempty {S : Structure L'} (H : nonempty S) : nonempty (reduct ϕ S) :=
 by {apply nonempty.map, repeat{assumption}, exact reduct_id}
