@@ -149,9 +149,9 @@ protected lemma concat_nth : ∀{n : ℕ} (xs : dvector α n) (x : α) (m : ℕ)
 | _ []      x' h := by refl
 | _ (x::xs) x' h := by dsimp; exact concat_nth_last xs x' _
 
--- @[simp] protected def append : ∀{n m : ℕ} (xs : dvector α n) (xs' : dvector α m), dvector α (n+m)
--- | _ _ xs []        := xs
--- | _ _ xs (x'::xs') := append (xs.concat x') xs'
+@[simp] protected def append : ∀{n m : ℕ} (xs : dvector α n) (xs' : dvector α m), dvector α (m+n)
+| _ _ []       xs := xs
+| _ _ (x'::xs) xs' := x'::append xs xs'
 
 /- how to make this protected? -/
 inductive rel [setoid α] : ∀{n}, dvector α n → dvector α n → Prop

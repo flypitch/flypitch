@@ -4,6 +4,10 @@ open set function
 universe variable u
 namespace fol
 
+local notation h :: t  := dvector.cons h t
+local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`:0) := l
+
+
 namespace Language
 protected def sum (L L' : Language) : Language :=
 ⟨λn, L.functions n ⊕ L'.functions n, λ n, L.relations n ⊕ L'.relations n⟩
@@ -13,6 +17,8 @@ end Language
 
 section
 variable {L : Language}
+
+
 def symbols_in_term : ∀{l}, preterm L l → set L.symbols
 | _ &k          := ∅
 | l (func f)    := {sum.inl ⟨l,f⟩}
@@ -42,6 +48,8 @@ def interpolation : ∀{Γ : set $ formula L} {f : formula L} (P : Γ ⊢ f),
     symbols_in_prf P₂ ⊆ symbols_in_formula f ∧ 
     symbols_in_formula f' ⊆ ⋃₀ (symbols_in_formula '' Γ) ∩ symbols_in_formula f := 
 sorry -- probably the last property follows automatically
+  
+
 
 end
 
@@ -62,6 +70,12 @@ structure is_injective : Prop :=
 (on_function {n} : injective (on_function ϕ : L.functions n → L'.functions n))
 (on_relation {n} : injective (on_relation ϕ : L.relations n → L'.relations n))
 
+class has_decidable_range : Type u := 
+(on_function {n} : decidable_pred (range (on_function ϕ : L.functions n → L'.functions n)))
+(on_relation {n} : decidable_pred (range (on_relation ϕ : L.relations n → L'.relations n)))
+
+attribute [instance] has_decidable_range.on_function has_decidable_range.on_relation
+
 @[simp] def on_term : ∀{l}, preterm L l → preterm L' l
 | _ &k          := &k
 | _ (func f)    := func $ ϕ.on_function f
@@ -81,6 +95,11 @@ structure is_injective : Prop :=
 | _ &k          s n := by apply lt_by_cases k n; intro h; simp [h]
 | _ (func f)    s n := by refl
 | _ (app t₁ t₂) s n := by simp*
+
+@[simp] def on_term_apps : ∀{l} (t : preterm L l) (ts : dvector (term L) l),
+  ϕ.on_term (apps t ts) = apps (ϕ.on_term t) (ts.map ϕ.on_term)
+| _ t []       := by refl
+| _ t (t'::ts) := by simp*
 
 @[simp] def on_formula : ∀{l}, preformula L l → preformula L' l
 | _ falsum       := falsum
@@ -163,6 +182,44 @@ by simp only [sprf, Theory.fst, (image_comp bounded_preformula.fst _ _).symm, co
   on_bounded_formula_fst, image_comp ϕ.on_formula bounded_preformula.fst, on_sentence]; 
   exact ϕ.on_prf h
 
+/- replace all symbols not in the image of ϕ by a new variable -/
+noncomputable def reflect_term [has_decidable_range ϕ] (t : term L') (m : ℕ) : term L :=
+term.elim (λk, &k ↑' 1 # m) 
+     (λl f' xs' xs, if hf' : f' ∈ range (@on_function _ _ ϕ l)
+       then apps (func (classical.some hf')) xs else &0) t
+
+lemma reflect_term_on_term [has_decidable_range ϕ] (t : term L) (m : ℕ) : 
+  ϕ.reflect_term (ϕ.on_term t) m = t ↑' 1 # m :=
+sorry
+
+noncomputable def reflect_formula [has_decidable_range ϕ] (f : formula L') : 
+  ∀(m : ℕ), formula L :=
+formula.rec (λm, ⊥) (λt₁ t₂ m, ϕ.reflect_term t₁ m ≃ ϕ.reflect_term t₂ m)
+  (λl R' xs' m, if hR' : R' ∈ range (@on_relation _ _ ϕ l)
+       then apps_rel (rel (classical.some hR')) (xs'.map $ λt, ϕ.reflect_term t m) else ⊤)
+   (λf₁' f₂' f₁ f₂ m, f₁ m ⟹ f₂ m) (λf' f m, ∀' f (m+1)) f
+
+lemma reflect_formula_on_formula [has_decidable_range ϕ] (f : formula L) (m : ℕ) : 
+  ϕ.reflect_formula (ϕ.on_formula f) m = f ↑' 1 # m :=
+sorry
+
+noncomputable def reflect_prf_gen [has_decidable_range ϕ] {Γ} {f : formula L'} (m) (H : Γ ⊢ f) : 
+  (λf, ϕ.reflect_formula f m) '' Γ ⊢ ϕ.reflect_formula f m :=
+begin
+  induction H generalizing m,
+  { apply axm, apply mem_image_of_mem _ H_h },
+  { apply impI, have h := @H_ih m, rw [image_insert_eq] at h, exact h },
+  { apply impE, apply H_ih_h₁, apply H_ih_h₂ },
+  { apply falsumE, have h := @H_ih m, rw [image_insert_eq] at h, exact h },
+  { apply allI, rw [←image_comp], have h := @H_ih (m+1), rw [←image_comp] at h, 
+    apply cast _ h, congr1, apply image_congr', intro, sorry },
+  { sorry /-apply allE _ _ _, symmetry, sorry, sorry-/ },
+  { apply ref },
+  { sorry 
+  -- apply subst _ H_ih_h₁, { have h := @H_ih_h₂ m, /-rw [subst_formula2_zero] at h, exact h-/ sorry }, sorry, sorry
+    /-rw [subst_formula2_zero]-/ },
+end
+
 variable {ϕ}
 lemma on_term_inj (h : ϕ.is_injective) {l} : injective (ϕ.on_term : preterm L l → preterm L' l) :=
 begin
@@ -184,22 +241,21 @@ begin
   { rw [x_ih hxy'] }
 end
 
-def reflect_prf {Γ : set $ formula L} {f : formula L} (hϕ : ϕ.is_injective) : 
-  ϕ.on_formula '' Γ ⊢ ϕ.on_formula f → Γ ⊢ f :=
+def of_prf_lift {Γ} {f : formula L} (n m : ℕ) 
+  (H : (λf' : formula L, f' ↑' n # m) '' Γ ⊢ f ↑' n # m) : Γ ⊢ f :=
 begin
-  have : ∀(Δ : set $ formula L') (g : formula L'), 
-    ϕ.on_formula '' Γ = Δ → ϕ.on_formula f = g → Δ ⊢ g → Γ ⊢ f,
-  intros Δ g hΓ hf h,
-  induction h generalizing Γ f; try {subst hΓ}; try {subst hf},
-  { apply axm, exact (mem_image_of_injective $ on_formula_inj hϕ).mp h_h, },
-  { cases f; cases hf, apply impI, apply h_ih, rw [image_insert_eq], refl },
-  { sorry }, -- we need something like a reduced proof tree here.
-  { sorry },
-  { sorry },
-  { sorry },
-  { cases f; injection hf with hf₁ hf₂, subst hf₂, cases on_term_inj hϕ hf₁, apply prf.ref },
-  { sorry }, 
-  exact this _ _ rfl rfl
+  sorry
+end
+
+noncomputable def reflect_prf {Γ : set $ formula L} {f : formula L} (hϕ : ϕ.is_injective)
+  (h : ϕ.on_formula '' Γ ⊢ ϕ.on_formula f) : Γ ⊢ f :=
+begin
+  haveI : has_decidable_range ϕ :=
+    ⟨λl f, classical.prop_decidable _, λl R, classical.prop_decidable _⟩ ,
+  apply of_prf_lift 1 0,
+  rw [(reflect_formula_on_formula ϕ f 0).symm],
+  refine eq.mp _ (ϕ.reflect_prf_gen 0 h),
+  rw [funext (λf, (reflect_formula_on_formula ϕ f 0).symm), ←image_comp]
 end
 
 variable (ϕ)
@@ -229,13 +285,13 @@ begin
   {sorry},
 end
 
-def reduct_all_ssatisfied {S : Structure L'} {T : Theory L} (h : S ⊨ ϕ.on_sentence '' T) :
-  ϕ.reduct S ⊨ T :=
-λf hf, reduct_ssatisfied $ h $ mem_image_of_mem _ hf
+def reduct_all_ssatisfied {S : Structure L'} {T : Theory L} (hϕ : ϕ.is_injective) 
+  (h : S ⊨ ϕ.on_sentence '' T) : ϕ.reduct S ⊨ T :=
+λf hf, reduct_ssatisfied hϕ $ h $ mem_image_of_mem _ hf
 
 def reduct_ssatisfied' {T : Theory L} (f : sentence L) (h : T ⊨ f) :
   ϕ.on_sentence '' T ⊨ ϕ.on_sentence f :=
-λS hS h, ϕ.on_prf _
+λS hS h, sorry
 
 lemma reduct_nonempty_of_nonempty {S : Structure L'} (H : nonempty S) : nonempty (reduct ϕ S) :=
 by {apply nonempty.map, repeat{assumption}, exact reduct_id}

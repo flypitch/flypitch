@@ -109,11 +109,60 @@ prefix `&`:max := fol.preterm.var
 | _ t []       := t
 | _ t (t'::ts) := apps (app t t') ts
 
+-- @[simp] def rev_apps : ∀{l l'}, preterm L (l+l) → dvector (term L) l' → preterm L l
+-- | _ _ t []       := sorry
+-- | l _ t (@dvector.cons _ l' t' ts) := app (@rev_apps (l+1) l' t ts) t'
+
 @[simp] lemma apps_zero (t : term L) (ts : dvector (term L) 0) : apps t ts = t :=
 by cases ts; refl
 
 def term_of_function {l} (f : L.functions l) : arity (term L) (term L) l :=
 arity.of_dvector_map $ apps (func f)
+
+@[elab_as_eliminator] def term.rec {C : term L → Sort v}
+  (hvar : ∀(k : ℕ), C &k)
+  (hfunc : Π {l} (f : L.functions l) (ts : dvector (term L) l) (ih_ts : ∀t, ts.pmem t → C t), 
+    C (apps (func f) ts)) : ∀(t : term L), C t :=
+have h : ∀{l} (t : preterm L l) (ts : dvector (term L) l) (ih_ts : ∀s, ts.pmem s → C s), 
+  C (apps t ts),
+begin
+  intros, induction t; try {rw ts.zero_eq},
+  { apply hvar }, 
+  { apply hfunc t_f ts ih_ts }, 
+  { apply t_ih_t (t_s::ts), intros t ht, 
+    cases ht, 
+    { induction ht, apply t_ih_s ([]), intros s hs, cases hs },
+    { exact ih_ts t ht }},
+end,
+λt, h t ([]) (by intros s hs; cases hs)
+
+@[elab_as_eliminator] def term.elim {C : Type v}
+  (hvar : ∀(k : ℕ), C)
+  (hfunc : Π {{l}} (f : L.functions l) (ts : dvector (term L) l) (ih_ts : dvector C l), C) : 
+  ∀(t : term L), C :=
+have h : ∀{l} (t : preterm L l) (ts : dvector (term L) l) (ih_ts : dvector C l), C,
+begin
+  intros, induction t; try {rw ts.zero_eq},
+  { apply hvar t }, 
+  { apply hfunc t_f ts ih_ts }, 
+  { apply t_ih_t (t_s::ts) (t_ih_s ([]) ([])::ih_ts) },
+end,
+λt, h t ([]) ([])
+
+-- @[elab_as_eliminator] def term.elim_beta {C : Type v}
+--   (hvar : ∀(k : ℕ), C)
+--   (hfunc : Π {{l}} (f : L.functions l) (ts : dvector (term L) l) (ih_ts : dvector C l), C) : 
+--   ∀{l} (f : L.functions l) (ts : dvector (term L) l), 
+--   @term.elim L C hvar hfunc (apps (func f) ts) = hfunc f ts (ts.map $ @term.elim L C hvar hfunc) :=
+-- have h : ∀{l l'} (f : L.functions (l+l')) (ts' : dvector (term L) l') (ts : dvector (term L) l) (ih_ts : dvector C l),
+--   @term.elim L C hvar hfunc (apps (apps' (func f) ts') ts) = hfunc f (ts'.append ts) 
+--   ((ts'.append ts).map $ @term.elim L C hvar hfunc),
+-- begin
+--   intros, induction l generalizing l'; try {rw ts.zero_eq},
+--   { simp, },
+-- end,
+-- λt, h t ([]) ([])
+
 
 /- lift_term_at _ t n m raises variables in t which are at least m by n -/
 @[simp] def lift_term_at : ∀ {l}, preterm L l → ℕ → ℕ → preterm L l
@@ -377,6 +426,7 @@ infix ` ⟹ `:62 := fol.preformula.imp -- input \==>
 prefix `∀'`:110 := fol.preformula.all
 def not (f : formula L) : formula L := imp f ⊥
 prefix `∼`:max := fol.not -- input \~, the ASCII character ~ has too low precedence
+notation `⊤` := ∼⊥ -- input: \top
 def and (f₁ f₂ : formula L) : formula L := ∼(f₁ ⟹ ∼f₂)
 infixr ` ⊓ ` := fol.and -- input: \sqcap
 def or (f₁ f₂ : formula L) : formula L := ∼f₁ ⟹ f₂
@@ -413,7 +463,7 @@ by cases ts; refl
 def formula_of_relation {l} (R : L.relations l) : arity (term L) (formula L) l :=
 arity.of_dvector_map $ apps_rel (rel R)
 
-def formula.rec {C : formula L → Sort v}
+@[elab_as_eliminator] def formula.rec {C : formula L → Sort v}
   (hfalsum : C ⊥)
   (hequal : Π (t₁ t₂ : term L), C (t₁ ≃ t₂))
   (hrel : Π {l} (R : L.relations l) (ts : dvector (term L) l), C (apps_rel (rel R) ts))
@@ -1116,7 +1166,7 @@ cast_fst _ _
 
 end closed_preterm
 
-def bounded_term.rec {n} {C : bounded_term L n → Sort v}
+@[elab_as_eliminator] def bounded_term.rec {n} {C : bounded_term L n → Sort v}
   (hvar : ∀(k : fin n), C &k)
   (hfunc : Π {l} (f : L.functions l) (ts : dvector (bounded_term L n) l) 
     (ih_ts : ∀t, ts.pmem t → C t), C (bd_apps (bd_func f) ts)) : 
@@ -1556,7 +1606,7 @@ def bounded_formula_of_relation {l n} (f : L.relations l) :
   arity (bounded_term L n) (bounded_formula L n) l :=
 arity.of_dvector_map $ bd_apps_rel (bd_rel f)
 
-def bounded_preformula.rec1 {C : Πn l, bounded_preformula L (n+1) l → Sort v}
+@[elab_as_eliminator] def bounded_preformula.rec1 {C : Πn l, bounded_preformula L (n+1) l → Sort v}
   (H0 : Π {n}, C n 0 ⊥)
   (H1 : Π {n} (t₁ t₂ : bounded_term L (n+1)), C n 0 (t₁ ≃ t₂))
   (H2 : Π {n l : ℕ} (R : L.relations l), C n l (bd_rel R))
@@ -1595,7 +1645,7 @@ begin
 end,
 h f ([])
 
-def bounded_formula.rec {C : Πn, bounded_formula L n → Sort v}
+@[elab_as_eliminator] def bounded_formula.rec {C : Πn, bounded_formula L n → Sort v}
   (hfalsum : Π {n}, C n ⊥)
   (hequal : Π {n} (t₁ t₂ : bounded_term L n), C n (t₁ ≃ t₂))
   (hrel : Π {n l : ℕ} (R : L.relations l) (ts : dvector (bounded_term L n) l), 
