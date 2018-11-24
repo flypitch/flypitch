@@ -42,8 +42,6 @@ def interpolation : ∀{Γ : set $ formula L} {f : formula L} (P : Γ ⊢ f),
     symbols_in_prf P₂ ⊆ symbols_in_formula f ∧ 
     symbols_in_formula f' ⊆ ⋃₀ (symbols_in_formula '' Γ) ∩ symbols_in_formula f := 
 sorry -- probably the last property follows automatically
-  
-
 
 end
 

@@ -1,4 +1,4 @@
-import .fol order tactic.tidy .to_mathlib
+import .fol order tactic.tidy .to_mathlib .language_extension
 
 /- The proper generality to do this is with directed categories as the indexing objects -/
 
@@ -77,3 +77,4 @@ def colimit {D : (directed_type : Type (u+1)) } (F : (directed_diagram D :  Type
   @quotient (coproduct_of_directed_diagram F) ⟨germ_relation F, germ_equivalence F⟩
 
 end colimit
+
