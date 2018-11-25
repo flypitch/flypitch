@@ -81,6 +81,19 @@ end
 
 local infix ` ∘ `:60 := Lhom.comp
 
+/- on_function and on_relation are functors to Type* -/
+lemma comp_on_function {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
+      (g ∘ f).on_function =
+      begin intro n, let g1 := g.on_function, let f1 := f.on_function,
+      exact function.comp (@g1 n) (@f1 n) end
+      := by refl
+
+lemma comp_on_relation {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
+      (g ∘ f).on_relation =
+      begin intro n, let g1 := g.on_relation, let f1 := f.on_relation,
+      exact function.comp (@g1 n) (@f1 n) end
+      := by refl
+
 @[simp]lemma id_is_left_identity {L1 L2} {F : L1 →ᴸ L2} : (Lhom.id L2) ∘ F = F := by {cases F, refl}
 
 @[simp]lemma id_is_right_identity {L1 L2} {F : L1 →ᴸ L2} : F ∘ (Lhom.id L1) = F := by {cases F, refl}

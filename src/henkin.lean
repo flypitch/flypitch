@@ -16,19 +16,6 @@ export directed_type
 
 local infix ` ∘ `:60 := Lhom.comp
 
-/- on_function and on_relation are functors to Type* -/
-lemma Lhom.comp_on_function {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
-      (g ∘ f).on_function =
-      begin intro n, let g1 := g.on_function, let f1 := f.on_function,
-      exact function.comp (@g1 n) (@f1 n) end
-      := by refl
-
-lemma Lhom.comp_on_relation {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
-      (g ∘ f).on_relation =
-      begin intro n, let g1 := g.on_relation, let f1 := f.on_relation,
-      exact function.comp (@g1 n) (@f1 n) end
-      := by refl
-
 structure directed_diagram_language (D : (directed_type.{u})) : Type (max (u+1) (v+1)) :=
   (obj : D.carrier → (Language.{v}))
   (mor : ∀{x}, ∀{y}, D.rel x y → (obj x →ᴸ obj y))
@@ -40,7 +27,7 @@ export directed_diagram_language
 /- Given a directed diagram of languages, we obtain two ℕ-indexed families of
    directed diagrams of types: one by restricting to functions and one by
    restricting to relations. -/
-def diagram_functions {D : (directed_type)} {F : (directed_diagram_language D)} (n : ℕ) :
+@[reducible]def diagram_functions {D : (directed_type)} {F : (directed_diagram_language D)} (n : ℕ) :
                       ((directed_diagram D)) :=
 begin
   refine ⟨by {intro x, exact (obj F x).functions n},_,_⟩,
@@ -48,7 +35,7 @@ begin
   {intros, simp only [], have := F.h_mor, have := @this x y z f1 f2 f3, rw[this]},
 end
 
-def diagram_relations {D : (directed_type)} {F : (directed_diagram_language D)} (n : ℕ) :
+@[reducible]def diagram_relations {D : (directed_type)} {F : (directed_diagram_language D)} (n : ℕ) :
                       ((directed_diagram D)) :=
 begin
   refine ⟨by {intro x, exact (obj F x).relations n},_,_⟩,
@@ -147,7 +134,6 @@ begin
     henkin_language_chain_maps L y z _ ∘
     henkin_language_chain_maps L x y _,
     intros x y z f1 f2 f3,
-    change henkin_language_chain_maps L x z _= henkin_language_chain_maps L y z _ ∘ henkin_language_chain_maps L x y _,
     induction z,
       {have this1 : x = 0, by exact nat.eq_zero_of_le_zero f3,
       have this2 : y = 0, by exact nat.eq_zero_of_le_zero f2,
@@ -190,7 +176,6 @@ def henkin_theory_chain {L : Language} {T : Theory L}: Π(n : ℕ), (Theory (obj
 (Lhom.on_sentence (@henkin_language_canonical_map L m)) '' (@henkin_theory_chain L T m)
 
 /- T_infty is the henkinization of T; we define it to be the union ⋃ (n : ℕ), ι(T n). -/
-
 def T_infty {L : Language} (T : Theory L) : Theory (L_infty L) := set.Union (@ι L T)
 
 def henkin_language {L} {T : Theory L} {hT : is_consistent T} : Language := L_infty L
@@ -198,12 +183,30 @@ def henkin_language {L} {T : Theory L} {hT : is_consistent T} : Language := L_in
 local infix ` →ᴸ `:10 := Lhom -- \^L
 
 /- I dislike this proof, but I don't know how apply canonical_map_language otherwise... -/
-lemma henkin_language_over {L} {T : Theory L} {hT : is_consistent T} : L →ᴸ (@henkin_language L T hT) := begin
+def henkin_language_over {L} {T : Theory L} {hT : is_consistent T} : L →ᴸ (@henkin_language L T hT) := begin
 change (henkin_language_chain.obj (0 : ℕ)) →ᴸ colimit_language henkin_language_chain,
 apply canonical_map_language
 end
 
-lemma henkin_language_over_injective {L} {T : Theory L} {hT : is_consistent T} : Lhom.is_injective (@henkin_language_over L T hT) := sorry
+lemma henkin_transition_inj_functions {L : Language} {T : Theory L} {n : ℕ} {i j : directed_type_of_nat.carrier} {H : directed_type_of_nat.rel i j} : function.injective ((@diagram_functions colimit.directed_type_of_nat (@henkin_language_chain L) n).mor H) :=
+begin
+sorry
+end
+
+lemma henkin_transition_inj_relations {L : Language} {T : Theory L} {n : ℕ} {i j : directed_type_of_nat.carrier} {H : directed_type_of_nat.rel i j} : function.injective ((@diagram_relations colimit.directed_type_of_nat (@henkin_language_chain L) n).mor H) :=
+begin
+  dsimp[diagram_relations,henkin_language_chain, Lhom.on_relation],
+  induction j,
+  {unfold henkin_language_chain_maps, sorry},
+  {sorry},
+end
+
+lemma henkin_language_over_injective {L} {T : Theory L} {hT : is_consistent T} : Lhom.is_injective (@henkin_language_over L T hT) :=
+begin
+  split, all_goals{intro n, unfold henkin_language_over canonical_map_language, simp,
+  rw[<-canonical_map], fapply colimit.canonical_map_inj_of_transition_maps_inj, intros i j H,
+  try{fapply henkin_transition_inj_functions, assumption}, try{fapply henkin_transition_inj_relations, assumption}}
+end
 
 def complete_henkin_Theory_over {L : Language} (T : Theory L) (hT : is_consistent T) : Type u := Σ' T' : Theory_over T hT, has_enough_constants T'.val ∧ is_complete T'.val
 

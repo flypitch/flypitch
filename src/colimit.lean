@@ -84,5 +84,13 @@ def colimit {D : (directed_type : Type (u+1)) } (F : (directed_diagram D :  Type
 def canonical_map {D : directed_type} {F : directed_diagram D} (i : D.carrier) :
                   F.obj i → colimit F := (by apply quotient.mk) ∘ canonical_inclusion_coproduct i
 
+lemma canonical_map_inj_of_transition_maps_inj {D : directed_type} {F : directed_diagram D} (i : D.carrier) (H : ∀ {i} {j}, ∀ h : D.rel i j, function.injective (F.mor h)) : function.injective (@canonical_map D F i) :=
+begin
+    unfold function.injective canonical_map canonical_inclusion_coproduct, intros x y,
+    simp only [function.comp_app, quotient.eq], simp only [(≈)], 
+    unfold germ_relation, intro H_eqv, rcases H_eqv with ⟨j,z,edge,_, ⟨H1, H2⟩⟩,
+    exact H edge (by cc)
+end
+
 end colimit
 
