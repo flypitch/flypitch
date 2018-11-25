@@ -43,17 +43,21 @@ begin
       {fapply Lhom.reduct_nonempty_of_nonempty, exact fol.nonempty_term_model T''_henkin},
     /- The L-reduct of the term model of a complete Henkinization' of T is a model of T -/
     have h_all_realized_of_reduct : Lhom.reduct (L'.snd) (term_model T'') ⊨ T,
-      {fapply Lhom.reduct_all_ssatisfied, have := HT''.left,
+      {fapply Lhom.reduct_all_ssatisfied,
+      {sorry}, -- injectivity
+      have := HT''.left,
       have h_term := term_model_ssatisfied T''_complete T''_henkin,
-      intros f hf, unfold Theory_induced at this, fapply term_model_models_T'',
-      exact this begin have : T ⊆ (T ∪ {∼ψ}),
+      intros f hf, fapply term_model_models_T'',
+      unfold Theory_induced at this, exact this begin have : T ⊆ (T ∪ {∼ψ}),
       by simp only [set.subset_insert, set.union_singleton],
         fapply set.image_subset, repeat{assumption} end
         },
     /- Since term_model T'' ⊨ T'' and T'' contains ∼ψ, the term model satisfies ∼ψ -/
     have h_not_psi : Lhom.reduct (L'.snd) (term_model T'') ⊨ ∼ψ,
       {have := @term_model_ssatisfied L'.fst T'' T''_complete T''_henkin,
-      refine Lhom.reduct_ssatisfied _, refine this _, fapply HT''.left,
+      refine Lhom.reduct_ssatisfied _ _,
+      {sorry}, -- injectivity
+      refine this _, fapply HT''.left,
       simp only [Theory_induced, set.mem_insert_iff, set.mem_image, set.union_singleton],
       exact ⟨∼ψ, by simp only [*, true_or, eq_self_iff_true, and_self]⟩
       },

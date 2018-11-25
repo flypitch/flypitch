@@ -81,9 +81,9 @@ end
 
 local infix ` ∘ `:60 := Lhom.comp
 
-lemma id_is_left_identity {L1 L2} {F : L1 →ᴸ L2} : (Lhom.id L2) ∘ F = F := by {cases F, refl}
+@[simp]lemma id_is_left_identity {L1 L2} {F : L1 →ᴸ L2} : (Lhom.id L2) ∘ F = F := by {cases F, refl}
 
-lemma id_is_right_identity {L1 L2} {F : L1 →ᴸ L2} : F ∘ (Lhom.id L1) = F := by {cases F, refl}
+@[simp]lemma id_is_right_identity {L1 L2} {F : L1 →ᴸ L2} : F ∘ (Lhom.id L1) = F := by {cases F, refl}
 
 structure is_injective : Prop := 
 (on_function {n} : injective (on_function ϕ : L.functions n → L'.functions n))

@@ -203,6 +203,8 @@ change (henkin_language_chain.obj (0 : ℕ)) →ᴸ colimit_language henkin_lang
 apply canonical_map_language
 end
 
+lemma henkin_language_over_injective {L} {T : Theory L} {hT : is_consistent T} : Lhom.is_injective (@henkin_language_over L T hT) := sorry
+
 def complete_henkin_Theory_over {L : Language} (T : Theory L) (hT : is_consistent T) : Type u := Σ' T' : Theory_over T hT, has_enough_constants T'.val ∧ is_complete T'.val
 
 def henkinization {L : Language} {T : Theory L} {hT : is_consistent T} : Theory (@henkin_language L T hT) := T_infty T
