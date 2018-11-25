@@ -91,6 +91,13 @@ by {intro f, fapply wit, exact f}
 def henkin_language_inclusion {L : Language} : L →ᴸ (henkin_language_step L) :=
   ⟨λ n f, inc f, λn, id⟩
 
+lemma henkin_language_inclusion_inj {L : Language} : Lhom.is_injective (@henkin_language_inclusion L) :=
+begin
+  split, all_goals{intro n, intros x y H, try{exact H}},
+  fapply @henkin_language_functions.inc.inj_arrow,
+  exact L, exact n, exact x, exact y, exact H, simp only [imp_self]
+end
+
 /- The basic step of the Henkin construction on theories.
    Given an L-theory T, return an L'-theory T' which is T expanded by
    sentences saying that the new witnesses are witnesses. -/
@@ -111,13 +118,42 @@ def henkin_language_chain_objects {L : Language} : ℕ → Language
 
 local infix ` ∘ `:60 := Lhom.comp
 
-def henkin_language_chain_maps (L : Language): Π x y, x ≤ y → (@henkin_language_chain_objects L x →ᴸ @henkin_language_chain_objects L y)
-| x 0 H := by {have : x = 0, apply nat.eq_zero_of_le_zero, exact H, rw[this], apply Lhom.id}
+@[elab_as_eliminator]def henkin_language_chain_maps (L : Language): Π x y, x ≤ y → (@henkin_language_chain_objects L x →ᴸ @henkin_language_chain_objects L y)
+| x 0 H := by {have : x = 0, by exact nat.eq_zero_of_le_zero H, rw[this], apply Lhom.id}
 | x (y+1) H := by {by_cases x = y + 1, rw[h], fapply Lhom.id,
                refine @henkin_language_inclusion (@henkin_language_chain_objects L y) ∘ _,
                fapply henkin_language_chain_maps,
                simp only [*, nat.lt_of_le_and_ne, nat.le_of_lt_succ, ne.def, not_false_iff]}
 
+lemma henkin_language_chain_maps_inj (L : Language) : Π x y : ℕ, Π (h : x ≤ y), Lhom.is_injective (henkin_language_chain_maps L x y h) :=
+begin
+  intros i j h, split, swap,
+  {induction j,
+    {have : i  = 0, by exact nat.eq_zero_of_le_zero h, subst this,
+    intros n x y H, exact H},
+    {by_cases i = (j_n + 1), dedup,
+     {subst h_1, rw[henkin_language_chain_maps], simp*,
+     intros n x y H, exact H},
+     {have : i ≤ j_n, by simp only [*, nat.le_of_lt_succ, nat.lt_of_le_and_ne, ne.def, not_false_iff],
+     have ih := j_ih this, show ℕ, exact i,
+     rw[henkin_language_chain_maps], simp only [*, dif_neg, not_false_iff],
+     intro n, fapply function.injective_comp, fapply henkin_language_inclusion_inj.on_relation,
+     change function.injective (Lhom.on_relation (henkin_language_chain_maps L i j_n this)),
+     simp only *,}}
+  },
+  {induction j,
+    {have : i  = 0, by exact nat.eq_zero_of_le_zero h, subst this,
+    intros n x y H, exact H},
+    {by_cases i = (j_n + 1), dedup,
+     {subst h_1, rw[henkin_language_chain_maps], simp*,
+     intros n x y H, exact H},
+     {have : i ≤ j_n, by simp only [*, nat.le_of_lt_succ, nat.lt_of_le_and_ne, ne.def, not_false_iff],
+     have ih := j_ih this, show ℕ, exact i,
+     rw[henkin_language_chain_maps], simp only [*, dif_neg, not_false_iff],
+     intro n, fapply function.injective_comp, fapply henkin_language_inclusion_inj.on_function,
+     change function.injective (Lhom.on_function (henkin_language_chain_maps L i j_n this)),
+     simp only *,}}},
+end
 
 /- Given a language, iterate henkin_language_step, returning this data in the form
    of a directed diagram of types indexed by ℕ' -/
@@ -149,7 +185,8 @@ begin
        {by_cases x = z_n+1,
          {simp*, have : y < z_n+1, by {fapply nat.lt_of_le_and_ne,
          repeat{assumption}}, exfalso, linarith},
-         {simp*, have Hxy : x ≤ z_n ∧ y ≤ z_n, by simp[*,nat.le_of_lt_succ, nat.lt_of_le_and_ne],
+         {simp*, have Hxy : x ≤ z_n ∧ y ≤ z_n,
+         by simp only [*, nat.le_of_lt_succ, nat.lt_of_le_and_ne, ne.def, not_false_iff, and_self],
          simp only [*, eq_self_iff_true, not_false_iff]}
        }
     }
@@ -188,25 +225,14 @@ change (henkin_language_chain.obj (0 : ℕ)) →ᴸ colimit_language henkin_lang
 apply canonical_map_language
 end
 
-lemma henkin_transition_inj_functions {L : Language} {T : Theory L} {n : ℕ} {i j : directed_type_of_nat.carrier} {H : directed_type_of_nat.rel i j} : function.injective ((@diagram_functions colimit.directed_type_of_nat (@henkin_language_chain L) n).mor H) :=
-begin
-sorry
-end
-
-lemma henkin_transition_inj_relations {L : Language} {T : Theory L} {n : ℕ} {i j : directed_type_of_nat.carrier} {H : directed_type_of_nat.rel i j} : function.injective ((@diagram_relations colimit.directed_type_of_nat (@henkin_language_chain L) n).mor H) :=
-begin
-  dsimp[diagram_relations,henkin_language_chain, Lhom.on_relation],
-  induction j,
-  {unfold henkin_language_chain_maps, sorry},
-  {sorry},
-end
-
 lemma henkin_language_over_injective {L} {T : Theory L} {hT : is_consistent T} : Lhom.is_injective (@henkin_language_over L T hT) :=
 begin
   split, all_goals{intro n, unfold henkin_language_over canonical_map_language, simp,
   rw[<-canonical_map], fapply colimit.canonical_map_inj_of_transition_maps_inj, intros i j H,
-  try{fapply henkin_transition_inj_functions, assumption}, try{fapply henkin_transition_inj_relations, assumption}}
+  dsimp[diagram_functions, diagram_relations, henkin_language_chain],
+  simp[henkin_language_chain_maps_inj, Lhom.is_injective.on_function, Lhom.is_injective.on_relation]}
 end
+
 
 def complete_henkin_Theory_over {L : Language} (T : Theory L) (hT : is_consistent T) : Type u := Σ' T' : Theory_over T hT, has_enough_constants T'.val ∧ is_complete T'.val
 
