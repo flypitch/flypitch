@@ -1,4 +1,4 @@
-import .fol
+import .fol tactic.tidy
 
 open set function
 universe variable u
@@ -80,19 +80,6 @@ split,
 end
 
 local infix ` ∘ `:60 := Lhom.comp
-
-/- on_function and on_relation are functors to Type* -/
-lemma comp_on_function {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
-      (g ∘ f).on_function =
-      begin intro n, let g1 := g.on_function, let f1 := f.on_function,
-      exact function.comp (@g1 n) (@f1 n) end
-      := by refl
-
-lemma comp_on_relation {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
-      (g ∘ f).on_relation =
-      begin intro n, let g1 := g.on_relation, let f1 := f.on_relation,
-      exact function.comp (@g1 n) (@f1 n) end
-      := by refl
 
 @[simp]lemma id_is_left_identity {L1 L2} {F : L1 →ᴸ L2} : (Lhom.id L2) ∘ F = F := by {cases F, refl}
 
@@ -190,6 +177,30 @@ attribute [instance] has_decidable_range.on_function has_decidable_range.on_rela
 | _ _ (bd_apprel f t) := by simp*
 | _ _ (f₁ ⟹ f₂)      := by simp*
 | _ _ (∀' f)          := by simp*
+
+
+/- Various lemmas of the shape "on_etc is a functor to Type*" -/
+@[simp]lemma comp_on_function {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
+      (g ∘ f).on_function =
+      begin intro n, let g1 := g.on_function, let f1 := f.on_function,
+      exact function.comp (@g1 n) (@f1 n) end
+      := by refl
+
+@[simp]lemma comp_on_relation {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
+      (g ∘ f).on_relation =
+      begin intro n, let g1 := g.on_relation, let f1 := f.on_relation,
+      exact function.comp (@g1 n) (@f1 n) end
+      := by refl
+
+/- Can't tag this as simp lemma for some reason -/
+/- The next two tidy proofs are unperformant, so maybe refactor later -/
+lemma comp_on_term {L1} {L2} {L3} {n l : ℕ}(g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
+@on_term L1 L3 (g ∘ f) l = function.comp (@on_term L2 L3 g l) (@on_term L1 L2 f l) :=
+by {tidy, induction x, tidy}
+
+@[simp]lemma comp_on_bounded_formula {L1} {L2} {L3} {n l : ℕ}(g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
+@on_bounded_formula L1 L3 (g ∘ f) n l = function.comp (@on_bounded_formula L2 L3 g n l) (@on_bounded_formula L1 L2 f n l) :=
+by {tidy, induction x, tidy, all_goals{rw[comp_on_term], exact l}}
 
 @[simp] def on_closed_term (t : closed_term L) : closed_term L' := ϕ.on_bounded_term t
 @[simp] def on_sentence (f : sentence L) : sentence L' := ϕ.on_bounded_formula f

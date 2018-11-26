@@ -11,7 +11,7 @@ begin
   fapply impI, fapply axm1, fapply exfalso, fapply deduction, assumption
 end
 
-lemma consis_not_of_not_provable {L} {T : Theory L} {f : sentence L} {hT : is_consistent T} : ¬ T ⊢' f → is_consistent (T ∪ {∼f}) :=
+lemma consis_not_of_not_provable {L} {T : Theory L} {f : sentence L} : ¬ T ⊢' f → is_consistent (T ∪ {∼f}) :=
 begin
   intro, by_contra, have := classical.choice (classical.by_contradiction a_1),
   simp only [*, set.union_singleton, fol.bounded_preformula.fst] at this,

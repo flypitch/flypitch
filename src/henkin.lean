@@ -193,12 +193,35 @@ begin
 }
 end
 
-
 def L_infty (L) : Language :=
    colimit_language $ @henkin_language_chain L
 
 /- For every n : ℕ, return the canonical inclusion L_n → L_infty  -/
 def henkin_language_canonical_map {L : Language} (m : ℕ) : (@henkin_language_chain L).obj m →ᴸ (@L_infty L) := by apply canonical_map_language
+
+/- To prove that T_infty is Henkin, we'll have to exhibit a witnessing function of the form
+  wit : bounded_formula 1 → L_infty.constants.
+
+  To do this, we have to recursively go through formulas and terms and show that for every
+  formula, there exists some N such that all the symbols in that formula were contained in L_N,
+  and therefore, the wit function for L_N introduces the constant we want.
+
+  The natural way to proceed is to define the induced colimits on terms, formulas, bounded
+  formulas, sentences, and so on.
+
+  Then, we can define the required wit function by taking a bounded formula, picking a
+  representative from stage N, applying the wit function from stage N, and then pushing
+  it up to L_infty. -/
+
+def henkin_bounded_formula_chain {L : Language} : directed_diagram directed_type_of_nat :=
+begin
+  refine ⟨λ n, bounded_formula (@henkin_language_chain_objects L n) 1, _, _⟩,
+  {intros x y H, apply Lhom.on_bounded_formula, apply @henkin_language_chain_maps L, exact H},
+  {intros x y z f1 f2 f3, dsimp only [*],
+   have : (henkin_language_chain_maps L x z f3) =
+   (henkin_language_chain_maps L y z f2) ∘ (henkin_language_chain_maps L x y f1),
+   fapply henkin_language_chain.h_mor, rw[this, Lhom.comp_on_bounded_formula]}
+end
 
 /- Not really a chain, since we haven't set up interpretations of theories yet -/
 def henkin_theory_chain {L : Language} {T : Theory L}: Π(n : ℕ), (Theory (obj (@henkin_language_chain L) n))
@@ -209,7 +232,7 @@ def henkin_theory_chain {L : Language} {T : Theory L}: Π(n : ℕ), (Theory (obj
    of sets. -/
 
 /- Given T_n from henkin_theory_chain, ι T_n is the expansion of T_n to an L_infty theory -/
-@[reducible]def ι {L : Language} {T : Theory L} (m : ℕ) :  Theory (L_infty L) :=
+def ι {L : Language} {T : Theory L} (m : ℕ) :  Theory (L_infty L) :=
 (Lhom.on_sentence (@henkin_language_canonical_map L m)) '' (@henkin_theory_chain L T m)
 
 /- T_infty is the henkinization of T; we define it to be the union ⋃ (n : ℕ), ι(T n). -/
@@ -230,16 +253,20 @@ begin
   split, all_goals{intro n, unfold henkin_language_over canonical_map_language, simp,
   rw[<-canonical_map], fapply colimit.canonical_map_inj_of_transition_maps_inj, intros i j H,
   dsimp[diagram_functions, diagram_relations, henkin_language_chain],
-  simp[henkin_language_chain_maps_inj, Lhom.is_injective.on_function, Lhom.is_injective.on_relation]}
+  simp only [henkin_language_chain_maps_inj, Lhom.is_injective.on_function, Lhom.is_injective.on_relation]}
 end
-
 
 def complete_henkin_Theory_over {L : Language} (T : Theory L) (hT : is_consistent T) : Type u := Σ' T' : Theory_over T hT, has_enough_constants T'.val ∧ is_complete T'.val
 
 def henkinization {L : Language} {T : Theory L} {hT : is_consistent T} : Theory (@henkin_language L T hT) := T_infty T
 
-lemma henkinization_is_henkin {L : Language} {T : Theory L} {hT : is_consistent T} : has_enough_constants (@henkinization L T hT) := sorry
+lemma henkinization_is_henkin {L : Language} {T : Theory L} {hT : is_consistent T} : has_enough_constants (@henkinization L T hT) :=
+begin
+  unfold henkinization T_infty has_enough_constants, split, swap,
+  sorry -- here, we need to define the witnessing function at L_infty
+end
 
+/- It looks like this is the lemma which requires reflect_prf -/
 lemma henkinization_consistent {L : Language} {T : Theory L} {hT : is_consistent T} : is_consistent (@henkinization L T hT) := sorry
 
 noncomputable def complete_henkinization {L} {T : Theory L} {hT : is_consistent T} := completion_of_consis _ (@henkinization L T hT) henkinization_consistent
