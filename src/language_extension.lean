@@ -354,13 +354,8 @@ noncomputable def reflect_prf {Γ : set $ formula L} {f : formula L} (hϕ : ϕ.i
 begin
   haveI : has_decidable_range ϕ :=
     ⟨λl f, classical.prop_decidable _, λl R, classical.prop_decidable _⟩,
-  apply of_prf_lift 1 0,
-  have := reflect_prf_gen hϕ 0 h,
-  simp [image_image] at this,
-  rw [image_image] at this,
-  rw [(reflect_formula_on_formula hϕ f 0).symm],
-  refine eq.mp _ (reflect_prf_gen hϕ 0 h),
-  rw [funext (λf, (reflect_formula_on_formula hϕ f 0).symm), image_image]
+  apply reflect_prf_lift1,
+  have := reflect_prf_gen hϕ 0 h, simp [image_image, hϕ] at this, exact this
 end
 
 lemma on_term_inj (h : ϕ.is_injective) {l} : injective (ϕ.on_term : preterm L l → preterm L' l) :=
