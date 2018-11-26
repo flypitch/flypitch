@@ -80,8 +80,13 @@ begin
     }
 end
 
+@[reducible]def coproduct_setoid {D : directed_type} (F : directed_diagram D) : setoid $ coproduct_of_directed_diagram F := ⟨germ_relation F, germ_equivalence F⟩
+local attribute [instance] coproduct_setoid
+
 def colimit {D : (directed_type : Type (u+1)) } (F : (directed_diagram D :  Type (max (u+1) (v+1)))) : Type (max u v) :=
-  @quotient (coproduct_of_directed_diagram F) ⟨germ_relation F, germ_equivalence F⟩
+  @quotient (coproduct_of_directed_diagram F) (by fapply coproduct_setoid)
+
+
 
 def canonical_map {D : directed_type} {F : directed_diagram D} (i : D.carrier) :
                   F.obj i → colimit F := (by apply quotient.mk) ∘ canonical_inclusion_coproduct i
@@ -110,17 +115,30 @@ end
 /- Given a cocone V over a diagram D, return the canonical map colim D → V-/
 def universal_map {D} {F : directed_diagram D} {V : cocone F} : colimit F → (V.vertex) :=
 begin
-  dsimp[colimit], fapply quotient.lift,
-  {exact λp, V.map p.fst p.snd},
+  fapply quotient.lift, {exact λp, V.map p.fst p.snd},
   {intros p q H, rcases p with ⟨i,x⟩, rcases q with ⟨j,y⟩, simp only *,
    simp[(≈), germ_relation] at H, rcases H with ⟨k,z,⟨f1, H1⟩,f2,H2⟩,
-   change V.map i x = V.map j y,
-   have : V.map i x = V.map k (F.mor f1 x),
+   change V.map i x = V.map j y, have : V.map i x = V.map k (F.mor f1 x),
    simp only [V.h_compat f1, eq_self_iff_true, function.comp_app],
    have : V.map j y = V.map k (F.mor f2 y),
    simp only [V.h_compat f2, eq_self_iff_true, function.comp_app],
-   simp only [*, eq_self_iff_true]
+   simp only [*, eq_self_iff_true],
   }
+end
+
+/- this generalizes canonical_map_inj_of_transition_maps_inj, because every colimit
+   is a cocone over its own diagram
+
+   If the maps to the vertex are injective, then the comparison map from the colimit
+   is injective.
+-/
+
+lemma universal_map_inj_of_components_inj {D} {F : directed_diagram D} {V : cocone F} (h_inj : ∀ i : D.carrier, function.injective (V.map i)) : function.injective (universal_map : colimit F → (V.vertex)) :=
+begin
+unfold universal_map, rintros ⟨i,x⟩ ⟨j,y⟩ H, dsimp[colimit] at *, change (⟦⟨i,x⟩⟧ : colimit F) = (⟦⟨j,y⟩⟧ : colimit F),
+simp[quotient.eq, (≈)], have := (D.h_directed i j), rcases this with ⟨k, Hik, Hjk⟩,
+refine ⟨k, F.mor Hik x, Hik, Hjk, rfl, _⟩, fapply h_inj k, unfold quotient.lift at H,
+simp only [*, V.h_compat Hik, V.h_compat Hjk, function.injective.eq_iff, eq_self_iff_true, function.comp_app] at *
 end
 
 end colimit

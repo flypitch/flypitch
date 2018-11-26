@@ -60,6 +60,60 @@ def canonical_map_language {D} {F : directed_diagram_language D} (i : D.carrier)
 ⟨λ n, function.comp (by apply quotient.mk) (@canonical_inclusion_coproduct D (diagram_functions n) i),
 λ n, function.comp (by apply quotient.mk) (@canonical_inclusion_coproduct D (diagram_relations n) i)⟩
 
+-- structure cocone_language' {D} (F : directed_diagram_language D) :=
+--   (vertex : Language)
+--   (cocone_functions : ∀{n}, @colimit.cocone D (@diagram_functions D F n)
+-- would need extra hypotheses that for every n, the vertex of the cocone_functions (resp. relations)
+-- is equal to vertex.functions (resp. relations)---maybe this is easier to work with
+
+structure cocone_language {D} (F : directed_diagram_language D) :=
+  (vertex : Language)
+  (map : Π i : D.carrier, F.obj i →ᴸ vertex)
+  (h_compat : ∀{i}, ∀{j}, Π h : D.rel i j, (map i ) = (map j) ∘ (F.mor h))
+
+export cocone_language
+
+def cocone_of_colimit_language {D} (F : directed_diagram_language D) : cocone_language F :=
+begin
+  refine ⟨colimit_language F, canonical_map_language, _⟩, intros i j H, fapply Lhom.Lhom_funext,
+  all_goals{fapply funext, intro n,
+  simp only [quotient.eq,(≈),canonical_map_language,function.comp], have h_refl : D.rel j j,
+  by apply D.h_reflexive, -- refine ⟨j,F.mor H x, H, h_refl, rfl, _⟩,
+  fapply funext, intro x, simp only [quotient.eq,(≈),canonical_map_language,function.comp], 
+  },
+  {refine ⟨j,(F.mor H).on_function x, H, h_refl, rfl, _⟩,
+  change (function.comp ((diagram_functions n).mor h_refl) begin fapply Lhom.on_function, exact @mor D F i j H, end) x = (F.mor H).on_function x,
+   have := Lhom.comp_on_function' (F.mor h_refl) (F.mor H) n, rw[<-this,<-F.h_mor]},
+  {  refine ⟨j,(F.mor H).on_relation x, H, h_refl, rfl, _⟩,
+    change (function.comp ((diagram_relations n).mor h_refl) begin fapply Lhom.on_relation, exact @mor D F i j H, end) x = (F.mor H).on_relation x,
+   have := Lhom.comp_on_relation' (F.mor h_refl) (F.mor H) n, rw[<-this,<-F.h_mor]}
+end
+
+/- Given a cocone V over a diagram D, return the canonical map colim D → V-/
+def universal_map_language {D} {F : directed_diagram_language D} {V : cocone_language F} : colimit_language F →ᴸ (V.vertex) :=
+begin
+  split, all_goals{intro n,
+  fapply quotient.lift},
+
+{exact λp, begin fapply @Lhom.on_function, exact F.obj p.fst, exact @map D F V p.fst, exact p.snd end},
+  {intros p q H, rcases p with ⟨i,x⟩, rcases q with ⟨j,y⟩, simp only *,
+   simp[(≈), germ_relation] at H, rcases H with ⟨k,z,⟨f1, H1⟩,f2,H2⟩,
+   change (V.map i).on_function x = (V.map j).on_function y, have : (V.map i).on_function x = (V.map k).on_function ((F.mor f1).on_function x),
+   simp only [V.h_compat f1, eq_self_iff_true, function.comp_app],
+   have : (V.map j).on_function y = (V.map k).on_function ((F.mor f2).on_function y),
+   simp only [V.h_compat f2, eq_self_iff_true, function.comp_app],
+   simp only [*, eq_self_iff_true]},
+
+{exact λp, begin fapply @Lhom.on_relation, exact F.obj p.fst, exact @map D F V p.fst, exact p.snd end},
+  {intros p q H, rcases p with ⟨i,x⟩, rcases q with ⟨j,y⟩, simp only *,
+   simp[(≈), germ_relation] at H, rcases H with ⟨k,z,⟨f1, H1⟩,f2,H2⟩,
+   change (V.map i).on_relation x = (V.map j).on_relation y, have : (V.map i).on_relation x = (V.map k).on_relation ((F.mor f1).on_relation x),
+   simp only [V.h_compat f1, eq_self_iff_true, function.comp_app],
+   have : (V.map j).on_relation y = (V.map k).on_relation ((F.mor f2).on_relation y),
+   simp only [V.h_compat f2, eq_self_iff_true, function.comp_app],
+   simp only [*, eq_self_iff_true]},
+end
+
 end colimit
 
 open colimit
@@ -196,8 +250,21 @@ end
 def L_infty (L) : Language :=
    colimit_language $ @henkin_language_chain L
 
-/- For every n : ℕ, return the canonical inclusion L_n → L_infty  -/
+/-- For every n : ℕ, return the canonical inclusion L_n → L_infty  --/
 def henkin_language_canonical_map {L : Language} (m : ℕ) : (@henkin_language_chain L).obj m →ᴸ (@L_infty L) := by apply canonical_map_language
+
+lemma henkin_language_canonical_map_inj {L : Language} (m : ℕ) : Lhom.is_injective $ @henkin_language_canonical_map L m :=
+begin
+  split,
+  
+  {intro n, unfold henkin_language_canonical_map canonical_map_language Lhom.on_function,
+  have := @canonical_map_inj_of_transition_maps_inj directed_type_of_nat (@diagram_functions directed_type_of_nat (@henkin_language_chain L) n), unfold canonical_map at this, apply this,intros i j H, dsimp[diagram_functions, henkin_language_chain],
+  fapply ((henkin_language_chain_maps_inj) L i j H).on_function},
+
+  {intro n, unfold henkin_language_canonical_map canonical_map_language Lhom.on_relation,
+  have := @canonical_map_inj_of_transition_maps_inj directed_type_of_nat (@diagram_relations directed_type_of_nat (@henkin_language_chain L) n), unfold canonical_map at this, apply this,intros i j H, dsimp[diagram_relations, henkin_language_chain],
+  fapply ((henkin_language_chain_maps_inj) L i j H).on_relation}
+end
 
 /- To prove that T_infty is Henkin, we'll have to exhibit a witnessing function of the form
   wit : bounded_formula 1 → L_infty.constants.
@@ -220,6 +287,40 @@ begin
    have : (henkin_language_chain_maps L x z f3) =
    (henkin_language_chain_maps L y z f2) ∘ (henkin_language_chain_maps L x y f1),
    fapply henkin_language_chain.h_mor, rw[this, Lhom.comp_on_bounded_formula]}
+end
+
+/- L_infty := colim L_n is naturally a cocone over the diagram of languages -/
+def cocone_of_L_infty {L : Language} : cocone_language (@henkin_language_chain L) :=
+  by apply cocone_of_colimit_language
+
+/- bounded_formula (L_infty L) 1 is naturally a cocone over the diagram of bounded_formulas -/
+def cocone_of_bounded_formula_L_infty {L : Language} : colimit.cocone (@henkin_bounded_formula_chain L) :=
+begin
+refine ⟨bounded_formula (L_infty L) 1,_,_⟩,
+{intro i, fapply Lhom.on_bounded_formula, fapply henkin_language_canonical_map},
+{intros i j H, dsimp[henkin_bounded_formula_chain, henkin_language_chain_maps],
+rw[<-Lhom.comp_on_bounded_formula],
+have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L i j H), swap, rw[this],
+{have := (@cocone_of_L_infty L).h_compat, tidy}}
+end
+
+def bounded_formula_comparison {L : Language} : colimit (@henkin_bounded_formula_chain L) → bounded_formula (L_infty L) 1 :=
+begin
+  change colimit (@henkin_bounded_formula_chain L) → (@cocone_of_bounded_formula_L_infty L).vertex,
+  apply colimit.universal_map
+end
+
+#check Lhom.on_bounded_formula_inj
+
+lemma bounded_formula_comparison_bijective {L : Language} : function.bijective (@bounded_formula_comparison L) :=
+begin
+  refine ⟨_,_⟩,
+  {unfold bounded_formula_comparison id, fapply colimit.universal_map_inj_of_components_inj,
+  change ∀ i : ℕ, function.injective (cocone_of_bounded_formula_L_infty.map i),
+  dsimp[cocone_of_bounded_formula_L_infty],  intro m,
+  fapply Lhom.on_bounded_formula_inj (@henkin_language_canonical_map_inj L m)},
+
+  {sorry}
 end
 
 /- Not really a chain, since we haven't set up interpretations of theories yet -/
@@ -262,7 +363,7 @@ def henkinization {L : Language} {T : Theory L} {hT : is_consistent T} : Theory 
 lemma henkinization_is_henkin {L : Language} {T : Theory L} {hT : is_consistent T} : has_enough_constants (@henkinization L T hT) :=
 begin
   unfold henkinization T_infty has_enough_constants, split, swap,
-  sorry -- here, we need to define the witnessing function at L_infty
+  repeat{sorry} -- here, we need to define the witnessing function at L_infty
 end
 
 /- It looks like this is the lemma which requires reflect_prf -/

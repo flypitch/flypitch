@@ -66,7 +66,6 @@ variables {L : Language.{u}} {L' : Language.{u}} (ϕ : L →ᴸ L')
 protected def id (L : Language) : L →ᴸ L :=
 ⟨λn, id, λ n, id⟩
 
-
 @[reducible]def comp {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2) : L1 →ᴸ L3 :=
 begin
 --  rcases g with ⟨g1, g2⟩, rcases f with ⟨f1,f2⟩,
@@ -78,6 +77,9 @@ split,
   let g2 := g.on_relation, let f2 := f.on_relation,
     exact (@g2 n) ∘ (@f2 n)
 end
+
+lemma Lhom_funext {L1} {L2} {F G : L1 →ᴸ L2} (h_fun : F.on_function = G.on_function ) (h_rel : F.on_relation = G.on_relation ) : F = G :=
+by {cases F with Ff Fr, cases G with Gf Gr, simp only *, exact and.intro h_fun h_rel}
 
 local infix ` ∘ `:60 := Lhom.comp
 
@@ -180,16 +182,28 @@ attribute [instance] has_decidable_range.on_function has_decidable_range.on_rela
 
 
 /- Various lemmas of the shape "on_etc is a functor to Type*" -/
-@[simp]lemma comp_on_function {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
+@[simp]lemma comp_on_function {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2):
       (g ∘ f).on_function =
       begin intro n, let g1 := g.on_function, let f1 := f.on_function,
       exact function.comp (@g1 n) (@f1 n) end
+      := by refl
+
+/- comp_on_function with explicit nat parameter -/
+@[simp]lemma comp_on_function' {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2) (n):
+      @on_function L1 L3 (g ∘ f) n  =
+      function.comp (@on_function L2 L3 g n) (@on_function L1 L2 f n)
       := by refl
 
 @[simp]lemma comp_on_relation {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
       (g ∘ f).on_relation =
       begin intro n, let g1 := g.on_relation, let f1 := f.on_relation,
       exact function.comp (@g1 n) (@f1 n) end
+      := by refl
+
+/- comp_on_relation with explicit nat parameter -/
+@[simp]lemma comp_on_relation' {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2) (n):
+      @on_relation L1 L3 (g ∘ f) n  =
+      function.comp (@on_relation L2 L3 g n) (@on_relation L1 L2 f n)
       := by refl
 
 /- The next two tidy proofs are unperformant, so maybe refactor later -/
@@ -280,6 +294,26 @@ begin
   { rw [on_term_inj h hxy', on_term_inj h hxy''] },
   { rw [h.on_relation hxy'] },
   { rw [x_ih hxy', on_term_inj h hxy''] },
+  { rw [x_ih_f₁ hxy', x_ih_f₂ hxy''] },
+  { rw [x_ih hxy'] }
+end
+
+lemma on_bounded_term_inj (h : ϕ.is_injective) {n} {l} : injective (ϕ.on_bounded_term : bounded_preterm L n l → bounded_preterm L' n l) :=
+begin
+  intros x y hxy, induction x generalizing y; cases y; try {injection hxy with hxy' hxy''},
+  { rw [hxy'] },
+  { rw [h.on_function hxy'] },
+  { congr1, exact x_ih_t hxy', exact x_ih_s hxy'' }
+end
+
+lemma on_bounded_formula_inj (h : ϕ.is_injective) {n l}:
+  injective (ϕ.on_bounded_formula : bounded_preformula L n l → bounded_preformula L' n l) :=
+begin
+  intros x y hxy, induction x generalizing y; cases y; try {injection hxy with hxy' hxy''},
+  { refl },
+  { rw [on_bounded_term_inj h hxy', on_bounded_term_inj h hxy''] },
+  { rw [h.on_relation hxy'] },
+  { rw [x_ih hxy', on_bounded_term_inj h hxy''] },
   { rw [x_ih_f₁ hxy', x_ih_f₂ hxy''] },
   { rw [x_ih hxy'] }
 end
