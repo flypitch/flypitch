@@ -192,15 +192,15 @@ attribute [instance] has_decidable_range.on_function has_decidable_range.on_rela
       exact function.comp (@g1 n) (@f1 n) end
       := by refl
 
-/- Can't tag this as simp lemma for some reason -/
 /- The next two tidy proofs are unperformant, so maybe refactor later -/
+/- Can't tag this as simp lemma for some reason -/
 lemma comp_on_term {L1} {L2} {L3} {n l : ℕ}(g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
 @on_term L1 L3 (g ∘ f) l = function.comp (@on_term L2 L3 g l) (@on_term L1 L2 f l) :=
-by {tidy, induction x, tidy}
+by {fapply funext, intro x, induction x, tidy}
 
 @[simp]lemma comp_on_bounded_formula {L1} {L2} {L3} {n l : ℕ}(g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
 @on_bounded_formula L1 L3 (g ∘ f) n l = function.comp (@on_bounded_formula L2 L3 g n l) (@on_bounded_formula L1 L2 f n l) :=
-by {tidy, induction x, tidy, all_goals{rw[comp_on_term], exact l}}
+by {fapply funext, intro x, tidy, induction x, tidy, all_goals{rw[comp_on_term], exact l}}
 
 @[simp] def on_closed_term (t : closed_term L) : closed_term L' := ϕ.on_bounded_term t
 @[simp] def on_sentence (f : sentence L) : sentence L' := ϕ.on_bounded_formula f

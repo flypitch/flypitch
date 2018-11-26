@@ -18,6 +18,8 @@ structure directed_type : Type (u+1) :=
   (h_transitive : transitive rel)
   (h_directed : ∀ x y, ∃ z : carrier, rel x z ∧ rel y z)
 
+lemma trans {D : directed_type} {i j k : D.carrier} (h1 : D.rel i j) (h2 : D.rel j k) : D.rel i k
+:= begin fapply directed_type.h_transitive, exact j, repeat{assumption} end
 
 structure directed_diagram (D : (directed_type : Type (u+1))) : Type (max (u+1) (v+1)) :=
   (obj : D.carrier → Type v)
@@ -65,7 +67,7 @@ begin
     have f2 : D.rel j ℓ₃,
       {fapply D.h_transitive, exacts [ℓ₁, fj_1, g1]},
     have f3 : D.rel k (ℓ₃),
-      {fapply D.h_transitive, exact ℓ₂, exact fk, exact g2},
+      {fapply D.h_transitive, exacts [ℓ₂, fk, g2]},
     have H1 : F.mor f1 = F.mor g1 ∘ F.mor fi; have H2_l : F.mor f2 = F.mor g1 ∘ F.mor fj_1;
     have H2_r : F.mor f2 = F.mor g2 ∘ F.mor fj_2; have H3 : F.mor f3 = F.mor g2 ∘ F.mor fk;
     all_goals{try{fapply F.h_mor}},
@@ -90,6 +92,35 @@ begin
     simp only [function.comp_app, quotient.eq], simp only [(≈)], 
     unfold germ_relation, intro H_eqv, rcases H_eqv with ⟨j,z,edge,_, ⟨H1, H2⟩⟩,
     exact H edge (by cc)
+end
+
+structure cocone {D} (F : directed_diagram D) :=
+  (vertex : Type*)
+  (map : Π i : D.carrier, F.obj i → vertex)
+  (h_compat : ∀{i}, ∀{j}, Π h : D.rel i j, (map i) = (map j) ∘ (F.mor h))
+
+def cocone_of_colimit {D} (F : directed_diagram D) : cocone F :=
+begin
+  refine ⟨colimit F, canonical_map, _⟩, intros i j H, fapply funext, intro x,
+  simp only [quotient.eq,(≈),canonical_map,function.comp], have h_refl : D.rel j j,
+  by apply D.h_reflexive, refine ⟨j,F.mor H x, H, h_refl, rfl, _⟩,
+  change ((F.mor h_refl) ∘ (F.mor H)) x = F.mor H x, rw[<-F.h_mor]
+end
+
+/- Given a cocone V over a diagram D, return the canonical map colim D → V-/
+def universal_map {D} {F : directed_diagram D} {V : cocone F} : colimit F → (V.vertex) :=
+begin
+  dsimp[colimit], fapply quotient.lift,
+  {exact λp, V.map p.fst p.snd},
+  {intros p q H, rcases p with ⟨i,x⟩, rcases q with ⟨j,y⟩, simp only *,
+   simp[(≈), germ_relation] at H, rcases H with ⟨k,z,⟨f1, H1⟩,f2,H2⟩,
+   change V.map i x = V.map j y,
+   have : V.map i x = V.map k (F.mor f1 x),
+   simp only [V.h_compat f1, eq_self_iff_true, function.comp_app],
+   have : V.map j y = V.map k (F.mor f2 y),
+   simp only [V.h_compat f2, eq_self_iff_true, function.comp_app],
+   simp only [*, eq_self_iff_true]
+  }
 end
 
 end colimit

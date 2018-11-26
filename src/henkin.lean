@@ -206,8 +206,7 @@ def henkin_language_canonical_map {L : Language} (m : ℕ) : (@henkin_language_c
   formula, there exists some N such that all the symbols in that formula were contained in L_N,
   and therefore, the wit function for L_N introduces the constant we want.
 
-  The natural way to proceed is to define the induced colimits on terms, formulas, bounded
-  formulas, sentences, and so on.
+  The natural way to proceed is to define the induced colimit on bounded_formulas.
 
   Then, we can define the required wit function by taking a bounded formula, picking a
   representative from stage N, applying the wit function from stage N, and then pushing
