@@ -394,7 +394,23 @@ begin
 end
 
 /- It looks like this is the lemma which requires reflect_prf -/
-lemma henkinization_consistent {L : Language} {T : Theory L} {hT : is_consistent T} : is_consistent (@henkinization L T hT) := sorry
+lemma henkinization_consistent {L : Language} {T : Theory L} {hT : is_consistent T} : is_consistent (@henkinization L T hT) :=
+begin
+  intro P, have := proof_compactness P,
+  have : ∃ k : ℕ, Theory.fst (@ι L T k) ⊢' (bd_falsum).fst,
+    by {sorry}, -- again, this depends on picking a representative of a germ-eq class
+                -- on the induced colimit of formulas
+  cases this with k P', unfold ι at P',
+  let T' := henkin_theory_chain k,
+  have : is_consistent T', by {sorry}, -- now we need to prove that finitely many steps preserve consistency
+  have : T' ⊢' (bd_falsum), swap, contradiction,
+  fapply nonempty.intro, fapply Lhom.reflect_prf, exact L_infty L,
+  exact henkin_language_canonical_map k,
+  fapply henkin_language_canonical_map_inj,
+  simp only [*, fol.Lhom.on_formula, fol.bounded_preformula.fst],
+  {sorry}, -- need to prove Theory.fst ∘ on_sentence  = on_formulas ∘ Theory.fst
+  repeat{assumption}
+end
 
 noncomputable def complete_henkinization {L} {T : Theory L} {hT : is_consistent T} := completion_of_consis _ (@henkinization L T hT) henkinization_consistent
 
