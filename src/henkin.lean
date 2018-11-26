@@ -276,13 +276,46 @@ end
   formula, there exists some N such that all the symbols in that formula were contained in L_N,
   and therefore, the wit function for L_N introduces the constant we want.
 
-  The natural way to proceed is to define the induced colimit on bounded_formulas.
+  The natural way to proceed is to define the induced colimit on bounded_formulas, etc.
 
   Then, we can define the required wit function by taking a bounded formula, picking a
-  representative from stage N, applying the wit function from stage N, and then pushing
-  it up to L_infty. -/
+  representative from stage N, applying the wit function from stage N to get something in
+  stage N+1, and then pushing it up to L_infty. -/
 
-def henkin_bounded_formula_chain {L : Language} : directed_diagram directed_type_of_nat :=
+/- In what follows, "l" is always pre(whatever) level, "k" is always chain index,
+   and "n" is always the bound in bounded_(whatever)-/
+
+def henkin_term_chain {L : Language} (l : ℕ) : directed_diagram ℕ' :=
+begin
+  refine ⟨λ k, preterm (@henkin_language_chain_objects L k) l, _, _⟩,
+  {intros x y H, apply Lhom.on_term, apply @henkin_language_chain_maps L, exact H},
+  {intros x y z f1 f2 f3, dsimp only [*],
+   have : (henkin_language_chain_maps L x z f3) =
+   (henkin_language_chain_maps L y z f2) ∘ (henkin_language_chain_maps L x y f1),
+   fapply henkin_language_chain.h_mor, rw[this, Lhom.comp_on_term], exact l}
+end
+
+def henkin_formula_chain {L : Language} (l : ℕ) : directed_diagram ℕ' :=
+begin
+  refine ⟨λ k, preformula (@henkin_language_chain_objects L k) l, _, _⟩,
+  {intros x y H, apply Lhom.on_formula, apply @henkin_language_chain_maps L, exact H},
+  {intros x y z f1 f2 f3, dsimp only [*],
+   have : (henkin_language_chain_maps L x z f3) =
+   (henkin_language_chain_maps L y z f2) ∘ (henkin_language_chain_maps L x y f1),
+   fapply henkin_language_chain.h_mor, rw[this, Lhom.comp_on_formula], exact l}
+end
+
+def henkin_bounded_term_chain {L : Language} (n l : ℕ) : directed_diagram ℕ' :=
+begin
+  refine ⟨λ k, bounded_preterm (@henkin_language_chain_objects L k) n l, _, _⟩,
+  {intros x y H, apply Lhom.on_bounded_term, apply @henkin_language_chain_maps L, exact H},
+  {intros x y z f1 f2 f3, dsimp only [*],
+   have : (henkin_language_chain_maps L x z f3) =
+   (henkin_language_chain_maps L y z f2) ∘ (henkin_language_chain_maps L x y f1),
+   fapply henkin_language_chain.h_mor, rw[this, Lhom.comp_on_bounded_term]}
+end
+
+def henkin_bounded_formula_chain {L : Language} : directed_diagram ℕ' :=
 begin
   refine ⟨λ n, bounded_formula (@henkin_language_chain_objects L n) 1, _, _⟩,
   {intros x y H, apply Lhom.on_bounded_formula, apply @henkin_language_chain_maps L, exact H},
@@ -297,7 +330,7 @@ def cocone_of_L_infty {L : Language} : cocone_language (@henkin_language_chain L
   by apply cocone_of_colimit_language
 
 /- bounded_formula (L_infty L) 1 is naturally a cocone over the diagram of bounded_formulas -/
-def cocone_of_bounded_formula_L_infty {L : Language} : colimit.cocone (@henkin_bounded_formula_chain L) :=
+def cocone_of_bounded_formula_L_infty {L : Language} : cocone (@henkin_bounded_formula_chain L) :=
 begin
 refine ⟨bounded_formula (L_infty L) 1,_,_⟩,
 {intro i, fapply Lhom.on_bounded_formula, fapply henkin_language_canonical_map},
@@ -321,13 +354,13 @@ end
 lemma bounded_formula_comparison_bijective {L : Language} : function.bijective (@bounded_formula_comparison L) :=
 begin
   refine ⟨_,_⟩,
-  {unfold bounded_formula_comparison id, fapply colimit.universal_map_inj_of_components_inj,
+  {unfold bounded_formula_comparison id, fapply universal_map_inj_of_components_inj,
   change ∀ i : ℕ, function.injective (cocone_of_bounded_formula_L_infty.map i),
   dsimp[cocone_of_bounded_formula_L_infty],  intro m,
   fapply Lhom.on_bounded_formula_inj (@henkin_language_canonical_map_inj L m)},
   
   {unfold function.surjective bounded_formula, intro f, dsimp[bounded_formula] at f,
-   change ∃ (a : colimit henkin_bounded_formula_chain), bounded_formula_comparison a = f,
+   change ∃ (a : henkin_bounded_formula_chain), bounded_formula_comparison a = f,
    cases f, repeat{sorry}} -- looks like to prove surjectivity, we need to use choice to define an inverse, so maybe this should be the other way around
    -- why does Lean complain induction isn't type-correct here? hmm...
 end
@@ -363,7 +396,7 @@ end
 lemma henkin_language_over_injective {L} {T : Theory L} {hT : is_consistent T} : Lhom.is_injective (@henkin_language_over L T hT) :=
 begin
   split, all_goals{intro n, unfold henkin_language_over canonical_map_language, simp,
-  rw[<-canonical_map], fapply colimit.canonical_map_inj_of_transition_maps_inj, intros i j H,
+  rw[<-canonical_map], fapply canonical_map_inj_of_transition_maps_inj, intros i j H,
   dsimp[diagram_functions, diagram_relations, henkin_language_chain],
   simp only [henkin_language_chain_maps_inj, Lhom.is_injective.on_function, Lhom.is_injective.on_relation]}
 end

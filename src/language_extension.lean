@@ -208,9 +208,17 @@ attribute [instance] has_decidable_range.on_function has_decidable_range.on_rela
 
 /- The next two tidy proofs are unperformant, so maybe refactor later -/
 /- Can't tag this as simp lemma for some reason -/
-lemma comp_on_term {L1} {L2} {L3} {n l : ℕ}(g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
+@[tidy]lemma comp_on_term {L1} {L2} {L3} {n l : ℕ}(g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
 @on_term L1 L3 (g ∘ f) l = function.comp (@on_term L2 L3 g l) (@on_term L1 L2 f l) :=
 by {fapply funext, intro x, induction x, tidy}
+
+@[tidy]lemma comp_on_formula {L1} {L2} {L3} {n l : ℕ}(g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
+@on_formula L1 L3 (g ∘ f) l = function.comp (@on_formula L2 L3 g l) (@on_formula L1 L2 f l) :=
+by {fapply funext, intro x, induction x, tidy, all_goals{rw[comp_on_term], exact l}}
+
+@[simp]lemma comp_on_bounded_term {L1} {L2} {L3} {n l : ℕ}(g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
+@on_bounded_term L1 L3 (g ∘ f) n l = function.comp (@on_bounded_term L2 L3 g n l) (@on_bounded_term L1 L2 f n l) :=
+by {fapply funext, intro x, tidy, induction x, tidy, all_goals{rw[comp_on_term], exact l}}
 
 @[simp]lemma comp_on_bounded_formula {L1} {L2} {L3} {n l : ℕ}(g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
 @on_bounded_formula L1 L3 (g ∘ f) n l = function.comp (@on_bounded_formula L2 L3 g n l) (@on_bounded_formula L1 L2 f n l) :=
@@ -326,6 +334,7 @@ end
 
 noncomputable def reflect_prf {Γ : set $ formula L} {f : formula L} (hϕ : ϕ.is_injective)
   (h : ϕ.on_formula '' Γ ⊢ ϕ.on_formula f) : Γ ⊢ f :=
+
 begin
   haveI : has_decidable_range ϕ :=
     ⟨λl f, classical.prop_decidable _, λl R, classical.prop_decidable _⟩ ,
