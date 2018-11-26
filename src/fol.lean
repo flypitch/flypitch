@@ -149,7 +149,7 @@ begin
 end,
 λt, h t ([]) ([])
 
-@[elab_as_eliminator] def term.elim_beta {C : Type v}
+def term.elim_apps {C : Type v}
   (hvar : ∀(k : ℕ), C)
   (hfunc : Π {{l}} (f : L.functions l) (ts : dvector (term L) l) (ih_ts : dvector C l), C) : 
   ∀{l} (f : L.functions l) (ts : dvector (term L) l), 
@@ -160,7 +160,8 @@ begin
   refine term.rec _ _ t; clear t; intros,
   { exfalso, induction ts;[cases ht,dsimp at ht],
     revert ht, generalize hf : func f = t', 
-    induction ts_x },
+    exact sorry },
+  exact sorry
 end
 
 /- lift_term_at _ t n m raises variables in t which are at least m by n -/
@@ -177,20 +178,21 @@ infix ` ↑ `:100 := fol.lift_term -- input ↑' with \u or \upa
 
 @[simp] lemma lift_term_def {l} (t : preterm L l) (n : ℕ) : t ↑' n # 0 = t ↑ n := by refl
 
-lemma lift_term_at_inj : ∀ {l} {t t' : preterm L l} {n m : ℕ}, t ↑' n # m = t' ↑' n # m → t = t'
-| _ &k &k' n m h := 
+lemma injective_lift_term_at : ∀ {l} {n m : ℕ}, 
+  function.injective (λ(t : preterm L l), lift_term_at t n m)
+| _ n m &k &k' h := 
   by by_cases h₁ : m ≤ k; by_cases h₂ : m ≤ k'; simp [h₁, h₂] at h;
      congr;[assumption, skip, skip, assumption]; exfalso; try {apply h₁}; 
-     try {apply h₂}; subst h; apply le_trans (by assumption) (le_add_right _ _)
-| _ &k (func f')            n m h := by by_cases h' : m ≤ k; simp [h'] at h; contradiction
-| _ &k (app t₁' t₂')        n m h := by by_cases h' : m ≤ k; simp [h'] at h; contradiction
-| _ (func f) &k'            n m h := by by_cases h' : m ≤ k'; simp [h'] at h; contradiction
-| _ (func f) (func f')      n m h := h
-| _ (func f) (app t₁' t₂')  n m h := by cases h
-| _ (app t₁ t₂) &k'         n m h := by by_cases h' : m ≤ k'; simp [h'] at h; contradiction
-| _ (app t₁ t₂) (func f')   n m h := by cases h
-| _ (app t₁ t₂) (app t₁' t₂') n m h := 
-  begin injection h, congr; apply lift_term_at_inj; assumption end
+     try {apply h₂}; subst h; apply le_trans (by assumption) (le_add_left _ _)
+| _ n m &k (func f')            h := by by_cases h' : m ≤ k; simp [h'] at h; contradiction
+| _ n m &k (app t₁' t₂')        h := by by_cases h' : m ≤ k; simp [h'] at h; contradiction
+| _ n m (func f) &k'            h := by by_cases h' : m ≤ k'; simp [h'] at h; contradiction
+| _ n m (func f) (func f')      h := h
+| _ n m (func f) (app t₁' t₂')  h := by cases h
+| _ n m (app t₁ t₂) &k'         h := by by_cases h' : m ≤ k'; simp [h'] at h; contradiction
+| _ n m (app t₁ t₂) (func f')   h := by cases h
+| _ n m (app t₁ t₂) (app t₁' t₂') h := 
+  begin injection h, congr; apply injective_lift_term_at; assumption end
 
 @[simp] lemma lift_term_at_zero : ∀ {l} (t : preterm L l) (m : ℕ), t ↑' 0 # m = t
 | _ &k          m := by simp
@@ -248,6 +250,14 @@ begin rw fol.lift_term_at2_small t n' n H₂, rw [nat.sub_add_cancel], exact H�
 @[simp] lemma lift_term_var0 (n : ℕ) : &0 ↑ n = (&n : term L) := 
 by have h : 0 ≤ 0 := le_refl 0; rw [←lift_term_def]; simp [h, -lift_term_def]
 
+@[simp] lemma lift_term_at_apps {l} (t : preterm L l) (ts : dvector (term L) l) (n m : ℕ) : 
+  (apps t ts) ↑' n # m = apps (t ↑' n # m) (ts.map $ λx, x ↑' n # m) :=
+by induction ts generalizing t;[refl, apply ts_ih (app t ts_x)]
+
+@[simp] lemma lift_term_apps {l} (t : preterm L l) (ts : dvector (term L) l) (n : ℕ) : 
+  (apps t ts) ↑ n = apps (t ↑ n) (ts.map $ λx, x ↑ n) :=
+lift_term_at_apps t ts n 0
+
 /- subst_term t s n substitutes s for (&n) and reduces the level of all variables above n by 1 -/
 def subst_term : ∀ {l}, preterm L l → term L → ℕ → preterm L l
 | _ &k          s n := subst_realize var (s ↑ n) n k
@@ -275,11 +285,9 @@ by refl
   (app t₁ t₂)[s // n] = app (t₁[s // n]) (t₂[s // n]) :=
 by refl
 
-@[simp] lemma subst_term_apps {l} (t : preterm L l) (ts : dvector (term L) l) (s : term L) (n : ℕ) : 
-  (apps t ts)[s // n] = apps (t[s // n]) (ts.map $ λx, x[s // n]) :=
-begin
-  induction ts generalizing t, refl, apply ts_ih (app t ts_x)
-end
+@[simp] lemma subst_term_apps {l} (t : preterm L l) (ts : dvector (term L) l) (s : term L) 
+  (n : ℕ) : (apps t ts)[s // n] = apps (t[s // n]) (ts.map $ λx, x[s // n]) :=
+by induction ts generalizing t;[refl, apply ts_ih (app t ts_x)]
 
 /- the following lemmas simplify first lifting and then substituting, depending on the size
   of the substituted variable -/
@@ -435,7 +443,7 @@ infix ` ⇔ `:61 := fol.biimp -- input \<=>
 def ex (f : formula L) : formula L := ∼ ∀' ∼f
 prefix `∃'`:110 := fol.ex
 
-def apps_rel : ∀{l} (f : preformula L l) (ts : dvector (term L) l), formula L
+@[simp] def apps_rel : ∀{l} (f : preformula L l) (ts : dvector (term L) l), formula L
 | 0     f []      := f
 | (n+1) f (t::ts) := apps_rel (apprel f t) ts
 
@@ -465,16 +473,30 @@ arity.of_dvector_map $ apps_rel (rel R)
 @[elab_as_eliminator] def formula.rec {C : formula L → Sort v}
   (hfalsum : C ⊥)
   (hequal : Π (t₁ t₂ : term L), C (t₁ ≃ t₂))
-  (hrel : Π {l} (R : L.relations l) (ts : dvector (term L) l), C (apps_rel (rel R) ts))
+  (hrel : Π {{l}} (R : L.relations l) (ts : dvector (term L) l), C (apps_rel (rel R) ts))
   (himp : Π {{f₁ f₂ : formula L}} (ih₁ : C f₁) (ih₂ : C f₂), C (f₁ ⟹ f₂))
   (hall : Π {{f : formula L}} (ih : C f), C (∀' f)) : ∀f, C f :=
 have h : ∀{l} (f : preformula L l) (ts : dvector (term L) l), C (apps_rel f ts),
 begin
-  intros, induction f; try {rw ts.zero_eq},
-  exact hfalsum, apply hequal, apply hrel, apply f_ih (f_t::ts),
-  exact himp (f_ih_f₁ ([])) (f_ih_f₂ ([])), exact hall (f_ih ([]))
+  intros, induction f,
+  { cases ts, exact hfalsum }, 
+  { cases ts, apply hequal }, 
+  { apply hrel }, 
+  { apply f_ih (f_t::ts) },
+  { cases ts, exact himp (f_ih_f₁ ([])) (f_ih_f₂ ([])) },
+  { cases ts, exact hall (f_ih ([])) }
 end,
 λ f, h f ([])
+
+@[simp] def formula.rec_apps_rel {C : formula L → Sort v}
+  (hfalsum : C ⊥)
+  (hequal : Π (t₁ t₂ : term L), C (t₁ ≃ t₂))
+  (hrel : Π {{l}} (R : L.relations l) (ts : dvector (term L) l), C (apps_rel (rel R) ts))
+  (himp : Π {{f₁ f₂ : formula L}} (ih₁ : C f₁) (ih₂ : C f₂), C (f₁ ⟹ f₂))
+  (hall : Π {{f : formula L}} (ih : C f), C (∀' f)) 
+  {l} (R : L.relations l) (ts : dvector (term L) l) : 
+  @formula.rec L C hfalsum hequal hrel himp hall (apps_rel (rel R) ts) = hrel R ts :=
+by sorry
 
 @[simp] def lift_formula_at : ∀ {l}, preformula L l → ℕ → ℕ → preformula L l
 | _ falsum       n m := falsum
@@ -493,12 +515,12 @@ infix ` ↑ `:100 := fol.lift_formula -- input ↑' with \upa
 @[simp] lemma lift_formula_def {l} (f : preformula L l) (n : ℕ) : f ↑' n # 0 = f ↑ n := by refl
 @[simp] lemma lift_formula1_not (n : ℕ) (f : formula L) : ∼f ↑ n  = ∼(f ↑ n) := by refl
 
-lemma lift_formula_at_inj {l} {f f' : preformula L l} {n m : ℕ} (H : f ↑' n # m = f' ↑' n # m) : 
-  f = f' :=
+lemma injective_lift_formula_at {l} {n m : ℕ} : 
+  function.injective (λ (f : preformula L l), lift_formula_at f n m) :=
 begin
-  induction f generalizing m; cases f'; injection H,
-  { simp only [lift_term_at_inj h_1, lift_term_at_inj h_2, eq_self_iff_true, and_self] },
-  { simp only [f_ih h_1, lift_term_at_inj h_2, eq_self_iff_true, and_self] },
+  intros f f' H, induction f generalizing m; cases f'; injection H,
+  { simp only [injective_lift_term_at h_1, injective_lift_term_at h_2, eq_self_iff_true, and_self] },
+  { simp only [f_ih h_1, injective_lift_term_at h_2, eq_self_iff_true, and_self] },
   { simp only [f_ih_f₁ h_1, f_ih_f₂ h_2, eq_self_iff_true, and_self] },
   { simp only [f_ih h_1, eq_self_iff_true] }
 end
@@ -543,6 +565,14 @@ have H₁ : n ≤ m', from le_trans (n.le_add_left m) H,
 have H₂ : m ≤ m' - n, from nat.le_sub_right_of_add_le H,
 begin rw lift_formula_at2_small f n' n H₂, rw [nat.sub_add_cancel], exact H₁ end
 
+@[simp] lemma lift_formula_at_apps_rel {l} (f : preformula L l) (ts : dvector (term L) l) 
+  (n m : ℕ) : (apps_rel f ts) ↑' n # m = apps_rel (f ↑' n # m) (ts.map $ λx, x ↑' n # m) :=
+by induction ts generalizing f;[refl, apply ts_ih (apprel f ts_x)]
+
+@[simp] lemma lift_formula_apps_rel {l} (f : preformula L l) (ts : dvector (term L) l) 
+  (n : ℕ) : (apps_rel f ts) ↑ n = apps_rel (f ↑ n) (ts.map $ λx, x ↑ n) :=
+lift_formula_at_apps_rel f ts n 0
+
 @[simp] def subst_formula : ∀ {l}, preformula L l → term L → ℕ → preformula L l
 | _ falsum       s n := falsum
 | _ (t₁ ≃ t₂)    s n := subst_term t₁ s n ≃ subst_term t₂ s n
@@ -560,12 +590,6 @@ by refl
 @[simp] lemma subst_formula_biimp (f₁ f₂ : formula L) (s : term L) (n : ℕ) :
   (f₁ ⇔ f₂)[s // n] = f₁[s // n] ⇔ (f₂[s // n]) :=
 by refl
-
-@[simp] lemma subst_formula_apps_rel {l} (f : preformula L l) (ts : dvector (term L) l) (s : term L) 
-  (n : ℕ): (apps_rel f ts)[s // n] = apps_rel (f[s // n]) (ts.map $ λx, x[s // n]) :=
-begin
-  induction ts generalizing f, refl, apply ts_ih (apprel f ts_x)
-end
 
 lemma lift_at_subst_formula_large : ∀{l} (f : preformula L l) (s : term L) {n₁} (n₂) {m}, m ≤ n₁ →
   (f ↑' n₂ # m)[s // n₁+n₂] = (f [s // n₁]) ↑' n₂ # m
@@ -649,6 +673,10 @@ lemma lift_subst_formula_cancel : ∀{l} (f : preformula L l) (n : ℕ), (f ↑'
 | _ (f₁ ⟹ f₂)   n := by simp*
 | _ (∀' f)       n := by simp*
 
+@[simp] lemma subst_formula_apps_rel {l} (f : preformula L l) (ts : dvector (term L) l) (s : term L) 
+  (n : ℕ): (apps_rel f ts)[s // n] = apps_rel (f[s // n]) (ts.map $ λx, x[s // n]) :=
+by induction ts generalizing f;[refl, apply ts_ih (apprel f ts_x)]
+
 @[simp] def count_quantifiers : ∀ {l}, preformula L l → ℕ
 | _ falsum       := 0
 | _ (t₁ ≃ t₂)    := 0
@@ -721,7 +749,7 @@ begin
   { apply impI, have h := @H_ih m, rw [image_insert_eq] at h, exact h },
   { apply impE, apply H_ih_h₁, apply H_ih_h₂ },
   { apply falsumE, have h := @H_ih m, rw [image_insert_eq] at h, exact h },
-  { apply allI, rw [←image_comp], have h := @H_ih (m+1), rw [←image_comp] at h, 
+  { apply allI, rw [image_image], have h := @H_ih (m+1), rw [image_image] at h, 
     apply cast _ h, congr1, apply image_congr', intro f', symmetry,
     exact lift_formula_at2_small f' _ _ m.zero_le },
   { apply allE _ _ (H_ih m), apply lift_at_subst_formula_small0 },
@@ -731,21 +759,34 @@ begin
     rw [lift_at_subst_formula_small0] },
 end
 
-def substitution {Γ} {f : formula L} {t n} (H : Γ ⊢ f) : (λx, x[t // n]) '' Γ ⊢ f[t // n] :=
+def substitution {Γ} {f : formula L} (t n) (H : Γ ⊢ f) : (λx, x[t // n]) '' Γ ⊢ f[t // n] :=
 begin
   induction H generalizing n,
   { apply axm, apply mem_image_of_mem _ H_h },
-  { apply impI, have h := @H_ih n, rw [image_insert_eq] at h, exact h },
+  { apply impI, have h := H_ih n, rw [image_insert_eq] at h, exact h },
   { apply impE, apply H_ih_h₁, apply H_ih_h₂ },
-  { apply falsumE, have h := @H_ih n, rw [image_insert_eq] at h, exact h },
-  { apply allI, rw [←image_comp], have h := @H_ih (n+1), rw [←image_comp] at h, 
+  { apply falsumE, have h := H_ih n, rw [image_insert_eq] at h, exact h },
+  { apply allI, rw [image_image], have h := @H_ih (n+1), rw [image_image] at h, 
     apply cast _ h, congr1, apply image_congr', intro,
     apply lift_subst_formula_large },
-  { apply allE _ _ H_ih, symmetry, apply subst_formula2_zero },
+  { apply allE _ _ (H_ih n), symmetry, apply subst_formula2_zero },
   { apply ref },
-  { apply subst _ H_ih_h₁, { have h := @H_ih_h₂ n, rw [subst_formula2_zero] at h, exact h}, 
+  { apply subst _ (H_ih_h₁ n), { have h := @H_ih_h₂ n, rw [subst_formula2_zero] at h, exact h}, 
     rw [subst_formula2_zero] },
 end
+
+def reflect_prf_lift1 {Γ} {f : formula L} (h : lift_formula1 '' Γ ⊢ f ↑ 1) : Γ ⊢ f :=
+begin
+  have := substitution &0 0 h, simp [image_image] at this, exact this
+end
+
+-- def reflect_prf_lift {Γ} {f : formula L} (n m : ℕ) :
+--   (λf' : formula L, f' ↑' n # m) '' Γ ⊢ f ↑' n # m → Γ ⊢ f :=
+-- begin
+--   induction n,
+--   { rw [lift_zero] },
+--   { }
+-- end
 
 def weakening1 {Γ} {f₁ f₂ : formula L} (H : Γ ⊢ f₂) : insert f₁ Γ ⊢ f₂ :=
 weakening (subset_insert f₁ Γ) H
@@ -896,7 +937,7 @@ begin
   apply subst (apps_rel (f' ↑ 1) ((s :: xs).map lift_term1) ⇔ 
                apps_rel (f' ↑ 1) (&0 :: xs.map lift_term1)) Hs; 
     simp [dvector.map_congr (λt, lift_term1_subst_term t s')],
-  apply biimp_refl, refl
+  apply biimp_refl
 end
 
 @[refl] def equiv_preformulae_refl (T : set (formula L)) {l} (f : preformula L l) : 
@@ -1827,7 +1868,7 @@ def provable_of_sprovable {T : Theory L} {f : sentence L} (h : T ⊢ f) : T.fst 
 def sprovable_lift {T : Theory L} {f : formula L} (h : T.fst ⊢ f) : T.fst ⊢ f ↑ 1 := 
 begin
   have := prf_lift 1 0 h, dsimp [Theory.fst] at this, 
-  rw [←image_comp, image_congr' lift_sentence_irrel] at this, exact this
+  rw [image_image, image_congr' lift_sentence_irrel] at this, exact this
 end
 
 def all_sprovable (T T' : Theory L) := ∀(f ∈ T'), T ⊢ f

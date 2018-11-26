@@ -30,6 +30,12 @@ begin
   exact ⟨classical.epsilon p, classical.epsilon_spec h⟩ 
 end
 
+namespace classical
+lemma some_eq {α : Type u} {p : α → Prop} {h : ∃ (a : α), p a} (x : α) 
+  (hx : ∀y, p y → y = x) : classical.some h = x :=
+classical.some_spec2 _ hx
+end classical
+
 
 namespace eq
 protected lemma congr {α : Type u} {x₁ x₂ y₁ y₂ : α} (h₁ : x₁ = y₁) (h₂ : x₂ = y₂) : 
@@ -88,12 +94,15 @@ xs.nth m.1 m.2
 protected def mem : ∀{n : ℕ} (x : α) (xs : dvector α n), Prop
 | _ x []       := false
 | _ x (x'::xs) := x = x' ∨ mem x xs
+instance {n : ℕ} : has_mem α (dvector α n) := ⟨dvector.mem⟩
 
 protected def pmem : ∀{n : ℕ} (x : α) (xs : dvector α n), Type
 | _ x []       := empty
 | _ x (x'::xs) := psum (x = x') (pmem x xs)
 
-instance {n : ℕ} : has_mem α (dvector α n) := ⟨dvector.mem⟩
+protected def mem_of_pmem : ∀{n : ℕ} {x : α} {xs : dvector α n} (hx : xs.pmem x), x ∈ xs
+| _ x []       hx := by cases hx
+| _ x (x'::xs) hx := by cases hx;[exact or.inl hx, exact or.inr (mem_of_pmem hx)]
 
 @[simp] protected def map (f : α → β) : ∀{n : ℕ}, dvector α n → dvector β n
 | _ []      := []
@@ -103,13 +112,18 @@ instance {n : ℕ} : has_mem α (dvector α n) := ⟨dvector.mem⟩
 | _ []      := rfl
 | _ (x::xs) := by dsimp; simp*
 
-@[simp] protected lemma map_congr' {f g : α → β} : 
-  ∀{n : ℕ} {xs : dvector α n} (h : ∀x, x ∈ xs → f x = g x), xs.map f = xs.map g
+@[simp] protected lemma map_congr_pmem {f g : α → β} : 
+  ∀{n : ℕ} {xs : dvector α n} (h : ∀x, xs.pmem x → f x = g x), xs.map f = xs.map g
 | _ []      h := rfl
 | _ (x::xs) h :=
   begin
-    dsimp, congr1, exact h x (or.inl rfl), apply map_congr', intros x hx, apply h, right, exact hx
+    dsimp, congr1, exact h x (psum.inl rfl), apply map_congr_pmem, 
+    intros x hx, apply h, right, exact hx
   end
+
+@[simp] protected lemma map_congr_mem {f g : α → β} {n : ℕ} {xs : dvector α n} 
+  (h : ∀x, x ∈ xs → f x = g x) : xs.map f = xs.map g :=
+dvector.map_congr_pmem $ λx hx, h x $ dvector.mem_of_pmem hx 
 
 @[simp] protected lemma map_congr {f g : α → β} (h : ∀x, f x = g x) : 
   ∀{n : ℕ} (xs : dvector α n), xs.map f = xs.map g
@@ -245,7 +259,7 @@ have h' : p = q, from funext h, by subst h'; refl
 
 namespace set
 
-variables {α : Type u} {β : Type v} 
+variables {α : Type u} {β : Type v} {γ : Type w}
 
 def subset_insert_diff (s t : set α) [decidable_pred (∈ t)] : s ⊆ (s \ t) ∪ t :=
 begin
@@ -285,6 +299,11 @@ subset.trans h₁ (subset_sUnion h₂)
 
 lemma image_congr' {f g : α → β} {s : set α} (h : ∀ (x : α), f x = g x) : f '' s = g '' s :=
 image_congr (λx _, h x)
+
+lemma image_image (g : β → γ) (f : α → β) (s : set α) : g '' (f '' s) = (λ x, g (f x)) '' s :=
+(image_comp g f s).symm
+
+@[simp] lemma image_id' (s : set α) : (λx, x) '' s = s := image_id s
 
 end set
 open nat
