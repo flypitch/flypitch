@@ -164,11 +164,14 @@ begin
   exact ∃'f' ⇔ f'[c /0],
 end
 
-local notation `ℕ'` := (ulift.{(u+2)} directed_type_of_nat)
+local notation `ℕ'` :=  directed_type_of_nat
 
 def henkin_language_chain_objects {L : Language} : ℕ → Language
   | 0 := L
   | (n+1) := henkin_language_step (henkin_language_chain_objects n)
+
+@[simp]lemma obvious {L : Language} {i : ℕ} : henkin_language_functions (@henkin_language_chain_objects L i) 0 = (@henkin_language_chain_objects L (i+1)).functions 0 :=
+by refl 
 
 local infix ` ∘ `:60 := Lhom.comp
 
@@ -310,7 +313,10 @@ begin
   apply colimit.universal_map
 end
 
-#check Lhom.on_bounded_formula_inj
+-- to proceed, need to show that bounded_formula_comparison, as we've defined it,
+-- commutes with operations on bounded formulas -- so we need to generalize from
+-- bounded_formula 1 to bounded_formula n, and prove colimit statements for terms, etc
+-- to complete the structural recursion
 
 lemma bounded_formula_comparison_bijective {L : Language} : function.bijective (@bounded_formula_comparison L) :=
 begin
@@ -319,9 +325,15 @@ begin
   change ∀ i : ℕ, function.injective (cocone_of_bounded_formula_L_infty.map i),
   dsimp[cocone_of_bounded_formula_L_infty],  intro m,
   fapply Lhom.on_bounded_formula_inj (@henkin_language_canonical_map_inj L m)},
-
-  {sorry}
+  
+  {unfold function.surjective bounded_formula, intro f, dsimp[bounded_formula] at f,
+   change ∃ (a : colimit henkin_bounded_formula_chain), bounded_formula_comparison a = f,
+   cases f, repeat{sorry}} -- looks like to prove surjectivity, we need to use choice to define an inverse, so maybe this should be the other way around
+   -- why does Lean complain induction isn't type-correct here? hmm...
 end
+
+noncomputable def equiv_bounded_formula_comparison {L : Language} : equiv (colimit (@henkin_bounded_formula_chain L)) (bounded_formula (L_infty L) 1) :=
+begin fapply equiv.of_bijective, exacts [bounded_formula_comparison, bounded_formula_comparison_bijective] end
 
 /- Not really a chain, since we haven't set up interpretations of theories yet -/
 def henkin_theory_chain {L : Language} {T : Theory L}: Π(n : ℕ), (Theory (obj (@henkin_language_chain L) n))
@@ -362,8 +374,23 @@ def henkinization {L : Language} {T : Theory L} {hT : is_consistent T} : Theory 
 
 lemma henkinization_is_henkin {L : Language} {T : Theory L} {hT : is_consistent T} : has_enough_constants (@henkinization L T hT) :=
 begin
-  unfold henkinization T_infty has_enough_constants, split, swap,
-  repeat{sorry} -- here, we need to define the witnessing function at L_infty
+  unfold henkinization T_infty has_enough_constants, split, all_goals{intro f,  have f' := equiv_bounded_formula_comparison.inv_fun f, have Hf' := quotient.exists_rep, dsimp[colimit] at f',
+  have := psigma_of_exists (Hf' f'), rcases this with ⟨⟨i,f''⟩, Hx⟩},
+  swap,
+  {fapply Lhom.on_function, exact @obj ℕ' (@henkin_language_chain L) (nat.succ i),
+  exact henkin_language_canonical_map (i+1), dsimp[henkin_language_chain, henkin_language_chain_objects], exact wit f''},
+  {simp only [*, id.def], fapply nonempty.intro, fapply axm,
+  simp only [*, fol.subst_formula, fol.bounded_preterm.fst, set.mem_Union, set.mem_image,
+            fol.subst0_bounded_formula_fst, fol.bounded_preformula.fst],
+  refine ⟨_,⟨(i+1),_⟩,_⟩,
+  {fapply Lhom.on_bounded_formula, exact @obj ℕ' (@henkin_language_chain L) (nat.succ i),
+  exact henkin_language_canonical_map (i+1),
+  dsimp[directed_type_of_nat] at i, have h_leq : i ≤ i + 1, by simp,
+  let f''' := henkin_bounded_formula_chain.mor h_leq f'',
+  have := ∃'f''' ⇔ f'''[begin dsimp[henkin_language_chain_objects], fapply bd_const, exact wit f'' end /0], exact this}, 
+  {sorry}, -- this is by definition of how we construct each T_n
+  {sorry}, -- this follows from structural recursion on the comparison maps
+  },
 end
 
 /- It looks like this is the lemma which requires reflect_prf -/
