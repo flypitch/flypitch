@@ -1,6 +1,6 @@
 import .fol tactic.tidy
 
-open set function
+open set function nat
 universe variable u
 namespace fol
 
@@ -104,7 +104,7 @@ attribute [instance] has_decidable_range.on_function has_decidable_range.on_rela
 
 @[simp] lemma on_term_lift_at : ∀{l} (t : preterm L l) (n m : ℕ), 
   ϕ.on_term (t ↑' n # m) = ϕ.on_term t ↑' n # m
-| _ &k          n m := by by_cases h : m ≤ k; simp [h]
+| _ &k          n m := by simp
 | _ (func f)    n m := by refl
 | _ (app t₁ t₂) n m := by simp*
 
@@ -274,14 +274,58 @@ begin
   refine (term.elim_apps _ _ f ts).trans _, rw [dif_neg hf]
 end
 
+@[simp] lemma reflect_term_var [has_decidable_range ϕ] (k : ℕ) (m : ℕ) : 
+  ϕ.reflect_term &k m = &k ↑' 1 # m := by refl
+
 @[simp] lemma reflect_term_on_term [has_decidable_range ϕ] (hϕ : is_injective ϕ) (t : term L) 
   (m : ℕ) : ϕ.reflect_term (ϕ.on_term t) m = t ↑' 1 # m :=
 begin
   refine term.rec _ _ t; clear t; intros,
   { refl },
   { simp [reflect_term_apps_pos (mem_range_self f)], 
-    rw [classical.some_eq f  (λy hy, hϕ.on_function hy), dvector.map_congr_pmem ih_ts] }
+    rw [classical.some_eq f (λy hy, hϕ.on_function hy), dvector.map_congr_pmem ih_ts] }
 end
+
+lemma reflect_term_lift_at [has_decidable_range ϕ] (hϕ : is_injective ϕ) {n m m' : ℕ} (h : m ≤ m')
+  (t : term L') : ϕ.reflect_term (t ↑' n # m) (m'+n) = ϕ.reflect_term t m' ↑' n # m :=
+begin
+  refine term.rec _ _ t; clear t; intros,
+  { simp [-lift_term_at], rw[lift_term_at2_small _ _ _ h], simp },
+  { by_cases h' : f ∈ range (@on_function _ _ ϕ l); simp [reflect_term_apps_pos, 
+      reflect_term_apps_neg, h', h, dvector.map_congr_pmem ih_ts, -add_comm] }
+end
+
+lemma reflect_term_lift [has_decidable_range ϕ] (hϕ : is_injective ϕ) {n m : ℕ}
+  (t : term L') : ϕ.reflect_term (t ↑ n) (m+n) = ϕ.reflect_term t m ↑ n :=
+reflect_term_lift_at hϕ m.zero_le t
+
+lemma reflect_term_subst [has_decidable_range ϕ] (hϕ : is_injective ϕ) (n m : ℕ) 
+  (s t : term L') : 
+  ϕ.reflect_term (t[s // n]) (m+n) = (ϕ.reflect_term t (m+n+1))[ϕ.reflect_term s m // n] :=
+begin
+  refine term.rec _ _ t; clear t; intros,
+  { simp [-lift_term_at, -add_comm, -add_assoc], 
+    apply lt_by_cases k n; intro h,
+    { have h₂ : ¬(m + n ≤ k), from λh', not_le_of_gt h (le_trans (le_add_left n m) h'),
+      have h₃ : ¬(m + n + 1 ≤ k), from λh', h₂ $ le_trans (le_succ _) h',
+      simp [h, h₂, h₃, -add_comm, -add_assoc] },
+    { have h₂ : ¬(m + n + 1 ≤ n), from not_le_of_gt (lt_of_le_of_lt (le_add_left n m) (lt.base _)) ,
+      simp [h, h₂, reflect_term_lift hϕ, -add_comm, -add_assoc] },
+    { have hk := one_le_of_lt h, 
+      have h₄ : n < k + 1, from lt.trans h (lt.base k),
+      by_cases h₂' : m + n + 1 ≤ k,
+      { have h₂ : m + n + 1 ≤ k, from h₂',
+        have h₃ : m + n ≤ k - 1, from (nat.le_sub_right_iff_add_le hk).mpr h₂,
+        simp [h, h₂, h₃, h₄, -add_comm, -add_assoc], 
+        rw [sub_add_eq_max, max_eq_left hk] },
+      { have h₂ : ¬(m + n + 1 ≤ k), from h₂',
+        have h₃ : ¬(m + n ≤ k - 1), from λh', h₂ $ (nat.le_sub_right_iff_add_le hk).mp h',
+        simp [h, h₂, h₃, -add_comm, -add_assoc] }}},
+  { have h : n < m + n + 1, from nat.lt_succ_of_le (nat.le_add_left n m),
+    by_cases h' : f ∈ range (@on_function _ _ ϕ l); simp [reflect_term_apps_pos, 
+      reflect_term_apps_neg, h, h', dvector.map_congr_pmem ih_ts, -add_comm, -add_assoc] }
+end
+
 variable (ϕ)
 
 noncomputable def reflect_formula [has_decidable_range ϕ] (f : formula L') : 
@@ -322,14 +366,44 @@ begin
   { simp* }
 end
 
-@[simp] lemma reflect_formula_lift_formula1 [has_decidable_range ϕ] (hϕ : is_injective ϕ) 
-  (f : formula L') : ∀(m : ℕ), ϕ.reflect_formula (f ↑ 1) (m+1) = ϕ.reflect_formula f m ↑ 1 :=
-sorry
+lemma reflect_formula_lift_at [has_decidable_range ϕ] (hϕ : is_injective ϕ) {n m m' : ℕ} 
+  (h : m ≤ m') (f : formula L') : 
+  ϕ.reflect_formula (f ↑' n # m) (m'+n) = ϕ.reflect_formula f m' ↑' n # m :=
+begin
+  revert m m', refine formula.rec _ _ _ _ _ f; clear f; intros,
+  { refl },
+  { simp [reflect_term_lift_at hϕ h, -add_comm] },
+  { by_cases h' : R ∈ range (@on_relation _ _ ϕ l); simp [reflect_formula_apps_rel_pos, 
+      reflect_formula_apps_rel_neg, h', h, ts.map_congr (reflect_term_lift_at hϕ h), -add_comm] },
+  { simp [ih₁ h, ih₂ h, -add_comm] },
+  { simp [-add_comm, -add_assoc], rw [←ih], simp, exact add_le_add_right h 1 },
+end
 
-@[simp] lemma reflect_formula_subst0 [has_decidable_range ϕ] (hϕ : is_injective ϕ) 
-  (f : formula L') (t : term L') : 
-  ∀(m : ℕ), ϕ.reflect_formula (f[t//0]) m = (ϕ.reflect_formula f (m+1))[ϕ.reflect_term t m//0] :=
-sorry
+lemma reflect_formula_lift [has_decidable_range ϕ] (hϕ : is_injective ϕ) (n m : ℕ)
+  (f : formula L') : ϕ.reflect_formula (f ↑ n) (m+n) = ϕ.reflect_formula f m ↑ n :=
+reflect_formula_lift_at hϕ m.zero_le f
+
+lemma reflect_formula_lift1 [has_decidable_range ϕ] (hϕ : is_injective ϕ) (m : ℕ)
+  (f : formula L') : ϕ.reflect_formula (f ↑ 1) (m+1) = ϕ.reflect_formula f m ↑ 1 :=
+reflect_formula_lift hϕ 1 m f
+
+lemma reflect_formula_subst [has_decidable_range ϕ] (hϕ : is_injective ϕ) (f : formula L') 
+  (n m : ℕ) (s : term L') : 
+  ϕ.reflect_formula (f[s // n]) (m+n) = (ϕ.reflect_formula f (m+n+1))[ϕ.reflect_term s m // n] :=
+begin
+  revert n, refine formula.rec _ _ _ _ _ f; clear f; intros,
+  { refl },
+  { simp [reflect_term_subst hϕ, -add_comm] },
+  { by_cases h' : R ∈ range (@on_relation _ _ ϕ l); simp [reflect_formula_apps_rel_pos, 
+      reflect_formula_apps_rel_neg, h', ts.map_congr (reflect_term_subst hϕ n m s), -add_comm] },
+  { simp [ih₁, ih₂, -add_comm] },
+  { simp [-add_comm, ih] },
+end
+
+@[simp] lemma reflect_formula_subst0 [has_decidable_range ϕ] (hϕ : is_injective ϕ) (m : ℕ)
+  (f : formula L') (s : term L') : 
+  ϕ.reflect_formula (f[s // 0]) m = (ϕ.reflect_formula f (m+1))[ϕ.reflect_term s m // 0] :=
+reflect_formula_subst hϕ f 0 m s
 
 noncomputable def reflect_prf_gen [has_decidable_range ϕ] (hϕ : is_injective ϕ) {Γ} 
   {f : formula L'} (m) (H : Γ ⊢ f) : (λf, ϕ.reflect_formula f m) '' Γ ⊢ ϕ.reflect_formula f m :=
@@ -340,8 +414,7 @@ begin
   { apply impE, apply H_ih_h₁, apply H_ih_h₂ },
   { apply falsumE, have h := @H_ih m, rw [image_insert_eq] at h, exact h },
   { apply allI, rw [image_image], have h := @H_ih (m+1), rw [image_image] at h, 
-    apply cast _ h, congr1, apply image_congr', intro f, 
-    exact reflect_formula_lift_formula1 hϕ f m },
+    apply cast _ h, congr1, apply image_congr' (reflect_formula_lift1 hϕ m) },
   { apply allE, have h := @H_ih m, simp at h, exact h, symmetry,
     apply reflect_formula_subst0 hϕ },
   { apply ref },

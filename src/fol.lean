@@ -242,11 +242,17 @@ by dsimp only [term.elim]; rw term.elim'_apps; refl
 
 /- lift_term_at _ t n m raises variables in t which are at least m by n -/
 @[simp] def lift_term_at : ∀ {l}, preterm L l → ℕ → ℕ → preterm L l
-| _ &k          n m := if m ≤ k then &(k+n) else &k
+| _ &k          n m := &(if m ≤ k then k+n else k)
 | _ (func f)    n m := func f
 | _ (app t₁ t₂) n m := app (lift_term_at t₁ n m) (lift_term_at t₂ n m)
 
 notation t ` ↑' `:90 n ` # `:90 m:90 := fol.lift_term_at t n m -- input ↑ with \u or \upa
+
+-- @[simp] lemma lift_term_var_le {k n m} (h : m ≤ k) : &k ↑' n # m = (&(k+n) : term L) := dif_pos h
+-- @[simp] lemma lift_term_var_gt {k n m} (h : ¬(m ≤ k)) : &k ↑' n # m = (&k : term L) := dif_neg h
+-- @[simp] lemma lift_term_at_func {l} (f : L.functions l) (n m) : func f ↑' n # m = func f := by refl
+-- @[simp] lemma lift_term_at_app {l} (t : preterm L (l+1)) (s : preterm L 0) (n m) : 
+--   app t s ↑' n # m = app (t ↑' n # m) (s ↑' n # m) := by refl
 
 @[reducible] def lift_term {l} (t : preterm L l) (n : ℕ) : preterm L l := t ↑' n # 0
 infix ` ↑ `:100 := fol.lift_term -- input ↑' with \u or \upa
@@ -260,18 +266,18 @@ lemma injective_lift_term_at : ∀ {l} {n m : ℕ},
   by by_cases h₁ : m ≤ k; by_cases h₂ : m ≤ k'; simp [h₁, h₂] at h;
      congr;[assumption, skip, skip, assumption]; exfalso; try {apply h₁}; 
      try {apply h₂}; subst h; apply le_trans (by assumption) (le_add_left _ _)
-| _ n m &k (func f')            h := by by_cases h' : m ≤ k; simp [h'] at h; contradiction
-| _ n m &k (app t₁' t₂')        h := by by_cases h' : m ≤ k; simp [h'] at h; contradiction
-| _ n m (func f) &k'            h := by by_cases h' : m ≤ k'; simp [h'] at h; contradiction
+| _ n m &k (func f')            h := by cases h
+| _ n m &k (app t₁' t₂')        h := by cases h
+| _ n m (func f) &k'            h := by cases h
 | _ n m (func f) (func f')      h := h
 | _ n m (func f) (app t₁' t₂')  h := by cases h
-| _ n m (app t₁ t₂) &k'         h := by by_cases h' : m ≤ k'; simp [h'] at h; contradiction
+| _ n m (app t₁ t₂) &k'         h := by cases h
 | _ n m (app t₁ t₂) (func f')   h := by cases h
 | _ n m (app t₁ t₂) (app t₁' t₂') h := 
   begin injection h, congr; apply injective_lift_term_at; assumption end
 
 @[simp] lemma lift_term_at_zero : ∀ {l} (t : preterm L l) (m : ℕ), t ↑' 0 # m = t
-| _ &k          m := by simp
+| _ &k          m := by simp [lift_term_at]
 | _ (func f)    m := by refl
 | _ (app t₁ t₂) m := by dsimp; congr; apply lift_term_at_zero
 
