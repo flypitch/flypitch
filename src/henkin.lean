@@ -64,7 +64,8 @@ def canonical_map_language {D} {F : directed_diagram_language D} (i : D.carrier)
 --   (vertex : Language)
 --   (cocone_functions : ∀{n}, @colimit.cocone D (@diagram_functions D F n)
 -- would need extra hypotheses that for every n, the vertex of the cocone_functions (resp. relations)
--- is equal to vertex.functions (resp. relations)---maybe this is easier to work with
+-- is equal to vertex.functions (resp. relations)
+-- maybe that would have been easier to work with
 
 structure cocone_language {D} (F : directed_diagram_language D) :=
   (vertex : Language)
@@ -315,9 +316,9 @@ begin
    fapply henkin_language_chain.h_mor, rw[this, Lhom.comp_on_bounded_term]}
 end
 
-def henkin_bounded_formula_chain {L : Language} : directed_diagram ℕ' :=
+def henkin_bounded_formula_chain {L : Language} (n l : ℕ) : directed_diagram ℕ' :=
 begin
-  refine ⟨λ n, bounded_formula (@henkin_language_chain_objects L n) 1, _, _⟩,
+  refine ⟨λ k, bounded_preformula (@henkin_language_chain_objects L k) n l, _, _⟩,
   {intros x y H, apply Lhom.on_bounded_formula, apply @henkin_language_chain_maps L, exact H},
   {intros x y z f1 f2 f3, dsimp only [*],
    have : (henkin_language_chain_maps L x z f3) =
@@ -325,48 +326,110 @@ begin
    fapply henkin_language_chain.h_mor, rw[this, Lhom.comp_on_bounded_formula]}
 end
 
+def henkin_bounded_formula_chain' {L : Language} : directed_diagram ℕ' := @henkin_bounded_formula_chain L 1 0
+
 /- L_infty := colim L_n is naturally a cocone over the diagram of languages -/
 def cocone_of_L_infty {L : Language} : cocone_language (@henkin_language_chain L) :=
   by apply cocone_of_colimit_language
 
-/- bounded_formula (L_infty L) 1 is naturally a cocone over the diagram of bounded_formulas -/
-def cocone_of_bounded_formula_L_infty {L : Language} : cocone (@henkin_bounded_formula_chain L) :=
+def cocone_of_term_L_infty {L : Language } (l : ℕ) : cocone (@henkin_term_chain L l) :=
 begin
-refine ⟨bounded_formula (L_infty L) 1,_,_⟩,
-{intro i, fapply Lhom.on_bounded_formula, fapply henkin_language_canonical_map},
-{intros i j H, dsimp[henkin_bounded_formula_chain, henkin_language_chain_maps],
-rw[<-Lhom.comp_on_bounded_formula],
-have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L i j H), swap, rw[this],
-{have := (@cocone_of_L_infty L).h_compat, tidy}}
+  refine ⟨preterm (L_infty L) l,_,_⟩,
+  {intro i, fapply Lhom.on_term, fapply henkin_language_canonical_map},
+  {intros i j H, dsimp[henkin_term_chain],
+  rw[<-Lhom.comp_on_term],
+  have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L i j H), swap, rw[this],
+  {have := (@cocone_of_L_infty L).h_compat, tidy}, exact l}
 end
 
-def bounded_formula_comparison {L : Language} : colimit (@henkin_bounded_formula_chain L) → bounded_formula (L_infty L) 1 :=
+def cocone_of_formula_L_infty {L : Language } (l : ℕ) : cocone (@henkin_formula_chain L l) :=
 begin
-  change colimit (@henkin_bounded_formula_chain L) → (@cocone_of_bounded_formula_L_infty L).vertex,
+  refine ⟨preformula (L_infty L) l,_,_⟩,
+  {intro i, fapply Lhom.on_formula, fapply henkin_language_canonical_map},
+  {intros i j H, dsimp[henkin_formula_chain],
+  rw[<-Lhom.comp_on_formula],
+  have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L i j H), swap, rw[this],
+  {have := (@cocone_of_L_infty L).h_compat, tidy}, exact l}
+end
+
+def cocone_of_bounded_term_L_infty {L : Language } (n l : ℕ) : cocone (@henkin_bounded_term_chain L n l) :=
+begin
+  refine ⟨bounded_preterm (L_infty L) n l,_,_⟩,
+  {intro i, fapply Lhom.on_bounded_term, fapply henkin_language_canonical_map},
+  {intros i j H, dsimp[henkin_bounded_term_chain],
+  rw[<-Lhom.comp_on_bounded_term],
+  have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L i j H), swap, rw[this],
+  {have := (@cocone_of_L_infty L).h_compat, tidy}}
+end
+
+def cocone_of_bounded_formula_L_infty {L : Language } (n l : ℕ) : cocone (@henkin_bounded_formula_chain L n l) :=
+begin
+  refine ⟨bounded_preformula (L_infty L) n l,_,_⟩,
+  {intro i, fapply Lhom.on_bounded_formula, fapply henkin_language_canonical_map},
+  {intros i j H, dsimp[henkin_bounded_formula_chain],
+  rw[<-Lhom.comp_on_bounded_formula],
+  have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L i j H), swap, rw[this],
+  {have := (@cocone_of_L_infty L).h_compat, tidy}}
+end
+
+/- bounded_formula (L_infty L) 1 is naturally a cocone over the diagram of bounded_formulas -/
+def cocone_of_bounded_formula'_L_infty {L : Language} : cocone (@henkin_bounded_formula_chain' L) :=
+begin
+  refine ⟨bounded_formula (L_infty L) 1,_,_⟩,
+  {intro i, fapply Lhom.on_bounded_formula, fapply henkin_language_canonical_map},
+  {intros i j H, dsimp[henkin_bounded_formula_chain', henkin_bounded_formula_chain],
+  rw[<-Lhom.comp_on_bounded_formula],
+  have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L i j H), swap, rw[this],
+  {have := (@cocone_of_L_infty L).h_compat, tidy}}
+end
+
+def term_comparison {L : Language} {l} : colimit (@henkin_term_chain L l) → preterm (L_infty L) l :=
+begin
+  change colimit (@henkin_term_chain L l)  → (@cocone_of_term_L_infty L l).vertex,
   apply colimit.universal_map
 end
+
+def formula_comparison {L : Language} {l} : colimit (@henkin_formula_chain L l) → preformula (L_infty L) l :=
+begin
+  change colimit (@henkin_formula_chain L l)  → (@cocone_of_formula_L_infty L l).vertex,
+  apply colimit.universal_map
+end
+
+def bounded_term_comparison {L : Language} {n l} : colimit (@henkin_bounded_term_chain L n l) → bounded_preterm (L_infty L) n l :=
+begin
+  change colimit (@henkin_bounded_term_chain L n l)  → (@cocone_of_bounded_term_L_infty L n l).vertex,
+  apply colimit.universal_map
+end
+
+def bounded_formula_comparison {L : Language} {n l} : colimit (@henkin_bounded_formula_chain L n l) → bounded_preformula (L_infty L) n l :=
+begin
+  change colimit (@henkin_bounded_formula_chain L n l)  → (@cocone_of_bounded_formula_L_infty L n l).vertex,
+  apply colimit.universal_map
+end
+
+def bounded_formula'_comparison {L : Language} : colimit (@henkin_bounded_formula_chain' L) → bounded_formula (L_infty L) 1 := @bounded_formula_comparison L 1 0
 
 -- to proceed, need to show that bounded_formula_comparison, as we've defined it,
 -- commutes with operations on bounded formulas -- so we need to generalize from
 -- bounded_formula 1 to bounded_formula n, and prove colimit statements for terms, etc
 -- to complete the structural recursion
 
-lemma bounded_formula_comparison_bijective {L : Language} : function.bijective (@bounded_formula_comparison L) :=
+lemma bounded_formula'_comparison_bijective {L : Language} : function.bijective (@bounded_formula'_comparison L) :=
 begin
   refine ⟨_,_⟩,
-  {unfold bounded_formula_comparison id, fapply universal_map_inj_of_components_inj,
-  change ∀ i : ℕ, function.injective (cocone_of_bounded_formula_L_infty.map i),
-  dsimp[cocone_of_bounded_formula_L_infty],  intro m,
+  {unfold bounded_formula'_comparison id, fapply universal_map_inj_of_components_inj,
+  change ∀ i : ℕ, function.injective (cocone_of_bounded_formula'_L_infty.map i),
+  dsimp[cocone_of_bounded_formula'_L_infty],  intro m,
   fapply Lhom.on_bounded_formula_inj (@henkin_language_canonical_map_inj L m)},
   
   {unfold function.surjective bounded_formula, intro f, dsimp[bounded_formula] at f,
-   change ∃ (a : henkin_bounded_formula_chain), bounded_formula_comparison a = f,
-   cases f, repeat{sorry}} -- looks like to prove surjectivity, we need to use choice to define an inverse, so maybe this should be the other way around
+   change ∃ (a : colimit henkin_bounded_formula_chain'), bounded_formula'_comparison a = f,
+   repeat{sorry}} -- looks like to prove surjectivity, we need to use choice to define an inverse, so maybe this should be the other way around
    -- why does Lean complain induction isn't type-correct here? hmm...
 end
 
-noncomputable def equiv_bounded_formula_comparison {L : Language} : equiv (colimit (@henkin_bounded_formula_chain L)) (bounded_formula (L_infty L) 1) :=
-begin fapply equiv.of_bijective, exacts [bounded_formula_comparison, bounded_formula_comparison_bijective] end
+noncomputable def equiv_bounded_formula_comparison {L : Language} : equiv (colimit (@henkin_bounded_formula_chain' L)) (bounded_formula (L_infty L) 1) :=
+begin fapply equiv.of_bijective, exacts [bounded_formula_comparison, bounded_formula'_comparison_bijective] end
 
 /- Not really a chain, since we haven't set up interpretations of theories yet -/
 def henkin_theory_chain {L : Language} {T : Theory L}: Π(n : ℕ), (Theory (obj (@henkin_language_chain L) n))
@@ -419,7 +482,7 @@ begin
   {fapply Lhom.on_bounded_formula, exact @obj ℕ' (@henkin_language_chain L) (nat.succ i),
   exact henkin_language_canonical_map (i+1),
   dsimp[directed_type_of_nat] at i, have h_leq : i ≤ i + 1, by simp,
-  let f''' := henkin_bounded_formula_chain.mor h_leq f'',
+  let f''' := henkin_bounded_formula_chain'.mor h_leq f'',
   have := ∃'f''' ⇔ f'''[begin dsimp[henkin_language_chain_objects], fapply bd_const, exact wit f'' end /0], exact this}, 
   {sorry}, -- this is by definition of how we construct each T_n
   {sorry}, -- this follows from structural recursion on the comparison maps
