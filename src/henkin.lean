@@ -416,6 +416,7 @@ def bounded_formula'_comparison {L : Language} : colimit (@henkin_bounded_formul
 -- bounded_formula 1 to bounded_formula n, and prove colimit statements for terms, etc
 -- to complete the structural recursion
 
+/- The universal map from colimit preterm L_n → preterm L_infty is a bijection -/
 lemma term_comparison_bijective {L : Language} (l) : function.bijective (@term_comparison L l) :=
 begin
   refine ⟨_,_⟩,
@@ -429,25 +430,24 @@ begin
      fapply canonical_map i, fapply func, exact x, rw[<-Hx], refl},
     {rcases f_ih_t with ⟨t, Ht⟩, rcases f_ih_s with ⟨s,Hs⟩, have Wt := germ_rep t,
     have Ws := germ_rep s, rcases Wt with ⟨⟨i,x_t⟩, Hxt⟩, rcases Ws with ⟨⟨j, x_s⟩, Hxs⟩,
-    have x_t' : (henkin_term_chain (f_l + 1)).obj (i+j),
+    let x_t' : (henkin_term_chain (f_l + 1)).obj (i+j),
       fapply (henkin_term_chain (f_l + 1)).mor, exact i,
       simp only [ℕ', directed_type.rel, id.def, zero_le, le_add_iff_nonneg_right],
       exact x_t,
-    have x_s' : (henkin_term_chain 0).obj (i+j),
+    let x_s' : (henkin_term_chain 0).obj (i+j),
       fapply (henkin_term_chain 0).mor, exact j,
       simp only [ℕ', directed_type.rel, zero_le, le_add_iff_nonneg_left],
       exact x_s,
     have Hxt' : ⟦(⟨i+j,x_t'⟩ : coproduct_of_directed_diagram $ henkin_term_chain (f_l + 1))⟧ = t,
       {rw[<-Hxt], simp[(≈), germ_relation], refine ⟨(i+j),x_t',⟨by simp,_⟩,_⟩,
        dsimp[henkin_term_chain, henkin_language_chain_maps], let k := i + j,
-       simp only [id_of_self_map], {sorry}, -- just need to prove lemmas saying
-                                           -- on_blah (id) = id
-       fapply exists.intro, simp only [zero_le, le_add_iff_nonneg_right],
-       sorry -- need to use injectivity and h_compat
-       },
+       simp only [id_of_self_map], apply Lhom.id_term,
+       fapply exists.intro, simp only [zero_le, le_add_iff_nonneg_right]},
     have Hxs' : ⟦(⟨i+j,x_s'⟩ : coproduct_of_directed_diagram $ henkin_term_chain 0)⟧ = s,
-      {sorry}, -- need to use injectivity and h_compat; should probably make this into a
-               -- colimit_lemma involving injectivity
+    {{rw[<-Hxs], simp[(≈), germ_relation], refine ⟨(i+j),x_s',⟨by simp,_⟩,_⟩,
+       dsimp[henkin_term_chain, henkin_language_chain_maps], let k := i + j,
+       simp only [id_of_self_map], apply Lhom.id_term,
+       fapply exists.intro, simp only [zero_le, le_add_iff_nonneg_left]},},   
     fapply exists.intro, fapply canonical_map, change ℕ, exact (i + j),
     fapply app, exact x_t', exact x_s', rw[<-Ht, <-Hs, <-Hxt', <-Hxs'], refl},}
 end

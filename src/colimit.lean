@@ -111,7 +111,7 @@ structure cocone {D} (F : directed_diagram D) :=
   (h_compat : ∀{i}, ∀{j}, Π h : D.rel i j, (map i) = (map j) ∘ (F.mor h))
 
 def cocone_of_colimit {D} (F : directed_diagram D) : cocone F :=
-begin
+  begin
   refine ⟨colimit F, canonical_map, _⟩, intros i j H, fapply funext, intro x,
   simp only [quotient.eq,(≈),canonical_map,function.comp], have h_refl : D.rel j j,
   by apply D.h_reflexive, refine ⟨j,F.mor H x, H, h_refl, rfl, _⟩,
@@ -150,6 +150,30 @@ end
 /- Given a germ-equivalence class from the colimit, return a representative from the coproduct and a proof that this is a lift  -/
 noncomputable def germ_rep {D} {F : directed_diagram D} (a : colimit F) : Σ' x : (coproduct_of_directed_diagram F), ⟦x⟧ = a := psigma_of_exists (quotient.exists_rep a)
 
+@[simp]lemma canonical_map_quotient {D} {F : directed_diagram D} (a : coproduct_of_directed_diagram F) : canonical_map a.fst a.snd = ⟦a⟧ :=
+by tidy
+
+/- Assuming canonical maps into the colimit are injective, ⟨i,x⟩ and ⟨j,y⟩ in the same fiber
+over a ⟦z⟧ : colimit F are related by any transition map i → j. -/
+lemma eq_mor_of_same_fiber {D} {F : directed_diagram D} (a b : coproduct_of_directed_diagram F) {z : colimit F} (Ha : ⟦a⟧ = z) (Hb : ⟦b⟧ = z)
+                           (H_inj : ∀ i : D.carrier, function.injective (@canonical_map D F i)) (H_rel : D.rel a.fst b.fst) : F.mor H_rel a.snd = b.snd :=
+begin
+have H_eq : z = canonical_map (b.fst) (F.mor H_rel (a.snd)), by
+  {have := (cocone_of_colimit F).h_compat, have H := congr_fun (@this a.fst b.fst H_rel) a.snd,
+  dsimp[cocone_of_colimit] at H, rw[canonical_map_quotient, Ha] at H, exact H},
+have : canonical_map (b.fst) (b.snd) = canonical_map (b.fst) (F.mor H_rel (a.snd)),
+simp only [*, canonical_map_quotient b, colimit.canonical_map_quotient, function.injective.eq_iff, eq_self_iff_true],
+fapply H_inj b.fst, symmetry, assumption
+end
+
+lemma eq_mor_of_same_fiber' {D} {F : directed_diagram D} (a_fst b_fst : D.carrier) (a_snd : F.obj a_fst) (b_snd : F.obj b_fst) {z : colimit F} (Ha : ⟦(⟨a_fst, a_snd⟩ : coproduct_of_directed_diagram F)⟧ = z) (Hb : ⟦(⟨b_fst, b_snd⟩ : coproduct_of_directed_diagram F)⟧ = z) (H_inj : ∀ i : D.carrier, function.injective (@canonical_map D F i)) (H_rel : D.rel a_fst b_fst) : F.mor H_rel a_snd = b_snd :=
+begin
+  let a : coproduct_of_directed_diagram F := ⟨a_fst, a_snd⟩,
+  let b : coproduct_of_directed_diagram F := ⟨b_fst, b_snd⟩,
+  have : ⟦a⟧ = z, by assumption, have : ⟦b⟧ = z, by assumption,
+  change F.mor H_rel a.snd = b.snd, have := @eq_mor_of_same_fiber D F a b z _ _ _ _,
+  repeat{assumption},
+end
 
 end colimit
 

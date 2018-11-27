@@ -229,6 +229,12 @@ by {fapply funext, intro x, tidy, induction x, tidy, all_goals{rw[comp_on_term],
 @on_bounded_formula L1 L3 (g ∘ f) n l = function.comp (@on_bounded_formula L2 L3 g n l) (@on_bounded_formula L1 L2 f n l) :=
 by {fapply funext, intro x, tidy, induction x, tidy, all_goals{rw[comp_on_term], exact l}}
 
+lemma id_term {L} : Πl, Π f, (@on_term L L (Lhom.id L) l) f = f
+| _ &k          := by refl
+| _ (func f)    := by refl
+| _ (app t₁ t₂) := by simp[id_term (_x+1) t₁, id_term 0 t₂]
+
+
 @[simp] def on_closed_term (t : closed_term L) : closed_term L' := ϕ.on_bounded_term t
 @[simp] def on_sentence (f : sentence L) : sentence L' := ϕ.on_bounded_formula f
 
