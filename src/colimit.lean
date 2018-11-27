@@ -155,7 +155,7 @@ by tidy
 
 /- Assuming canonical maps into the colimit are injective, ⟨i,x⟩ and ⟨j,y⟩ in the same fiber
 over a ⟦z⟧ : colimit F are related by any transition map i → j. -/
-lemma eq_mor_of_same_fiber {D} {F : directed_diagram D} (a b : coproduct_of_directed_diagram F) {z : colimit F} (Ha : ⟦a⟧ = z) (Hb : ⟦b⟧ = z)
+@[simp]lemma eq_mor_of_same_fiber {D} {F : directed_diagram D} (a b : coproduct_of_directed_diagram F) {z : colimit F} (Ha : ⟦a⟧ = z) (Hb : ⟦b⟧ = z)
                            (H_inj : ∀ i : D.carrier, function.injective (@canonical_map D F i)) (H_rel : D.rel a.fst b.fst) : F.mor H_rel a.snd = b.snd :=
 begin
 have H_eq : z = canonical_map (b.fst) (F.mor H_rel (a.snd)), by
@@ -166,7 +166,7 @@ simp only [*, canonical_map_quotient b, colimit.canonical_map_quotient, function
 fapply H_inj b.fst, symmetry, assumption
 end
 
-lemma eq_mor_of_same_fiber' {D} {F : directed_diagram D} (a_fst b_fst : D.carrier) (a_snd : F.obj a_fst) (b_snd : F.obj b_fst) {z : colimit F} (Ha : ⟦(⟨a_fst, a_snd⟩ : coproduct_of_directed_diagram F)⟧ = z) (Hb : ⟦(⟨b_fst, b_snd⟩ : coproduct_of_directed_diagram F)⟧ = z) (H_inj : ∀ i : D.carrier, function.injective (@canonical_map D F i)) (H_rel : D.rel a_fst b_fst) : F.mor H_rel a_snd = b_snd :=
+@[simp]lemma eq_mor_of_same_fiber' {D} {F : directed_diagram D} (a_fst b_fst : D.carrier) (a_snd : F.obj a_fst) (b_snd : F.obj b_fst) {z : colimit F} (Ha : ⟦(⟨a_fst, a_snd⟩ : coproduct_of_directed_diagram F)⟧ = z) (Hb : ⟦(⟨b_fst, b_snd⟩ : coproduct_of_directed_diagram F)⟧ = z) (H_inj : ∀ i : D.carrier, function.injective (@canonical_map D F i)) (H_rel : D.rel a_fst b_fst) : F.mor H_rel a_snd = b_snd :=
 begin
   let a : coproduct_of_directed_diagram F := ⟨a_fst, a_snd⟩,
   let b : coproduct_of_directed_diagram F := ⟨b_fst, b_snd⟩,
@@ -175,5 +175,20 @@ begin
   repeat{assumption},
 end
 
+/- Given an x : F_i and a j : ℕ, apply the map to obtain x' : F_{i+j} -/
+@[reducible]def push_to_sum_r {F : directed_diagram ℕ'} {i} (x : F.obj i) (j) : F.obj (i+j) :=
+F.mor (by simp only [zero_le, le_add_iff_nonneg_right]) x
+
+@[reducible]def push_to_sum_l {F : directed_diagram ℕ'} {j} (x : F.obj j) (i) : F.obj (i+j) :=
+F.mor (by simp only [zero_le, le_add_iff_nonneg_right, add_comm]) x
+
+/- The push_to of x is in the same germ-equivalence class of x -/
+lemma same_fiber_as_push_to_r {F : directed_diagram ℕ'} {i} (x : F.obj i) (j) :
+     canonical_map i x = canonical_map (i+j) (push_to_sum_r x j)  :=
+by {have := (cocone_of_colimit F).h_compat, have := @this i (i+j) (by simp), tidy}
+
+lemma same_fiber_as_push_to_l {F : directed_diagram ℕ'} {j} (x : F.obj j) (i) :
+     canonical_map j x = canonical_map (i+j) (push_to_sum_l x i)  :=
+by {have := (cocone_of_colimit F).h_compat, have := @this i (i+j) (by simp), tidy}
 end colimit
 

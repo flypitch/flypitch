@@ -417,6 +417,7 @@ def bounded_formula'_comparison {L : Language} : colimit (@henkin_bounded_formul
 -- to complete the structural recursion
 
 /- The universal map from colimit preterm L_n → preterm L_infty is a bijection -/
+-- TODO(jesse) refactor with new colimit lemmas
 lemma term_comparison_bijective {L : Language} (l) : function.bijective (@term_comparison L l) :=
 begin
   refine ⟨_,_⟩,
@@ -450,6 +451,46 @@ begin
        fapply exists.intro, simp only [zero_le, le_add_iff_nonneg_left]},},   
     fapply exists.intro, fapply canonical_map, change ℕ, exact (i + j),
     fapply app, exact x_t', exact x_s', rw[<-Ht, <-Hs, <-Hxt', <-Hxs'], refl},}
+end
+
+/- At some point, I should write out explicitly the fact that all the comparison maps
+   structurally recurse -/
+lemma formula_comparison_bijective {L : Language} (l) : function.bijective (@formula_comparison L l) :=
+begin
+  refine ⟨_,_⟩,
+  {{unfold formula_comparison id, fapply universal_map_inj_of_components_inj,
+  change ∀ i : ℕ, function.injective ((cocone_of_formula_L_infty l).map i),
+  dsimp[cocone_of_formula_L_infty],  intro m,
+  fapply Lhom.on_formula_inj (@henkin_language_canonical_map_inj L m)},},
+  {intro f, induction f,
+  {refine ⟨(by {fapply canonical_map, by {change ℕ, exact 0}, exact falsum}), by split⟩},
+  {
+    rcases (term_comparison_bijective 0).right f_t₁ with ⟨t₁, H₁⟩, rcases (term_comparison_bijective 0).right f_t₂ with ⟨t₂, H₂⟩,
+    rcases germ_rep t₁ with ⟨⟨i,x⟩,Hx⟩, rcases germ_rep t₂ with ⟨⟨j,y⟩,Hy⟩,
+    fapply exists.intro, fapply canonical_map, exact i+j, fapply equal,
+    exact push_to_sum_r x j, exact push_to_sum_l y i,
+    rw[<-H₁, <-H₂,<-Hx, <-Hy, <-canonical_map_quotient, same_fiber_as_push_to_r x j ,<-canonical_map_quotient, same_fiber_as_push_to_l y i],
+    simpa only},
+  {have x := germ_rep f_R, rcases x with ⟨⟨i,x⟩,H⟩, fapply exists.intro, have R' := rel x,
+   exact ⟦⟨i,R'⟩⟧, tidy},
+  {rcases (psigma_of_exists f_ih) with ⟨t₁, H₁⟩,
+   rcases (term_comparison_bijective 0).right f_t with ⟨t₂, H₂⟩,
+   rcases germ_rep t₁ with ⟨⟨i,x⟩,Hx⟩, rcases germ_rep t₂ with ⟨⟨j,y⟩,Hy⟩,
+   fapply exists.intro, fapply canonical_map, exact i+j, fapply apprel,
+   exact push_to_sum_r x j, exact push_to_sum_l y i,
+    rw[<-H₁, <-H₂,<-Hx, <-Hy, <-canonical_map_quotient, same_fiber_as_push_to_r x j ,<-canonical_map_quotient, same_fiber_as_push_to_l y i],
+    simpa only},
+  {rcases (psigma_of_exists f_ih_f₁) with ⟨t₁, H₁⟩,
+    rcases (psigma_of_exists f_ih_f₂) with ⟨t₂, H₂⟩,
+   rcases germ_rep t₁ with ⟨⟨i,x⟩,Hx⟩, rcases germ_rep t₂ with ⟨⟨j,y⟩,Hy⟩,
+   fapply exists.intro, fapply canonical_map, exact (i+j), fapply imp,
+   exact push_to_sum_r x j, exact push_to_sum_l y i,
+    rw[<-H₁, <-H₂,<-Hx, <-Hy, <-canonical_map_quotient, same_fiber_as_push_to_r x j ,<-canonical_map_quotient, same_fiber_as_push_to_l y i],
+    simpa only},
+  {rcases (psigma_of_exists f_ih) with ⟨t₁, H₁⟩,
+   rcases germ_rep t₁ with ⟨⟨i,x⟩,Hx⟩,
+   fapply exists.intro, fapply canonical_map, exact i, fapply all,
+   exact x, rw[<-H₁, <-Hx], simpa only}}
 end
 
 lemma bounded_formula'_comparison_bijective {L : Language} : function.bijective (@bounded_formula'_comparison L) :=
