@@ -165,8 +165,6 @@ begin
   exact ∃'f' ⇔ f'[c /0],
 end
 
-local notation `ℕ'` :=  directed_type_of_nat
-
 def henkin_language_chain_objects {L : Language} : ℕ → Language
   | 0 := L
   | (n+1) := henkin_language_step (henkin_language_chain_objects n)
@@ -250,6 +248,10 @@ begin
     }
 }
 end
+
+@[simp]lemma id_of_self_map (L : Language) : ∀ k, (henkin_language_chain_maps L k k (le_refl k)) = Lhom.id ((@henkin_language_chain L).obj k)
+| 0 := by refl
+| (n+1) := by {dsimp[henkin_language_chain_maps], simp*, refl}
 
 def L_infty (L) : Language :=
    colimit_language $ @henkin_language_chain L
@@ -383,25 +385,25 @@ begin
   {have := (@cocone_of_L_infty L).h_compat, tidy}}
 end
 
-def term_comparison {L : Language} {l} : colimit (@henkin_term_chain L l) → preterm (L_infty L) l :=
+def term_comparison {L : Language} (l) : colimit (@henkin_term_chain L l) → preterm (L_infty L) l :=
 begin
   change colimit (@henkin_term_chain L l)  → (@cocone_of_term_L_infty L l).vertex,
   apply colimit.universal_map
 end
 
-def formula_comparison {L : Language} {l} : colimit (@henkin_formula_chain L l) → preformula (L_infty L) l :=
+def formula_comparison {L : Language} (l) : colimit (@henkin_formula_chain L l) → preformula (L_infty L) l :=
 begin
   change colimit (@henkin_formula_chain L l)  → (@cocone_of_formula_L_infty L l).vertex,
   apply colimit.universal_map
 end
 
-def bounded_term_comparison {L : Language} {n l} : colimit (@henkin_bounded_term_chain L n l) → bounded_preterm (L_infty L) n l :=
+def bounded_term_comparison {L : Language} (n l) : colimit (@henkin_bounded_term_chain L n l) → bounded_preterm (L_infty L) n l :=
 begin
   change colimit (@henkin_bounded_term_chain L n l)  → (@cocone_of_bounded_term_L_infty L n l).vertex,
   apply colimit.universal_map
 end
 
-def bounded_formula_comparison {L : Language} {n l} : colimit (@henkin_bounded_formula_chain L n l) → bounded_preformula (L_infty L) n l :=
+def bounded_formula_comparison {L : Language} (n l) : colimit (@henkin_bounded_formula_chain L n l) → bounded_preformula (L_infty L) n l :=
 begin
   change colimit (@henkin_bounded_formula_chain L n l)  → (@cocone_of_bounded_formula_L_infty L n l).vertex,
   apply colimit.universal_map
@@ -413,6 +415,42 @@ def bounded_formula'_comparison {L : Language} : colimit (@henkin_bounded_formul
 -- commutes with operations on bounded formulas -- so we need to generalize from
 -- bounded_formula 1 to bounded_formula n, and prove colimit statements for terms, etc
 -- to complete the structural recursion
+
+lemma term_comparison_bijective {L : Language} (l) : function.bijective (@term_comparison L l) :=
+begin
+  refine ⟨_,_⟩,
+  {{unfold term_comparison id, fapply universal_map_inj_of_components_inj,
+  change ∀ i : ℕ, function.injective ((cocone_of_term_L_infty l).map i),
+  dsimp[cocone_of_term_L_infty],  intro m,
+  fapply Lhom.on_term_inj (@henkin_language_canonical_map_inj L m)},},
+  {intro f, induction f,
+    {refine ⟨(by {fapply canonical_map, by {change ℕ, exact 0}, exact var f}), by split⟩},
+    {have W := germ_rep f_f, rcases W with ⟨⟨i,x⟩, Hx⟩, fapply exists.intro, 
+     fapply canonical_map i, fapply func, exact x, rw[<-Hx], refl},
+    {rcases f_ih_t with ⟨t, Ht⟩, rcases f_ih_s with ⟨s,Hs⟩, have Wt := germ_rep t,
+    have Ws := germ_rep s, rcases Wt with ⟨⟨i,x_t⟩, Hxt⟩, rcases Ws with ⟨⟨j, x_s⟩, Hxs⟩,
+    have x_t' : (henkin_term_chain (f_l + 1)).obj (i+j),
+      fapply (henkin_term_chain (f_l + 1)).mor, exact i,
+      simp only [ℕ', directed_type.rel, id.def, zero_le, le_add_iff_nonneg_right],
+      exact x_t,
+    have x_s' : (henkin_term_chain 0).obj (i+j),
+      fapply (henkin_term_chain 0).mor, exact j,
+      simp only [ℕ', directed_type.rel, zero_le, le_add_iff_nonneg_left],
+      exact x_s,
+    have Hxt' : ⟦(⟨i+j,x_t'⟩ : coproduct_of_directed_diagram $ henkin_term_chain (f_l + 1))⟧ = t,
+      {rw[<-Hxt], simp[(≈), germ_relation], refine ⟨(i+j),x_t',⟨by simp,_⟩,_⟩,
+       dsimp[henkin_term_chain, henkin_language_chain_maps], let k := i + j,
+       simp only [id_of_self_map], {sorry}, -- just need to prove lemmas saying
+                                           -- on_blah (id) = id
+       fapply exists.intro, simp only [zero_le, le_add_iff_nonneg_right],
+       sorry -- need to use injectivity and h_compat
+       },
+    have Hxs' : ⟦(⟨i+j,x_s'⟩ : coproduct_of_directed_diagram $ henkin_term_chain 0)⟧ = s,
+      {sorry}, -- need to use injectivity and h_compat; should probably make this into a
+               -- colimit_lemma involving injectivity
+    fapply exists.intro, fapply canonical_map, change ℕ, exact (i + j),
+    fapply app, exact x_t', exact x_s', rw[<-Ht, <-Hs, <-Hxt', <-Hxs'], refl},}
+end
 
 lemma bounded_formula'_comparison_bijective {L : Language} : function.bijective (@bounded_formula'_comparison L) :=
 begin
@@ -429,7 +467,7 @@ begin
 end
 
 noncomputable def equiv_bounded_formula_comparison {L : Language} : equiv (colimit (@henkin_bounded_formula_chain' L)) (bounded_formula (L_infty L) 1) :=
-begin fapply equiv.of_bijective, exacts [bounded_formula_comparison, bounded_formula'_comparison_bijective] end
+begin fapply equiv.of_bijective, exacts [bounded_formula'_comparison, bounded_formula'_comparison_bijective] end
 
 /- Not really a chain, since we haven't set up interpretations of theories yet -/
 def henkin_theory_chain {L : Language} {T : Theory L}: Π(n : ℕ), (Theory (obj (@henkin_language_chain L) n))

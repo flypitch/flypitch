@@ -27,13 +27,19 @@ structure directed_diagram (D : (directed_type : Type (u+1))) : Type (max (u+1) 
   (h_mor : ∀{x} {y} {z} {f1 : D.rel x y} {f2 : D.rel y z} {f3 : D.rel x z},
            (mor f3) = (mor f2) ∘ (mor f1)) -- functoriality
 
-def directed_type_of_nat : directed_type :=
+@[reducible]def directed_type_of_nat : directed_type :=
   begin refine ⟨ℕ, (≤), _, _, _⟩, intro, refl,
   fapply le_trans, intros, fapply exists.intro, exact x + y,
   simp only [*, zero_le, le_add_iff_nonneg_right, and_self, le_add_iff_nonneg_left]
   end
 
-@[simp]lemma jesse : directed_type_of_nat.carrier = ℕ := by refl
+notation `ℕ'` :=  directed_type_of_nat
+
+@[simp, elab_as_eliminator]lemma ℕ_of_ℕ'.carrier : (ℕ').carrier = ℕ := by refl
+@[simp, elab_as_eliminator]lemma le_of_ℕ'.rel : (ℕ').rel = nat.le := by refl
+
+-- @[reducible]def has_le_ℕ' : has_le (ℕ').carrier := begin split, rw[ℕ_of_ℕ'.carrier], exact λ x y, x ≤ y end
+-- attribute [instance] has_le_ℕ'
 
 def constant_functor (D : directed_type) (A : Type v) : directed_diagram D :=
   ⟨(λ x, A), λ x y h, id, by simp⟩
@@ -81,7 +87,7 @@ begin
 end
 
 @[reducible]def coproduct_setoid {D : directed_type} (F : directed_diagram D) : setoid $ coproduct_of_directed_diagram F := ⟨germ_relation F, germ_equivalence F⟩
-local attribute [instance] coproduct_setoid
+attribute [instance] coproduct_setoid
 
 def colimit {D : (directed_type : Type (u+1)) } (F : (directed_diagram D :  Type (max (u+1) (v+1)))) : Type (max u v) :=
   @quotient (coproduct_of_directed_diagram F) (by fapply coproduct_setoid)
@@ -135,11 +141,15 @@ end
 
 lemma universal_map_inj_of_components_inj {D} {F : directed_diagram D} {V : cocone F} (h_inj : ∀ i : D.carrier, function.injective (V.map i)) : function.injective (universal_map : colimit F → (V.vertex)) :=
 begin
-unfold universal_map, rintros ⟨i,x⟩ ⟨j,y⟩ H, dsimp[colimit] at *, change (⟦⟨i,x⟩⟧ : colimit F) = (⟦⟨j,y⟩⟧ : colimit F),
+unfold universal_map, rintros ⟨i,x⟩ ⟨j,y⟩ H, unfold quotient.lift at H, dsimp[colimit] at *, change (⟦⟨i,x⟩⟧ : colimit F) = (⟦⟨j,y⟩⟧ : colimit F),
 simp[quotient.eq, (≈)], have := (D.h_directed i j), rcases this with ⟨k, Hik, Hjk⟩,
-refine ⟨k, F.mor Hik x, Hik, Hjk, rfl, _⟩, fapply h_inj k, unfold quotient.lift at H,
+refine ⟨k, F.mor Hik x, Hik, Hjk, rfl, _⟩, fapply h_inj k,
 simp only [*, V.h_compat Hik, V.h_compat Hjk, function.injective.eq_iff, eq_self_iff_true, function.comp_app] at *
 end
+
+/- Given a germ-equivalence class from the colimit, return a representative from the coproduct and a proof that this is a lift  -/
+noncomputable def germ_rep {D} {F : directed_diagram D} (a : colimit F) : Σ' x : (coproduct_of_directed_diagram F), ⟦x⟧ = a := psigma_of_exists (quotient.exists_rep a)
+
 
 end colimit
 
