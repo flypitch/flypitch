@@ -15,43 +15,43 @@ protected def sum (L L' : Language) : Language :=
 def symbols (L : Language) := (Σl, L.functions l) ⊕ (Σl, L.relations l)
 end Language
 
-section
-variable {L : Language}
+-- section
+-- variable {L : Language}
 
 
-def symbols_in_term : ∀{l}, preterm L l → set L.symbols
-| _ &k          := ∅
-| l (func f)    := {sum.inl ⟨l,f⟩}
-| _ (app t₁ t₂) := symbols_in_term t₁ ∪ symbols_in_term t₂
+-- def symbols_in_term : ∀{l}, preterm L l → set L.symbols
+-- | _ &k          := ∅
+-- | l (func f)    := {sum.inl ⟨l,f⟩}
+-- | _ (app t₁ t₂) := symbols_in_term t₁ ∪ symbols_in_term t₂
 
-def symbols_in_formula : ∀{l}, preformula L l → set L.symbols
-| _ falsum       := ∅
-| _ (t₁ ≃ t₂)    := symbols_in_term t₁ ∪ symbols_in_term t₂
-| l (rel R)      := {sum.inr ⟨l, R⟩}
-| _ (apprel f t) := symbols_in_formula f ∪ symbols_in_term t
-| _ (f₁ ⟹ f₂)   := symbols_in_formula f₁ ∪ symbols_in_formula f₂
-| _ (∀' f)       := symbols_in_formula f
+-- def symbols_in_formula : ∀{l}, preformula L l → set L.symbols
+-- | _ falsum       := ∅
+-- | _ (t₁ ≃ t₂)    := symbols_in_term t₁ ∪ symbols_in_term t₂
+-- | l (rel R)      := {sum.inr ⟨l, R⟩}
+-- | _ (apprel f t) := symbols_in_formula f ∪ symbols_in_term t
+-- | _ (f₁ ⟹ f₂)   := symbols_in_formula f₁ ∪ symbols_in_formula f₂
+-- | _ (∀' f)       := symbols_in_formula f
 
-def symbols_in_prf : ∀{Γ : set $ formula L} {f : formula L} (P : Γ ⊢ f), set L.symbols
-| Γ f (axm h)              := symbols_in_formula f
-| Γ (f₁ ⟹ f₂) (impI P)    := symbols_in_prf P ∪ symbols_in_formula f₁
-| Γ f₂ (impE f₁ P₁ P₂)     := symbols_in_prf P₁ ∪ symbols_in_prf P₂
-| Γ f (falsumE P)          := symbols_in_prf P ∪ symbols_in_formula f
-| Γ (∀' f) (allI P)        := symbols_in_prf P
-| Γ _ (allE₂ f t P)        := symbols_in_prf P ∪ symbols_in_term t
-| Γ (_ ≃ t) (ref _ _)     := symbols_in_term t
-| Γ _ (subst₂ s t f P₁ P₂) := symbols_in_prf P₁ ∪ symbols_in_prf P₂
+-- def symbols_in_prf : ∀{Γ : set $ formula L} {f : formula L} (P : Γ ⊢ f), set L.symbols
+-- | Γ f (axm h)              := symbols_in_formula f
+-- | Γ (f₁ ⟹ f₂) (impI P)    := symbols_in_prf P ∪ symbols_in_formula f₁
+-- | Γ f₂ (impE f₁ P₁ P₂)     := symbols_in_prf P₁ ∪ symbols_in_prf P₂
+-- | Γ f (falsumE P)          := symbols_in_prf P ∪ symbols_in_formula f
+-- | Γ (∀' f) (allI P)        := symbols_in_prf P
+-- | Γ _ (allE₂ f t P)        := symbols_in_prf P ∪ symbols_in_term t
+-- | Γ (_ ≃ t) (ref _ _)     := symbols_in_term t
+-- | Γ _ (subst₂ s t f P₁ P₂) := symbols_in_prf P₁ ∪ symbols_in_prf P₂
 
-def interpolation : ∀{Γ : set $ formula L} {f : formula L} (P : Γ ⊢ f), 
-  Σ' (f' : formula L) (P₁ : Γ ⊢ f') (P₂ : {f'} ⊢ f), 
-    symbols_in_prf P₁ ⊆ ⋃₀ (symbols_in_formula '' Γ) ∧ 
-    symbols_in_prf P₂ ⊆ symbols_in_formula f ∧ 
-    symbols_in_formula f' ⊆ ⋃₀ (symbols_in_formula '' Γ) ∩ symbols_in_formula f := 
-sorry -- probably the last property follows automatically
+-- def interpolation : ∀{Γ : set $ formula L} {f : formula L} (P : Γ ⊢ f), 
+--   Σ' (f' : formula L) (P₁ : Γ ⊢ f') (P₂ : {f'} ⊢ f), 
+--     symbols_in_prf P₁ ⊆ ⋃₀ (symbols_in_formula '' Γ) ∧ 
+--     symbols_in_prf P₂ ⊆ symbols_in_formula f ∧ 
+--     symbols_in_formula f' ⊆ ⋃₀ (symbols_in_formula '' Γ) ∩ symbols_in_formula f := 
+-- sorry -- probably the last property follows automatically
   
 
 
-end
+-- end
 
 structure Lhom (L L' : Language) :=
 (on_function : ∀{n}, L.functions n → L'.functions n) 
