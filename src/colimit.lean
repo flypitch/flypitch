@@ -132,6 +132,8 @@ begin
   }
 end
 
+@[simp]lemma universal_map_property {D} {F : directed_diagram D} {V : cocone F} (i : D.carrier) (x) : universal_map ((canonical_map i) x) = (V.map i) x := by refl
+
 /- this generalizes canonical_map_inj_of_transition_maps_inj, because every colimit
    is a cocone over its own diagram
 

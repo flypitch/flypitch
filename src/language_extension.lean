@@ -239,6 +239,14 @@ lemma id_bounded_term {L} (n) : Πl, Π f, (@on_bounded_term L L (Lhom.id L) n l
 | _ (bd_func k) := by refl
 | l (bd_app t₁ t₂) := by simp[id_bounded_term (l+1) t₁, id_bounded_term 0 t₂]
 
+lemma id_bounded_formula {L} : Π n l, Π f, (@on_bounded_formula L L (Lhom.id L) n l) f = f
+| _ _   bd_falsum        := by refl
+| _ _ (t₁ ≃ t₂)         := by simp[id_bounded_term]
+| _ _ (bd_rel R)       := by refl
+| _ l (bd_apprel f t)  := by {dsimp, rw[id_bounded_formula _ _ f, id_bounded_term _ _ t]}
+| _ _ (f₁ ⟹ f₂)    := by {dsimp, rw[id_bounded_formula _ _ f₁, id_bounded_formula _ _ f₂]}
+| _ _ (∀' f)        := by {dsimp, rw[id_bounded_formula _ _ f]}
+
 @[simp] def on_closed_term (t : closed_term L) : closed_term L' := ϕ.on_bounded_term t
 @[simp] def on_sentence (f : sentence L) : sentence L' := ϕ.on_bounded_formula f
 

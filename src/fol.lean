@@ -1531,6 +1531,9 @@ export bounded_preformula
 @[reducible] def sentence                := presentence L 0
 variable {L}
 
+instance nonempty_bounded_formula (n : ℕ) : nonempty $ bounded_formula L n :=
+  nonempty.intro (by constructor)
+
 -- @[reducible, simp] def bd_falsum' {n} : bounded_formula L n := bd_falsum
 -- @[reducible, simp] def bd_equal' {n} (t₁ t₂ : bounded_term L n) : bounded_formula L n := 
 -- bd_equal t₁ t₂ 
@@ -2067,6 +2070,11 @@ end
 def has_enough_constants (T : Theory L) :=
 ∃(C : Π(f : bounded_formula L 1), L.constants), 
 ∀(f : bounded_formula L 1), T ⊢' ∃' f ⟹ f[bd_const (C f)/0]
+
+lemma has_enough_constants.intro {L : Language} (T : Theory L) 
+  (H : ∀(f : bounded_formula L 1), ∃ c : L.constants, T ⊢' ∃' f ⟹ f[bd_const c/0]) : 
+  has_enough_constants T :=
+classical.axiom_of_choice H
 
 def find_counterexample_of_henkin {T : Theory L} (H₁ : is_complete T) (H₂ : has_enough_constants T) 
   (f : bounded_formula L 1) (H₃ : ¬ T ⊢' ∀' f) : ∃(t : closed_term L), T ⊢' ∼ f[t/0] :=
