@@ -24,7 +24,7 @@ def quantifier_count_preformula {L : Language} : Π n, preformula L n → ℕ
 | 0 f := f
 | (n+1) f := ∀' alls n f
 
-@[simp] def bd_alls {L : Language}  : Π n : ℕ, bounded_formula L n → bounded_formula L 0
+@[simp] def bd_alls {L : Language}  : Π n : ℕ, bounded_formula L n → sentence L
 | 0     f := f
 | (n+1) f := bd_alls n (∀' f)
 
@@ -80,26 +80,27 @@ end
 /- END LEMMAS -/
 
 /- The language of PA -/
-inductive L_peano_funct : ℕ → Type -- thanks Floris!
-| zero : L_peano_funct 0
-| succ : L_peano_funct 1
-| plus : L_peano_funct 2
-| mult : L_peano_funct 2
+inductive peano_functions : ℕ → Type -- thanks Floris!
+| zero : peano_functions 0
+| succ : peano_functions 1
+| plus : peano_functions 2
+| mult : peano_functions 2
 
 --notation t ` ↑' `:90 n ` # `:90 m:90 := _root_.fol.lift_term_at t n m -- input ↑ with \u or \upa
 
-def L_peano : Language := ⟨L_peano_funct, λ n, empty⟩
+def L_peano : Language := ⟨peano_functions, λ n, empty⟩
 
-def L_peano_zero : L_peano.functions 0 := L_peano_funct.zero
-def L_peano_succ : L_peano.functions 1 := L_peano_funct.succ
-def L_peano_plus : L_peano.functions 2 := L_peano_funct.plus
-def L_peano_mult : L_peano.functions 2 := L_peano_funct.mult
+def L_peano_plus {n} (t₁ t₂ : bounded_term L_peano n) : bounded_term L_peano n := 
+@bounded_term_of_function L_peano 2 n peano_functions.plus t₁ t₂
+def L_peano_mult {n} (t₁ t₂ : bounded_term L_peano n) : bounded_term L_peano n := 
+@bounded_term_of_function L_peano 2 n peano_functions.mult t₁ t₂
 
-local infix ` +' `:100 := bounded_term_of_function L_peano_plus
-local infix ` ×' `:150 := bounded_term_of_function L_peano_mult
+local infix ` +' `:100 := L_peano_plus
+local infix ` ×' `:150 := L_peano_mult
 
-def succ {n} : bounded_term L_peano n → bounded_term L_peano  n := bounded_term_of_function L_peano_succ
-def zero {n} : bounded_term L_peano n := bd_const L_peano_zero
+def succ {n} : bounded_term L_peano n → bounded_term L_peano n := 
+@bounded_term_of_function L_peano 1 n peano_functions.succ
+def zero {n} : bounded_term L_peano n := bd_const peano_functions.zero
 def one {n} : bounded_term L_peano n := succ zero
 
 /- for all x, zero not equal to succ x -/

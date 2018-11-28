@@ -513,17 +513,17 @@ notation `⊥` := fol.preformula.falsum -- input: \bot
 infix ` ≃ `:88 := fol.preformula.equal -- input \~- or \simeq
 infix ` ⟹ `:62 := fol.preformula.imp -- input \==>
 prefix `∀'`:110 := fol.preformula.all
-def not (f : formula L) : formula L := imp f ⊥
+def not   (f : formula L)     : formula L := imp f ⊥
 prefix `∼`:max := fol.not -- input \~, the ASCII character ~ has too low precedence
 notation `⊤` := ∼⊥ -- input: \top
-def and (f₁ f₂ : formula L) : formula L := ∼(f₁ ⟹ ∼f₂)
+def and   (f₁ f₂ : formula L) : formula L := ∼(f₁ ⟹ ∼f₂)
 infixr ` ⊓ ` := fol.and -- input: \sqcap
-def or (f₁ f₂ : formula L) : formula L := ∼f₁ ⟹ f₂
+def or    (f₁ f₂ : formula L) : formula L := ∼f₁ ⟹ f₂
 infixr ` ⊔ ` := fol.or -- input: \sqcup
 def biimp (f₁ f₂ : formula L) : formula L := (f₁ ⟹ f₂) ⊓ (f₂ ⟹ f₁)
 infix ` ⇔ `:61 := fol.biimp -- input \<=>
-def ex (f : formula L) : formula L := ∼ ∀' ∼f
-prefix `∃'`:110 := fol.ex
+def ex    (f : formula L)     : formula L := ∼ ∀' ∼f
+prefix `∃'`:110 := fol.ex -- input \ex
 
 @[simp] def apps_rel : ∀{l} (f : preformula L l) (ts : dvector (term L) l), formula L
 | 0     f []      := f
@@ -1240,9 +1240,9 @@ inductive bounded_preterm (n : ℕ) : ℕ → Type u
 | bd_app : ∀ {l : ℕ} (t : bounded_preterm (l + 1)) (s : bounded_preterm 0), bounded_preterm l
 export bounded_preterm
 
-def bounded_term    (n)   := bounded_preterm L n 0
-def closed_preterm  (l)   := bounded_preterm L 0 l
-def closed_term           := closed_preterm L 0
+def bounded_term   (n) := bounded_preterm L n 0
+def closed_preterm (l) := bounded_preterm L 0 l
+def closed_term        := closed_preterm L 0
 variable {L}
 
 prefix `&`:max := bd_var
@@ -1526,9 +1526,9 @@ inductive bounded_preformula : ℕ → ℕ → Type u
 
 export bounded_preformula
 
-@[reducible] def bounded_formula    (n : ℕ)   := bounded_preformula L n 0
-@[reducible] def presentence        (l : ℕ)   := bounded_preformula L 0 l
-@[reducible] def sentence                     := presentence L 0
+@[reducible] def bounded_formula (n : ℕ) := bounded_preformula L n 0
+@[reducible] def presentence     (l : ℕ) := bounded_preformula L 0 l
+@[reducible] def sentence                := presentence L 0
 variable {L}
 
 -- @[reducible, simp] def bd_falsum' {n} : bounded_formula L n := bd_falsum
@@ -1641,7 +1641,7 @@ lift_bounded_formula_irrel f 1 $ le_refl 0
 | _ _ v (t₁ ≃ t₂)       xs := realize_bounded_term v t₁ xs = realize_bounded_term v t₂ xs
 | _ _ v (bd_rel R)      xs := S.rel_map R xs
 | _ _ v (bd_apprel f t) xs := realize_bounded_formula v f $ realize_bounded_term v t ([])::xs
-| _ _ v (f₁ ⟹ f₂)      xs := realize_bounded_formula v f₁ xs →  realize_bounded_formula v f₂ xs
+| _ _ v (f₁ ⟹ f₂)      xs := realize_bounded_formula v f₁ xs → realize_bounded_formula v f₂ xs
 | _ _ v (∀' f)          xs := ∀(x : S), realize_bounded_formula (x::v) f xs
 
 @[reducible] def realize_sentence (S : Structure L) (f : sentence L) : Prop :=
