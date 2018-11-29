@@ -14,6 +14,7 @@ open classical zorn
 lemma dne {p : Prop} : (¬ ¬ p) ↔ p  :=
 by {split, exact classical.by_contradiction, intros h₁ h₂, exact h₂ h₁ }
 
+/-- Given a theory T and a sentence ψ, either T ∪ {ψ} or T ∪ {∼ ψ} is consistent.--/
 lemma can_extend {L : Language} (T : Theory L) (ψ : sentence L) (h : is_consistent T) : 
   is_consistent (T ∪ {ψ}) ∨ is_consistent (T ∪ {∼ ψ}) :=
 begin

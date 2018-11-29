@@ -69,7 +69,6 @@ lemma theory_proof_compactness_iff {L : Language} {T : Theory L} {ψ : sentence 
   T ⊢' ψ ↔ ∃Γ : finset (sentence L), ↑Γ ⊢' ψ ∧ ↑Γ ⊆ T :=
 ⟨theory_proof_compactness, λ⟨Γ, H, K⟩, weakening' (image_subset _ K) H⟩
 
-/-- Given a theory T and a sentence ψ, either T ∪ {ψ} or T ∪ {∼ ψ} is consistent.--/
 lemma is_consistent_union {L : Language} {T₁ T₂ : Theory L} (h₁ : is_consistent T₁) 
   (h₂ : ∀ψ ∈ T₂, insert (∼ψ) T₁ ⊢' (⊥ : sentence L)) : is_consistent (T₁ ∪ T₂) :=
 begin
