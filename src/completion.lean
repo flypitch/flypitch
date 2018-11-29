@@ -3,7 +3,7 @@
 import .fol .compactness order.zorn order.filter logic.basic data.finset data.set tactic.tidy data.list
 
 local attribute [instance, priority 0] classical.prop_decidable
-open fol
+open fol set 
 
 universe variables u v
 section
@@ -36,6 +36,27 @@ begin
   have hc_dos : T ⊢' ∼∼ψ,
     exact hc2.map simpI,
   exact hc_dos.map2 (impE _) hc_uno
+end
+
+def is_consistent_union {L : Language} {T₁ T₂ : Theory L} (h₁ : is_consistent T₁) 
+  (h₂ : ∀ψ ∈ T₂, insert (∼ψ) T₁ ⊢' (⊥ : sentence L)) : is_consistent (T₁ ∪ T₂) :=
+begin
+  have lem : ∀(T₀ : finset (sentence L)), ↑T₀ ⊆ T₂ → is_consistent (T₁ ∪ ↑T₀),
+  { refine finset.induction _ _,
+    { intro hT, rw [finset.coe_empty, union_empty], exact h₁ },
+    { intros ψ s hψ ih hs hT, apply ih (subset.trans (finset.subset_insert _ _) hs),
+      apply sprf_by_cases ψ,
+      { simp at hT, exact hT },
+      { simp [insert_subset] at hs, apply weakening' _ (h₂ _ hs.1), 
+        apply image_subset, apply insert_subset_insert, apply subset_union_left }}},
+  intro h, rcases theory_proof_compactness h with ⟨T₀, h₀, hT⟩,
+  have : decidable_pred (∈ T₁) := λx, classical.prop_decidable _,
+  let T₀' := T₀.filter (∉ T₁),
+  refine lem T₀' _ _,
+  { intros x hx, simp [T₀'] at hx, exact (hT hx.1).resolve_left hx.2 },
+  { apply weakening' _ h₀, apply image_subset, rw [←inter_union_diff (↑T₀) T₁], 
+    apply union_subset_union, apply inter_subset_right,
+    intros x hx, rw [finset.mem_coe, finset.mem_filter], exact hx }
 end
 
 /- Given a consistent theory T and sentence ψ, return whichever one of T ∪ ψ or T ∪ ∼ ψ is consistent.  We will need `extend` to show that the maximal theory given by Zorn's lemma is complete. -/

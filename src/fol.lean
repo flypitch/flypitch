@@ -1079,6 +1079,14 @@ end
 lemma iff_of_biimp {Γ} {f₁ f₂ : formula L} (H : Γ ⊢' f₁ ⇔ f₂) : Γ ⊢' f₁ ↔ Γ ⊢' f₂ :=
 ⟨impE' _ $ H.map (andE1 _), impE' _ $ H.map (andE2 _)⟩ 
 
+lemma prf_by_cases {Γ} (f₁) {f₂ : formula L} (H₁ : insert f₁ Γ ⊢' f₂)
+  (H₂ : insert ∼f₁ Γ ⊢' f₂) : Γ ⊢' f₂ :=
+begin
+  apply falsumE', apply impE' _ ⟨axm1⟩,
+  refine impE' _ (impI' (weakening2' H₁)) _, 
+  apply falsumE', apply impE' _ ⟨axm2⟩, apply weakening2' H₂
+end
+
 /- model theory -/
 
 /- an L-structure is a type S with interpretations of the functions and relations on S -/
@@ -1958,6 +1966,14 @@ by exact andI H1 H2
 
 def snot_and_self {T : Theory L} {A : sentence L} (H : T ⊢ A ⊓ ∼ A) : T ⊢ bd_falsum :=
 by exact not_and_self H
+
+lemma sprf_by_cases {Γ} (f₁) {f₂ : sentence L} (H₁ : insert f₁ Γ ⊢' f₂)
+  (H₂ : insert ∼f₁ Γ ⊢' f₂) : Γ ⊢' f₂ :=
+begin
+  simp [sprovable, Theory.fst, set.image_insert_eq] at H₁ H₂,
+  exact prf_by_cases f₁.fst H₁ H₂
+end
+
 
 def sprovable_of_provable {T : Theory L} {f : sentence L} (h : T.fst ⊢ f.fst) : T ⊢ f := h
 def provable_of_sprovable {T : Theory L} {f : sentence L} (h : T ⊢ f) : T.fst ⊢ f.fst := h
