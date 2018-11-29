@@ -24,16 +24,23 @@ end interactive
 end tactic
 
 /- logic -/
+namespace classical
 noncomputable def psigma_of_exists {α : Type u} {p : α → Prop} (h : ∃x, p x) : Σ' x, p x :=
 begin
   haveI : nonempty α := nonempty_of_exists h,
-  exact ⟨classical.epsilon p, classical.epsilon_spec h⟩ 
+  exact ⟨epsilon p, epsilon_spec h⟩ 
 end
 
-namespace classical
 lemma some_eq {α : Type u} {p : α → Prop} {h : ∃ (a : α), p a} (x : α) 
   (hx : ∀y, p y → y = x) : classical.some h = x :=
 classical.some_spec2 _ hx
+
+noncomputable def instantiate_existential {α : Type*} {P : α → Prop} (h : ∃ x, P x) : {x // P x} :=
+begin
+  haveI : nonempty α := nonempty_of_exists h,
+  exact ⟨classical.epsilon P, classical.epsilon_spec h⟩ 
+end
+
 end classical
 
 

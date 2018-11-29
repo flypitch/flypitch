@@ -54,7 +54,6 @@ begin
     refine ⟨Γ₁ ∪ Γ₂, subst₂' _ _ _ (weakening' (by simp) H₁) (weakening' (by simp) H₂), by simp [K₁, K₂]⟩ }
 end
 
-
 lemma theory_proof_compactness {L : Language} {T : Theory L} {ψ : sentence L} (hψ : T ⊢' ψ) : 
   ∃Γ : finset (sentence L), ↑Γ ⊢' ψ ∧ ↑Γ ⊆ T :=
 begin
@@ -69,3 +68,26 @@ end
 lemma theory_proof_compactness_iff {L : Language} {T : Theory L} {ψ : sentence L} : 
   T ⊢' ψ ↔ ∃Γ : finset (sentence L), ↑Γ ⊢' ψ ∧ ↑Γ ⊆ T :=
 ⟨theory_proof_compactness, λ⟨Γ, H, K⟩, weakening' (image_subset _ K) H⟩
+
+/-- Given a theory T and a sentence ψ, either T ∪ {ψ} or T ∪ {∼ ψ} is consistent.--/
+lemma is_consistent_union {L : Language} {T₁ T₂ : Theory L} (h₁ : is_consistent T₁) 
+  (h₂ : ∀ψ ∈ T₂, insert (∼ψ) T₁ ⊢' (⊥ : sentence L)) : is_consistent (T₁ ∪ T₂) :=
+begin
+  haveI : decidable_eq (sentence L) := λx y, classical.prop_decidable _,
+  have lem : ∀(T₀ : finset (sentence L)), ↑T₀ ⊆ T₂ → is_consistent (T₁ ∪ ↑T₀),
+  { refine finset.induction _ _,
+    { intro hT, rw [finset.coe_empty, union_empty], exact h₁ },
+    { intros ψ s hψ ih hs hT, apply ih (subset.trans (finset.subset_insert _ _) hs),
+      apply sprf_by_cases ψ,
+      { simp at hT, exact hT },
+      { simp [insert_subset] at hs, apply weakening' _ (h₂ _ hs.1), 
+        apply image_subset, apply insert_subset_insert, apply subset_union_left }}},
+  intro h, rcases theory_proof_compactness h with ⟨T₀, h₀, hT⟩,
+  have : decidable_pred (∈ T₁) := λx, classical.prop_decidable _,
+  let T₀' := T₀.filter (∉ T₁),
+  refine lem T₀' _ _,
+  { intros x hx, simp [T₀'] at hx, exact (hT hx.1).resolve_left hx.2 },
+  { apply weakening' _ h₀, apply image_subset, rw [←inter_union_diff (↑T₀) T₁], 
+    apply union_subset_union, apply inter_subset_right,
+    intros x hx, rw [finset.mem_coe, finset.mem_filter], exact hx }
+end

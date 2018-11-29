@@ -31,7 +31,7 @@ export directed_diagram_language
                       ((directed_diagram D)) :=
 begin
   refine ⟨by {intro x, exact (obj F x).functions n},_,_⟩,
-  {intros x y edge, have := (F.mor edge).on_function, exact @this n},
+  {intros x y edge, have := (F.mor edge).on_function, exact this },
   {intros, simp only [], have := F.h_mor, have := @this x y z f1 f2 f3, rw[this]},
 end
 
@@ -127,23 +127,21 @@ open colimit
    function symbols, comprising an inclusion constructor for the symbols
    from L, and a witness constructor which introduces witnesses for every
    bounded_formula 1-/
-inductive henkin_language_functions (L : (Language : Type (u+1))) : ℕ → Type u
-  | inc : ∀ {n}, (L.functions n) → henkin_language_functions n
-  | wit : (bounded_formula L 1) → henkin_language_functions 0
+inductive henkin_language_functions (L : Language.{u}) : ℕ → Type u
+  | inc : ∀ {n}, L.functions n → henkin_language_functions n
+  | wit : bounded_formula L 1 → henkin_language_functions 0
 
-export henkin_language_functions
+open henkin_language_functions
 
 /- The basic step of the Henkin construction on languages.
    Given a language L, return a language L' with constants
    witnessing all bounded_formula 1-/
-@[reducible]def henkin_language_step (L : (Language : Type (u+1))) : (Language : Type (u+1)) :=
+@[reducible]def henkin_language_step (L : Language.{u}) : Language.{u} :=
   ⟨henkin_language_functions L, L.relations⟩
 
-def wit' {L : Language} :
-(bounded_formula L 1) →(henkin_language_step L).functions 0 :=
-by {intro f, fapply wit, exact f}
+def wit' {L : Language} : bounded_formula L 1 → (henkin_language_step L).constants := wit
 
-def henkin_language_inclusion {L : Language} : L →ᴸ (henkin_language_step L) :=
+def henkin_language_inclusion {L : Language} : L →ᴸ henkin_language_step L :=
   ⟨λ n f, inc f, λn, id⟩
 
 lemma henkin_language_inclusion_inj {L : Language} : Lhom.is_injective (@henkin_language_inclusion L) :=
@@ -156,17 +154,29 @@ end
 /- The basic step of the Henkin construction on theories.
    Given an L-theory T, return an L'-theory T' which is T expanded by
    sentences saying that the new witnesses are witnesses. -/
-@[reducible]def wit_property {L : Language} (f : bounded_formula L 1) (c : L.functions 0) : sentence L :=
-  (∃'f) ⟹ f[(bd_const c)/0]
+@[reducible]def wit_property {L : Language} (f : bounded_formula L 1) (c : L.constants) : 
+  sentence L :=
+(∃'f) ⟹ f[bd_const c/0]
 
+open fol.Lhom
 def henkin_theory_step {L} (T : Theory L) : Theory $ henkin_language_step L :=
-(λ f : bounded_formula L 1, @wit_property _ (Lhom.on_bounded_formula henkin_language_inclusion f) (wit' f)) '' (set.univ : set $ bounded_formula L 1) ∪ (Theory_induced henkin_language_inclusion T)
+Theory_induced henkin_language_inclusion T ∪ 
+(λ f : bounded_formula L 1, 
+  wit_property (henkin_language_inclusion.on_bounded_formula f) (wit' f)) '' (set.univ : set $ bounded_formula L 1)
+
+def is_consistent_henkin_theory_step{L} {T : Theory L} (hT : is_consistent T) :
+  is_consistent (henkin_theory_step T) :=
+begin
+  apply is_consistent_union,
+  { exact is_consistent_Theory_induced henkin_language_inclusion_inj hT },
+  { intros ψ hψ, rcases hψ with ⟨ψ', x, hψ'⟩, sorry }
+end
 
 @[reducible]def henkin_language_chain_objects {L : Language} : ℕ → Language
   | 0 := L
   | (n+1) := henkin_language_step (henkin_language_chain_objects n)
 
-@[simp]lemma obvious {L : Language} {i : ℕ} : henkin_language_functions (@henkin_language_chain_objects L i) 0 = (@henkin_language_chain_objects L (i+1)).functions 0 :=
+@[simp]lemma obvious {L : Language} {i : ℕ} : henkin_language_functions (@henkin_language_chain_objects L i) 0 = (@henkin_language_chain_objects L (i+1)).constants :=
 by refl 
 
 local infix ` ∘ `:60 := Lhom.comp
@@ -619,7 +629,7 @@ end
 
 def complete_henkin_Theory_over {L : Language} (T : Theory L) (hT : is_consistent T) : Type u := Σ' T' : Theory_over T hT, has_enough_constants T'.val ∧ is_complete T'.val
 
-def henkinization {L : Language} {T : Theory L} {hT : is_consistent T} : Theory (@henkin_language L T hT) := T_infty T
+def henkinization {L : Language} {T : Theory L} (hT : is_consistent T) : Theory (@henkin_language L T hT) := T_infty T
 
 /-- Given an f : bounded_formula L_infty, return a Henkin witness for f, along with all the
     data and conditions needed to obtain this witness --/
@@ -630,7 +640,7 @@ begin
   refine ⟨(henkin_language_canonical_map (f_lift2.fst.fst + 1)).on_function (wit' (f_lift2.fst.snd)), f_lift1,(f_lift2.fst), f_lift2.snd,rfl⟩,
 end
 
-lemma henkinization_is_henkin {L : Language} {T : Theory L} {hT : is_consistent T} : has_enough_constants (@henkinization L T hT) :=
+lemma henkinization_is_henkin {L : Language} {T : Theory L} (hT : is_consistent T) : has_enough_constants (henkinization hT) :=
 begin
   apply has_enough_constants.intro,
   unfold henkinization T_infty, intro f, have big_sigma := wit_infty f, rcases big_sigma with ⟨c, blah⟩, refine ⟨c,_⟩,
@@ -642,7 +652,7 @@ begin
    fapply henkin_language_canonical_map, fapply wit_property, fapply Lhom.on_bounded_formula,
    exact (@henkin_language_chain L).obj i, exact henkin_language_inclusion,
    exact f'', exact (wit' f'')},
-  {fapply in_iota_of_in_step, fapply or.inl, tidy},
+  {fapply in_iota_of_in_step, fapply or.inr, tidy},
   {let c_infty := (bd_const ((henkin_language_canonical_map (i + 1)).on_function (wit' f''))),
   have this1 : bounded_preformula.fst (∃' f) ⟹
       (bounded_preformula.fst f)[bounded_preterm.fst
@@ -678,8 +688,7 @@ begin
   by tidy, rw[this]}
 end
 
-/- It looks like this is the lemma which requires reflect_prf -/
-lemma henkinization_consistent {L : Language} {T : Theory L} {hT : is_consistent T} : is_consistent (@henkinization L T hT) :=
+lemma is_consistent_henkinization {L : Language} {T : Theory L} (hT : is_consistent T) : is_consistent (henkinization hT) :=
 begin
   intro P, have := proof_compactness P,
   have : ∃ k : ℕ, Theory.fst (@ι L T k) ⊢' (bd_falsum).fst,
@@ -697,7 +706,7 @@ begin
   repeat{assumption}
 end
 
-noncomputable def complete_henkinization {L} {T : Theory L} {hT : is_consistent T} := completion_of_consis _ (@henkinization L T hT) henkinization_consistent
+noncomputable def complete_henkinization {L} {T : Theory L} (hT : is_consistent T) := completion_of_consis _ (henkinization hT) (is_consistent_henkinization hT)
 
 /- Bundled versions below -/
 def Language_over (L : Language) := Σ L' : Language, L →ᴸ L'
@@ -707,7 +716,7 @@ def henkin_Theory_over {L : Language} (T : Theory L) (hT : is_consistent T) : Ty
 def henkinization' {L : Language} {T : Theory L} (hT : is_consistent T) : Σ (L' : Language_over L), henkin_Theory_over (Theory_induced L'.snd T) begin apply consis_Theory_induced_of_consis, repeat{assumption} end := sorry
 
 /-- The completion of a Henkin theory is again Henkin. --/
-lemma has_enough_constants_of_completion {L} {T : Theory L} {hT : is_consistent T} : is_consistent (completion_of_consis _ (@henkinization L T hT) henkinization_consistent).fst.val := sorry
+lemma has_enough_constants_of_completion {L} {T : Theory L} (hT : is_consistent T) : is_consistent (completion_of_consis _ (@henkinization L T hT) (is_consistent_henkinization hT)).fst.val := sorry
 
 /-- Given an L-theory T, return a completed Henkinization of T --/
 def complete_henkinization' {L : Language} {T : Theory L} (hT : is_consistent T) : Σ (L' : Language_over L), complete_henkin_Theory_over (Theory_induced L'.snd T) begin apply consis_Theory_induced_of_consis, repeat{assumption} end := sorry

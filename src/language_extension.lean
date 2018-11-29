@@ -457,6 +457,11 @@ begin
   have := reflect_prf_gen hϕ 0 h, simp [image_image, hϕ] at this, exact this
 end
 
+noncomputable def reflect_sprf {Γ : set $ sentence L} {f : sentence L} (hϕ : ϕ.is_injective) 
+  (h : ϕ.on_sentence '' Γ ⊢ ϕ.on_sentence f) : Γ ⊢ f :=
+by { apply reflect_prf hϕ, simp only [sprf, Theory.fst, image_image, function.comp,
+     on_bounded_formula_fst, on_sentence] at h ⊢, exact h }
+
 lemma on_term_inj (h : ϕ.is_injective) {l} : injective (ϕ.on_term : preterm L l → preterm L' l) :=
 begin
   intros x y hxy, induction x generalizing y; cases y; try {injection hxy with hxy' hxy''},
@@ -502,62 +507,51 @@ variable (ϕ)
 /-- Given L → L' and an L'-structure S, the reduct of S to L is the L-structure given by
 restricting interpretations from L' to L --/
 def reduct (S : Structure L') : Structure L :=
-have x : Type*, from S.carrier,
 ⟨ S.carrier, λn f, S.fun_map $ ϕ.on_function f, λn R, S.rel_map $ ϕ.on_relation R⟩ 
 
 variable {ϕ}
 
+@[simp] def reduct_coe (S : Structure L') : ↥(reduct ϕ S) = S := 
+by refl
+
 def reduct_id {S : Structure L'} : S → reduct ϕ S := id
 
-lemma reduct_term_eq {S : Structure L'} {n}  (hϕ : ϕ.is_injective) (x : dvector S n) : Πl, Π (t : bounded_preterm L n l), realize_bounded_term x (on_bounded_term ϕ t) = @realize_bounded_term L (reduct ϕ S) n x l t
-| _ (bd_var k) := by tidy
-| _ (bd_func f) := by tidy
-| l (bd_app t s) := by sorry
+@[simp] lemma reduct_term_eq {S : Structure L'} (hϕ : ϕ.is_injective) {n} : 
+  Π(xs : dvector S n) {l} (t : bounded_preterm L n l) (xs' : dvector S l), realize_bounded_term xs (on_bounded_term ϕ t) xs' = @realize_bounded_term L (reduct ϕ S) n xs l t xs'
+| xs _ (bd_var k)   xs' := by refl
+| xs _ (bd_func f)  xs' := by refl
+| xs l (bd_app t s) xs' := by simp*
 
-lemma reduct_bounded_formula_eq {S : Structure L'} {n}  (hϕ : ϕ.is_injective) (x : dvector S n) : Πl, Π (t : bounded_preformula L n l), realize_bounded_formula x (on_bounded_formula ϕ t) = @realize_bounded_formula L (reduct ϕ S) n l x t
-| _ (bd_falsum) := by tidy
-| _ (bd_equal t₁ t₂) := by sorry
-| _ (bd_rel R)       := by tidy
-| _ (bd_apprel f t)  := by sorry
-| _ (f₁ ⟹ f₂)    := by sorry
-| _ (∀' f)        := by sorry
-
+lemma reduct_bounded_formula_iff {S : Structure L'} (hϕ : ϕ.is_injective) : Π{n l} (xs : dvector S n) (xs' : dvector S l) (f : bounded_preformula L n l), 
+  realize_bounded_formula xs (on_bounded_formula ϕ f) xs' ↔ @realize_bounded_formula L (reduct ϕ S) n l xs f xs'
+| _ _ xs xs' (bd_falsum)      := by refl
+| _ _ xs xs' (bd_equal t₁ t₂) := by simp [hϕ]
+| _ _ xs xs' (bd_rel R)       := by refl
+| _ _ xs xs' (bd_apprel f t)  := by simp*
+| _ _ xs xs' (f₁ ⟹ f₂)       := by simp*
+| _ _ xs xs' (∀' f)           := by apply forall_congr; intro x;simp*
 
 lemma reduct_ssatisfied {S : Structure L'} {f : sentence L} (hϕ : ϕ.is_injective) 
   (h : S ⊨ ϕ.on_sentence f) : ϕ.reduct S ⊨ f :=
-by {unfold realize_sentence, rw[<-(@reduct_bounded_formula_eq L L' ϕ S 0 hϕ ([]) 0 f)], exact h}
-
--- begin
---   rcases f,
---   {exact h},
---   {unfold on_sentence on_bounded_formula on_bounded_term realize_sentence realize_bounded_formula at h, unfold realize_sentence realize_bounded_formula realize_bounded_term,
---   fapply @eq.rec, fapply @reduct_id L L' ϕ, exact realize_bounded_term dvector.nil (on_bounded_term ϕ f_t₁) dvector.nil, unfold reduct_id, rcases f_t₁, repeat{sorry},
---   -- seems like here we need to show that induced interpretation on terms is literally equal to the reduct interpretation
---   },
---   {sorry},
---   {sorry},
---   {sorry},
---   {sorry},
--- end
+(reduct_bounded_formula_iff hϕ ([]) ([]) f).mp h
 
 def reduct_all_ssatisfied {S : Structure L'} {T : Theory L} (hϕ : ϕ.is_injective) 
   (h : S ⊨ ϕ.on_sentence '' T) : ϕ.reduct S ⊨ T :=
 λf hf, reduct_ssatisfied hϕ $ h $ mem_image_of_mem _ hf
 
-def reduct_ssatisfied' {T : Theory L} (f : sentence L) (h : T ⊨ f) :
-  ϕ.on_sentence '' T ⊨ ϕ.on_sentence f :=
-λS hS h, sorry
-
 lemma reduct_nonempty_of_nonempty {S : Structure L'} (H : nonempty S) : nonempty (reduct ϕ S) :=
 by {apply nonempty.map, repeat{assumption}, exact reduct_id}
 
+variable (ϕ)
+def Theory_induced (T : Theory L) : Theory L' := ϕ.on_sentence '' T
+
+variable {ϕ}
+lemma is_consistent_Theory_induced (hϕ : ϕ.is_injective) {T : Theory L} (hT : is_consistent T) : 
+  is_consistent (ϕ.Theory_induced T) :=
+λH, hT $ H.map $ λh, reflect_sprf hϕ (by apply h)
+
 end Lhom
 
-
-def Theory_induced {L L' : Language} (F : L →ᴸ L') (T : Theory L) : Theory L' :=
-  (Lhom.on_sentence F) '' T
-
-lemma consis_Theory_induced_of_consis {L L' : Language} (F : L →ᴸ L') (T : Theory L) {hT : is_consistent T} : is_consistent (Theory_induced F T) := sorry
 
 end fol
 

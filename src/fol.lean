@@ -1974,6 +1974,15 @@ begin
   exact prf_by_cases f₁.fst H₁ H₂
 end
 
+def double_negation_elim {L} {T : Theory L} {f : sentence L} : T ⊢ ∼∼f → T ⊢ f :=
+begin
+  intro, fapply falsumE, fapply impE, exact f.fst, all_goals{unfold fol.not},
+  fapply deduction, 
+  fapply impI, fapply axm1, fapply exfalso, fapply deduction, assumption
+end
+
+def sweakening {T T' : Theory L} (h_sub : T' ⊆ T) {ψ : sentence L} (h : T' ⊢ ψ) : T ⊢ ψ :=
+weakening (image_subset _ h_sub) h
 
 def sprovable_of_provable {T : Theory L} {f : sentence L} (h : T.fst ⊢ f.fst) : T ⊢ f := h
 def provable_of_sprovable {T : Theory L} {f : sentence L} (h : T ⊢ f) : T.fst ⊢ f.fst := h
@@ -2038,6 +2047,7 @@ def Model (T : Theory L) : Type (u+1) := Σ' (S : Structure L), S ⊨ T
 lemma soundness {T : Theory L} {A : sentence L} (H : T ⊢ A) : T ⊨ A :=
 ssatisfied_of_satisfied $ formula_soundness H
 
+/- consistent theories -/
 def is_consistent (T : Theory L) := ¬(T ⊢' (⊥ : sentence L))
 
 protected def is_consistent.intro {T : Theory L} (H : ¬ T ⊢' (⊥ : sentence L)) : is_consistent T :=
@@ -2046,6 +2056,14 @@ H
 protected def is_consistent.elim {T : Theory L} (H : is_consistent T) : ¬ T ⊢' (⊥ : sentence L)
 | H' := H H'
 
+lemma consis_not_of_not_provable {L} {T : Theory L} {f : sentence L} : 
+  ¬ T ⊢' f → is_consistent (T ∪ {∼f}) :=
+begin
+  intros h₁ h₂, cases h₂ with h₂, simp only [*, set.union_singleton] at h₂, 
+  apply h₁, exact ⟨sfalsumE h₂⟩
+end
+
+/- complete theories -/
 def is_complete (T : Theory L) := 
 is_consistent T ∧ ∀(f : sentence L), f ∈ T ∨ ∼ f ∈ T
 

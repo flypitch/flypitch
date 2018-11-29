@@ -4,25 +4,9 @@ local attribute [instance, priority 0] classical.prop_decidable
 
 open fol
 
-def double_negation_elim {L} {T : Theory L} {f : sentence L} : T ⊢ (f ⟹ (⊥ : sentence L)) ⟹ (⊥ : sentence L) → T ⊢ f :=
-begin
-  intro, fapply falsumE, fapply impE, exact f.fst, all_goals{unfold fol.not},
-  fapply deduction, 
-  fapply impI, fapply axm1, fapply exfalso, fapply deduction, assumption
-end
-
-lemma consis_not_of_not_provable {L} {T : Theory L} {f : sentence L} : ¬ T ⊢' f → is_consistent (T ∪ {∼f}) :=
-begin
-  intro, by_contra, have := classical.choice (classical.by_contradiction a_1),
-  simp only [*, set.union_singleton, fol.bounded_preformula.fst] at this,
-  have : Theory.fst T ⊢ f.fst, fapply double_negation_elim, fapply impI,
-  unfold Theory.fst at this, rw[set.image_insert_eq] at this, exact this,
-  have := nonempty.intro this, contradiction
-end
-
 theorem completeness {L : Language} (T : Theory L) (ψ : sentence L) : T ⊢' ψ ↔ T ⊨ ψ :=
 begin
-  refine ⟨by {intro H, fapply soundness, exact classical.choice H}, _⟩,
+  refine ⟨by {intro H, cases H with H, fapply soundness H }, _⟩,
   {by_cases is_consistent T, swap,
             {intro, fapply nonempty.intro, fapply exfalso, fapply classical.choice,
             unfold is_consistent at h, have : T ⊢' (⊥ : sentence L),
