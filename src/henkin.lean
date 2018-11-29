@@ -606,10 +606,8 @@ def henkin_language {L} {T : Theory L} {hT : is_consistent T} : Language := L_in
 local infix ` →ᴸ `:10 := Lhom -- \^L
 
 /- I dislike this proof, but I don't know how apply canonical_map_language otherwise... -/
-def henkin_language_over {L} {T : Theory L} {hT : is_consistent T} : L →ᴸ (@henkin_language L T hT) := begin
-change (henkin_language_chain.obj (0 : ℕ)) →ᴸ colimit_language henkin_language_chain,
-apply canonical_map_language
-end
+def henkin_language_over {L} {T : Theory L} {hT : is_consistent T} : L →ᴸ (@henkin_language L T hT) :=
+by {change (henkin_language_chain.obj (0 : ℕ)) →ᴸ colimit_language henkin_language_chain, apply canonical_map_language}
 
 lemma henkin_language_over_injective {L} {T : Theory L} {hT : is_consistent T} : Lhom.is_injective (@henkin_language_over L T hT) :=
 begin

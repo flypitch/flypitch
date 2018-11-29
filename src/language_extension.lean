@@ -234,6 +234,14 @@ lemma id_term {L} : Πl, Π f, (@on_term L L (Lhom.id L) l) f = f
 | _ (func f)    := by refl
 | l (app t₁ t₂) := by simp[id_term (l+1) t₁, id_term 0 t₂]
 
+lemma id_formula {L} : Π l, Π f, (@on_formula L L (Lhom.id L) l) f = f
+| _   falsum        := by refl
+| _ (t₁ ≃ t₂)         := by simp[id_term]
+| _ (rel R)       := by refl
+| l (apprel f t)  := by {dsimp, rw[id_formula _ f, id_term _ t]}
+| _ (f₁ ⟹ f₂)    := by {dsimp, rw[id_formula _ f₁, id_formula _ f₂]}
+| _ (∀' f)        := by {dsimp, rw[id_formula _ f]}
+
 lemma id_bounded_term {L} (n) : Πl, Π f, (@on_bounded_term L L (Lhom.id L) n l) f = f
 | _ (bd_var k) := by refl
 | _ (bd_func k) := by refl
@@ -501,20 +509,36 @@ variable {ϕ}
 
 def reduct_id {S : Structure L'} : S → reduct ϕ S := id
 
-def reduct_ssatisfied {S : Structure L'} {f : sentence L} (hϕ : ϕ.is_injective) 
+lemma reduct_term_eq {S : Structure L'} {n}  (hϕ : ϕ.is_injective) (x : dvector S n) : Πl, Π (t : bounded_preterm L n l), realize_bounded_term x (on_bounded_term ϕ t) = @realize_bounded_term L (reduct ϕ S) n x l t
+| _ (bd_var k) := by tidy
+| _ (bd_func f) := by tidy
+| l (bd_app t s) := by sorry
+
+lemma reduct_bounded_formula_eq {S : Structure L'} {n}  (hϕ : ϕ.is_injective) (x : dvector S n) : Πl, Π (t : bounded_preformula L n l), realize_bounded_formula x (on_bounded_formula ϕ t) = @realize_bounded_formula L (reduct ϕ S) n l x t
+| _ (bd_falsum) := by tidy
+| _ (bd_equal t₁ t₂) := by sorry
+| _ (bd_rel R)       := by tidy
+| _ (bd_apprel f t)  := by sorry
+| _ (f₁ ⟹ f₂)    := by sorry
+| _ (∀' f)        := by sorry
+
+
+lemma reduct_ssatisfied {S : Structure L'} {f : sentence L} (hϕ : ϕ.is_injective) 
   (h : S ⊨ ϕ.on_sentence f) : ϕ.reduct S ⊨ f :=
-begin
-  rcases f,
-  {exact h},
-  {unfold on_sentence on_bounded_formula on_bounded_term realize_sentence realize_bounded_formula at h, unfold realize_sentence realize_bounded_formula realize_bounded_term,
-  fapply @eq.rec, fapply @reduct_id L L' ϕ, exact realize_bounded_term dvector.nil (on_bounded_term ϕ f_t₁) dvector.nil, unfold reduct_id, rcases f_t₁, repeat{sorry},
-  -- seems like here we need to show that induced interpretation on terms is literally equal to the reduct interpretation
-  },
-  {sorry},
-  {sorry},
-  {sorry},
-  {sorry},
-end
+by {unfold realize_sentence, rw[<-(@reduct_bounded_formula_eq L L' ϕ S 0 hϕ ([]) 0 f)], exact h}
+
+-- begin
+--   rcases f,
+--   {exact h},
+--   {unfold on_sentence on_bounded_formula on_bounded_term realize_sentence realize_bounded_formula at h, unfold realize_sentence realize_bounded_formula realize_bounded_term,
+--   fapply @eq.rec, fapply @reduct_id L L' ϕ, exact realize_bounded_term dvector.nil (on_bounded_term ϕ f_t₁) dvector.nil, unfold reduct_id, rcases f_t₁, repeat{sorry},
+--   -- seems like here we need to show that induced interpretation on terms is literally equal to the reduct interpretation
+--   },
+--   {sorry},
+--   {sorry},
+--   {sorry},
+--   {sorry},
+-- end
 
 def reduct_all_ssatisfied {S : Structure L'} {T : Theory L} (hϕ : ϕ.is_injective) 
   (h : S ⊨ ϕ.on_sentence '' T) : ϕ.reduct S ⊨ T :=
