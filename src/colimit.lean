@@ -1,4 +1,4 @@
-import .fol order tactic.tidy .to_mathlib .language_extension
+import .to_mathlib tactic.tidy
 
 /- The proper generality to do this is with directed categories as the indexing objects -/
 
@@ -150,7 +150,7 @@ simp only [*, V.h_compat Hik, V.h_compat Hjk, function.injective.eq_iff, eq_self
 end
 
 /- Given a germ-equivalence class from the colimit, return a representative from the coproduct and a proof that this is a lift  -/
-noncomputable def germ_rep {D} {F : directed_diagram D} (a : colimit F) : Σ' x : (coproduct_of_directed_diagram F), ⟦x⟧ = a := psigma_of_exists (quotient.exists_rep a)
+noncomputable def germ_rep {D} {F : directed_diagram D} (a : colimit F) : Σ' x : (coproduct_of_directed_diagram F), ⟦x⟧ = a := classical.psigma_of_exists (quotient.exists_rep a)
 
 @[simp]lemma canonical_map_quotient {D} {F : directed_diagram D} (a : coproduct_of_directed_diagram F) : canonical_map a.fst a.snd = ⟦a⟧ :=
 by tidy

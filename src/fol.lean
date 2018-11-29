@@ -6,7 +6,7 @@
 * There is no well-formedness predicate; all elements of type "term" are well-formed.
 -/
 
-import .to_mathlib tactic.squeeze data.quot
+import .to_mathlib
 
 open nat set
 universe variables u v

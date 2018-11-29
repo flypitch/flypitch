@@ -1,4 +1,4 @@
-import .fol order.zorn order.filter logic.basic data.finset data.set data.list
+import .fol
 --local attribute [instance, priority 0] classical.prop_decidable
 open fol set
 

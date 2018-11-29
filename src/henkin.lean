@@ -1,4 +1,4 @@
-import .fol order.zorn order.filter logic.basic data.finset data.set tactic.tidy .completion .language_extension .colimit .to_mathlib tactic.linarith
+import .completion .language_extension .colimit tactic.linarith
 
 -- local attribute [instance] classical.prop_decidable
 
@@ -493,21 +493,20 @@ begin
     simpa only},
   {have x := germ_rep f_R, rcases x with ⟨⟨i,x⟩,H⟩, fapply exists.intro, have R' := rel x,
    exact ⟦⟨i,R'⟩⟧, tidy},
-  {rcases (psigma_of_exists f_ih) with ⟨t₁, H₁⟩,
+  {rcases f_ih with ⟨t₁, H₁⟩,
    rcases (term_comparison_bijective 0).right f_t with ⟨t₂, H₂⟩,
    rcases germ_rep t₁ with ⟨⟨i,x⟩,Hx⟩, rcases germ_rep t₂ with ⟨⟨j,y⟩,Hy⟩,
    fapply exists.intro, fapply canonical_map, exact i+j, fapply apprel,
    exact push_to_sum_r x j, exact push_to_sum_l y i,
     rw[<-H₁, <-H₂,<-Hx, <-Hy, <-canonical_map_quotient, same_fiber_as_push_to_r x j ,<-canonical_map_quotient, same_fiber_as_push_to_l y i],
     simpa only},
-  {rcases (psigma_of_exists f_ih_f₁) with ⟨t₁, H₁⟩,
-    rcases (psigma_of_exists f_ih_f₂) with ⟨t₂, H₂⟩,
+  {rcases f_ih_f₁ with ⟨t₁, H₁⟩, rcases f_ih_f₂ with ⟨t₂, H₂⟩,
    rcases germ_rep t₁ with ⟨⟨i,x⟩,Hx⟩, rcases germ_rep t₂ with ⟨⟨j,y⟩,Hy⟩,
    fapply exists.intro, fapply canonical_map, exact (i+j), fapply imp,
    exact push_to_sum_r x j, exact push_to_sum_l y i,
     rw[<-H₁, <-H₂,<-Hx, <-Hy, <-canonical_map_quotient, same_fiber_as_push_to_r x j ,<-canonical_map_quotient, same_fiber_as_push_to_l y i],
     simpa only},
-  {rcases (psigma_of_exists f_ih) with ⟨t₁, H₁⟩,
+  {rcases f_ih with ⟨t₁, H₁⟩,
    rcases germ_rep t₁ with ⟨⟨i,x⟩,Hx⟩,
    fapply exists.intro, fapply canonical_map, exact i, fapply all,
    exact x, rw[<-H₁, <-Hx], simpa only}}
@@ -567,22 +566,20 @@ refine ⟨_,_⟩,
     simpa only},
   {have x := germ_rep f_R, rcases x with ⟨⟨i,x⟩,H⟩, fapply exists.intro, have R' := bd_rel x,
    exact ⟦⟨i,R'⟩⟧, tidy},
-  {rcases (psigma_of_exists f_ih) with ⟨t₁, H₁⟩,
+  {rcases f_ih with ⟨t₁, H₁⟩,
    rcases (bounded_term_comparison_bijective _ 0).right f_t with ⟨t₂, H₂⟩,
    rcases germ_rep t₁ with ⟨⟨i,x⟩,Hx⟩, rcases germ_rep t₂ with ⟨⟨j,y⟩,Hy⟩,
    fapply exists.intro, fapply canonical_map, exact i+j, fapply bd_apprel,
    exact push_to_sum_r x j, exact push_to_sum_l y i,
     rw[<-H₁, <-H₂,<-Hx, <-Hy, <-canonical_map_quotient, same_fiber_as_push_to_r x j ,<-canonical_map_quotient, same_fiber_as_push_to_l y i],
     simpa only},
-  {rcases (psigma_of_exists f_ih_f₁) with ⟨t₁, H₁⟩,
-    rcases (psigma_of_exists f_ih_f₂) with ⟨t₂, H₂⟩,
+  {rcases f_ih_f₁ with ⟨t₁, H₁⟩, rcases f_ih_f₂ with ⟨t₂, H₂⟩,
    rcases germ_rep t₁ with ⟨⟨i,x⟩,Hx⟩, rcases germ_rep t₂ with ⟨⟨j,y⟩,Hy⟩,
    fapply exists.intro, fapply canonical_map, exact (i+j), fapply bd_imp,
    exact push_to_sum_r x j, exact push_to_sum_l y i,
     rw[<-H₁, <-H₂,<-Hx, <-Hy, <-canonical_map_quotient, same_fiber_as_push_to_r x j ,<-canonical_map_quotient, same_fiber_as_push_to_l y i],
     simpa only},
-  {rcases (psigma_of_exists f_ih) with ⟨t₁, H₁⟩,
-   rcases germ_rep t₁ with ⟨⟨i,x⟩,Hx⟩,
+  {rcases f_ih with ⟨t₁, H₁⟩, rcases germ_rep t₁ with ⟨⟨i,x⟩,Hx⟩,
    fapply exists.intro, fapply canonical_map, exact i, fapply bd_all,
    exact x, rw[<-H₁, <-Hx], simpa only}},
 end
@@ -635,7 +632,7 @@ def henkinization {L : Language} {T : Theory L} (hT : is_consistent T) : Theory 
     data and conditions needed to obtain this witness --/
 noncomputable def wit_infty {L} {T : Theory L} {hT : is_consistent T} (f : bounded_formula (@henkin_language L T hT) 1) : Σ c : (@henkin_language L T hT).constants, Σ (f' : Σ' (x : colimit (@henkin_bounded_formula_chain' L)), bounded_formula'_comparison x = f), Σ' (f'' : coproduct_of_directed_diagram (@henkin_bounded_formula_chain' L)), ⟦f''⟧ = f'.fst ∧ c = (henkin_language_canonical_map (f''.fst + 1)).on_function  (wit' f''.snd) :=
 begin
-  have f_lift1 := psigma_of_exists ((bounded_formula'_comparison_bijective).right f),
+  have f_lift1 := classical.psigma_of_exists ((bounded_formula'_comparison_bijective).right f),
   have f_lift2 := germ_rep (f_lift1.fst),
   refine ⟨(henkin_language_canonical_map (f_lift2.fst.fst + 1)).on_function (wit' (f_lift2.fst.snd)), f_lift1,(f_lift2.fst), f_lift2.snd,rfl⟩,
 end
@@ -713,10 +710,10 @@ def Language_over (L : Language) := Σ L' : Language, L →ᴸ L'
 
 def henkin_Theory_over {L : Language} (T : Theory L) (hT : is_consistent T) : Type u := Σ' T' : Theory_over T hT, has_enough_constants T'.val
 /-- Given an L-theory T, return a larger language L' and a Henkin theory T' extending T viewed as an L'-theory --/
-def henkinization' {L : Language} {T : Theory L} (hT : is_consistent T) : Σ (L' : Language_over L), henkin_Theory_over (Theory_induced L'.snd T) begin apply consis_Theory_induced_of_consis, repeat{assumption} end := sorry
+def henkinization' {L : Language} {T : Theory L} (hT : is_consistent T) : Σ (L' : Language_over L), henkin_Theory_over (Theory_induced L'.snd T) begin apply is_consistent_Theory_induced, repeat{assumption}, sorry end := sorry
 
 /-- The completion of a Henkin theory is again Henkin. --/
 lemma has_enough_constants_of_completion {L} {T : Theory L} (hT : is_consistent T) : is_consistent (completion_of_consis _ (@henkinization L T hT) (is_consistent_henkinization hT)).fst.val := sorry
 
 /-- Given an L-theory T, return a completed Henkinization of T --/
-def complete_henkinization' {L : Language} {T : Theory L} (hT : is_consistent T) : Σ (L' : Language_over L), complete_henkin_Theory_over (Theory_induced L'.snd T) begin apply consis_Theory_induced_of_consis, repeat{assumption} end := sorry
+def complete_henkinization' {L : Language} {T : Theory L} (hT : is_consistent T) : Σ (L' : Language_over L), complete_henkin_Theory_over (Theory_induced L'.snd T) begin apply is_consistent_Theory_induced, repeat{assumption}, sorry end := sorry

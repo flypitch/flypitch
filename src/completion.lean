@@ -1,6 +1,6 @@
 /- Show that every theory can be extended to a complete theory -/
 
-import .fol .compactness order.zorn order.filter logic.basic data.finset data.set tactic.tidy data.list
+import .fol .compactness order.zorn tactic.tidy
 
 local attribute [instance, priority 0] classical.prop_decidable
 open fol set 
@@ -248,8 +248,7 @@ have witness_property := witness.property, cases witness_property with case1 cas
   let T_bad := @strong_indefinite_description (Theory L) (λ S, S ∈ (subtype.val '' Ts) ∧ ({ϕ | ϕ ∈ Γpair.fst} ⊆ S))  begin apply_instance end,
   have T_bad_inconsis : sprovable T_bad.val ⊥,
   fapply nonempty.intro,
-  fapply sweakening T_bad.val {ϕ | ϕ ∈ Γpair.fst},
-  exact (T_bad.property h_bad).right,
+  fapply sweakening (T_bad.property h_bad).right,
   exact classical.choice Γpair.snd.left,
   have T_bad_consis : is_consistent T_bad.val,
     {have almost_done := (T_bad.property h_bad).left,

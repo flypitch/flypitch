@@ -1,8 +1,8 @@
-import .fol order.zorn order.filter logic.basic data.finset data.set tactic.tidy .henkin .language_extension
+import .henkin
 
 local attribute [instance, priority 0] classical.prop_decidable
 
-open fol
+open fol fol.Lhom
 
 theorem completeness {L : Language} (T : Theory L) (ψ : sentence L) : T ⊢' ψ ↔ T ⊨ ψ :=
 begin
