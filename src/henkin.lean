@@ -164,13 +164,19 @@ Theory_induced henkin_language_inclusion T ∪
 (λ f : bounded_formula L 1, 
   wit_property (henkin_language_inclusion.on_bounded_formula f) (wit' f)) '' (set.univ : set $ bounded_formula L 1)
 
-def is_consistent_henkin_theory_step{L} {T : Theory L} (hT : is_consistent T) :
+def is_consistent_henkin_theory_step {L} {T : Theory L} (hT : is_consistent T) :
   is_consistent (henkin_theory_step T) :=
 begin
   refine eq.mp _ (is_consistent_extend hT henkin_language_inclusion_inj 
     (λf, (∃' f).cast1 ⟹ f) _ wit _ _), 
-  { congr1, congr1, apply set.image_congr', intro f, simp [wit_property], sorry },
-  { intro f, apply falsumE, apply impE _ axm1, sorry /-apply exI, simp,-/ },
+  { congr1, congr1, apply set.image_congr', intro f, ext,
+    simp [wit_property, wit'], rw [←on_bounded_formula_fst, subst_sentence_irrel], refl },
+  { intro f, apply falsumE, apply impE (∃' f.fst),
+    { apply impI, apply impE _ axm2, apply exE axm1, 
+      apply exI &0, rw [lift_subst_formula_cancel], apply impI axm2 },
+    { apply falsumE, apply impE _ axm2, apply exI &0, 
+      apply impI, apply exfalso, apply impE _ axm2, 
+      rw [bounded_preformula.cast1_fst, subst_sentence_irrel], exact axm1 }},
   { intros f f' h, cases h, refl },
   { intro f, intro h, rcases h with ⟨f', hf'⟩, cases hf' }
 end

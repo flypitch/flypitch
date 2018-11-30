@@ -948,7 +948,7 @@ begin
   apply allE₂ ∼f t axm1,
 end
 
-def exE {Γ} {f₁ f₂ : formula L} (t : term L) (H₁ : Γ ⊢ ∃' f₁) 
+def exE {Γ} {f₁ f₂ : formula L} (H₁ : Γ ⊢ ∃' f₁) 
   (H₂ : insert f₁ (lift_formula1 '' Γ) ⊢ lift_formula1 f₂) : Γ ⊢ f₂ :=
 begin
   apply falsumE, apply impE _ (weakening1 H₁), apply allI, apply impI, 
@@ -1263,7 +1263,7 @@ def bd_const {n} (c : L.constants) : bounded_term L n := bd_func c
 
 namespace bounded_preterm
 @[simp] protected def fst {n} : ∀{l}, bounded_preterm L n l → preterm L l
-| _ &k         := &k.1
+| _ &k           := &k.1
 | _ (bd_func f)  := func f
 | _ (bd_app t s) := app (fst t) (fst s)
 
@@ -1339,6 +1339,12 @@ lemma lift_bounded_term_irrel {n : ℕ} : ∀{l} (t : bounded_preterm L n l) (n'
   have h' : ¬(m ≤ k.1), from not_le_of_lt (lt_of_lt_of_le k.2 h), by simp [h']
 | _ (bd_func f)  n' m h := by refl
 | _ (bd_app t s) n' m h := by simp [lift_bounded_term_irrel t n' h, lift_bounded_term_irrel s n' h]
+
+lemma subst_bounded_term_irrel {n : ℕ} : ∀{l} (t : bounded_preterm L n l) {n'} (s : term L)
+  (h : n ≤ n'), t.fst[s // n'] = t.fst
+| _ &k             n' s h := by simp [lt_of_lt_of_le k.2 h]
+| _ (bd_func f)    n' s h := by refl
+| _ (bd_app t₁ t₂) n' s h := by simp*
 
 @[simp] def realize_bounded_term {S : Structure L} {n} (v : dvector S n) : 
   ∀{l} (t : bounded_preterm L n l) (xs : dvector S l), S.carrier
@@ -1645,6 +1651,18 @@ lemma lift_bounded_formula_irrel : ∀{n l} (f : bounded_preformula L n l) (n') 
 
 lemma lift_sentence_irrel (f : sentence L) : f.fst ↑ 1 = f.fst :=
 lift_bounded_formula_irrel f 1 $ le_refl 0
+
+lemma subst_bounded_formula_irrel : ∀{n l} (f : bounded_preformula L n l) {n'} (s : term L)
+  (h : n ≤ n'), f.fst[s // n'] = f.fst
+| _ _ bd_falsum       n' s h := by refl
+| _ _ (t₁ ≃ t₂)       n' s h := by simp [subst_bounded_term_irrel _ s h]
+| _ _ (bd_rel R)      n' s h := by refl
+| _ _ (bd_apprel f t) n' s h := by simp [*, subst_bounded_term_irrel _ s h]
+| _ _ (f₁ ⟹ f₂)      n' s h := by simp*
+| _ _ (∀' f)          n' s h := by simp*
+
+lemma subst_sentence_irrel (f : sentence L) (n) (s : term L) : f.fst[s // n] = f.fst :=
+subst_bounded_formula_irrel f s n.zero_le
 
 @[simp] def realize_bounded_formula {S : Structure L} : 
   ∀{n l} (v : dvector S n) (f : bounded_preformula L n l) (xs : dvector S l), Prop
