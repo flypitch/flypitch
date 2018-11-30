@@ -167,9 +167,12 @@ Theory_induced henkin_language_inclusion T ∪
 def is_consistent_henkin_theory_step{L} {T : Theory L} (hT : is_consistent T) :
   is_consistent (henkin_theory_step T) :=
 begin
-  apply is_consistent_union,
-  { exact is_consistent_Theory_induced henkin_language_inclusion_inj hT },
-  { intros ψ hψ, rcases hψ with ⟨ψ', x, hψ'⟩, sorry }
+  refine eq.mp _ (is_consistent_extend hT henkin_language_inclusion_inj 
+    (λf, (∃' f).cast1 ⟹ f) _ wit _ _), 
+  { congr1, congr1, apply set.image_congr', intro f, simp [wit_property], sorry },
+  { intro f, apply falsumE, apply impE _ axm1, sorry /-apply exI, simp,-/ },
+  { intros f f' h, cases h, refl },
+  { intro f, intro h, rcases h with ⟨f', hf'⟩, cases hf' }
 end
 
 @[reducible]def henkin_language_chain_objects {L : Language} : ℕ → Language

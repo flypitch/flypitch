@@ -41,6 +41,9 @@ begin
   exact ⟨classical.epsilon P, classical.epsilon_spec h⟩ 
 end
 
+lemma or_not_iff_true (p : Prop) : (p ∨ ¬ p) ↔ true :=
+⟨λ_, trivial, λ_, or_not⟩
+
 end classical
 
 
@@ -312,6 +315,13 @@ lemma image_image (g : β → γ) (f : α → β) (s : set α) : g '' (f '' s) =
 
 @[simp] lemma image_id' (s : set α) : (λx, x) '' s = s := image_id s
 
+theorem image_preimage_eq_of_subset {f : α → β} {s : set β} (h : s ⊆ range f) :
+  f '' (f ⁻¹' s) = s :=
+begin 
+  ext, refine ⟨λhx, image_preimage_subset f s hx, _⟩,
+  intro hx, rcases h hx with ⟨x, rfl⟩, apply mem_image_of_mem, exact hx
+end
+
 end set
 open nat
 
@@ -332,6 +342,19 @@ begin
   refine ⟨insert x s', _, _⟩,
   { rw [finset.coe_insert, set.insert_subset], exact ⟨hxt, hst⟩ },
   rw [finset.image_insert, hsi]
+end
+
+theorem filter_union_right (p q : α → Prop) [decidable_pred p] [decidable_pred q] (s : finset α) :
+  s.filter p ∪ s.filter q = s.filter (λx, p x ∨ q x) :=
+ext.2 $ λ x, by simp only [mem_filter, mem_union, and_or_distrib_left.symm]
+
+lemma subset_union_elim {s : finset α} {t₁ t₂ : set α} [decidable_pred (∈ t₁)] (h : ↑s ⊆ t₁ ∪ t₂) :
+  ∃s₁ s₂ : finset α, s₁ ∪ s₂ = s ∧ ↑s₁ ⊆ t₁ ∧ ↑s₂ ⊆ t₂ \ t₁ :=
+begin
+  refine ⟨s.filter (∈ t₁), s.filter (∉ t₁), _, _ , _⟩,
+  { simp [filter_union_right, classical.or_not_iff_true] },
+  { intro x, simp },
+  { intro x, simp, intros hx hx₂, refine ⟨or.resolve_left (h hx) hx₂, hx₂⟩ }
 end
 
 end finset
