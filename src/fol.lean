@@ -1944,10 +1944,18 @@ infix ` ⊢' `:51 := fol.sprovable -- input: \|- or \vdash
 def saxm {T : Theory L} {A : sentence L} (H : A ∈ T) : T ⊢ A := 
 by apply axm; apply mem_image_of_mem _ H
 
+def saxm1 {T : Theory L} {A : sentence L} : insert A T ⊢ A := by apply saxm; left; refl
+def saxm2 {T : Theory L} {A B : sentence L} : insert A (insert B T) ⊢ B := 
+by apply saxm; right; left; refl
+
 def simpI {T : Theory L} {A B : sentence L} (H : insert A T ⊢ B) : T ⊢ A ⟹ B := 
 begin
   apply impI, simp[sprf, Theory.fst, image_insert_eq] at H, assumption
 end
+
+def simpE {T : Theory L} (A : sentence L) {B : sentence L} (H₁ : T ⊢ A ⟹ B) (H₂ : T ⊢ A) : 
+  T ⊢ B := 
+by apply impE A.fst H₁ H₂
 
 @[reducible] lemma fst_commutes_with_imp {T : Theory L} (A B : sentence L) : (A ⟹ B).fst = A.fst ⟹ B.fst := by refl
 
@@ -1984,8 +1992,18 @@ end
 def sweakening {T T' : Theory L} (h_sub : T' ⊆ T) {ψ : sentence L} (h : T' ⊢ ψ) : T ⊢ ψ :=
 weakening (image_subset _ h_sub) h
 
+def sweakening1 {T : Theory L} {ψ₁ ψ₂ : sentence L} (h : T ⊢ ψ₂) : insert ψ₁ T ⊢ ψ₂ :=
+sweakening (subset_insert ψ₁ T) h
+
+def sweakening2 {T : Theory L} {ψ₁ ψ₂ ψ₃ : sentence L} (h : insert ψ₁ T ⊢ ψ₃) : 
+  insert ψ₁ (insert ψ₂ T) ⊢ ψ₃ :=
+sweakening (insert_subset_insert (subset_insert _ T)) h
+
 def sprovable_of_provable {T : Theory L} {f : sentence L} (h : T.fst ⊢ f.fst) : T ⊢ f := h
 def provable_of_sprovable {T : Theory L} {f : sentence L} (h : T ⊢ f) : T.fst ⊢ f.fst := h
+def sprovable_of_sprf {T : Theory L} {f : sentence L} (h : T ⊢ f) : T ⊢' f := ⟨h⟩
+def sprovable.elim {P : Prop} {T : Theory L} {f : sentence L} (ih : T ⊢ f → P) (h : T ⊢' f) : P := 
+by unfreezeI; cases h with h; exact ih h
 
 -- def sprovable_of_sprovable_lift_at {T : Theory L} (n m : ℕ) {f : formula L} (h : T.fst ⊢ f ↑' n # m) :
 --   T.fst ⊢ f := 
