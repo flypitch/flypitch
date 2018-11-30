@@ -629,7 +629,7 @@ end
 
 def complete_henkin_Theory_over {L : Language} (T : Theory L) (hT : is_consistent T) : Type u := Σ' T' : Theory_over T hT, has_enough_constants T'.val ∧ is_complete T'.val
 
-def henkinization {L : Language} {T : Theory L} (hT : is_consistent T) : Theory (@henkin_language L T hT) := T_infty T
+@[reducible]def henkinization {L : Language} {T : Theory L} (hT : is_consistent T) : Theory (@henkin_language L T hT) := T_infty T
 
 /-- Given an f : bounded_formula L_infty, return a Henkin witness for f, along with all the
     data and conditions needed to obtain this witness --/

@@ -4,22 +4,6 @@ local attribute [instance, priority 0] classical.prop_decidable
 
 open fol fol.Lhom
 
-def double_negation_elim {L} {T : Theory L} {f : sentence L} : T ⊢ (f ⟹ (⊥ : sentence L)) ⟹ (⊥ : sentence L) → T ⊢ f :=
-begin
-  intro, fapply falsumE, fapply impE, exact f.fst, all_goals{unfold fol.not},
-  fapply deduction, 
-  fapply impI, fapply axm1, fapply exfalso, fapply deduction, assumption
-end
-
-lemma consis_not_of_not_provable {L} {T : Theory L} (f : sentence L) : ¬ T ⊢' f → is_consistent (T ∪ {∼f}) :=
-begin
-  intro, by_contra, have := classical.choice (classical.by_contradiction a_1),
-  simp only [*, set.union_singleton, fol.bounded_preformula.fst] at this,
-  have : Theory.fst T ⊢ f.fst, fapply double_negation_elim, fapply impI,
-  unfold Theory.fst at this, rw[set.image_insert_eq] at this, exact this,
-  have := nonempty.intro this, contradiction
-end
-
 theorem completeness2 {L : Language} (T : Theory L) (ψ : sentence L) : T ⊢' ψ ↔ T ⊨ ψ :=
 begin
   refine ⟨by {intro H, fapply soundness, exact classical.choice H}, _⟩,
@@ -29,15 +13,23 @@ begin
             fapply classical.by_contradiction, exact h, exact this},
   
   by_contra, simp[*,-a] at a, cases a with H2 H1,
-  have hT := consis_not_of_not_provable ψ H1,
-  let L' := L_infty L, let T' := T_infty T,
-  let T'' := sorry
---   L' : Language_over L,
--- T'' : Theory (L'.fst),
--- HT'' : Theory_induced (L'.snd) (T ∪ {∼ψ}) ⊆ T'' ∧ is_consistent T'',
--- T''_henkin : has_enough_constants (⟨T'', HT''⟩.val),
--- T''_complete : is_complete (⟨T'', HT''⟩.val)
-  
+  have hT := consis_not_of_not_provable H1,
+  let L' := @henkin_language L, let T' := T_infty T,
+  have T'' := completion_of_henkinization hT,
+  let f_infty := @henkin_language_canonical_map L 0,
+  have h_all_realized_of_reduct : Lhom.reduct (f_infty) (term_model T'') ⊨ T,
+      {fapply Lhom.reduct_all_ssatisfied,
+      {simp only [henkin_language_canonical_map_inj]}, -- injectivity
+      have h_term := term_model_ssatisfied (completion_of_henkinization_complete hT) (completion_of_henkinization_is_henkin hT),
+        
+      -- unfold Theory_induced at this, exact H_sub begin have : T ⊆ (T ∪ {∼ψ}),
+      -- by simp only [set.subset_insert, set.union_singleton],
+      --   fapply set.image_subset, repeat{assumption} end
+        },
+  suffices h_not_psi : Lhom.reduct (f_infty) (term_model T'') ⊨ ∼ψ,
+  by {revert h_not_psi,
+    simp only [*, forall_prop_of_true, forall_prop_of_false, not_true,
+              fol.realize_sentence_not, not_false_iff], sorry},  
 end
 
 theorem completeness {L : Language} (T : Theory L) (ψ : sentence L) : T ⊢' ψ ↔ T ⊨ ψ :=
