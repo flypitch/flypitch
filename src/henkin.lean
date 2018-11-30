@@ -275,7 +275,7 @@ def L_infty (L) : Language :=
 /-- For every n : ℕ, return the canonical inclusion L_n → L_infty  --/
 def henkin_language_canonical_map {L : Language} (m : ℕ) : (@henkin_language_chain L).obj m →ᴸ (@L_infty L) := by apply canonical_map_language
 
-lemma henkin_language_canonical_map_inj {L : Language} (m : ℕ) : Lhom.is_injective $ @henkin_language_canonical_map L m :=
+@[simp]lemma henkin_language_canonical_map_inj {L : Language} (m : ℕ) : Lhom.is_injective $ @henkin_language_canonical_map L m :=
 begin
   split,
   
@@ -608,7 +608,7 @@ def ι {L : Language} {T : Theory L} (m : ℕ) :  Theory (L_infty L) :=
 /- T_infty is the henkinization of T; we define it to be the union ⋃ (n : ℕ), ι(T n). -/
 def T_infty {L : Language} (T : Theory L) : Theory (L_infty L) := set.Union (@ι L T)
 
-def henkin_language {L} {T : Theory L} {hT : is_consistent T} : Language := L_infty L
+@[reducible]def henkin_language {L} {T : Theory L} {hT : is_consistent T} : Language := L_infty L
 
 local infix ` →ᴸ `:10 := Lhom -- \^L
 
@@ -637,7 +637,7 @@ begin
   refine ⟨(henkin_language_canonical_map (f_lift2.fst.fst + 1)).on_function (wit' (f_lift2.fst.snd)), f_lift1,(f_lift2.fst), f_lift2.snd,rfl⟩,
 end
 
-lemma henkinization_is_henkin {L : Language} {T : Theory L} (hT : is_consistent T) : has_enough_constants (henkinization hT) :=
+@[simp]lemma henkinization_is_henkin {L : Language} {T : Theory L} (hT : is_consistent T) : has_enough_constants (henkinization hT) :=
 begin
   apply has_enough_constants.intro,
   unfold henkinization T_infty, intro f, have big_sigma := wit_infty f, rcases big_sigma with ⟨c, blah⟩, refine ⟨c,_⟩,
@@ -685,7 +685,7 @@ begin
   by tidy, rw[this]}
 end
 
-lemma is_consistent_henkinization {L : Language} {T : Theory L} (hT : is_consistent T) : is_consistent (henkinization hT) :=
+@[simp]lemma is_consistent_henkinization {L : Language} {T : Theory L} (hT : is_consistent T) : is_consistent (henkinization hT) :=
 begin
   intro P, have := proof_compactness P,
   have : ∃ k : ℕ, Theory.fst (@ι L T k) ⊢' (bd_falsum).fst,
@@ -703,7 +703,27 @@ begin
   repeat{assumption}
 end
 
-noncomputable def complete_henkinization {L} {T : Theory L} (hT : is_consistent T) := completion_of_consis _ (henkinization hT) (is_consistent_henkinization hT)
+@[reducible]noncomputable def completion_of_henkinization_core {L} {T : Theory L} (hT : is_consistent T) : Σ' (T' : Theory_over (henkinization hT) _), is_complete (T'.val) := completion_of_consis _ (henkinization hT) (is_consistent_henkinization hT)
+
+/- the completed theory-/
+@[reducible]def completion_of_henkinization {L} {T : Theory L} (hT : is_consistent T) := (completion_of_henkinization_core (by assumption)).fst.val
+
+/- the completed theory contains the original theory -/
+@[simp]def completion_of_henkinization_contains {L} {T : Theory L} (hT : is_consistent T) := (completion_of_henkinization_core (by assumption)).fst.property.left
+
+/- the completed theory is consistent -/
+@[simp]def completion_of_henkinization_consistent {L} {T : Theory L} (hT : is_consistent T) := (completion_of_henkinization_core (by assumption)).fst.property.right
+
+/- the completed theory is complete -/
+@[reducible]def completion_of_henkinization_complete {L} {T : Theory L} (hT : is_consistent T) := (completion_of_henkinization_core (by assumption)).snd
+
+/- the completed theory is henkin -/
+lemma completion_of_henkinization_is_henkin {L} {T : Theory L} (hT : is_consistent T) : has_enough_constants (completion_of_henkinization hT) :=
+begin
+fapply has_enough_constants.intro,
+  cases (@henkinization_is_henkin L T hT) with C H,
+  intro f, refine ⟨C f,_⟩, fapply weakening', exact (Theory.fst $ (henkinization hT)), fapply set.image_subset, simp, exact H f
+end
 
 /- Bundled versions below -/
 def Language_over (L : Language) := Σ L' : Language, L →ᴸ L'
@@ -713,7 +733,7 @@ def henkin_Theory_over {L : Language} (T : Theory L) (hT : is_consistent T) : Ty
 def henkinization' {L : Language} {T : Theory L} (hT : is_consistent T) : Σ (L' : Language_over L), henkin_Theory_over (Theory_induced L'.snd T) begin apply is_consistent_Theory_induced, repeat{assumption}, sorry end := sorry
 
 /-- The completion of a Henkin theory is again Henkin. --/
-lemma has_enough_constants_of_completion {L} {T : Theory L} (hT : is_consistent T) : is_consistent (completion_of_consis _ (@henkinization L T hT) (is_consistent_henkinization hT)).fst.val := sorry
+@[simp]lemma has_enough_constants_of_completion {L} {T : Theory L} (hT : is_consistent T) : is_consistent (completion_of_consis _ (@henkinization L T hT) (is_consistent_henkinization hT)).fst.val := sorry
 
 /-- Given an L-theory T, return a completed Henkinization of T --/
 def complete_henkinization' {L : Language} {T : Theory L} (hT : is_consistent T) : Σ (L' : Language_over L), complete_henkin_Theory_over (Theory_induced L'.snd T) begin apply is_consistent_Theory_induced, repeat{assumption}, sorry end := sorry
