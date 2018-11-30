@@ -2237,9 +2237,6 @@ def term_model : Structure L :=
 --   sorry
 -- end
 
--- dsimp [term_model, Structure.rel_map, term_model_rel], 
---     rw [ts.map_congr realize_closed_term_term_model, dvector.quotient_beta], refl
-
 variable {T}
 lemma realize_closed_preterm_term_model {l} (ts : dvector (closed_term L) l) (t : closed_preterm L l) : 
   realize_bounded_term ([]) t (ts.map $ term_mk T) = (term_mk T (bd_apps t ts)) :=
