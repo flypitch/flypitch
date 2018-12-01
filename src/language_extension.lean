@@ -22,12 +22,12 @@ section
 variable {L : Language}
 
 
-def symbols_in_term : ∀{l}, preterm L l → set L.symbols
+@[simp] def symbols_in_term : ∀{l}, preterm L l → set L.symbols
 | _ &k          := ∅
 | l (func f)    := {sum.inl ⟨l,f⟩}
 | _ (app t₁ t₂) := symbols_in_term t₁ ∪ symbols_in_term t₂
 
-def symbols_in_formula : ∀{l}, preformula L l → set L.symbols
+@[simp] def symbols_in_formula : ∀{l}, preformula L l → set L.symbols
 | _ falsum       := ∅
 | _ (t₁ ≃ t₂)    := symbols_in_term t₁ ∪ symbols_in_term t₂
 | l (rel R)      := {sum.inr ⟨l, R⟩}
@@ -35,8 +35,39 @@ def symbols_in_formula : ∀{l}, preformula L l → set L.symbols
 | _ (f₁ ⟹ f₂)   := symbols_in_formula f₁ ∪ symbols_in_formula f₂
 | _ (∀' f)       := symbols_in_formula f
 
-def symbols_in_formula_subst (s : term L) : ∀{l} (n) (f : preformula L l), 
-  symbols_in_formula (f[s // n]) ⊆ symbols_in_formula f ∪ symbols_in_term s := sorry
+@[simp] lemma symbols_in_term_lift_at (n m) : ∀{l} (t : preterm L l), 
+  symbols_in_term (t ↑' n # m) = symbols_in_term t
+| _ &k          := by by_cases h : m ≤ k; simp [h]
+| l (func f)    := by refl
+| _ (app t₁ t₂) := by simp*
+
+@[simp] lemma symbols_in_term_lift (n) {l} (t : preterm L l) :
+  symbols_in_term (t ↑ n) = symbols_in_term t :=
+symbols_in_term_lift_at n 0 t
+
+lemma symbols_in_term_subst (s : term L) (n) : ∀{l} (t : preterm L l), 
+  symbols_in_term (t[s // n]) ⊆ symbols_in_term t ∪ symbols_in_term s
+| _ &k          := by apply lt_by_cases n k; intro h; simp [h]
+| _ (func f)    := subset_union_left _ _
+| _ (app t₁ t₂) := 
+  by { simp; split; refine subset.trans (symbols_in_term_subst _) _; 
+       simp [subset_union2_left, subset_union2_middle] }
+
+lemma symbols_in_formula_subst : ∀{l} (f : preformula L l) (s : term L) (n), 
+  symbols_in_formula (f[s // n]) ⊆ symbols_in_formula f ∪ symbols_in_term s
+| _ falsum       s n := empty_subset _
+| _ (t₁ ≃ t₂)    s n := 
+  by { simp; split; refine subset.trans (symbols_in_term_subst _ _ _) _; 
+       simp [subset_union2_left, subset_union2_middle] }
+| _ (rel R)      s n := subset_union_left _ _
+| _ (apprel f t) s n := 
+  by { simp; split; [refine subset.trans (symbols_in_formula_subst _ _ _) _,
+         refine subset.trans (symbols_in_term_subst _ _ _) _];
+       simp [subset_union2_left, subset_union2_middle] }
+| _ (f₁ ⟹ f₂)   s n :=
+  by { simp; split; refine subset.trans (symbols_in_formula_subst _ _ _) _;
+       simp [subset_union2_left, subset_union2_middle] }
+| _ (∀' f)       s n := symbols_in_formula_subst f _ _
 
 end
 
@@ -141,10 +172,10 @@ attribute [instance] has_decidable_range.on_function has_decidable_range.on_rela
 
 lemma not_mem_symbols_in_term_on_term {s : L'.symbols} (h : s ∉ range (ϕ.on_symbol)) :
   ∀{l} (t : preterm L l), s ∉ symbols_in_term (ϕ.on_term t)
-| _ &k          := not_mem_empty _
-| l (func f)    := λh', h ⟨sum.inl ⟨l, f⟩, (eq_of_mem_singleton h').symm⟩
-| _ (app t₁ t₂) := 
-  λh, or.elim h (not_mem_symbols_in_term_on_term t₁) (not_mem_symbols_in_term_on_term t₂)
+| _ &k          h' := not_mem_empty _ h'
+| l (func f)    h' := h ⟨sum.inl ⟨l, f⟩, (eq_of_mem_singleton h').symm⟩
+| _ (app t₁ t₂) h' := 
+  or.elim h' (not_mem_symbols_in_term_on_term t₁) (not_mem_symbols_in_term_on_term t₂)
 
 @[simp] def on_formula : ∀{l}, preformula L l → preformula L' l
 | _ falsum       := falsum
@@ -168,7 +199,7 @@ lemma not_mem_symbols_in_term_on_term {s : L'.symbols} (h : s ∉ range (ϕ.on_s
 ϕ.on_formula_lift_at n 0 f
 
 @[simp] lemma on_formula_subst : ∀{l} (f : preformula L l) (s : term L) (n : ℕ), 
-  ϕ.on_formula (f[s // n]) = ϕ.on_formula f[ϕ.on_term s // n]
+  ϕ.on_formula (f[s // n]) = (ϕ.on_formula f)[ϕ.on_term s // n]
 | _ falsum       s n := by refl
 | _ (t₁ ≃ t₂)    s n := by simp
 | _ (rel R)      s n := by refl
@@ -182,7 +213,15 @@ lemma not_mem_symbols_in_term_on_term {s : L'.symbols} (h : s ∉ range (ϕ.on_s
 | _ f (t'::ts) := by simp*
 
 lemma not_mem_symbols_in_formula_on_formula {s : L'.symbols} (h : s ∉ range (ϕ.on_symbol)) :
-  ∀{l} (f : preformula L l), s ∉ symbols_in_formula (ϕ.on_formula f) := sorry
+  ∀{l} (f : preformula L l), s ∉ symbols_in_formula (ϕ.on_formula f)
+| _ falsum       h' := not_mem_empty _ h'
+| _ (t₁ ≃ t₂)    h' := by cases h'; apply not_mem_symbols_in_term_on_term ϕ h _ h'
+| l (rel R)      h' := h ⟨sum.inr ⟨l, R⟩, (eq_of_mem_singleton h').symm⟩
+| _ (apprel f t) h' := 
+  by { cases h', apply not_mem_symbols_in_formula_on_formula _ h', 
+       apply not_mem_symbols_in_term_on_term ϕ h _ h' }
+| _ (f₁ ⟹ f₂)   h' := by cases h'; apply not_mem_symbols_in_formula_on_formula _ h'
+| _ (∀' f)       h' := not_mem_symbols_in_formula_on_formula f h'
 
 lemma not_mem_function_in_formula_on_formula {l'} {f' : L'.functions l'} 
   (h : f' ∉ range (@on_function _ _ ϕ l')) {l} (f : preformula L l) :

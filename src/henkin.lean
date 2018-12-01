@@ -164,13 +164,19 @@ Theory_induced henkin_language_inclusion T ∪
 (λ f : bounded_formula L 1, 
   wit_property (henkin_language_inclusion.on_bounded_formula f) (wit' f)) '' (set.univ : set $ bounded_formula L 1)
 
-def is_consistent_henkin_theory_step{L} {T : Theory L} (hT : is_consistent T) :
+def is_consistent_henkin_theory_step {L} {T : Theory L} (hT : is_consistent T) :
   is_consistent (henkin_theory_step T) :=
 begin
   refine eq.mp _ (is_consistent_extend hT henkin_language_inclusion_inj 
     (λf, (∃' f).cast1 ⟹ f) _ wit _ _), 
-  { congr1, congr1, apply set.image_congr', intro f, simp [wit_property], sorry },
-  { intro f, apply falsumE, apply impE _ axm1, sorry /-apply exI, simp,-/ },
+  { congr1, congr1, apply set.image_congr', intro f, ext,
+    simp [wit_property, wit'], rw [←on_bounded_formula_fst, subst_sentence_irrel], refl },
+  { intro f, apply falsumE, apply impE (∃' f.fst),
+    { apply impI, apply impE _ axm2, apply exE axm1, 
+      apply exI &0, rw [lift_subst_formula_cancel], apply impI axm2 },
+    { apply falsumE, apply impE _ axm2, apply exI &0, 
+      apply impI, apply exfalso, apply impE _ axm2, 
+      rw [bounded_preformula.cast1_fst, subst_sentence_irrel], exact axm1 }},
   { intros f f' h, cases h, refl },
   { intro f, intro h, rcases h with ⟨f', hf'⟩, cases hf' }
 end
@@ -594,9 +600,13 @@ noncomputable def equiv_bounded_formula_comparison {L : Language} : equiv (colim
 begin fapply equiv.of_bijective, exacts [bounded_formula'_comparison, bounded_formula'_comparison_bijective] end
 
 /- Not really a chain, since we haven't set up interpretations of theories yet -/
-def henkin_theory_chain {L : Language} {T : Theory L}: Π(n : ℕ), (Theory (obj (@henkin_language_chain L) n))
+def henkin_theory_chain {L : Language} (T : Theory L) : Π(n : ℕ), (Theory (obj (@henkin_language_chain L) n))
 | 0 := T
 | (n+1) := henkin_theory_step (henkin_theory_chain n)
+
+def is_consistent_henkin_theory_chain {L} {T : Theory L} (hT : is_consistent T) (n : ℕ) :
+  is_consistent (henkin_theory_chain T n) :=
+by induction n; [exact hT, exact is_consistent_henkin_theory_step n_ih]
 
 /- Now we have to push all these theories into Theory L_∞, so that they literally become a chain
    of sets. -/
@@ -691,19 +701,15 @@ end
 @[simp]lemma is_consistent_henkinization {L : Language} {T : Theory L} (hT : is_consistent T) : is_consistent (henkinization hT) :=
 begin
   intro P, have := proof_compactness P,
-  have : ∃ k : ℕ, Theory.fst (@ι L T k) ⊢' (bd_falsum).fst,
-    by {sorry}, -- again, this depends on picking a representative of a germ-eq class
-                -- on the induced colimit of formulas
+  have : ∃ k : ℕ, @ι L T k ⊢' bd_falsum,
+  {sorry}, -- again, this depends on picking a representative of a germ-eq class
+           -- on the induced colimit of formulas
+           -- remark(Floris): we need a lemma that if a directed union of theories proves f, then an element of it proves f.
   cases this with k P', unfold ι at P',
-  let T' := henkin_theory_chain k,
-  have : is_consistent T', by {sorry}, -- now we need to prove that finitely many steps preserve consistency
-  have : T' ⊢' (bd_falsum), swap, contradiction,
-  fapply nonempty.intro, fapply Lhom.reflect_prf, exact L_infty L,
-  exact henkin_language_canonical_map k,
-  fapply henkin_language_canonical_map_inj,
-  simp only [*, fol.Lhom.on_formula, fol.bounded_preformula.fst],
-  {sorry}, -- need to prove Theory.fst ∘ on_sentence  = on_formulas ∘ Theory.fst
-  repeat{assumption}
+  apply is_consistent_henkin_theory_chain hT k, 
+  apply nonempty.map (Lhom.reflect_prf (henkin_language_canonical_map_inj k)), 
+  simp only [on_formula, bounded_preformula.fst, Theory.fst, set.image_image, sprovable,
+    on_sentence_fst] at P' ⊢, exact P'
 end
 
 @[reducible]noncomputable def completion_of_henkinization_core {L} {T : Theory L} (hT : is_consistent T) : Σ' (T' : Theory_over (henkinization hT) _), is_complete (T'.val) := completion_of_consis _ (henkinization hT) (is_consistent_henkinization hT)

@@ -315,12 +315,18 @@ lemma image_image (g : β → γ) (f : α → β) (s : set α) : g '' (f '' s) =
 
 @[simp] lemma image_id' (s : set α) : (λx, x) '' s = s := image_id s
 
-theorem image_preimage_eq_of_subset {f : α → β} {s : set β} (h : s ⊆ range f) :
+lemma image_preimage_eq_of_subset {f : α → β} {s : set β} (h : s ⊆ range f) :
   f '' (f ⁻¹' s) = s :=
 begin 
   ext, refine ⟨λhx, image_preimage_subset f s hx, _⟩,
   intro hx, rcases h hx with ⟨x, rfl⟩, apply mem_image_of_mem, exact hx
 end
+
+lemma subset_union2_left {s t u : set α} : s ⊆ s ∪ t ∪ u :=
+subset.trans (subset_union_left _ _) (subset_union_left _ _)
+
+lemma subset_union2_middle {s t u : set α} : t ⊆ s ∪ t ∪ u :=
+subset.trans (subset_union_right _ _) (subset_union_left _ _)
 
 end set
 open nat
