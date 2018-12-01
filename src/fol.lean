@@ -901,6 +901,9 @@ impE A (weakening1 H) axm1
 def exfalso {Γ} {A : formula L} (H : Γ ⊢ falsum) : Γ ⊢ A :=
 falsumE (weakening1 H)
 
+def exfalso' {Γ} {A : formula L} (H : Γ ⊢' falsum) : Γ ⊢' A :=
+by {fapply nonempty.map, exact Γ ⊢ falsum, exact exfalso, exact H}
+
 def notI {Γ} {A : formula L} (H : Γ ⊢ A ⟹ falsum) : Γ ⊢ ∼ A :=
   by {rw[not], assumption}
 
@@ -1889,6 +1892,10 @@ infix ` ⊨ `:51 := fol.realize_sentence -- input using \|= or \vDash, but not u
 
 @[simp] lemma realize_sentence_false {S : Structure L} : S ⊨ (⊥ : sentence L) ↔ false :=
 by refl
+
+@[simp]lemma false_of_satisfied_false {S : Structure L} :  (S ⊨ (⊥ : sentence L)) → false
+:= by simp only [realize_sentence_false, imp_self]
+
 @[simp] lemma realize_sentence_imp {S : Structure L} {f₁ f₂ : sentence L} : 
   S ⊨ f₁ ⟹ f₂ ↔ (S ⊨ f₁ → S ⊨ f₂) :=
 by refl
@@ -1990,8 +1997,18 @@ end
 def sandI {T : Theory L} {A B : sentence L} (H1 : T ⊢ A) (H2 : T ⊢ B) : T ⊢ A ⊓ B :=
 by exact andI H1 H2
 
+lemma sandI' {T : Theory L} {A B : sentence L} (H1 : T ⊢' A) (H2 : T ⊢' B) : T ⊢' A ⊓ B :=
+begin
+  apply @nonempty.map ((T ⊢ A) × (T ⊢ B)) (T ⊢ A ⊓ B),
+  intro H, cases H, apply sandI, repeat{assumption},
+  simp only [nonempty_prod], apply and.intro, exact H1, exact H2
+end
+
 def snot_and_self {T : Theory L} {A : sentence L} (H : T ⊢ A ⊓ ∼ A) : T ⊢ bd_falsum :=
 by exact not_and_self H
+
+def snot_and_self' {T : Theory L} {A : sentence L} (H : T ⊢' A ⊓ ∼A) : T ⊢' bd_falsum :=
+by {apply nonempty.map _ H, apply snot_and_self}
 
 lemma sprf_by_cases {Γ} (f₁) {f₂ : sentence L} (H₁ : insert f₁ Γ ⊢' f₂)
   (H₂ : insert ∼f₁ Γ ⊢' f₂) : Γ ⊢' f₂ :=
@@ -2080,8 +2097,25 @@ by exact hS
 
 def Model (T : Theory L) : Type (u+1) := Σ' (S : Structure L), S ⊨ T
 
+@[reducible]def Model_ssatisfied {T : Theory L} (M : Model T) (ψ : sentence L) := M.fst ⊨ ψ
+
+infix ` ⊨ `:51 := fol.Model_ssatisfied -- input using \|= or \vDash, but not using \models 
+
+@[simp] lemma false_of_Model_absurd {T : Theory L} (M : Model T) {ψ : sentence L} (h : M ⊨ ψ) (h' : M ⊨ ∼ψ) : false :=
+by {unfold Model_ssatisfied at *, simp[*,-h'] at h', exact h'}
+
+
 lemma soundness {T : Theory L} {A : sentence L} (H : T ⊢ A) : T ⊨ A :=
 ssatisfied_of_satisfied $ formula_soundness H
+
+/-- Given a model M ⊨ T with M ⊨ ¬ ψ, ¬ T ⊨ ψ--/
+@[simp]lemma not_satisfied_of_model_not {T : Theory L} {ψ : sentence L} (M : Model T) (hM : M ⊨ ∼ψ) (h_nonempty : nonempty M.fst): ¬ T ⊨ ψ :=
+begin
+  intro H, suffices : M ⊨ ψ, exact false_of_Model_absurd M this hM,
+  exact H h_nonempty M.snd
+end
+
+--infix ` ⊨ `:51 := fol.ssatisfied -- input using \|= or \vDash, but not using \models 
 
 /- consistent theories -/
 def is_consistent (T : Theory L) := ¬(T ⊢' (⊥ : sentence L))

@@ -63,7 +63,7 @@ begin
   rcases finset.exists_of_subset_image K with ⟨Γ', K', hΓ⟩,
   subst hΓ, simp only [finset.coe_image] at H K, 
   exact ⟨Γ', H, K'⟩
-end
+end  
 
 lemma theory_proof_compactness_iff {L : Language} {T : Theory L} {ψ : sentence L} : 
   T ⊢' ψ ↔ ∃Γ : finset (sentence L), ↑Γ ⊢' ψ ∧ ↑Γ ⊆ T :=

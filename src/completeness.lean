@@ -4,87 +4,34 @@ local attribute [instance, priority 0] classical.prop_decidable
 
 open fol fol.Lhom
 
-theorem completeness2 {L : Language} (T : Theory L) (ψ : sentence L) : T ⊢' ψ ↔ T ⊨ ψ :=
+lemma completeness_for_inconsistent_theories {L : Language} (T : Theory L) (ψ : sentence L) (h_inconsis : ¬ is_consistent T) : T ⊢' ψ ↔ T ⊨ ψ :=
+ ⟨by {intro H, fapply soundness, exact classical.choice H}, (by {intro H, exact exfalso' (classical.by_contradiction h_inconsis)})⟩
+
+lemma satisfied_of_provable {L : Language} (T : Theory L) (ψ : sentence L) : T ⊢' ψ → T ⊨ ψ :=
+by {intro H, exact soundness (classical.choice H)}
+
+theorem model_existence {L : Language} (T : Theory L) : is_consistent T ↔ (∃ M : Structure L, (nonempty M) ∧ M ⊨ T) :=
 begin
-  refine ⟨by {intro H, fapply soundness, exact classical.choice H}, _⟩,
-  by_cases is_consistent T, swap,
-            {intro, fapply nonempty.intro, fapply exfalso, fapply classical.choice,
-            unfold is_consistent at h, have : T ⊢' (⊥ : sentence L),
-            fapply classical.by_contradiction, exact h, exact this},
-  
-  by_contra, simp[*,-a] at a, cases a with H2 H1,
-  have hT := consis_not_of_not_provable H1,
-  let L' := @henkin_language L, let T' := T_infty T,
-  have T'' := completion_of_henkinization hT,
-  let f_infty := @henkin_language_canonical_map L 0,
-  have h_all_realized_of_reduct : Lhom.reduct (f_infty) (term_model T'') ⊨ T,
-      {fapply Lhom.reduct_all_ssatisfied,
-      {simp only [henkin_language_canonical_map_inj]}, -- injectivity
-      have h_term := term_model_ssatisfied (completion_of_henkinization_complete hT) (completion_of_henkinization_is_henkin hT),
-        
-      -- unfold Theory_induced at this, exact H_sub begin have : T ⊆ (T ∪ {∼ψ}),
-      -- by simp only [set.subset_insert, set.union_singleton],
-      --   fapply set.image_subset, repeat{assumption} end
-        },
-  suffices h_not_psi : Lhom.reduct (f_infty) (term_model T'') ⊨ ∼ψ,
-  by {revert h_not_psi,
-    simp only [*, forall_prop_of_true, forall_prop_of_false, not_true,
-              fol.realize_sentence_not, not_false_iff], sorry},  
+split, swap,
+  {intro H, rcases H with ⟨M,⟨h_nonempty, hM⟩⟩, intro,
+   apply false_of_satisfied_false, repeat{assumption},
+   apply satisfied_of_provable T ⊥ a, repeat{assumption}},
+  {intro hT, refine ⟨_,_⟩,
+   apply reduct, exact @henkin_language_over L T hT,
+   apply term_model, exact completion_of_henkinization hT,
+   refine ⟨_,_,⟩, fapply Lhom.reduct_nonempty_of_nonempty, simp[fol.nonempty_term_model],
+   apply reduct_of_complete_henkinization_models_T}
 end
 
-theorem completeness {L : Language} (T : Theory L) (ψ : sentence L) : T ⊢' ψ ↔ T ⊨ ψ :=
+noncomputable def nonempty_model_of_consis {L : Language} {T : Theory L} (hT : is_consistent T) : Σ' M : Model T, nonempty M.fst.carrier :=
 begin
-  refine ⟨by {intro H, cases H with H, fapply soundness H }, _⟩,
-  {by_cases is_consistent T, swap,
-            {intro, fapply nonempty.intro, fapply exfalso, fapply classical.choice,
-            unfold is_consistent at h, have : T ⊢' (⊥ : sentence L),
-            fapply classical.by_contradiction, exact h, exact this},
-    {by_contra, simp[*, -a] at a, cases a with H2 H1, 
-    
-    have hT : is_consistent (T ∪ {∼ψ}), by {fapply consis_not_of_not_provable, repeat{assumption}},
-    have T' := (complete_henkinization' hT), cases T' with L' T', cases T' with T'1 T'2,
-    cases T'1 with T'' HT'', cases T'2 with T''_henkin T''_complete,
-    have : ¬ T ⊨ ψ,
-    {unfold ssatisfied, rw[not_forall], fapply exists.intro, fapply Lhom.reduct,
-    exact L'.fst, exact L'.snd, fapply term_model, exact T'', intro H,
-    /- The term model of T'' models T'' -/
-    have term_model_models_T'' : term_model T'' ⊨ T'',
-      {fapply term_model_ssatisfied, repeat{assumption}},
-    /- The term model is nonempty -/
-    have h_nonempty :  nonempty ↥(Lhom.reduct (L'.snd) (term_model T'')),
-      {fapply Lhom.reduct_nonempty_of_nonempty, exact fol.nonempty_term_model T''_henkin},
-    /- The L-reduct of the term model of a complete Henkinization' of T is a model of T -/
-    have h_all_realized_of_reduct : Lhom.reduct (L'.snd) (term_model T'') ⊨ T,
-      {fapply Lhom.reduct_all_ssatisfied,
-      {sorry}, -- injectivity
-      have := HT''.left,
-      have h_term := term_model_ssatisfied T''_complete T''_henkin,
-      intros f hf, fapply term_model_models_T'',
-      unfold Theory_induced at this, exact this begin have : T ⊆ (T ∪ {∼ψ}),
-      by simp only [set.subset_insert, set.union_singleton],
-        fapply set.image_subset, repeat{assumption} end
-        },
-    /- Since term_model T'' ⊨ T'' and T'' contains ∼ψ, the term model satisfies ∼ψ -/
-    have h_not_psi : Lhom.reduct (L'.snd) (term_model T'') ⊨ ∼ψ,
-      {have := @term_model_ssatisfied L'.fst T'' T''_complete T''_henkin,
-      refine Lhom.reduct_ssatisfied _ _,
-      {sorry}, -- injectivity
-      refine this _, fapply HT''.left,
-      simp only [Theory_induced, set.mem_insert_iff, set.mem_image, set.union_singleton],
-      exact ⟨∼ψ, by simp only [*, true_or, eq_self_iff_true, and_self]⟩
-      },
-    revert h_not_psi,
-    simp only [*, forall_prop_of_true, forall_prop_of_false, not_true,
-              fol.realize_sentence_not, not_false_iff]},
-    {contradiction}, 
-    },
-  }
+  have := (model_existence T).mp hT, apply classical.psigma_of_exists,
+  rcases this with ⟨M, hM, h_satisfied⟩,
+  apply exists.intro, swap, exact ⟨M, h_satisfied⟩, exact hM
 end
 
-/- Note: in the not-easy direction, the term model of a complete Henkin theory will contain a constant witnessing "∃ x, x = x" or something like that, and so will not be empty. -/
-
-/-- Corollary of completeness --/
-theorem completeness'' {L : Language} (T : Theory L) : is_consistent T ↔ (∃ M : Structure L, (nonempty M) ∧ M ⊨ T) :=
+/-- model_existence is implied by completeness --/
+theorem model_existence_of_completeness {L : Language} (T : Theory L) (h_completeness : ∀ (T : Theory L) (ψ : sentence L), T ⊢' ψ ↔ T ⊨ ψ) : is_consistent T ↔ (∃ M : Structure L, (nonempty M) ∧ M ⊨ T) :=
 begin
   split, swap,
   {intros H1 H2, cases H1 with M hM, cases hM with h_nonempty hM,
@@ -94,14 +41,28 @@ begin
     exact classical.choice H2},
 
   {by_contra, simp only [*, -a, not_exists, not_imp, not_and, nonempty.forall] at a, cases a,
-  have  : ¬ T ⊢' (⊥ : sentence L) → ¬ T ⊨ (⊥ : sentence L),
-  by simp only [completeness T ⊥, imp_self], have H := this a_left, unfold ssatisfied at H,
+  have  : ¬ T ⊢' (⊥ : sentence L) → ¬ T ⊨ (⊥ : sentence L), 
+  by simp only [@h_completeness T ⊥, imp_self], have H := this a_left, unfold ssatisfied at H,
   simp only [*, -H, fol.realize_sentence_false, nonempty.forall] at H,
   fapply absurd, exact ∀ ⦃S : Structure L⦄, S.carrier → S ⊨ T → false, repeat{assumption}}
 end
 
-theorem compactness {L : Language} {T : Theory L} {f : sentence L} : 
-  T ⊨ f ↔ ∃ fs : finset (sentence L), ↑fs ⊨ f ∧ ↑fs ⊆ T :=
+theorem completeness {L : Language} (T : Theory L) (ψ : sentence L) : T ⊢' ψ ↔ T ⊨ ψ :=
 begin
-  rw [←completeness T f, theory_proof_compactness_iff], simp only [completeness]
+  suffices : T ⊨ ψ → T ⊢' ψ, by exact ⟨(by apply satisfied_of_provable), this⟩,
+  intro hψ, by_contra,
+  suffices : ¬ T ⊨ ψ, by contradiction,
+  have := nonempty_model_of_consis (consis_not_of_not_provable a),
+  rcases this with ⟨⟨M,hM⟩, nonempty_M⟩;
+  fapply not_satisfied_of_model_not,
+  refine ⟨M,_⟩,
+  intros f hf, apply hM, simp[hf],
+  unfold Model_ssatisfied, dsimp, apply hM _,
+  simpa only [set.mem_insert_iff, true_or, eq_self_iff_true, set.union_singleton]
+end
+
+theorem compactness {L : Language} {T : Theory L} {f : sentence L} : 
+  T ⊨ f ↔ ∃ fs : finset (sentence L), (↑fs : Theory L) ⊨ (f : sentence L) ∧ ↑fs ⊆ T :=
+begin
+  rw [<-(completeness T f), theory_proof_compactness_iff], simp only [completeness]
 end

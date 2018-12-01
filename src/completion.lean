@@ -11,6 +11,25 @@ parameter L : Language.{u}
 
 open classical zorn
 
+
+lemma inconsis_not_of_provable {L} {T : Theory L} {f : sentence L} :
+  T ⊢' f → ¬ is_consistent (T ∪ {∼f}) :=
+begin
+  intro H,
+  suffices : (T ∪ {∼f}) ⊢' (⊥ : sentence L),
+  by tidy,
+  apply snot_and_self' _, exact f, apply nonempty.intro, apply andI,
+  apply weakening, show set (formula L), exact T.fst, tidy, exact or.inr (by assumption),
+  exact classical.choice H, apply axm, tidy
+end
+
+lemma provable_of_inconsis_not {L} {T : Theory L} {f : sentence L} :
+¬ is_consistent (T ∪ {∼f})  → T ⊢' f :=
+begin
+by_contra, simp[*,-a] at a, cases a with a1 a2, apply consis_not_of_not_provable a2,
+exact classical.by_contradiction (by tidy)
+end
+
 lemma dne {p : Prop} : (¬ ¬ p) ↔ p  :=
 by {split, exact classical.by_contradiction, intros h₁ h₂, exact h₂ h₁ }
 
