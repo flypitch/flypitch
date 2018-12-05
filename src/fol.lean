@@ -18,6 +18,7 @@ namespace fol
 
 /- realizers of variables are just maps ℕ → S. We need some operations on them -/
 
+/-- Given a valuation v, a nat n, and an x : S, return v truncated to its first n values, with the rest of the values replaced by x. --/
 def subst_realize {S : Type u} (v : ℕ → S) (x : S) (n k : ℕ) : S :=
 if k < n then v k else if n < k then v (k - 1) else x
 
@@ -1336,6 +1337,24 @@ begin
 end,
 λt, h t ([]) (by intros s hs; cases hs)
 
+@[elab_as_eliminator] def bounded_term.rec1 {n} {C : bounded_term L (n+1) → Sort v}
+  (hvar : ∀(k : fin (n+1)), C &k)
+  (hfunc : Π {l} (f : L.functions l) (ts : dvector (bounded_term L (n+1)) l) 
+    (ih_ts : ∀t, ts.pmem t → C t), C (bd_apps (bd_func f) ts)) : 
+  ∀(t : bounded_term L (n+1)), C t :=
+have h : ∀{l} (t : bounded_preterm L (n+1) l) (ts : dvector (bounded_term L (n+1)) l) 
+  (ih_ts : ∀s, ts.pmem s → C s), C (bd_apps t ts),
+begin
+  intros, induction t; try {rw ts.zero_eq},
+  { apply hvar }, 
+  { apply hfunc t_f ts ih_ts }, 
+  { apply t_ih_t (t_s::ts), intros t ht, 
+    cases ht, 
+    { induction ht, apply t_ih_s ([]), intros s hs, cases hs },
+    { exact ih_ts t ht }},
+end,
+λt, h t ([]) (by intros s hs; cases hs)
+
 lemma lift_bounded_term_irrel {n : ℕ} : ∀{l} (t : bounded_preterm L n l) (n') {m : ℕ}
   (h : n ≤ m), t.fst ↑' n' # m = t.fst
 | _ &k           n' m h := 
@@ -1349,6 +1368,14 @@ lemma subst_bounded_term_irrel {n : ℕ} : ∀{l} (t : bounded_preterm L n l) {n
 | _ (bd_func f)    n' s h := by refl
 | _ (bd_app t₁ t₂) n' s h := by simp*
 
+/--Given a bounded_preterm of bound n and level l, realize it using (v : dvector S n) and (xs : dvector L l) by the following structural induction:
+
+1. Given a free de Bruijn variable &k, replace it with the kth member (indexing starting at 0) of v,
+
+2. given a (bd_func f), replace it with its realization as a function on S, _evaluated_ at xs, and
+
+3. given an application of terms, replace it with a literal application of terms, with the inner term evaluated at xs.
+--/
 @[simp] def realize_bounded_term {S : Structure L} {n} (v : dvector S n) : 
   ∀{l} (t : bounded_preterm L n l) (xs : dvector S l), S.carrier
 | _ &k             xs := v.nth k.1 k.2
@@ -1613,6 +1640,9 @@ end
 
 protected def cast_eq {n m l} (h : n = m) (f : bounded_preformula L n l) : bounded_preformula L m l :=
 f.cast $ le_of_eq h
+
+protected def cast_eqr {n m l} (h : n = m) (f : bounded_preformula L m l) : bounded_preformula L n l :=
+f.cast $ ge_of_eq h
 
 protected def cast1 {n l} (f : bounded_preformula L n l) : bounded_preformula L (n+1) l :=
 f.cast $ n.le_add_right 1
@@ -1901,19 +1931,20 @@ by refl
 by refl
 @[simp] lemma realize_sentence_not {S : Structure L} {f : sentence L} : S ⊨ ∼f ↔ ¬ S ⊨ f :=
 by refl
-@[simp] lemma realize_sentence_and {S : Structure L} {f₁ f₂ : sentence L} :
-  S ⊨ f₁ ⊓ f₂ ↔ (S ⊨ f₁ ∧ S ⊨ f₂) :=
-begin
-  have : S ⊨ f₁ ∧ S ⊨ f₂ ↔ ¬(S ⊨ f₁ → ¬ S ⊨ f₂),
-    split,
-      {intro H, fapply not.intro, tauto},
-      {intro H, have := @not.elim _ (S ⊨ f₁) H, finish},
-  rw[this], refl
-end
 
 @[simp] lemma realize_sentence_all {S : Structure L} {f : bounded_formula L 1} :
   (S ⊨ ∀'f) ↔ ∀ x : S, realize_bounded_formula([x]) f([]) :=
 by refl
+
+@[simp]lemma realize_bounded_formula_and {L} {S : Structure L} : ∀{n} {v : dvector S n} {f g : bounded_formula L n}, realize_bounded_formula v (f ⊓ g) dvector.nil ↔ (realize_bounded_formula v f dvector.nil ∧ realize_bounded_formula v g dvector.nil) :=
+begin
+    intros, have : realize_bounded_formula v f dvector.nil ∧ realize_bounded_formula v g dvector.nil ↔ ¬(realize_bounded_formula v f dvector.nil → ¬ (realize_bounded_formula v g dvector.nil)),
+    by finish, rw[this], refl
+end
+
+@[simp] lemma realize_sentence_and {S : Structure L} {f₁ f₂ : sentence L} :
+  S ⊨ f₁ ⊓ f₂ ↔ (S ⊨ f₁ ∧ S ⊨ f₂) :=
+    by apply realize_bounded_formula_and
 
 lemma realize_bounded_formula_bd_apps_rel {S : Structure L}
   {n l} (xs : dvector S n) (f : bounded_preformula L n l) (ts : dvector (bounded_term L n) l) :
@@ -1923,10 +1954,10 @@ begin
   induction ts generalizing f, refl, apply ts_ih (bd_apprel f ts_x)
 end
 
--- lemma realize_sentence_bd_apps_rel' {S : Structure L}
---   {l} (f : presentence L l) (ts : dvector (closed_term L) l) :
---   S ⊨ bd_apps_rel f ts ↔ realize_bounded_formula ([]) f (ts.map $ realize_closed_term S) :=
--- realize_bounded_formula_bd_apps_rel ([]) f ts
+lemma realize_sentence_bd_apps_rel' {S : Structure L}
+  {l} (f : presentence L l) (ts : dvector (closed_term L) l) :
+  S ⊨ bd_apps_rel f ts ↔ realize_bounded_formula ([]) f (ts.map $ realize_closed_term S) :=
+realize_bounded_formula_bd_apps_rel ([]) f ts
 
 lemma realize_bd_apps_rel {S : Structure L}
   {l} (R : L.relations l) (ts : dvector (closed_term L) l) :

@@ -728,7 +728,7 @@ lemma reduct_nonempty_of_nonempty {S : Structure L'} (H : nonempty S) : nonempty
 by {apply nonempty.map, repeat{assumption}, exact reduct_id}
 
 variable (ϕ)
-def Theory_induced (T : Theory L) : Theory L' := ϕ.on_sentence '' T
+@[reducible]def Theory_induced (T : Theory L) : Theory L' := ϕ.on_sentence '' T
 
 variable {ϕ}
 lemma is_consistent_Theory_induced (hϕ : ϕ.is_injective) {T : Theory L} (hT : is_consistent T) : 

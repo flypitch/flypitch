@@ -20,8 +20,6 @@ def ZFC_el : L_ZFC.relations 2 := ZFC_rel.ϵ
 
 local infix ` ∈' `:100 := bounded_formula_of_relation ZFC_el
 
--- #print L_ZFC -- good
-
 
 inductive ZFC'_f0 : Type
 | emptyset
@@ -66,51 +64,6 @@ rw[duh],
 assumption
 end
 
-/- state the ZFC axioms using L_ZFC' and prove that they are sentences -/
-
--- for reference:
--- notation `⊥` := _root_.fol.preformula.falsum -- input: \bot
--- infix ` ≃ `:88 := _root_.fol.preformula.equal -- input \~- or \simeq
--- infix ` ⟹ `:62 := _root_.fol.preformula.imp -- input \==>
--- prefix `∼`:max := _root_.fol.not -- input \~, the ASCII character ~ has too low precedence
--- infixr ` ⊔ ` := _root_.fol.or -- input: \sqcup
--- infixr ` ⊓ ` := _root_.fol.and -- input: \sqcap
--- prefix `∀'`:110 := _root_.fol.preformula.all
--- prefix `∃'`:110 := _root_.fol.ex
---set_option pp.notation true
-
--- def b_not {L : Language} (n : ℕ) (f : preformula L 0) (hf : formula_below n f)  : formula_below n (fol.not f) := begin
--- simp[fol.not],
--- refine formula_below.b_imp _ _ _ _,
--- assumption,
--- exact formula_below.b_falsum
--- end
-
--- def b_and {L : Language} (n : ℕ) (f g : preformula L 0) (hf : formula_below n f) (hg : formula_below n g) : formula_below n (fol.and f g) :=
--- begin
--- simp[fol.and],
--- refine b_not _ _ _,
--- refine formula_below.b_imp _ _ _ _,
--- assumption,
--- apply b_not,
--- assumption
--- end
-
--- def b_biimp {L : Language} (n : ℕ) (f g : preformula L 0) (hf : formula_below n f) (hg : formula_below n g) : formula_below n (f ⟺ g) :=
--- begin
--- simp[biimp,fol.and, fol.not],
--- refine formula_below.b_imp _ _ _ _,
--- have := formula_below.b_falsum, -- can we add this to _every_ local context?
--- refine formula_below.b_imp _ _ _ _,
--- refine formula_below.b_imp _ _ _ _,
--- assumption, assumption,
--- refine formula_below.b_imp _ _ _ _,
--- refine formula_below.b_imp _ _ _ _,
--- assumption, assumption, assumption,
--- have := formula_below.b_falsum,
--- assumption
--- end
-
 def Class : Type := bounded_formula L_ZFC 1
 def small {n} (c : bounded_formula L_ZFC (n+1)) : bounded_formula L_ZFC n := 
 ∃' ∀' (&0 ∈' &1 ⇔ (c ↑' 1 # 1))
@@ -125,6 +78,9 @@ def binary_union : bounded_formula L_ZFC 3 := &0 ∈' &1 ⊔ &0 ∈' &2
 def succ : bounded_formula L_ZFC 2 := bd_equal &0 &1 ⊔ &0 ∈' &1
 --∀x∃y(x ∈ y ∧ ∀z(z ∈ y → ∃w(z ∈ w ∧ w ∈ y)))
 
+def function : bounded_formula L_ZFC 1 := sorry
+-- to define what functions are, we need to have a notion of what it means for a set to be made up of only ordered pairs, but this seems... ugly
+
 def axiom_of_extensionality : sentence L_ZFC := ∀' ∀' (∀' (&0 ∈' &1 ⇔ &0 ∈' &2) ⟹ &0 ≃ &1)
 def axiom_of_union : sentence L_ZFC := ∀' (small ∃' (&1 ∈' &0 ⊓ &0 ∈' &2))
 -- todo: c can have free variables. Note that c y x is interpreted as y is the image of x
@@ -137,8 +93,9 @@ def axiom_of_powerset : sentence L_ZFC :=
 def axiom_of_infinity : sentence L_ZFC := 
 --∀x∃y(x ∈ y ∧ ∀z(z ∈ y → ∃w(z ∈ w ∧ w ∈ y)))
 ∀' ∃' (&1 ∈' &0 ⊓ ∀'(&0 ∈' &1 ⟹ ∃' (bd_and (&1 ∈' &0) (&0 ∈' &2))))
-def axiom_of_choice : sentence L_ZFC := sorry
-
+def axiom_of_choice : sentence L_ZFC :=
+-- for every E : A → B, there exists a function C on A such that for every a ∈ A, C a ∈ E a.
+  ∀' /-E : A → B-/ ∃' /- C -/ ∀' /- a -/ /- if a is in the domain of E and E a is nonempty, then C a ∈ E a -/ sorry
 -- the following axioms follow from the other axioms
 def axiom_of_emptyset : sentence L_ZFC := small ⊥
 -- todo: c can have free variables

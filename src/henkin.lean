@@ -115,9 +115,62 @@ begin
    simp only [*, eq_self_iff_true]},
 end
 
+namespace omega_colimit_language
+/- Facts about directed colimits indexed by ℕ'. -/
+def diagram.mk.map {F : ℕ → Language} {h_succ : ∀{i : ℕ}, F i →ᴸ F (i+1)} : Π (x y : ℕ), x ≤ y → (F x →ᴸ F y)
+| x 0 h := by {rw[nat.eq_zero_of_le_zero h], exact ⟨λn, id, λn, id⟩}
+| x (y+1) h := by {by_cases x = y + 1, rw[h], exact ⟨λn, id, λn, id⟩, refine h_succ ∘  _,
+                  apply diagram.mk.map, apply nat.le_of_le_and_ne_succ, repeat{assumption}}
+
+--TODO(jesse) finish converting this to language versions and refactor henkin_language_chain
+-- @[simp]lemma diagram.mk.map_self_id {F : ℕ → Type*} {h_succ : ∀(i : ℕ), F i → F (i+1)} (x : ℕ) :
+--                   @diagram.mk.map F @h_succ x x (by constructor) = id :=
+-- by {induction x, tidy, simp[diagram.mk.map,*], refl}
+
+
+-- /- If the successive maps of h_succ are injective, then all their compositions are injective -/
+-- lemma diagram.mk.map_inj {F : ℕ → Type*} {h_succ : ∀(i : ℕ), F i → F (i+1)} {h_inj : ∀ {i : ℕ}, function.injective (@h_succ i )} (x y : ℕ) (h : x ≤ y) : function.injective (@diagram.mk.map F h_succ x y h) :=
+-- begin
+--   induction y,
+--     {have : x = 0, by exact nat.eq_zero_of_le_zero h, dsimp[*,diagram.mk.map], finish},
+--     by_cases x = y_n + 1,
+--       {dsimp[*, diagram.mk.map], finish},
+--     have : x ≤ y_n, by {apply nat.le_of_le_and_ne_succ, repeat{assumption}},
+--     simp[*, diagram.mk.map], apply function.injective_comp, apply h_inj, apply y_ih
+-- end
+
+-- -- /- Given a ℕ-indexed family of types and a way of assigning maps between successive objects
+-- --    in this family, return the induced directed_diagram over ℕ'. -/
+-- def diagram.mk(F : ℕ → Type*) (h_succ :∀{i : ℕ}, F i → F (i+1)) : directed_diagram ℕ' :=
+-- begin
+-- refine ⟨F, by {apply diagram.mk.map, assumption}, _⟩,
+--   intros x y z H1 H2 H3,
+--     induction z, induction y, induction x,
+--     dsimp[diagram.mk.map], refl,
+--      by {exfalso, fapply nat.succ_ne_zero, exact x_n, apply (nat.le_zero_iff).mp, assumption},
+--      by {exfalso, fapply nat.succ_ne_zero, exact y_n, apply (nat.le_zero_iff).mp, assumption},
+--      by_cases y = z_n+1, subst h;
+--        by_cases x = z_n+1;
+--        {repeat{dsimp[diagram.mk.map], simp*, refl}},
+--      by_cases x = z_n+1,
+--        {exfalso, have : y < z_n+1, by {fapply nat.lt_of_le_and_ne,
+--          repeat{assumption}}, dsimp at *, linarith},
+--        {have h_x : x ≤ z_n; have h_y : y ≤ z_n,
+--          all_goals{try{apply nat.le_of_le_and_ne_succ, repeat{assumption}}},
+--         have := @z_ih h_y h_x,
+--         dsimp[diagram.mk.map], dedup,
+--         simp only [h, h_1, dif_neg, not_false_iff, colimit.nat.le_of_le_and_ne_succ],
+--         rw[this]}
+-- end
+
+
+end omega_colimit_language
+
 end colimit
 
 open colimit
+
+open omega_colimit
 
 /- The Henkin construction consists of the following:
    1. Constructing a ℕ-indexed chain of languages and theories, and
@@ -190,16 +243,13 @@ by refl
 
 local infix ` ∘ `:60 := Lhom.comp
 
-@[simp]lemma le_of_le_and_ne_succ {x y : ℕ} (H : x ≤ y + 1) (H' : x ≠ y + 1) : x ≤ y :=
-by simp only [*, nat.lt_of_le_and_ne, nat.le_of_lt_succ, ne.def, not_false_iff]
 
-
-@[elab_as_eliminator]def henkin_language_chain_maps (L : Language): Π x y, x ≤ y → (@henkin_language_chain_objects L x →ᴸ @henkin_language_chain_objects L y)
+def henkin_language_chain_maps (L : Language): Π x y, x ≤ y → (@henkin_language_chain_objects L x →ᴸ @henkin_language_chain_objects L y)
 | x 0 H := by {have : x = 0, by exact nat.eq_zero_of_le_zero H, rw[this], apply Lhom.id}
 | x (y+1) H := by {by_cases x = y + 1, rw[h], fapply Lhom.id,
                refine @henkin_language_inclusion (@henkin_language_chain_objects L y) ∘ _,
                fapply henkin_language_chain_maps,
-               fapply le_of_le_and_ne_succ, exacts [H, h]}
+               fapply nat.le_of_le_and_ne_succ, exacts [H, h]}
 
 
 lemma henkin_language_chain_maps_inj (L : Language) : Π x y : ℕ, Π (h : x ≤ y), Lhom.is_injective (henkin_language_chain_maps L x y h) :=
@@ -211,7 +261,7 @@ begin
     {by_cases i = (j_n + 1), dedup,
      {subst h_1, rw[henkin_language_chain_maps], simp*,
      intros n x y H, exact H},
-     {have : i ≤ j_n, by {apply le_of_le_and_ne_succ, repeat{assumption}},
+     {have : i ≤ j_n, by {apply nat.le_of_le_and_ne_succ, repeat{assumption}},
      have ih := j_ih this, show ℕ, exact i,
      rw[henkin_language_chain_maps], simp only [*, dif_neg, not_false_iff],
      intro n, fapply function.injective_comp, fapply henkin_language_inclusion_inj.on_relation,
@@ -224,7 +274,7 @@ begin
     {by_cases i = (j_n + 1), dedup,
      {subst h_1, rw[henkin_language_chain_maps], simp*,
      intros n x y H, exact H},
-     {have : i ≤ j_n, by {apply le_of_le_and_ne_succ, repeat{assumption}},
+     {have : i ≤ j_n, by {apply nat.le_of_le_and_ne_succ, repeat{assumption}},
      have ih := j_ih this, show ℕ, exact i,
      rw[henkin_language_chain_maps], simp only [*, dif_neg, not_false_iff],
      intro n, fapply function.injective_comp, fapply henkin_language_inclusion_inj.on_function,
@@ -622,12 +672,13 @@ def ι {L : Language} {T : Theory L} (m : ℕ) :  Theory (L_infty L) :=
 
 @[simp]lemma is_consistent_iota {L : Language} {T : Theory L} (hT : is_consistent T) (m : ℕ) : is_consistent (@ι _ T m) :=
 begin
-  unfold ι,
-  intro,
+  unfold ι, intro,
   have := @is_consistent_henkin_theory_chain L T hT m,
   suffices : (henkin_theory_chain T m) ⊢' bd_falsum, by contradiction,
   apply nonempty.intro, apply reflect_prf,
-  exact henkin_language_canonical_map_inj m,simp[on_formula, bounded_preformula.fst, Theory.fst, set.image_image, sprovable, on_sentence_fst] at *; exact classical.choice a
+  exact henkin_language_canonical_map_inj m,
+  simp[on_formula, bounded_preformula.fst, Theory.fst, set.image_image, sprovable, on_sentence_fst] at *;
+  exact classical.choice a
 end
 
 @[simp]lemma not_succ (i : ℕ) : ¬ i = i + 1 :=
@@ -648,13 +699,13 @@ begin
   induction j with j ih,
     {have : i = 0,
       {suffices : i ≤ 0, by exact nat.eq_zero_of_le_zero this,
-        fapply le_of_le_and_ne_succ, repeat{assumption}},
+        fapply nat.le_of_le_and_ne_succ, repeat{assumption}},
     subst this,
     apply or.inl, fapply exists.intro,
-    exact f, tidy
-    },
+    exact f, tidy},
+
     have : i ≤ nat.succ j,
-      by {fapply le_of_le_and_ne_succ, repeat{assumption}},
+      by {fapply nat.le_of_le_and_ne_succ, repeat{assumption}},
     have := ih this,
     by_cases i = j+1,
        subst h, apply henkin_theory_chain_inclusion_step, assumption,
@@ -673,7 +724,8 @@ begin
          (on_bounded_formula (henkin_language_chain_maps L j (j + 1) _)
             (on_bounded_formula (Lhom.id (henkin_language_chain_objects j))
                (on_bounded_formula (henkin_language_chain_maps L i j _) f)))),
-  simp[id_bounded_formula 0 0], refl
+  simp only [id_bounded_formula 0 0, not_false_iff, colimit.nat.le_of_le_and_ne_succ, fol.Lhom.on_bounded_formula],
+  refl
 end
 
 @[simp]lemma iota_inclusion_of_le {L} {T : Theory L} : Π{i : ℕ} {j : ℕ} (h : i ≤ j), (@ι _ T i) ⊆ (@ι _ T j)
@@ -692,16 +744,6 @@ end
                    ((henkin_bounded_formula_chain 0 0).mor _)) x = ψ,
                    rw[<-this'], exact Hx.right
                    }
-                  -- by_cases i = j+1,
-                   -- rw[h], have := (cocone_of_bounded_formula_L_infty 0 0).h_compat,
-                   -- have this' := @this i (j+1) (by simp*), dsimp[ι, on_sentence],
-                   -- dsimp[cocone_of_bounded_formula_L_infty] at this',
-                   -- simp at *, rw[this'], tidy,
-                   -- dsimp[henkin_bounded_formula_chain, henkin_theory_chain, henkin_theory_step],
-                   -- apply or.inl, tidy, fapply on_bounded_formula,
-                   -- exact (@henkin_language_chain L).obj i,
-                   -- exact (@henkin_language_chain L).mor (by dsimp; simp),
-                  
 
 /- T_infty is the henkinization of T; we define it to be the union ⋃ (n : ℕ), ι(T n). -/
 @[reducible]def T_infty {L : Language} (T : Theory L) : Theory (L_infty L) := set.Union (@ι L T)
@@ -738,8 +780,8 @@ end
 @[simp]lemma henkinization_is_henkin {L : Language} {T : Theory L} (hT : is_consistent T) : has_enough_constants (henkinization hT) :=
 begin
   apply has_enough_constants.intro,
-  unfold henkinization T_infty, intro f, have big_sigma := wit_infty f, rcases big_sigma with ⟨c, blah⟩, refine ⟨c,_⟩,
-  rcases blah with ⟨⟨f', Hf'⟩,⟨i, f''⟩, H⟩,
+  unfold henkinization T_infty, intro f, have big_sigma := wit_infty f, rcases big_sigma with ⟨c, Hc⟩, refine ⟨c,_⟩,
+  rcases Hc with ⟨⟨f', Hf'⟩,⟨i, f''⟩, H⟩,
   fapply nonempty.intro, fapply axm,
   simp only [*, fol.subst_formula, fol.bounded_preterm.fst, set.mem_Union, set.mem_image, fol.subst0_bounded_formula_fst, fol.bounded_preformula.fst],
   refine ⟨_,⟨(i+1),_⟩,_⟩,
@@ -873,8 +915,6 @@ begin
   unfold henkinization T_infty, simp, refine ⟨0, _⟩, unfold ι, tidy
 end
 
-/- Given ψ ∈ T, the term model of the complete henkinization of T satisfies T -/
-@[simp]lemma reduct_of_complete_henkinization_satisfies {L} {T : Theory L} (hT : is_consistent T) (ψ : sentence L) (hψ : ψ ∈ T) : Lhom.reduct (@henkin_language_canonical_map L 0) (term_model (completion_of_henkinization hT)) ⊨ ψ :=
-  by {apply reduct_of_complete_henkinization_models_T, exact hψ}
-
-
+/- Given ψ ∈ T, the term model of the complete henkinization of T satisfies ψ -/
+@[simp]lemma reduct_of_complete_henkinization_satisfies {L} {T : Theory L} (hT : is_consistent T) (ψ : sentence L) (hψ : ψ ∈ T) : Lhom.reduct (@henkin_language_canonical_map L 0) (term_model (completion_of_henkinization hT)) ⊨ ψ := 
+  reduct_of_complete_henkinization_models_T _ hψ

@@ -1,10 +1,10 @@
 * Flypitch
-
 * Goals
-The Flypitch project aims to produce a formal proof of the independence of the continuum hypothesis. We will produce the formal proof based on the conventional human-readable account of the proof, [[https://www.github.com/flypitch/flypitch-notes/][located here]].
-
+The Flypitch project aims to produce a formal proof of the [[https://en.wikipedia.org/wiki/Continuum_hypothesis#Independence_from_ZFC][independence of the continuum hypothesis]].
+* Documentation 
+A conventional human-readable account of the proof written in type-theoretic foundations, upon which some parts of the formalization will be based, is [[https://www.github.com/flypitch/flypitch-notes/][located here]].
 * Compilation
-To compile some parts of the Flypitch project, you will need a compiled copy of ~mathlib~ on your marchine. After cloning the repository to ~flypitch~, navigate to ~flypitch~ and run
+To compile the Flypitch project, you will need [[https://leanprover.github.io/][Lean 3.4.1]] and a compiled copy of ~mathlib~ on your marchine. After cloning the repository to ~flypitch~, navigate to ~flypitch~ and run
 #+BEGIN_SRC
 leanpkg init
 git checkout -- .gitignore
@@ -13,9 +13,10 @@ leanpkg add PATH/TO/mathlib
 
 After this, you can (re)build the project using ~leanpkg build~.
 
+Installation instructions for Lean (using ~elan~) can be found [[https://github.com/leanprover/mathlib/blob/master/docs/elan.md][here]].
+
 * Contributors
 Current contributors include:
  - [[https://www.pitt.edu/~jmh288][Jesse Han]]
- - Andrew Tindall
  - [[http://florisvandoorn.com/][Floris van Doorn]]
- - [[https://sites.google.com/site/thalespitt/][Tom Hales]]
+

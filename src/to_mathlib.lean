@@ -177,11 +177,24 @@ protected lemma concat_nth : ∀{n : ℕ} (xs : dvector α n) (x : α) (m : ℕ)
 | _ _ []       xs := xs
 | _ _ (x'::xs) xs' := x'::append xs xs'
 
+@[simp] protected def insert : ∀{n : ℕ} (x : α) (k : ℕ) (xs : dvector α n), dvector α (n+1)
+| n x 0 xs := (x::xs)
+| 0 x k xs := (x::xs)
+| (n+1) x (k+1) (y::ys) := (y::insert x k ys)
+
+@[simp] protected lemma insert_at_zero : ∀{n : ℕ} (x : α) (xs : dvector α n), dvector.insert x 0 xs = (x::xs) := by {intros, induction n, refl, refl} -- why doesn't {intros, refl} work?
+
+@[simp] protected lemma insert_nth : ∀{n : ℕ} (x : α) (k : ℕ) (xs : dvector α n) (h : k < n+1), (dvector.insert x k xs).nth k h = x
+| 0 x k xs h := by {cases h, refl, exfalso, apply nat.not_lt_zero, exact h_a}
+| n x 0 xs h := by {induction n, refl, simp*}
+| (n+1) x (k+1) (y::ys) h := by simp*
+
 /- how to make this protected? -/
 inductive rel [setoid α] : ∀{n}, dvector α n → dvector α n → Prop
 | rnil : rel [] []
 | rcons {n} {x x' : α} {xs xs' : dvector α n} (hx : x ≈ x') (hxs : rel xs xs') :
     rel (x::xs) (x'::xs')
+
 open rel
 
 protected def rel_refl [setoid α] : ∀{n} (xs : dvector α n), xs.rel xs
