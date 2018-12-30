@@ -66,7 +66,7 @@ begin
   intros a H, repeat{cases H},
   {tidy},
   {intros x H, dsimp at H, unfold realize_bounded_formula, have : ∃ y : ℤ, x + y = 0,
-  by exact ⟨-x, by tidy⟩, rcases this with ⟨y, hy⟩, have := H y, apply this, simp[hy], refl},
+  by exact ⟨-x, by tidy⟩, rcases this with ⟨y, hy⟩, apply H y, simp[hy], refl},
   {tidy, conv {to_lhs, change (0 : ℤ) + x, rw[zero_add]}, refl},
   {tidy, conv {to_lhs, change x + 0, rw[add_zero]}, refl},
   {tidy, conv {to_lhs, change x + x_1 + x_2}, finish}

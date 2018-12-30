@@ -1290,6 +1290,15 @@ local attribute [extensionality] fin.eq_of_veq
 | _ (bd_func f)  := bd_func f
 | _ (bd_app t s) := bd_app t.cast s.cast
 
+@[simp] lemma cast_irrel {n m } {h h' : n ≤ m} : ∀ {l} (t : bounded_preterm L n l), (t.cast h) = (t.cast h') :=
+  by {intros, refl}
+
+@[simp] lemma cast_rfl {n} {h : n ≤ n} : ∀ {l} (t : bounded_preterm L n l), (t.cast h) = t :=
+begin
+  intros, induction t,
+  {simp, unfold fin.cast_le, unfold fin.cast_lt, cases t, refl}, {refl}, {simp*}
+end
+  
 protected def cast_eq {n m l} (h : n = m) (t : bounded_preterm L n l) : bounded_preterm L m l :=
 t.cast $ le_of_eq h
 
@@ -1384,6 +1393,13 @@ lemma subst_bounded_term_irrel {n : ℕ} : ∀{l} (t : bounded_preterm L n l) {n
 
 @[reducible] def realize_closed_term (S : Structure L) (t : closed_term L) : S :=
 realize_bounded_term ([]) t ([])
+
+/- When realizing a closed term, we may as well replace the realizing dvector with [] -/
+@[simp] lemma realize_closed_term_v_irrel {S : Structure L} {n} {v : dvector S n} {t : closed_term L} : realize_bounded_term v (t.cast (by {simp})) ([]) = realize_closed_term S t :=
+begin
+  induction v, unfold realize_closed_term, simp,
+  sorry
+end
 
 lemma realize_bounded_term_eq {S : Structure L} {n} {v₁ : dvector S n} {v₂ : ℕ → S}
   (hv : ∀k (hk : k < n), v₁.nth k hk = v₂ k) : ∀{l} (t : bounded_preterm L n l)
@@ -1637,6 +1653,12 @@ end
 | _ _ _ h (bd_apprel f t) := bd_apprel (f.cast h) $ t.cast h
 | _ _ _ h (f₁ ⟹ f₂)      := f₁.cast h ⟹ f₂.cast h
 | _ _ _ h (∀' f)          := ∀' f.cast (succ_le_succ h)
+
+@[simp] lemma cast_irrel : ∀ {n m l} (h h' : n ≤ m) (f : bounded_preformula L n l), (f.cast h) = (f.cast h') :=
+  by {intros, refl}
+
+@[simp] lemma cast_rfl {n} {h : n ≤ n} : ∀ {l} (f : bounded_preformula L n l), (f.cast h) = f :=
+by {intros, induction f; simp*}
 
 protected def cast_eq {n m l} (h : n = m) (f : bounded_preformula L n l) : bounded_preformula L m l :=
 f.cast $ le_of_eq h
@@ -2445,10 +2467,5 @@ lemma realize_sentence_Th (S : Structure L) : S ⊨ Th S :=
 
 lemma is_complete_Th (S : Structure L) (HS : nonempty S) : is_complete (Th S) :=
 ⟨λH, by cases H; apply soundness H HS (realize_sentence_Th S), λ(f : sentence L), classical.em (S ⊨ f)⟩
-
-/- maybe define 
-presburger_arithmetic := Th (Z,+,0)
-true_arithmetic := (ℕ, +, ⬝, 0, 1)
--/
 
 end fol
