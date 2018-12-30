@@ -1942,6 +1942,9 @@ begin
     by finish, rw[this], refl
 end
 
+@[simp]lemma realize_bounded_formula_not {L} {S : Structure L} : ∀{n} {v : dvector S n} {f : bounded_formula L n}, realize_bounded_formula v ∼f dvector.nil ↔ ¬(realize_bounded_formula v f dvector.nil) :=
+  by {intros, refl}
+
 @[simp] lemma realize_sentence_and {S : Structure L} {f₁ f₂ : sentence L} :
   S ⊨ f₁ ⊓ f₂ ↔ (S ⊨ f₁ ∧ S ⊨ f₂) :=
     by apply realize_bounded_formula_and

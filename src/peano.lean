@@ -232,7 +232,7 @@ def hewwo := (p_induction_schema is_even).fst
 def L_peano_structure_of_nat : Structure L_peano :=
 begin
   refine ⟨ℕ, _, _⟩,
-  {intros n F, cases F with zero succ plus mult, exact λv, 0,
+  {intros n F, induction F, exact λv, 0,
    {intro v, cases v, exact nat.succ v_x},
    {intro v, cases v, exact v_x + (v_xs.nth 0 $ by constructor)},
    {intro v, cases v, exact v_x * (v_xs.nth 0 $ by constructor)},},
@@ -246,8 +246,8 @@ local notation ℕ := L_peano_structure_of_nat
 example : ℕ ⊨ p_zero_not_succ := begin
 change ∀ x : ℕ, 0 = nat.succ x → false, intros x h, cases h end
 
-@[simp]lemma zero_is_zero : (nat.zero) = @realize_bounded_term L_peano ℕ 0 [] 0 zero [] := by refl
-@[simp]lemma one_is_one : (nat.succ nat.zero) = @realize_bounded_term L_peano ℕ 0 [] 0 one [] := by refl
+@[simp]lemma zero_is_zero : @realize_bounded_term L_peano ℕ 0 [] 0 zero [] = nat.zero := by refl
+@[simp]lemma one_is_one : @realize_bounded_term L_peano ℕ 0 [] 0 one [] = (nat.succ nat.zero)  := by refl
 
 instance has_zero_sort_L_peano_structure_of_nat : has_zero ℕ := ⟨nat.zero⟩
 
