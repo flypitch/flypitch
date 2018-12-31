@@ -35,8 +35,8 @@ structure directed_diagram (D : (directed_type : Type (u+1))) : Type (max (u+1) 
 
 notation `ℕ'` :=  directed_type_of_nat
 
-@[simp, elab_as_eliminator]lemma ℕ_of_ℕ'.carrier : (ℕ').carrier = ℕ := by refl
-@[simp, elab_as_eliminator]lemma le_of_ℕ'.rel : (ℕ').rel = nat.le := by refl
+@[simp]lemma ℕ_of_ℕ'.carrier : (ℕ').carrier = ℕ := by refl
+@[simp]lemma le_of_ℕ'.rel : (ℕ').rel = nat.le := by refl
 
 -- @[reducible]def has_le_ℕ' : has_le (ℕ').carrier := begin split, rw[ℕ_of_ℕ'.carrier], exact λ x y, x ≤ y end
 -- attribute [instance] has_le_ℕ'

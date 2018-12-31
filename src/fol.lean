@@ -799,6 +799,8 @@ by cases f; refl
 | _ (f₁ ⟹ f₂)   s n := by simp*
 | _ (∀' f)       s n := by simp*
 
+def quantifier_free {l} : preformula L l → Prop := λ f, count_quantifiers f = 0
+
 /- Provability
 * to decide: should Γ be a list or a set (or finset)?
 * We use natural deduction as our deduction system, since that is most convenient to work with.
@@ -1690,6 +1692,9 @@ f.cast $ n.le_add_right 1
 @[simp] lemma cast1_fst {l n} (f : bounded_preformula L n l) : 
   f.cast1.fst = f.fst := f.cast_fst _
 
+/- A bounded_preformula is qf if the underlying preformula is qf -/
+def quantifier_free {l n} : bounded_preformula L n l → Prop := λ f, fol.quantifier_free f.fst
+
 end bounded_preformula
 
 namespace presentence
@@ -2474,5 +2479,8 @@ lemma realize_sentence_Th (S : Structure L) : S ⊨ Th S :=
 
 lemma is_complete_Th (S : Structure L) (HS : nonempty S) : is_complete (Th S) :=
 ⟨λH, by cases H; apply soundness H HS (realize_sentence_Th S), λ(f : sentence L), classical.em (S ⊨ f)⟩
+
+def eliminates_quantifiers : Theory L → Prop :=
+  λ T, ∀ f ∈ T, ∃ f' , bounded_preformula.quantifier_free f' ∧ (T ⊢' f ⇔ f')
 
 end fol
