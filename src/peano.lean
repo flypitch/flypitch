@@ -349,7 +349,7 @@ end
 
 @[simp]lemma realize_bounded_term_subst0 {L} {S : Structure L} {n} (s : bounded_term L (n+1)) {v : dvector S n} (t : closed_term L) : realize_bounded_term v (s[(t.cast (by simp)) /0]) [] = realize_bounded_term ((realize_closed_term S t)::v) s [] :=
 begin
-revert n s v, -- refine bounded_term.rec1 _ _ _ _, -- this should work, i probably did something wrong
+revert s, refine bounded_term.rec1 _ _,
 repeat{sorry}
 end
 

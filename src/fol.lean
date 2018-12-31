@@ -1290,6 +1290,13 @@ local attribute [extensionality] fin.eq_of_veq
 | _ (bd_func f)  := bd_func f
 | _ (bd_app t s) := bd_app t.cast s.cast
 
+@[simp]lemma cast_bd_app {n m} (h : n ≤ m) {l} {t : bounded_preterm L n (l+1)} {s : bounded_preterm L n 0} : (bd_app t s).cast h = (bd_app (t.cast h) (s.cast h)) := by refl
+
+@[simp]lemma cast_bd_apps {n m } (h : n ≤ m) {l} {t : bounded_preterm L n l} {ts : dvector (bounded_term L n) l} : (bd_apps t ts).cast h = bd_apps (t.cast h) (ts.map (λ t, t.cast h)) :=
+by {induction ts generalizing t, refl, simp*}
+
+-- @[simp]lemma cast_bd_apps_nil {n m} (h : n ≤ m) {l} {t : bounded_preterm L n (l+1)} {s : bounded_preterm L n 0} : (bd_apps t s []).cast h = (bd_app (t.cast h) (s.cast h))
+
 @[simp] lemma cast_irrel {n m } {h h' : n ≤ m} : ∀ {l} (t : bounded_preterm L n l), (t.cast h) = (t.cast h') :=
   by {intros, refl}
 
@@ -1393,13 +1400,6 @@ lemma subst_bounded_term_irrel {n : ℕ} : ∀{l} (t : bounded_preterm L n l) {n
 
 @[reducible] def realize_closed_term (S : Structure L) (t : closed_term L) : S :=
 realize_bounded_term ([]) t ([])
-
-/- When realizing a closed term, we may as well replace the realizing dvector with [] -/
-@[simp] lemma realize_closed_term_v_irrel {S : Structure L} {n} {v : dvector S n} {t : closed_term L} : realize_bounded_term v (t.cast (by {simp})) ([]) = realize_closed_term S t :=
-begin
-  induction v, unfold realize_closed_term, simp,
-  sorry
-end
 
 lemma realize_bounded_term_eq {S : Structure L} {n} {v₁ : dvector S n} {v₂ : ℕ → S}
   (hv : ∀k (hk : k < n), v₁.nth k hk = v₂ k) : ∀{l} (t : bounded_preterm L n l)
@@ -1551,9 +1551,7 @@ by refl
 begin
   induction ts generalizing t, refl, apply ts_ih (bd_app t ts_x)
 end
-
 --⟨t.fst[s.fst // n], bounded_term_subst_closed t.snd s.snd⟩
-
 
 lemma realize_bounded_term_bd_apps {S : Structure L}
   {n l} (xs : dvector S n) (t : bounded_preterm L n l) (ts : dvector (bounded_term L n) l) :
@@ -1561,6 +1559,15 @@ lemma realize_bounded_term_bd_apps {S : Structure L}
   realize_bounded_term xs t (ts.map (λt, realize_bounded_term xs t ([]))) :=
 begin
   induction ts generalizing t, refl, apply ts_ih (bd_app t ts_x)
+end
+
+/- When realizing a closed term, we can replace the realizing dvector with [] -/
+@[simp] lemma realize_closed_term_v_irrel {S : Structure L} {n} {v : dvector S n} {t : bounded_term L 0} : realize_bounded_term v (t.cast (by {simp})) ([]) = realize_closed_term S t :=
+begin
+  revert t, refine bounded_term.rec _ _,
+    {intro k, cases k, exfalso, exact not_lt_zero k_val k_is_lt},
+    {intros, simp[realize_bounded_term_bd_apps], congr' 1,
+      apply dvector.map_congr_pmem, intros x Hx, rw[ih_ts x Hx]}
 end
 
 /- this is the same as realize_bounded_term, we should probably have a common generalization of this definition -/
