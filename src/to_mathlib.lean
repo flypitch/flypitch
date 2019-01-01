@@ -387,6 +387,9 @@ protected def map (f : α → β) : nonempty α → nonempty β
 protected def map2 (f : α → β → γ) : nonempty α → nonempty β → nonempty γ
 | ⟨x⟩ ⟨y⟩ := ⟨f x y⟩
 
+protected def iff (mp : α → β) (mpr : β → α) : nonempty α ↔ nonempty β :=
+⟨nonempty.map mp, nonempty.map mpr⟩
+
 end nonempty
 
 namespace fin

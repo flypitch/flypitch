@@ -514,7 +514,7 @@ notation `⊥` := fol.preformula.falsum -- input: \bot
 infix ` ≃ `:88 := fol.preformula.equal -- input \~- or \simeq
 infix ` ⟹ `:62 := fol.preformula.imp -- input \==>
 prefix `∀'`:110 := fol.preformula.all
-def not   (f : formula L)     : formula L := imp f ⊥
+def not   (f : formula L)     : formula L := f ⟹ ⊥
 prefix `∼`:max := fol.not -- input \~, the ASCII character ~ has too low precedence
 notation `⊤` := ∼⊥ -- input: \top
 def and   (f₁ f₂ : formula L) : formula L := ∼(f₁ ⟹ ∼f₂)
@@ -894,6 +894,8 @@ end
 
 def weakening1 {Γ} {f₁ f₂ : formula L} (H : Γ ⊢ f₂) : insert f₁ Γ ⊢ f₂ :=
 weakening (subset_insert f₁ Γ) H
+
+
 
 def weakening2 {Γ} {f₁ f₂ f₃ : formula L} (H : insert f₁ Γ ⊢ f₂) : insert f₁ (insert f₃ Γ) ⊢ f₂ :=
 weakening (insert_subset_insert (subset_insert _ Γ)) H
@@ -1641,6 +1643,8 @@ namespace bounded_preformula
 | _ _ (f₁ ⟹ f₂)      := f₁.fst ⟹ f₂.fst
 | _ _ (∀' f)          := ∀' f.fst
 
+@[simp] lemma fst_not : ∀{n} {f : bounded_formula L n}, ∼(bounded_preformula.fst f) = bounded_preformula.fst (∼f) := by {intros, refl}
+
 local attribute [extensionality] fin.eq_of_veq
 @[extensionality] protected def eq {n l} {f₁ f₂ : bounded_preformula L n l} (h : f₁.fst = f₂.fst) :
   f₁ = f₂ :=
@@ -1801,6 +1805,7 @@ begin
       (f_f.cast_eq_fst _).trans pf₁).cast_eq (succ_add n n') }  
 end
 
+/- f[s//n] for bounded_formula, requiring an extra proof that (n+n'+1 = n'') -/
 @[simp] def subst_bounded_formula : ∀{n n' n'' l} (f : bounded_preformula L n'' l)  
   (s : bounded_term L n') (h : n+n'+1 = n''), bounded_preformula L (n+n') l
 | _ _ _ _ bd_falsum       s rfl := ⊥ 
@@ -1810,6 +1815,8 @@ end
 | _ _ _ _ (f₁ ⟹ f₂)      s rfl := subst_bounded_formula f₁ s rfl ⟹ subst_bounded_formula f₂ s rfl
 | _ _ _ _ (∀' f)          s rfl := 
   ∀' (subst_bounded_formula f s $ by simp [succ_add]).cast_eq (succ_add _ _)
+
+notation f `[`:95 s ` // `:95 n ` // `:95 h `]`:0 := @fol.subst_bounded_formula _ n _ _ _ f s h
 
 @[simp] def subst_bounded_formula_fst : ∀{n n' n'' l} (f : bounded_preformula L n'' l)  
   (s : bounded_term L n') (h : n+n'+1 = n''),
@@ -2092,6 +2099,13 @@ begin
   fapply impI, fapply axm1, fapply exfalso, fapply deduction, assumption
 end
 
+@[simp]lemma dne {L} {T : Theory L} {f : sentence L} : T ⊢' ∼∼f ↔ T ⊢' f :=
+begin
+  apply nonempty.iff, exact double_negation_elim, intro P, apply impI,
+  apply @not_and_self _ _ f.fst, apply andI, exact weakening1 P,
+  apply axm, simp
+end 
+
 def sweakening {T T' : Theory L} (h_sub : T' ⊆ T) {ψ : sentence L} (h : T' ⊢ ψ) : T ⊢ ψ :=
 weakening (image_subset _ h_sub) h
 
@@ -2171,7 +2185,6 @@ infix ` ⊨ `:51 := fol.Model_ssatisfied -- input using \|= or \vDash, but not u
 
 @[simp] lemma false_of_Model_absurd {T : Theory L} (M : Model T) {ψ : sentence L} (h : M ⊨ ψ) (h' : M ⊨ ∼ψ) : false :=
 by {unfold Model_ssatisfied at *, simp[*,-h'] at h', exact h'}
-
 
 lemma soundness {T : Theory L} {A : sentence L} (H : T ⊢ A) : T ⊨ A :=
 ssatisfied_of_satisfied $ formula_soundness H

@@ -342,15 +342,30 @@ end
 @[simp]lemma subst0_imp {L} {n} {t : bounded_term L n} {f₁ f₂ : bounded_formula L (n+1)} : (f₁ ⟹ f₂)[t /0] = f₁[t /0] ⟹ f₂[t /0] :=
   by tidy
 
-@[simp]lemma subst0_all {L} {n} {t : closed_term L} {f : bounded_formula L (n+2)} : (∀' f)[(t.cast (by simp)) /0] = begin apply bd_all, fapply subst_bounded_formula, exact n+2, exact f, exact (t.cast (by simp)), repeat{constructor} end :=
-begin
-  sorry
-end
+
+-- this is the suspicious simp lemma--- don't want this
+-- @[simp]lemma subst0_all {L} {n} {t : closed_term L} {f : bounded_formula L (n+2)} : (∀' f)[(t.cast (by simp)) /0] = begin apply bd_all, fapply subst_bounded_formula, exact n+2, exact f, exact (t.cast (by simp)), repeat{constructor} end :=
+-- begin
+--   sorry
+-- end
+
+lemma subst0_all {L} {n} {t : closed_term L} {f : bounded_formula L (n+2)} :
+  ((∀' f)((@bounded_preterm.cast L 0 n (by simp) 0 t) /0] = ∀'(f[(@bounded_preterm.cast L 0 n (by simp) 0 t // 1)])
+
+--(∀' f)[@bounded_preterm.cast L 0 n _ 0 t /0] = ∀'(f[@bounded_preterm.cast L 0 n _ 0 t // 1])
+
+lemma zero_of_lt_one (n : nat) (h : n < 1) : n = 0 :=
+  by {cases h, refl, cases nat.lt_of_succ_le h_a}
 
 @[simp]lemma realize_bounded_term_subst0 {L} {S : Structure L} {n} (s : bounded_term L (n+1)) {v : dvector S n} (t : closed_term L) : realize_bounded_term v (s[(t.cast (by simp)) /0]) [] = realize_bounded_term ((realize_closed_term S t)::v) s [] :=
 begin
 revert s, refine bounded_term.rec1 _ _,
-repeat{sorry}
+  {intros, induction n, rw[dvector.zero_eq v],
+    {cases k, tidy,
+    have := zero_of_lt_one k_val (by exact k_is_lt), subst this,
+    congr, unfold subst0_bounded_term, tidy},
+    {cases v, have := @n_ih v_xs, sorry}},
+  {sorry}
 end
 
 
@@ -361,6 +376,8 @@ begin
   sorry
 end
 
+set_option pp.implicit true
+
 /-- realization of a subst0 is the realization with the substituted term prepended to the realizing vector --/
 lemma realize_bounded_formula_subst0 {L} {S : Structure L} {n} (f : bounded_formula L (n+1)) {v : dvector S n} (t : closed_term L) : realize_bounded_formula v (f[(t.cast (by simp)) /0]) [] ↔ realize_bounded_formula ((realize_closed_term S t)::v) f [] :=
 -- begin
@@ -370,11 +387,16 @@ lemma realize_bounded_formula_subst0 {L} {S : Structure L} {n} (f : bounded_form
 -- end
 begin
   revert n f v, refine bounded_formula.rec1 _ _ _ _ _; intros,
-  {simp},
-  {simp},
-  {simp[realize_bounded_formula_bd_apps_rel], sorry}, -- here we need a version of realize_bounded_formula_bd_apps_rel for substitutions also
-  {simp*},
-  {simp, tidy,  sorry, sorry} -- to finish this, need to generalize over all substitution indices---substitution at n corresponds to an insertion at n, and so on
+  {sorry}, -- simp
+  {sorry}, -- simp
+  {sorry -- simp[realize_bounded_formula_bd_apps_rel], sorry
+  }, -- here we need a version of realize_bounded_formula_bd_apps_rel for substitutions also
+  {sorry-- simp*
+  },
+-- need (∀' f)[@bounded_preterm.cast L 0 n _ 0 t /0] = ∀'(f[@bounded_preterm.cast L 0 n _ 0 t // 1])
+  {dsimp, -- apply forall_congr, intro x, induction v, {tidy, }, 
+  }
+  -- {simp, tidy, } -- to finish this, need to generalize over all substitution indices---substitution at n corresponds to an insertion at n, and so on
 end
 
 -- begin
@@ -408,11 +430,6 @@ begin
     {intros n H, apply (@realize_bounded_formula_subst0' _ _ _ ψ xs (succ &0) n).mp,
      exact H_ih n H}
 end
-
--- #check @realize_sentence L_peano ℕ (∀' (∀' ((&1 +' &0) ≃ &2)))
--- -- this shouldn't type-check, hmm...
-
--- #reduce @realize_bounded_formula L_peano ℕ 1 0 ((0 : ℕ)::[]) (∀' (∀' ((&1 +' &0) ≃ &2))) []
 
 @[reducible]def true_arithmetic := Th ℕ
 
