@@ -2057,7 +2057,7 @@ def simpE {T : Theory L} (A : sentence L) {B : sentence L} (H₁ : T ⊢ A ⟹ B
   T ⊢ B := 
 by apply impE A.fst H₁ H₂
 
-@[reducible] lemma fst_commutes_with_imp {T : Theory L} (A B : sentence L) : (A ⟹ B).fst = A.fst ⟹ B.fst := by refl
+lemma fst_commutes_with_imp {T : Theory L} (A B : sentence L) : (A ⟹ B).fst = A.fst ⟹ B.fst := by refl
 
 def sfalsumE {T : Theory L} {A : sentence L} (H : insert ∼A T ⊢ bd_falsum) : T ⊢ A :=
 begin
@@ -2099,7 +2099,7 @@ begin
   fapply impI, fapply axm1, fapply exfalso, fapply deduction, assumption
 end
 
-@[simp]lemma dne {L} {T : Theory L} {f : sentence L} : T ⊢' ∼∼f ↔ T ⊢' f :=
+@[simp]lemma double_negation_elim' {L} {T : Theory L} {f : sentence L} : T ⊢' ∼∼f ↔ T ⊢' f :=
 begin
   apply nonempty.iff, exact double_negation_elim, intro P, apply impI,
   apply @not_and_self _ _ f.fst, apply andI, exact weakening1 P,

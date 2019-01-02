@@ -227,8 +227,6 @@ def PA : Theory L_peano :=
 def is_even : bounded_formula L_peano 1 :=
 ∃' (&0 +' &0 ≃ &1)
 
-def hewwo := (p_induction_schema is_even).fst
-
 def L_peano_structure_of_nat : Structure L_peano :=
 begin
   refine ⟨ℕ, _, _⟩,
@@ -343,16 +341,20 @@ end
   by tidy
 
 
+-- def hewwo : bounded_formula L_peano 1 := &0 ≃ zero
+
+-- #reduce @realize_bounded_formula L_peano L_peano_structure_of_nat _ _ [] ((hewwo[ (succ zero) // 0 // (by simp)]).cast (by {refl})) [] -- sanity check, works as expected
+
+
 -- this is the suspicious simp lemma--- don't want this
 -- @[simp]lemma subst0_all {L} {n} {t : closed_term L} {f : bounded_formula L (n+2)} : (∀' f)[(t.cast (by simp)) /0] = begin apply bd_all, fapply subst_bounded_formula, exact n+2, exact f, exact (t.cast (by simp)), repeat{constructor} end :=
 -- begin
 --   sorry
 -- end
 
-lemma subst0_all {L} {n} {t : closed_term L} {f : bounded_formula L (n+2)} :
-  ((∀' f)((@bounded_preterm.cast L 0 n (by simp) 0 t) /0] = ∀'(f[(@bounded_preterm.cast L 0 n (by simp) 0 t // 1)])
+@[simp]lemma subst0_all {L} {n} {t : closed_term L} {f : bounded_formula L (n+2)} :
+  ((∀'f)[t.cast (by simp) /0] : bounded_formula L n) = ∀'((f[t.cast (by {simp} : 0 ≤ n) // 1 // (by {simp} : 1 + n + 1 = n + 2)]).cast_eq (by simp)) := by tidy -- god bless u tidy ;_;7
 
---(∀' f)[@bounded_preterm.cast L 0 n _ 0 t /0] = ∀'(f[@bounded_preterm.cast L 0 n _ 0 t // 1])
 
 lemma zero_of_lt_one (n : nat) (h : n < 1) : n = 0 :=
   by {cases h, refl, cases nat.lt_of_succ_le h_a}
@@ -368,35 +370,31 @@ revert s, refine bounded_term.rec1 _ _,
   {sorry}
 end
 
-
-/-- This seems odd (and annoying): to say, "f[t // k]", i need to cast t to some level N such that k + N + 1 = n + 1 --/
-/-- Seems like what this requires is a basic theory of arbitrary substitutions into arbitrary variables for bounded_formula (for which subst0 and substmax are the easy edge cases) --/
 lemma realize_bounded_formula_subst_insert {L} {S : Structure L} {n i} (f : bounded_formula L (n+1)) {v : dvector S n} (t : closed_term L) {h_i : i + 0 + 1 = n + 1}: realize_bounded_formula v (begin apply @subst_bounded_formula L i _ (n+1) _ f (by sorry), repeat{constructor} end) [] ↔ realize_bounded_formula (v.insert (realize_closed_term S t) i) f [] :=
 begin
   sorry
 end
 
-set_option pp.implicit true
+lemma subst0_bounded_formula_bd_apps_rel {L} {n l} (f : bounded_preformula L (n+1) l) 
+  (t : closed_term L) (ts : dvector (bounded_term L (n+1)) l) :
+  subst0_bounded_formula (bd_apps_rel f ts) (t.cast (by simp)) = 
+  bd_apps_rel (subst0_bounded_formula f (t.cast (by simp))) (ts.map $ λt', subst0_bounded_term t' (t.cast (by simp))) :=
+begin
+  induction ts generalizing f, refl, simp[bd_apps_rel, ts_ih (bd_apprel f ts_x)], congr, tidy
+end
+
+lemma rel_subst0_irrel {L : Language} {n l} {R : L.relations l} {t : bounded_term L n} : (bd_rel R)[t /0] = (bd_rel R) := by tidy
 
 /-- realization of a subst0 is the realization with the substituted term prepended to the realizing vector --/
 lemma realize_bounded_formula_subst0 {L} {S : Structure L} {n} (f : bounded_formula L (n+1)) {v : dvector S n} (t : closed_term L) : realize_bounded_formula v (f[(t.cast (by simp)) /0]) [] ↔ realize_bounded_formula ((realize_closed_term S t)::v) f [] :=
--- begin
--- sorry,
---   -- dsimp[subst0_bounded_formula], convert @realize_bounded_formula_subst_insert L S n 0 f v t,
---   -- swap, simp, tidy,
--- end
 begin
   revert n f v, refine bounded_formula.rec1 _ _ _ _ _; intros,
-  {sorry}, -- simp
-  {sorry}, -- simp
-  {sorry -- simp[realize_bounded_formula_bd_apps_rel], sorry
-  }, -- here we need a version of realize_bounded_formula_bd_apps_rel for substitutions also
-  {sorry-- simp*
-  },
--- need (∀' f)[@bounded_preterm.cast L 0 n _ 0 t /0] = ∀'(f[@bounded_preterm.cast L 0 n _ 0 t // 1])
-  {dsimp, -- apply forall_congr, intro x, induction v, {tidy, }, 
-  }
-  -- {simp, tidy, } -- to finish this, need to generalize over all substitution indices---substitution at n corresponds to an insertion at n, and so on
+  {simp},
+  {simp},
+  {rw[subst0_bounded_formula_bd_apps_rel], simp[realize_bounded_formula_bd_apps_rel]},
+  {simp*},
+  {simp, apply forall_congr, clear ih, intro x, sorry --- this is another lemma
+  } -- maybe to finish this, need to generalize over all substitution indices---substitution at n corresponds to an insertion at n, and so on
 end
 
 -- begin
