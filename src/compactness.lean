@@ -34,7 +34,7 @@ begin
   apply list.mem_map.symm
 end
 
-/-- Any proof from a set of formulas is provable from a finite subformulas. --/
+/-- Any proof from a set of formulas is provable from a finset of subformulas. --/
 lemma proof_compactness {L : Language.{u}} {ψ : formula L} {T : set $ formula L} :
   (T ⊢' ψ) → ∃Γ : finset (formula L), ↑Γ ⊢' ψ ∧ ↑Γ ⊆ T :=
 begin

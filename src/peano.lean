@@ -237,36 +237,36 @@ begin
   {intro v, intro R, cases R},
 end
 
-local notation ℕ := L_peano_structure_of_nat
+local notation `ℕ'` := L_peano_structure_of_nat
 
 @[simp]lemma floris {L} {S : Structure L} : ↥S = S.carrier := by refl
 
-example : ℕ ⊨ p_zero_not_succ := begin
-change ∀ x : ℕ, 0 = nat.succ x → false, intros x h, cases h end
+example : ℕ' ⊨ p_zero_not_succ := begin
+change ∀ x : ℕ', 0 = nat.succ x → false, intros x h, cases h end
 
-@[simp]lemma zero_is_zero : @realize_bounded_term L_peano ℕ 0 [] 0 zero [] = nat.zero := by refl
-@[simp]lemma one_is_one : @realize_bounded_term L_peano ℕ 0 [] 0 one [] = (nat.succ nat.zero)  := by refl
+@[simp]lemma zero_is_zero : @realize_bounded_term L_peano ℕ' 0 [] 0 zero [] = nat.zero := by refl
+@[simp]lemma one_is_one : @realize_bounded_term L_peano ℕ' 0 [] 0 one [] = (nat.succ nat.zero)  := by refl
 
-instance has_zero_sort_L_peano_structure_of_nat : has_zero ℕ := ⟨nat.zero⟩
+instance has_zero_sort_L_peano_structure_of_nat : has_zero ℕ' := ⟨nat.zero⟩
 
 instance has_zero_L_peano_structure_of_nat : has_zero L_peano_structure_of_nat := ⟨nat.zero⟩
 
-@[simp]lemma formal_nat_realize_term {n} : realize_closed_term ℕ (formal_nat n) = n :=
+@[simp]lemma formal_nat_realize_term {n} : realize_closed_term ℕ' (formal_nat n) = n :=
   by {induction n, refl, tidy}
 
-@[simp] lemma succ_realize_term {n} : realize_closed_term ℕ (succ $ formal_nat n) = nat.succ n :=
+@[simp] lemma succ_realize_term {n} : realize_closed_term ℕ' (succ $ formal_nat n) = nat.succ n :=
 begin
   dsimp[realize_closed_term, realize_bounded_term, succ, bounded_term_of_function],
   induction n, tidy
 end
 
-@[simp]lemma formal_nat_realize_formula {ψ : bounded_formula L_peano 1} (n) : realize_bounded_formula ([(n : ℕ)]) ψ [] ↔ ℕ ⊨ ψ[(formal_nat n)/0] :=
+@[simp]lemma formal_nat_realize_formula {ψ : bounded_formula L_peano 1} (n) : realize_bounded_formula ([(n : ℕ')]) ψ [] ↔ ℕ' ⊨ ψ[(formal_nat n)/0] :=
 begin
   induction n, all_goals{dsimp[formal_nat], simp[realize_subst_formula0]},
   have := @formal_nat_realize_term 0, unfold formal_nat at this, rw[this]
 end
 
-@[simp]lemma nat_bd_all {ψ : bounded_formula L_peano 1} : ℕ ⊨ ∀'ψ ↔ ∀(n : ℕ), ℕ ⊨ ψ[(formal_nat n)/0] :=
+@[simp]lemma nat_bd_all {ψ : bounded_formula L_peano 1} : ℕ' ⊨ ∀'ψ ↔ ∀(n : ℕ'), ℕ' ⊨ ψ[(formal_nat n)/0] :=
 begin
   refine ⟨by {intros H n, induction n, all_goals{dsimp[formal_nat], rw[realize_subst_formula0], tidy}}, _⟩,
   intros H n, have := H n, induction n, all_goals{simp only [formal_nat_realize_formula], exact this}
@@ -293,7 +293,7 @@ lemma shallow_induction (P : set nat) : (P(0) ∧ ∀ x, P x → P (nat.succ x))
 
 ---- oops, i think this is already somewhere in fol.lean
 -- /-- Canonical extension of a dvector to a valuation --/
--- def val_of_dvector {α : Type*} [has_zero α] {n} (xs : dvector α n): ℕ → α :=
+-- def val_of_dvector {α : Type*} [has_zero α] {n} (xs : dvector α n): ℕ' → α :=
 -- begin
 --   intro k,
 --   by_cases nat.lt k n, 
@@ -362,13 +362,21 @@ lemma zero_of_lt_one (n : nat) (h : n < 1) : n = 0 :=
 @[simp]lemma realize_bounded_term_subst0 {L} {S : Structure L} {n} (s : bounded_term L (n+1)) {v : dvector S n} (t : closed_term L) : realize_bounded_term v (s[(t.cast (by simp)) /0]) [] = realize_bounded_term ((realize_closed_term S t)::v) s [] :=
 begin
 revert s, refine bounded_term.rec1 _ _,
-  {intros, induction n, rw[dvector.zero_eq v],
-    {cases k, tidy,
-    have := zero_of_lt_one k_val (by exact k_is_lt), subst this,
-    congr, unfold subst0_bounded_term, tidy},
-    {cases v, have := @n_ih v_xs, sorry}},
+  {intro k, rcases k with ⟨k_val, k_H⟩, simp,
+    induction n generalizing k_val, have := zero_of_lt_one k_val (by exact k_H), subst this,
+    congr, {apply dvector.zero_eq}, {tidy}, cases nat.le_of_lt_succ k_H with H1 H2,
+    swap, repeat{sorry}
+    },
   {sorry}
 end
+
+-- intros, induction n, rw[dvector.zero_eq v],
+--     {cases k, tidy,
+--     have := zero_of_lt_one k_val (by exact k_is_lt), subst this,
+--     congr, unfold subst0_bounded_term, tidy},
+--     {
+-- -- cases v, have := @n_ih v_xs, sorry
+--     }
 
 lemma realize_bounded_formula_subst_insert {L} {S : Structure L} {n i} (f : bounded_formula L (n+1)) {v : dvector S n} (t : closed_term L) {h_i : i + 0 + 1 = n + 1}: realize_bounded_formula v (begin apply @subst_bounded_formula L i _ (n+1) _ f (by sorry), repeat{constructor} end) [] ↔ realize_bounded_formula (v.insert (realize_closed_term S t) i) f [] :=
 begin
@@ -394,7 +402,7 @@ begin
   {rw[subst0_bounded_formula_bd_apps_rel], simp[realize_bounded_formula_bd_apps_rel]},
   {simp*},
   {simp, apply forall_congr, clear ih, intro x, sorry --- this is another lemma
-  } -- maybe to finish this, need to generalize over all substitution indices---substitution at n corresponds to an insertion at n, and so on
+  }                         -- maybe to finish this, need to generalize over all substitution indices---substitution at n corresponds to an insertion at n, and so on
 end
 
 -- begin
@@ -418,8 +426,8 @@ revert f n v, refine bounded_formula.rec1 _ _ _ _ _; intros,
 end
 
 
-/- ℕ satisfies PA induction schema -/
-theorem PA_standard_model_induction {index : nat} {ψ : bounded_formula L_peano (index + 1)} : ℕ ⊨ bd_alls index (ψ[zero /0] ⊓ ∀'(ψ ⟹ (ψ ↑' 1 # 1)[succ &0 /0]) ⟹ ∀' ψ) :=
+/- ℕ' satisfies PA induction schema -/
+theorem PA_standard_model_induction {index : nat} {ψ : bounded_formula L_peano (index + 1)} : ℕ' ⊨ bd_alls index (ψ[zero /0] ⊓ ∀'(ψ ⟹ (ψ ↑' 1 # 1)[succ &0 /0]) ⟹ ∀' ψ) :=
 begin
   rw[realize_sentence_bd_alls], intro xs,
   simp,
@@ -429,7 +437,7 @@ begin
      exact H_ih n H}
 end
 
-@[reducible]def true_arithmetic := Th ℕ
+def true_arithmetic := Th ℕ'
 
 lemma true_arithmetic_extends_PA : PA ⊆ true_arithmetic :=
 begin
@@ -448,7 +456,8 @@ begin
     {simp[shallow_induction_schema] at H, rcases H with ⟨y, Hy⟩, subst Hy, exact nat.rec}
 end
 
-def PA_standard_model : Model PA := ⟨ℕ, true_arithmetic_extends_PA⟩
+def PA_standard_model : Model PA := ⟨ℕ', true_arithmetic_extends_PA⟩
 
 end
 end peano
+
