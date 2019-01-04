@@ -8,7 +8,7 @@ open fol
   and a formula A should be interpreted as "&0 ∈ A"
 -/
 
-section zfc
+namespace zfc
 
 inductive ZFC_rel : ℕ → Type
 | ϵ : ZFC_rel 2
@@ -19,50 +19,6 @@ def L_ZFC : Language :=
 def ZFC_el : L_ZFC.relations 2 := ZFC_rel.ϵ
 
 local infix ` ∈' `:100 := bounded_formula_of_relation ZFC_el
-
-
-inductive ZFC'_f0 : Type
-| emptyset
-
-inductive ZFC'_f1 : Type
-| union
-| pow
-
-inductive ZFC'_f2 : Type
-| pair
-
-inductive ZFC'_rel : Type
-| ϵ
-| subset 
-
-def L_ZFC' : Language :=
-begin
-split,
-{intro arityf,
-exact if arityf = 0
-      then ZFC'_f0
-      else (if arityf = 1
-           then ZFC'_f1
-           else (if arityf = 2
-                then ZFC'_f2
-                else empty))   },
-{
-{intro arityr,
-exact if arityr = 2 then ZFC'_rel else empty},
-}
-end
-
--- is there a way to do this with the equation compiler instead?
-
-lemma duh : L_ZFC'.relations 2 = ZFC'_rel :=
-by refl
-
-@[reducible]def rel_is_rel : ZFC'_rel → L_ZFC'.relations 2 :=
-begin
-intro,
-rw[duh],
-assumption
-end
 
 def Class : Type := bounded_formula L_ZFC 1
 def small {n} (c : bounded_formula L_ZFC (n+1)) : bounded_formula L_ZFC n := 
@@ -156,8 +112,7 @@ def axiom_of_ordered_pairing : sentence L_ZFC := ∀' ∀' small ordered_pair
 --the class consisting of all ordered pairs
 def axiom_of_product : sentence L_ZFC := small is_ordered_pair
 
--- inductive ZFC' : (@sentence L_ZFC') → Prop -- should this be Type-valued instead?
--- := sorry
+-- TODO(Andrew)
+def ZFC : Theory L_ZFC := sorry
 
 end zfc
-

@@ -10,6 +10,7 @@ lemma completeness_for_inconsistent_theories {L : Language} (T : Theory L) (ψ :
 lemma satisfied_of_provable {L : Language} (T : Theory L) (ψ : sentence L) : T ⊢' ψ → T ⊨ ψ :=
 by {intro H, exact soundness (classical.choice H)}
 
+/- T is consistent iff there is a nonempty model of T -/
 theorem model_existence {L : Language} (T : Theory L) : is_consistent T ↔ (∃ M : Structure L, (nonempty M) ∧ M ⊨ T) :=
 begin
 split, swap,
