@@ -2035,6 +2035,9 @@ variable {L}
 
 @[reducible] def Theory.fst (T : Theory L) : set (formula L) := bounded_preformula.fst '' T
 
+lemma lift_Theory_irrel (T : Theory L) : (lift_formula1 '' Theory.fst T) = Theory.fst T :=
+by rw[image_image, image_congr' lift_sentence_irrel]
+
 def sprf (T : Theory L) (f : sentence L) := T.fst ⊢ f.fst
 infix ` ⊢ `:51 := fol.sprf -- input: \|- or \vdash
 
@@ -2094,9 +2097,8 @@ end
 
 def double_negation_elim {L} {T : Theory L} {f : sentence L} : T ⊢ ∼∼f → T ⊢ f :=
 begin
-  intro, fapply falsumE, fapply impE, exact f.fst, all_goals{unfold fol.not},
-  fapply deduction, 
-  fapply impI, fapply axm1, fapply exfalso, fapply deduction, assumption
+  intro, apply falsumE, apply impE, show preformula L 0, by exact f.fst,
+  apply deduction, apply impI, apply axm1, apply exfalso, exact deduction a
 end
 
 @[simp]lemma double_negation_elim' {L} {T : Theory L} {f : sentence L} : T ⊢' ∼∼f ↔ T ⊢' f :=
@@ -2140,6 +2142,19 @@ infix ` ⊢ `:51 := fol.all_sprovable -- input: \|- or \vdash
 
 def all_realize_sentence (S : Structure L) (T : Theory L) := ∀{{f}}, f ∈ T → S ⊨ f
 infix ` ⊨ `:51 := fol.all_realize_sentence -- input using \|= or \vDash, but not using \models 
+
+lemma all_realize_sentence_axm {S : Structure L} {f : sentence L} {T : Theory L} : ∀ (H : S ⊨ insert f T), S ⊨ f ∧ S ⊨ T :=
+λ H, ⟨by {apply H, exact or.inl rfl}, by {intros ψ hψ, apply H, exact or.inr hψ}⟩
+
+@[simp]lemma all_realize_sentence_axm_rw {S : Structure L} {f : sentence L} {T : Theory L} : (S ⊨ insert f T) ↔ S ⊨ f ∧ S ⊨ T :=
+begin
+  refine ⟨by apply all_realize_sentence_axm, _⟩, intro H,
+  rcases H with ⟨Hf, HT⟩, intros g Hg, rcases Hg with ⟨Hg1, Hg2⟩,
+  exact Hf, exact HT Hg
+end
+
+@[simp]lemma all_realize_sentence_singleton {S : Structure L} {f : sentence L} : S ⊨ {f} ↔ S ⊨ f :=
+  ⟨by{intro H, apply H, exact or.inl rfl}, by {intros H g Hg, repeat{cases Hg}, assumption}⟩
 
 def ssatisfied (T : Theory L) (f : sentence L) := 
 ∀{{S : Structure L}}, nonempty S → S ⊨ T → S ⊨ f

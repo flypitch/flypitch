@@ -1,4 +1,4 @@
-import .fol tactic.tidy tactic.ring
+import .fol tactic.tidy
 
 open fol
 
@@ -21,7 +21,7 @@ def L_abel_plus {n} (t₁ t₂ : bounded_term L_abel n) : bounded_term L_abel n 
 
 def zero {n} : bounded_term L_abel n := bd_const abel_functions.zero
 
-local infix ` +' `:100 := L_abel_plus
+infix ` +' `:100 := _root_.abel.L_abel_plus
 
 def a_assoc : sentence L_abel := ∀' ∀' ∀' (((&2 +' &1) +' &0) ≃ (&2 +' (&1 +' &0)))
 
@@ -34,7 +34,7 @@ def a_inv : sentence L_abel := ∀' ∃' (&1 +' &0 ≃ zero ⊓ &0 +' &1 ≃ zer
 def a_comm : sentence L_abel := ∀' ∀' (&1 +' &0 ≃ &0 +' &1)
 
 /- axioms of abelian groups -/
-def Th_ab : Theory L_abel := {a_assoc, a_zero_right, a_zero_left, a_inv, a_comm}
+def T_ab : Theory L_abel := {a_assoc, a_zero_right, a_zero_left, a_inv, a_comm}
 
 def L_abel_structure_of_int : Structure L_abel :=
 begin
@@ -45,13 +45,15 @@ begin
   {intros, cases a}
 end
 
-local notation `ℤ'` := L_abel_structure_of_int
+notation `ℤ'` := _root_.abel.L_abel_structure_of_int
 
 @[simp]lemma ℤ'_ℤ : ↥(ℤ') = ℤ := by refl
 
 @[reducible]instance has_zero_ℤ' : has_zero ℤ' := ⟨(0 : ℤ)⟩
 
 @[reducible]instance has_add_ℤ' : has_add ℤ' := ⟨λx y, (x + y : ℤ)⟩
+
+@[reducible]instance nonempty_ℤ' : nonempty ℤ' := by simp
 
 @[simp]lemma zero_is_zero : @realize_bounded_term L_abel ℤ' _ [] _ zero [] = (0 : ℤ) := by refl
 
@@ -61,7 +63,7 @@ local notation `ℤ'` := L_abel_structure_of_int
 
 def presburger_arithmetic : Theory L_abel := Th ℤ'
 
-theorem ℤ'_is_abelian_group : Th_ab ⊆ presburger_arithmetic :=
+theorem ℤ'_is_abelian_group : T_ab ⊆ presburger_arithmetic :=
 begin
   intros a H, repeat{cases H},
   {tidy},
