@@ -73,10 +73,12 @@ def functional {n} (c : bounded_formula L_ZFC (n+2)) : bounded_formula L_ZFC n :
 ∀' ∃' ∀' (c ↑' 1 # 1 ⇔ &0 ≃ &1)
 def subset : bounded_formula L_ZFC 2 := ∀' (&0 ∈' &1 ⟹ &0 ∈' &2)
 def pair : bounded_formula L_ZFC 3 := bd_equal &0 &1 ⊔ bd_equal &0 &2
+def ordered_pair : bounded_formula L_ZFC 3 := ∀' ((bd_equal &0 &2 ⊔ ∀' (&0 ∈' &1 ⇔ (bd_equal &0 &3 ⊔ bd_equal &0 &2)))
 def singl : bounded_formula L_ZFC 2 := &0 ≃ &1
 def binary_union : bounded_formula L_ZFC 3 := &0 ∈' &1 ⊔ &0 ∈' &2
 def succ : bounded_formula L_ZFC 2 := bd_equal &0 &1 ⊔ &0 ∈' &1
 --∀x∃y(x ∈ y ∧ ∀z(z ∈ y → ∃w(z ∈ w ∧ w ∈ y)))
+
 
 def function : bounded_formula L_ZFC 1 := sorry
 -- to define what functions are, we need to have a notion of what it means for a set to be made up of only ordered pairs, but this seems... ugly
@@ -102,8 +104,8 @@ def axiom_of_emptyset : sentence L_ZFC := small ⊥
 def axiom_of_separation (c : Class) : sentence L_ZFC := ∀' (small $ &0 ∈' &1 ⊓ c.cast1)
 -- the class consisting of the unordered pair {x, y}
 def axiom_of_pairing : sentence L_ZFC := ∀' ∀' small pair
-
-
+--the class consisting of the ordered pair ⟨x, y⟩
+def axiom_of_ordered_pairing : sentence L_ZFC := ∀' ∀' small ordered_pair
 -- inductive ZFC' : (@sentence L_ZFC') → Prop -- should this be Type-valued instead?
 -- := sorry
 
