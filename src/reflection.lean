@@ -20,13 +20,12 @@ open abel
 def T_ab_proves_x_y_y : T_ab ⊢' ∀' ∀' (&1 +' (&0 +' &0) ≃ &0 +' (&0 +' &1)) :=
 begin
   apply (completeness _ _).mpr, intros M h_nonempty hM,
-  intros x y, unfold T_ab at hM, simp at hM, rcases hM with ⟨uno,dos,tres,cuatro,cinco⟩,
-  have this1 := cinco x y y, have this2 := uno y x,  have this3 := uno (realize_bounded_term ([x,y]) (&0 +' &1) []) y,
-  dsimp* at *,
-  have : realize_bounded_term ([y, y, x]) (&2 +' (&1 +' &0)) [] = realize_bounded_term ([y, x]) (&1 +' (&0 +' &0)) [], by refl,
-    rw[<-this, <-this1], 
-  have : realize_bounded_term ([y, y, x]) (&2 +' &1 +' &0) [] = realize_bounded_term ([y, (realize_bounded_term ([x, y]) (&0 +' &1) [])]) (&1 +' &0) [], by refl,
-    rw[this, this3, <-this2], refl
+  intros x y, unfold T_ab at hM,
+  have  hM' : M ⊨ a_comm ∧ M ⊨ a_inv ∧ M ⊨ a_zero_left ∧ M ⊨ a_zero_right ∧ M ⊨ a_assoc,
+  by {simp at hM, assumption}, rcases hM' with ⟨uno,dos,tres,cuatro,cinco⟩,
+  have this1 := cinco x y y, have this2 := uno y x, have this3 := uno (realize_bounded_term ([x,y]) (&0 +' &1) []) y, dsimp at *,
+  conv {to_lhs, change realize_bounded_term ([y, y, x]) (&2 +' (&1 +' &0)) [], rw[<-this1]},
+  conv {to_lhs, change realize_bounded_term ([y, (realize_bounded_term ([x, y]) (&0 +' &1) [])]) (&1 +' &0) [], rw[this3, <-(this2)]}, refl
 end
 
 example : ∀ x y : ℤ, x + (y + y) = y + (y + x) :=

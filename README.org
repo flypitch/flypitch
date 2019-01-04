@@ -16,7 +16,6 @@ After this, you can (re)build the project using ~leanpkg build~.
 Installation instructions for Lean (using ~elan~) can be found [[https://github.com/leanprover/mathlib/blob/master/docs/elan.md][here]].
 
 * Contributors
-Current contributors include:
  - [[https://www.pitt.edu/~jmh288][Jesse Han]]
  - [[http://florisvandoorn.com/][Floris van Doorn]]
-
+ - [[https://github.com/AlmostNever][Andrew Tindall]]
