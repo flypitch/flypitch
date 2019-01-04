@@ -115,7 +115,8 @@ def transitive_zfc : bounded_formula L_ZFC 1 := ∀' ((&0 ∈' &1) ⟹ subset)
 def fn_zfc_equiv : bounded_formula L_ZFC 3 := bd_and ( bd_and (function_one_one ↑' 1 # 1 ↑' 1 # 1) (fn_domain ↑' 1 # 1)) (fn_range ↑' 1 # 2)
 --I don't know why it's ↑' 1 # 1 ↑' 1 # 1 instead of ↑' 2 # 1. It didnt like the 2 but it likes the 1s.
 def zfc_equiv : bounded_formula L_ZFC 2 := ∃' fn_zfc_equiv
-
+def is_powerset : bounded_formula L_ZFC 2 := ∀' ((&0 ∈' &2) ⇔ subset ↑' 1 # 2)
+--&1 is P(&0)
 def is_suc_of : bounded_formula L_ZFC 2 := ∀' ((&0 ∈' &2) ⇔ (bd_or (&0 ∈' &1) (bd_equal &0 &1)))
 -- &1 = succ(&0)
 def is_ordinal : bounded_formula L_ZFC 1 := (∀' ((membership_relation ↑' 1 # 1) ⟹ well_order)) ⊓ transitive_zfc
@@ -127,7 +128,7 @@ def is_first_ordinal : bounded_formula L_ZFC 1 := ∀' (((&0 ∈' &1) ⇔ bd_and
 def is_at_least_second_ordinal : bounded_formula L_ZFC 1 := ∀' ((is_first_ordinal ↑' 1 # 1) ⟹ (∀' (subset ↑' 1 # 2 ⟹ (∼(zfc_equiv ↑' 1 # 1)))))
 def is_second_ordinal : bounded_formula L_ZFC 1 := is_at_least_second_ordinal ⊓ (∀' ((is_at_least_second_ordinal ↑' 1 # 1) ⟹ ordinal_le))
 
-def continuum_hypothesis : bounded_formula L_ZFC 0 := ∀' ∀' ((bd_and (is_first_ordinal ↑' 1 # 1) (is_second_ordinal ↑' 1 #0)) ⟹  zfc_equiv)
+def continuum_hypothesis : bounded_formula L_ZFC 0 := ∀' ∀' ((bd_and ((∃' bd_and (is_first_ordinal ↑' 1 # 1 ↑' 1 # 1) (is_powerset ↑' 1 # 2))) (is_second_ordinal ↑' 1 #0)) ⟹  zfc_equiv)
 
 def axiom_of_extensionality : sentence L_ZFC := ∀' ∀' (∀' (&0 ∈' &1 ⇔ &0 ∈' &2) ⟹ &0 ≃ &1)
 def axiom_of_union : sentence L_ZFC := ∀' (small ∃' (&1 ∈' &0 ⊓ &0 ∈' &2))
