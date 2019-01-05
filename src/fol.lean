@@ -1973,6 +1973,11 @@ by refl
 @[simp] lemma realize_sentence_not {S : Structure L} {f : sentence L} : S ⊨ ∼f ↔ ¬ S ⊨ f :=
 by refl
 
+@[simp] lemma realize_sentence_dne {S : Structure L} {f : sentence L} : S ⊨ ∼∼f ↔ S ⊨ f :=
+begin
+  refine ⟨by apply classical.by_contradiction, _⟩, finish
+end
+
 @[simp] lemma realize_sentence_all {S : Structure L} {f : bounded_formula L 1} :
   (S ⊨ ∀'f) ↔ ∀ x : S, realize_bounded_formula([x]) f([]) :=
 by refl
