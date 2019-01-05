@@ -20,8 +20,6 @@ def ZFC_el : L_ZFC.relations 2 := ZFC_rel.ϵ
 
 local infix ` ∈' `:100 := bounded_formula_of_relation ZFC_el
 
-<<<<<<< HEAD
-
 inductive ZFC'_f0 : Type
 | emptyset
 
@@ -92,9 +90,6 @@ def str_formula : ∀ {n : ℕ}, bounded_formula L_ZFC n → ℕ → string
 
 def print_formula : ∀ {n : ℕ}, bounded_formula L_ZFC n → string := λ n f, str_formula f n
 ----------------------------------------------------------------------------
-
-=======
->>>>>>> 42146337f264feadedd0e61567fd81ff68fa54c3
 def Class : Type := bounded_formula L_ZFC 1
 def small {n} (c : bounded_formula L_ZFC (n+1)) : bounded_formula L_ZFC n := 
 ∃' ∀' (&0 ∈' &1 ⇔ (c ↑' 1 # 1))
@@ -193,16 +188,10 @@ def axiom_of_ordered_pairing : sentence L_ZFC := ∀' ∀' small ordered_pair
 --the class consisting of all ordered pairs
 def axiom_of_product : sentence L_ZFC := small is_ordered_pair
 
-<<<<<<< HEAD
 def ZF : Theory L_ZFC := {axiom_of_extensionality, axiom_of_union, axiom_of_powerset, axiom_of_infinity} ∪ (λ(c : bounded_formula L_ZFC 2), axiom_of_replacement c) '' set.univ
 
 def ZFC : Theory L_ZFC := ZF ∪ {axiom_of_choice}
 
 -- inductive ZFC' : (@sentence L_ZFC') → Prop -- should this be Type-valued instead?
--- := sorry
-=======
--- TODO(Andrew)
-def ZFC : Theory L_ZFC := sorry
->>>>>>> 42146337f264feadedd0e61567fd81ff68fa54c3
 
 end zfc
