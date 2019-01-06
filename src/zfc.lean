@@ -102,7 +102,7 @@ def transitive_relation : bounded_formula L_ZFC 2 := relation ↑' 1 # 0 ⊓ (�
 def partial_order_zfc : bounded_formula L_ZFC 2 := irreflexive_relation ⊓ transitive_relation
 
 --TODO(Andrew) see ⊔ error below
-def connected_relation : bounded_formula L_ZFC 2 := relation ↑' 1 # 0 ⊓ ∀' ∀' ((bd_and (bd_and (&0 ∈' &3) (&1 ∈' &3)) (∼ (bd_equal &0 &1))) ⟹ (∃' bd_and (&0 ∈' &3) (ordered_pair ⊔ (∀' (&0 ∈' &1) ⇔ (bd_equal &0 &2) ⊔ pair ↑' 1 # 1)))) ↑' 2 # 2
+def connected_relation : bounded_formula L_ZFC 2 := bd_and (relation ↑' 1 # 0) (∀' ∀' ((bd_and (bd_and (&0 ∈' &3) (&1 ∈' &3)) (∼ (bd_equal &0 &1))) ⟹ (∃' bd_and (&0 ∈' &3) (bd_or (ordered_pair ↑' 1 # 1 ↑' 1 # 3) (∀' (&0 ∈' &1) ⇔ bd_or (bd_equal &0 &2) (pair ↑' 1 # 1 ↑' 1 # 3))))))
 --&0 is a connected relation on &1
 -- X Con Y iff Rel(X) and ∀u ∀v (u ∈ Y ∧ v ∈ Y ∧ u ≠ v) → ⟨u,v⟩ ∈ X ∨ ⟨v, u⟩ ∈ X
 def total_order : bounded_formula L_ZFC 2 := irreflexive_relation ⊓ transitive_relation ⊓ connected_relation
