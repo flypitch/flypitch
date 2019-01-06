@@ -15,9 +15,7 @@ open classical zorn
 lemma inconsis_not_of_provable {L} {T : Theory L} {f : sentence L} :
   T ⊢' f → ¬ is_consistent (T ∪ {∼f}) :=
 begin
-  intro H,
-  suffices : (T ∪ {∼f}) ⊢' (⊥ : sentence L),
-  by tidy,
+  intro H, suffices : (T ∪ {∼f}) ⊢' (⊥ : sentence L), by tidy,
   apply snot_and_self' _, exact f, apply nonempty.intro, apply andI,
   apply weakening, show set (formula L), exact T.fst, tidy, exact or.inr (by assumption),
   exact classical.choice H, apply axm, tidy
@@ -30,22 +28,23 @@ by_contra, simp[*,-a] at a, cases a with a1 a2, apply consis_not_of_not_provable
 exact classical.by_contradiction (by tidy)
 end
 
-lemma dne {p : Prop} : (¬ ¬ p) ↔ p  :=
-by {split, exact classical.by_contradiction, intros h₁ h₂, exact h₂ h₁ }
-
 /-- Given a theory T and a sentence ψ, either T ∪ {ψ} or T ∪ {∼ ψ} is consistent.--/
 lemma can_extend {L : Language} (T : Theory L) (ψ : sentence L) (h : is_consistent T) : 
   is_consistent (T ∪ {ψ}) ∨ is_consistent (T ∪ {∼ ψ}) :=
 begin
-  simp[is_consistent],  by_contra,  rename a hc, rw[not_or_distrib] at hc,
-  cases hc with hc1 hc2,
-  apply h, rw [dne] at hc1 hc2,
-  have hc_uno : T ⊢'  ∼ψ,
-    exact hc1.map simpI,
-  have hc_dos : T ⊢' ∼∼ψ,
-    exact hc2.map simpI,
-  exact hc_dos.map2 (impE _) hc_uno
+  simp only [is_consistent, set.union_singleton], by_contra,
+  rw[not_or_distrib] at a, rcases a with ⟨H1, H2⟩,
+  suffices : T ⊢' (⊥ : sentence L), by contradiction,
+  exact snot_and_self'' (simpI' (classical.by_contradiction H1)) (simpI' (classical.by_contradiction H2))
 end
+  -- simp[is_consistent],  by_contra,  rename a hc, rw[not_or_distrib] at hc,
+  -- have hc1 := classical.by_contradiction hc.1,
+  -- have hc2 := classical.by_contradiction hc.2,
+  -- have hc_uno : T ⊢'  ∼ψ,
+  --   exact hc1.map simpI,
+  -- have hc_dos : T ⊢' ∼∼ψ,
+  --   exact hc2.map simpI,
+  -- exact hc_dos.map2 (impE _) hc_uno
 
 /-
 Now, we have to show that given an arbitrary chain in this poset, we can obtain an upper bound in this chain. We do this by taking the union.
@@ -349,7 +348,7 @@ begin
 
   by_cases is_consistent ((@maximal_extension L T hT).fst.val ∪ {ψ}),
     {rename h h1,
-      fapply cannot_extend_maximal_extension, repeat{assumption}},
+      apply cannot_extend_maximal_extension, repeat{assumption}},
   {rename h h2,
   have q_of_not_p : ∀ p q : Prop, ∀ h1 : p ∨ q, ∀ h2 : ¬ p, q, by tauto,
   have h2' := q_of_not_p _ _ can_extend h2,
@@ -359,10 +358,7 @@ end
 
 /-- Given a consistent theory, return a complete extension of it --/
 noncomputable def completion_of_consis : Π ( T : Theory L) (h_consis : is_consistent T), Σ' T' : (Theory_over T h_consis), is_complete T'.val :=
-begin
-  intros T h_consis,
-  let T_max := maximal_extension L T h_consis,
-  exact ⟨T_max.fst, by apply complete_maximal_extension_of_consis⟩,
-end
+λ T h_consis, ⟨(maximal_extension L T h_consis).fst, by apply complete_maximal_extension_of_consis⟩
+
 
 end

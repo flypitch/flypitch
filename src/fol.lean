@@ -2061,6 +2061,9 @@ begin
   apply impI, simp[sprf, Theory.fst, image_insert_eq] at H, assumption
 end
 
+lemma simpI' {T : Theory L} {A B : sentence L} (H : insert A T ⊢' B) : T ⊢' A ⟹ B :=
+  H.map simpI
+
 def simpE {T : Theory L} (A : sentence L) {B : sentence L} (H₁ : T ⊢ A ⟹ B) (H₂ : T ⊢ A) : 
   T ⊢ B := 
 by apply impE A.fst H₁ H₂
@@ -2090,8 +2093,10 @@ end
 def snot_and_self {T : Theory L} {A : sentence L} (H : T ⊢ A ⊓ ∼ A) : T ⊢ bd_falsum :=
 by exact not_and_self H
 
-def snot_and_self' {T : Theory L} {A : sentence L} (H : T ⊢' A ⊓ ∼A) : T ⊢' bd_falsum :=
+lemma snot_and_self' {T : Theory L} {A : sentence L} (H : T ⊢' A ⊓ ∼A) : T ⊢' bd_falsum :=
 by {apply nonempty.map _ H, apply snot_and_self}
+
+lemma snot_and_self'' {T : Theory L} {A : sentence L} (H₁ : T ⊢' A) (H₂ : T ⊢' ∼A) : T ⊢' bd_falsum := snot_and_self' $ sandI' H₁ H₂
 
 lemma sprf_by_cases {Γ} (f₁) {f₂ : sentence L} (H₁ : insert f₁ Γ ⊢' f₂)
   (H₂ : insert ∼f₁ Γ ⊢' f₂) : Γ ⊢' f₂ :=

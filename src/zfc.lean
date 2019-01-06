@@ -20,49 +20,6 @@ def ZFC_el : L_ZFC.relations 2 := ZFC_rel.ϵ
 
 local infix ` ∈' `:100 := bounded_formula_of_relation ZFC_el
 
-inductive ZFC'_f0 : Type
-| emptyset
-
-inductive ZFC'_f1 : Type
-| union
-| pow
-
-inductive ZFC'_f2 : Type
-| pair
-
-inductive ZFC'_rel : Type
-| ϵ
-| subset 
-
-def L_ZFC' : Language :=
-begin
-split,
-{intro arityf,
-exact if arityf = 0
-      then ZFC'_f0
-      else (if arityf = 1
-           then ZFC'_f1
-           else (if arityf = 2
-                then ZFC'_f2
-                else empty))   },
-{
-{intro arityr,
-exact if arityr = 2 then ZFC'_rel else empty},
-}
-end
-
--- is there a way to do this with the equation compiler instead?
-
-lemma duh : L_ZFC'.relations 2 = ZFC'_rel :=
-by refl
-
-@[reducible]def rel_is_rel : ZFC'_rel → L_ZFC'.relations 2 :=
-begin
-intro,
-rw[duh],
-assumption
-end
-
 ---ugly but working (str_formula says it's not well-founded recursion, but it evaluates anyway
 def str_preterm : ∀ n m : ℕ, ℕ → bounded_preterm L_ZFC n m → string
   | n m z &k := "x" ++ to_string(z - k)
@@ -191,7 +148,5 @@ def axiom_of_product : sentence L_ZFC := small is_ordered_pair
 def ZF : Theory L_ZFC := {axiom_of_extensionality, axiom_of_union, axiom_of_powerset, axiom_of_infinity} ∪ (λ(c : bounded_formula L_ZFC 2), axiom_of_replacement c) '' set.univ
 
 def ZFC : Theory L_ZFC := ZF ∪ {axiom_of_choice}
-
--- inductive ZFC' : (@sentence L_ZFC') → Prop -- should this be Type-valued instead?
 
 end zfc
