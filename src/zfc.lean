@@ -86,6 +86,10 @@ def relation : bounded_formula L_ZFC 1 := ∀' ((&0 ∈' &1) ⟹ is_ordered_pair
 def function : bounded_formula L_ZFC 1 := relation ⊓ ∀' (∀' (∀' (∀' (∀' (( (&1 ∈' &5) ⊓ ((ordered_pair ↑' 1 # 1) ↑' 1 # 0 ) ⊓ (&0 ∈' &5 ⊓ ((ordered_pair ↑' 1 # 2) ↑' 1 # 1 ))) ⟹ (bd_equal &3 &2)))))) ↑' 1 # 0
 -- X is a function iff X is a relation and the jfollowing holds:
 -- ∀x ∀y ∀z ∀w ∀t, ((w ∈ X) ∧ (w = ⟨x, y⟩) ∧ (z ∈ X) ∧ (z = ⟨x, z⟩ ))) →  y = z
+def fn_app : bounded_formula L_ZFC 3 := ∃' (∀' (&0 ∈' &1 ⇔ bd_or (bd_equal &0 &3) (pair ↑' 1 # 1 ↑' 1 # 4)))
+-- ⟨&1, &0⟩ ∈ &2 
+-- &0 = &2(&1) 
+-- variable order is weird; this fell out of the defn of axiom_of_choice
 def fn_domain : bounded_formula L_ZFC 2 := ∀' ((&0 ∈' &2) ⇔ ∃' ∃' (ordered_pair ↑' 1 # 1 ↑' 1 # 1))
 -- &1 is the domain of &0
 def fn_range : bounded_formula L_ZFC 2 := ∀' ((&0 ∈' &2) ⇔ ∃' ∃' (∀' ((&0 ∈' &1) ⇔ bd_or (bd_equal &0 &2) (pair ↑' 1 # 1 ↑' 1 # 4 ↑' 1 # 4))) )
@@ -153,9 +157,29 @@ def axiom_of_infinity : sentence L_ZFC :=
 
 --TODO(Andrew)
 def axiom_of_choice : sentence L_ZFC :=
--- for every E : A → B, there exists a function C on A such that for every a ∈ A, C a ∈ E a.
-  ∀' /-E : A → B-/ ∃' /- C -/ ∀' /- a -/ /- if a is in the domain of E and E a is nonempty, then C a ∈ E a -/ sorry
-
+-- for every E : A → B, there exists a function C on A such that for every a ∈ A, C a ∈ E a (if E a is nonempty).
+  ∀' /-E-/  
+    (∀' /-A-/
+      (fn_domain ⟹ 
+        (∃' /-C-/                 
+          (∀' /-a-/ 
+            ((&0 ∈' &2) ⟹         
+              (∀' /-b-/
+                (bd_imp (fn_app ↑' 1 # 2 ↑' 1 # 2) /-&0 = &4(&1) ;  b = E(a)-/
+                  ((∀' 
+                    (bd_and 
+                      (fn_app ↑' 1 # 1 ↑' 1 # 4 ↑' 1 # 4) /-&0 = &3(&2) ; c = C(a)-/
+                      (∃' (&0 ∈' &2)) /- b is nonempty -/
+                    ) ⟹ (&0 ∈' &1)
+                  ))
+                )
+              )
+            )
+          )
+        )
+      )
+    )  
+-- ∀E, function(E) ⇒  ∀ A, A = dom(E) ⇒ ∃ C, ∀ a, (a ∈ A ⇒ (∀ b, (fn_app E a b) ⇒ ∀ c, (fn_app C a c ∧ (∃'z, z ∈ b)) ⇒ c ∈ b))
 -- the following axioms follow from the other axioms
 def axiom_of_emptyset : sentence L_ZFC := small ⊥
 -- todo: c can have free variables
