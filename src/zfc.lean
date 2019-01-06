@@ -20,7 +20,7 @@ def ZFC_el : L_ZFC.relations 2 := ZFC_rel.ϵ
 
 local infix ` ∈' `:100 := bounded_formula_of_relation ZFC_el
 
----ugly but working (str_formula says it's not well-founded recursion, but it evaluates anyway
+---ugly but working (str_formula says it's not well-founded recursion, but it evaluates anyways)
 def str_preterm : ∀ n m : ℕ, ℕ → bounded_preterm L_ZFC n m → string
   | n m z &k := "x" ++ to_string(z - k)
   | _ _ _ _ := "h"
@@ -46,6 +46,16 @@ def str_formula : ∀ {n : ℕ}, bounded_formula L_ZFC n → ℕ → string
 
 
 def print_formula : ∀ {n : ℕ}, bounded_formula L_ZFC n → string := λ n f, str_formula f n
+
+-- section test
+
+-- /- ∀ x, ∀ y, x = y → ∀ z, z = x → z = y -/
+-- def testsentence : sentence L_ZFC := ∀' ∀' (&1 ≃ &0 ⟹ ∀' (&0 ≃ &2 ⟹ &0 ≃ &1))
+
+-- #eval print_formula testsentence --- it's alive!!
+
+-- end test
+
 ----------------------------------------------------------------------------
 def Class : Type := bounded_formula L_ZFC 1
 def small {n} (c : bounded_formula L_ZFC (n+1)) : bounded_formula L_ZFC n := 
@@ -60,6 +70,11 @@ def pair : bounded_formula L_ZFC 3 := bd_equal &0 &1 ⊔ bd_equal &0 &2
 def ordered_pair : bounded_formula L_ZFC 3 := ∀' ((&0 ∈' &1) ⟹ ((bd_or (bd_equal &0 &3) (∀' ((&0 ∈' &2) ⇔ (pair ↑' 1 # 1 ↑' 1 # 1 ))))))
 -- &0 is an ordered pair of &2 and &1 (z = ⟨x, y⟩)
 def is_ordered_pair : bounded_formula L_ZFC 1 := ∃' ∃' ∀' ((&0 ∈' &3) ⇔ ordered_pair ↑' 1 # 3)
+
+def identity_relation : bounded_formula L_ZFC 2 := &0 ≃ &1
+
+-- #eval print_formula (functional identity_relation)
+-- #eval print_formula is_ordered_pair
 -- x is_ordered_pairs := ∀w, w ∈ x ↔ ∃u ∃v ∀t, t ∈ w ↔ ordered_pair u v t
 -- the set of all ordered pairs is V², which could also be used to define relations (Rel(X) ↔ X ⊂ V²)
 def singl : bounded_formula L_ZFC 2 := &0 ≃ &1
@@ -85,6 +100,8 @@ def transitive_relation : bounded_formula L_ZFC 2 := relation ↑' 1 # 0 ⊓ (�
 -- X Tr Y iff X is a relation and the following holds:
 -- ∀u ∀v ∀w, (u ∈ Y ∧ v ∈ Y ∧ w ∈ Y ∧ ⟨u, v⟩ ∈ X ∧ ⟨v,w⟩ ∈ X) → ⟨u,w⟩ ∈ X 
 def partial_order_zfc : bounded_formula L_ZFC 2 := irreflexive_relation ⊓ transitive_relation
+
+--TODO(Andrew) see ⊔ error below
 def connected_relation : bounded_formula L_ZFC 2 := relation ↑' 1 # 0 ⊓ ∀' ∀' ((bd_and (bd_and (&0 ∈' &3) (&1 ∈' &3)) (∼ (bd_equal &0 &1))) ⟹ (∃' bd_and (&0 ∈' &3) (ordered_pair ⊔ (∀' (&0 ∈' &1) ⇔ (bd_equal &0 &2) ⊔ pair ↑' 1 # 1)))) ↑' 2 # 2
 --&0 is a connected relation on &1
 -- X Con Y iff Rel(X) and ∀u ∀v (u ∈ Y ∧ v ∈ Y ∧ u ≠ v) → ⟨u,v⟩ ∈ X ∨ ⟨v, u⟩ ∈ X
@@ -110,12 +127,14 @@ def ordinal_lt : bounded_formula L_ZFC 2 := (is_ordinal ↑' 1 # 1) ⊓ (is_ordi
 def ordinal_le : bounded_formula L_ZFC 2 := ordinal_lt ⊔ (bd_equal &0 &1)
 def is_first_ordinal : bounded_formula L_ZFC 1 := ∀' (((&0 ∈' &1) ⇔ bd_and ((is_emptyset ⊔ is_suc_ordinal)↑' 1 # 1) (∀' (&0 ∈' &1) ⟹ is_suc_ordinal ↑' 1 # 1)))
 def is_at_least_second_ordinal : bounded_formula L_ZFC 1 := ∀' ((is_first_ordinal ↑' 1 # 1) ⟹ (∀' (subset ↑' 1 # 2 ⟹ (∼(zfc_equiv ↑' 1 # 1)))))
-#eval print_formula is_at_least_second_ordinal
+
+-- #eval print_formula is_at_least_second_ordinal
+
 def is_second_ordinal : bounded_formula L_ZFC 1 := is_at_least_second_ordinal ⊓ (∀' ((is_at_least_second_ordinal ↑' 1 # 1) ⟹ ordinal_le))
 
 
 
-def continuum_hypothesis : sentence L_ZFC /:= ∀' ∀' ((bd_and ((∃' bd_and (is_first_ordinal ↑' 1 # 1 ↑' 1 # 1) (is_powerset ↑' 1 # 2))) (is_second_ordinal ↑' 1 #0)) ⟹  zfc_equiv)
+def continuum_hypothesis : sentence L_ZFC := ∀' ∀' ((bd_and ((∃' bd_and (is_first_ordinal ↑' 1 # 1 ↑' 1 # 1) (is_powerset ↑' 1 # 2))) (is_second_ordinal ↑' 1 #0)) ⟹  zfc_equiv)
 
 
 
@@ -131,9 +150,12 @@ def axiom_of_powerset : sentence L_ZFC :=
 def axiom_of_infinity : sentence L_ZFC := 
 --∀x∃y(x ∈ y ∧ ∀z(z ∈ y → ∃w(z ∈ w ∧ w ∈ y)))
 ∀' ∃' (&1 ∈' &0 ⊓ ∀'(&0 ∈' &1 ⟹ ∃' (bd_and (&1 ∈' &0) (&0 ∈' &2))))
+
+--TODO(Andrew)
 def axiom_of_choice : sentence L_ZFC :=
 -- for every E : A → B, there exists a function C on A such that for every a ∈ A, C a ∈ E a.
   ∀' /-E : A → B-/ ∃' /- C -/ ∀' /- a -/ /- if a is in the domain of E and E a is nonempty, then C a ∈ E a -/ sorry
+
 -- the following axioms follow from the other axioms
 def axiom_of_emptyset : sentence L_ZFC := small ⊥
 -- todo: c can have free variables
