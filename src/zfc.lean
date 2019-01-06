@@ -127,7 +127,7 @@ relation ↑' 1 # 1 ⊓
           (bd_equal &0 &2) 
           (∀' ((&0 ∈' &1) ⇔ (bd_equal &0 &3)))
         ⟹ 
-        (∼(&0 ∈' &3))))
+        (∼(&0 ∈' &3)))))
 -- &0 is an irreflexive relation on &1
 
 def transitive_relation : bounded_formula L_ZFC 2 := /- X := &0, Y := &1 -/
