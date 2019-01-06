@@ -67,34 +67,91 @@ def functional {n} (c : bounded_formula L_ZFC (n+2)) : bounded_formula L_ZFC n :
 def subset : bounded_formula L_ZFC 2 := ∀' (&0 ∈' &1 ⟹ &0 ∈' &2)
 def is_emptyset : bounded_formula L_ZFC 1 := ∼ ∃' (&0 ∈' &1) 
 def pair : bounded_formula L_ZFC 3 := bd_equal &0 &1 ⊔ bd_equal &0 &2
-def ordered_pair : bounded_formula L_ZFC 3 := ∀' ((&0 ∈' &1) ⟹ ((bd_or (bd_equal &0 &3) (∀' ((&0 ∈' &2) ⇔ (pair ↑' 1 # 1 ↑' 1 # 1 ))))))
--- &0 is an ordered pair of &2 and &1 (z = ⟨x, y⟩)
-def ordered_pair' : bounded_formula L_ZFC 3 := sorry
--- &2 is an ordered pair of &1 and &0 (x = ⟨y,z⟩)
-def is_ordered_pair : bounded_formula L_ZFC 1 := ∃' ∃' ∀' ((&0 ∈' &3) ⇔ ordered_pair ↑' 1 # 3)
-
 def identity_relation : bounded_formula L_ZFC 2 := &0 ≃ &1
-
--- #eval print_formula (functional identity_relation)
--- #eval print_formula is_ordered_pair
--- x is_ordered_pairs := ∀w, w ∈ x ↔ ∃u ∃v ∀t, t ∈ w ↔ ordered_pair u v t
--- the set of all ordered pairs is V², which could also be used to define relations (Rel(X) ↔ X ⊂ V²)
 def singl : bounded_formula L_ZFC 2 := &0 ≃ &1
 def binary_union : bounded_formula L_ZFC 3 := &0 ∈' &1 ⊔ &0 ∈' &2
 def succ : bounded_formula L_ZFC 2 := bd_equal &0 &1 ⊔ &0 ∈' &1 
 --∀x∃y(x ∈ y ∧ ∀z(z ∈ y → ∃w(z ∈ w ∧ w ∈ y)))
+
+
+
+
+def ordered_pair : bounded_formula L_ZFC 3 := 
+∀' 
+  ((&0 ∈' &1) 
+  ⇔
+  (bd_or 
+    (bd_equal &0 &3) 
+    ∀' 
+      ((&0 ∈' &1) ⇔ 
+      (pair ↑' 1 # 1 ↑' 1 # 1 ))))
+-- &0 is an ordered pair of &2 and &1 (z = ⟨x, y⟩)
+def ordered_pair' : bounded_formula L_ZFC 3 := 
+∀' 
+  ((&0 ∈' &3) 
+  ⇔
+  (bd_or 
+    (bd_equal &0 &1) 
+    ∀' 
+      ((&0 ∈' &1) ⇔ 
+      (pair ↑' 1 # 1 ↑' 1 # 4))))
+-- &2 is an ordered pair of &1 and &0 (x = ⟨y,z⟩)
+
+def is_ordered_pair : bounded_formula L_ZFC 1 := ∃' ∃' ordered_pair
+--&0 is an ordered pair of some two elements--
+
 def relation : bounded_formula L_ZFC 1 := ∀' ((&0 ∈' &1) ⟹ is_ordered_pair ↑' 1 # 1)
-#eval print_formula relation
-def function : bounded_formula L_ZFC 1 := relation ⊓ ∀' (∀' (∀' (∀' (∀' (( (&1 ∈' &5) ⊓ ((ordered_pair ↑' 1 # 1) ↑' 1 # 0 ) ⊓ (&0 ∈' &5 ⊓ ((ordered_pair ↑' 1 # 2) ↑' 1 # 1 ))) ⟹ (bd_equal &3 &2)))))) ↑' 1 # 0
--- X is a function iff X is a relation and the jfollowing holds:
+--&0 is a relation (is a set of ordered pairs)
+
+def function : bounded_formula L_ZFC 1 := 
+bd_and
+  relation  
+  ∀' 
+    ∀' 
+      ∀' 
+        ∀' 
+          ∀' 
+            ((bd_and 
+              (bd_and 
+                (&1 ∈' &5) 
+                (ordered_pair ↑' 1 # 3 ↑' 1 # 1 ↑' 1 # 0)) 
+              (bd_and 
+                (&0 ∈' &5) 
+                (ordered_pair ↑' 1 # 3 ↑' 1 # 2 ↑' 1 # 1 ))) 
+            ⟹ (bd_equal &3 &2))
+
+-- X is a function iff X is a relation and the following holds:
 -- ∀x ∀y ∀z ∀w ∀t, ((w ∈ X) ∧ (w = ⟨x, y⟩) ∧ (z ∈ X) ∧ (z = ⟨x, z⟩ ))) →  y = z
-def fn_app : bounded_formula L_ZFC 3 := ∃' (∀' (&0 ∈' &1 ⇔ bd_or (bd_equal &0 &3) (pair ↑' 1 # 1 ↑' 1 # 4)))
+
+
+def fn_app : bounded_formula L_ZFC 3 := 
+∃' 
+  ∀' 
+    ((&0 ∈' &1) ⇔ 
+      bd_or 
+        (bd_equal &0 &3) 
+        (pair ↑' 1 # 1 ↑' 1 # 4))
 -- ⟨&1, &0⟩ ∈ &2 
 -- &0 = &2(&1) 
--- variable order is weird; this fell out of the defn of axiom_of_choice
-def fn_domain : bounded_formula L_ZFC 2 := ∀' ((&0 ∈' &2) ⇔ ∃' ∃' (ordered_pair ↑' 1 # 1 ↑' 1 # 1))
+
+def fn_domain : bounded_formula L_ZFC 2 := 
+∀' 
+  ((&0 ∈' &2) ⇔ 
+  ∃' 
+    ∃' 
+      (ordered_pair ↑' 1 # 1 ↑' 1 # 1))
 -- &1 is the domain of &0
-def fn_range : bounded_formula L_ZFC 2 := ∀' ((&0 ∈' &2) ⇔ ∃' ∃' (∀' ((&0 ∈' &1) ⇔ bd_or (bd_equal &0 &2) (pair ↑' 1 # 1 ↑' 1 # 4 ↑' 1 # 4))) )
+
+def fn_range : bounded_formula L_ZFC 2 := 
+∀' 
+  ((&0 ∈' &2) ⇔ 
+  ∃' 
+    ∃' 
+      ∀' 
+        ((&0 ∈' &1) ⇔ 
+        bd_or 
+          (bd_equal &0 &2) 
+          (pair ↑' 1 # 1 ↑' 1 # 4 ↑' 1 # 4)))
 --&1 is the range of &0
 
 def inverse_relation : bounded_formula L_ZFC 2 := /-X := &0, Y := &1-/
@@ -165,24 +222,25 @@ def partial_order_zfc : bounded_formula L_ZFC 2 := irreflexive_relation ⊓ tran
 def connected_relation : bounded_formula L_ZFC 2 := 
 bd_and 
   (relation ↑' 1 # 1) 
-  ∀' 
-    ∀' 
+  ∀' /-u-/
+    ∀' /-v-/
       ((bd_and 
         (bd_and 
-          (&0 ∈' &3) 
-          (&1 ∈' &3)) 
-        (∼ (bd_equal &0 &1))) 
+          (&0 ∈' &3) /-v ∈ y-/
+          (&1 ∈' &3)) /-u ∈ y-/
+        (∼ (bd_equal &0 &1))) /-v ≠ u-/
       ⟹ 
-      ∃'
+      ∃' /-p-/
         bd_and 
-          (&0 ∈' &3) 
-          (bd_or 
-            (ordered_pair ↑' 1 # 3 ↑' 1 # 3) 
-            ∀' 
-              ((&0 ∈' &1) ⇔ 
+          (&0 ∈' &3) /-p ∈ X-/
+          (bd_or
+            (ordered_pair ↑' 1 # 3 ↑' 1 # 3) /-p = ⟨u,v⟩-/
+              /-term below is "p = ⟨v,u⟩"-/
+            ∀' /-w-/
+              ((&0 ∈' &1) ⇔ /-w ∈ p-/
                 bd_or 
-                  (bd_equal &0 &2) 
-                  (pair ↑' 1 # 1 ↑' 1 # 4 ↑' 1 # 4))))
+                  (bd_equal &0 &2) /-w = v-/
+                  (pair ↑' 1 # 1 ↑' 1 # 4 ↑' 1 # 4)))) /-w = {u,v}-/
 --&0 is a connected relation on &1
 -- X Con Y iff Rel(X) and ∀u ∀v (u ∈ Y ∧ v ∈ Y ∧ u ≠ v) → ⟨u,v⟩ ∈ X ∨ ⟨v, u⟩ ∈ X
 
@@ -209,44 +267,97 @@ bd_and
                 (ordered_pair ↑' 1 # 4 ↑' 1 # 4) /-p = ⟨y,v⟩-/
                 (&0 ∈' &4))) /-p ∈ X -/
             (∼ (∃' /-q-/
-                 bd_and /- first argument is "q = ⟨v,y⟩", second is "q ∈ X"-/
-                   (∀' 
-                     (&0 ∈' &1) ⇔ 
+                 bd_and /-first argument is q = ⟨v,y⟩-/
+                   (∀' /-w-/
+                     (&0 ∈' &1) ⇔ /-w ∈ q-/
                      bd_or 
-                       (bd_equal &0 &2)  
-                       (∀' 
-                         (&0 ∈' &1) ⇔ 
-                         (bd_equal &0 &3) ⊔ 
-                           (bd_equal &0 &4)))
-                   (&0 ∈' &4)))))
---todo: debug this monstrosity
+                       (bd_equal &0 &2)  /-w = v-/
+                       (pair ↑' 1 # 1 ↑' 1 # 4)) /-w = {v,y}-/
+                   (&0 ∈' &4))))) /-q ∈ X-/
 -- &0 well-orders &1
-def membership_relation : bounded_formula L_ZFC 1 := relation ⊓ ∀' (&0 ∈' &1) ⇔ ∃' ∃' ∀' (&0 ∈' &3 ⇔ (bd_and (bd_equal &0 &2 ⊔ pair ↑' 1 # 3)) (&2 ∈' &1))
+def membership_relation : bounded_formula L_ZFC 1 := 
+relation ⊓ 
+∀' 
+  (&0 ∈' &1) ⇔ 
+  ∃' 
+    ∃'
+      ∀' 
+      ((&0 ∈' &3) ⇔ 
+      (bd_and 
+        (bd_equal &0 &2 ⊔ pair ↑' 1 # 3) 
+        (&2 ∈' &1)))
 -- &0 is E, the membership relation {⟨x,y⟩ | x ∈ y}
+
 def transitive_zfc : bounded_formula L_ZFC 1 := ∀' ((&0 ∈' &1) ⟹ subset)
 --&0 is transitive
-def fn_zfc_equiv : bounded_formula L_ZFC 3 := bd_and ( bd_and (function_one_one ↑' 1 # 1 ↑' 1 # 1) (fn_domain ↑' 1 # 1)) (fn_range ↑' 1 # 2)
---I don't know why it's ↑' 1 # 1 ↑' 1 # 1 instead of ↑' 2 # 1. It didnt like the 2 but it likes the 1s.
+
+def fn_zfc_equiv : bounded_formula L_ZFC 3 := 
+bd_and 
+  (bd_and 
+    (function_one_one ↑' 1 # 1 ↑' 1 # 1) 
+    (fn_domain ↑' 1 # 1)) 
+  (fn_range ↑' 1 # 2)
+
 def zfc_equiv : bounded_formula L_ZFC 2 := ∃' fn_zfc_equiv
+--&0 ≃ &1, i.e. they are equinumerous
+
 def is_powerset : bounded_formula L_ZFC 2 := ∀' ((&0 ∈' &2) ⇔ subset ↑' 1 # 2)
 --&1 is P(&0)
-def is_suc_of : bounded_formula L_ZFC 2 := ∀' ((&0 ∈' &2) ⇔ (bd_or (&0 ∈' &1) (bd_equal &0 &1)))
+
+def is_suc_of : bounded_formula L_ZFC 2 := 
+∀' 
+  ((&0 ∈' &2) ⇔ 
+  (bd_or 
+    (&0 ∈' &1) 
+    (bd_equal &0 &1)))
 -- &1 = succ(&0)
-def is_ordinal : bounded_formula L_ZFC 1 := (∀' ((membership_relation ↑' 1 # 1) ⟹ well_order)) ⊓ transitive_zfc
+
+def is_ordinal : bounded_formula L_ZFC 1 :=
+bd_and 
+  (∀' ((membership_relation ↑' 1 # 1) ⟹ well_order))
+  transitive_zfc
+
 def is_suc_ordinal : bounded_formula L_ZFC 1 := is_ordinal ⊓ ∃' is_suc_of
+--&0 is a successor ordinal
+
 def ordinal_lt : bounded_formula L_ZFC 2 := (is_ordinal ↑' 1 # 1) ⊓ (is_ordinal ↑' 1 # 0) ⊓ (&0 ∈' &1)
 -- &0 < &1
-def ordinal_le : bounded_formula L_ZFC 2 := ordinal_lt ⊔ (bd_equal &0 &1)
-def is_first_ordinal : bounded_formula L_ZFC 1 := ∀' (((&0 ∈' &1) ⇔ bd_and ((is_emptyset ⊔ is_suc_ordinal)↑' 1 # 1) (∀' (&0 ∈' &1) ⟹ is_suc_ordinal ↑' 1 # 1)))
-def is_at_least_second_ordinal : bounded_formula L_ZFC 1 := ∀' ((is_first_ordinal ↑' 1 # 1) ⟹ (∀' (subset ↑' 1 # 2 ⟹ (∼(zfc_equiv ↑' 1 # 1)))))
 
--- #eval print_formula is_at_least_second_ordinal
+def ordinal_le : bounded_formula L_ZFC 2 := ordinal_lt ⊔ (bd_equal &0 &1)
+-- &0 ≤ &1
+
+def is_first_ordinal : bounded_formula L_ZFC 1 := 
+∀' 
+  ((&0 ∈' &1) ⇔ 
+  bd_and 
+    ((is_emptyset ⊔ is_suc_ordinal)↑' 1 # 1) 
+    ∀' 
+      ((&0 ∈' &1) ⟹ ((is_emptyset ⊔ is_suc_ordinal) ↑' 1 # 1 ↑' 1 # 1)))
+--&0 = ω
+
+def is_at_least_second_ordinal : bounded_formula L_ZFC 1 := 
+∀' 
+  ((is_first_ordinal ↑' 1 # 1) ⟹ 
+  ∀' 
+    (subset ↑' 1 # 2 ⟹ 
+    (∼(zfc_equiv ↑' 1 # 1))))
+--&0 ≥ ω₁
 
 def is_second_ordinal : bounded_formula L_ZFC 1 := is_at_least_second_ordinal ⊓ (∀' ((is_at_least_second_ordinal ↑' 1 # 1) ⟹ ordinal_le))
+--&0 = ω₁
 
 
 
-def continuum_hypothesis : sentence L_ZFC := ∀' ∀' ((bd_and ((∃' bd_and (is_first_ordinal ↑' 1 # 1 ↑' 1 # 1) (is_powerset ↑' 1 # 2))) (is_second_ordinal ↑' 1 #0)) ⟹  zfc_equiv)
+def continuum_hypothesis : sentence L_ZFC := 
+∀' 
+  ∀' 
+    ((bd_and 
+      (∃' 
+        bd_and 
+          (is_first_ordinal ↑' 1 # 1 ↑' 1 # 1) 
+          (is_powerset ↑' 1 # 2)) 
+      (is_second_ordinal ↑' 1 #0)) ⟹  
+    zfc_equiv)
 
 
 
@@ -263,7 +374,7 @@ def axiom_of_infinity : sentence L_ZFC :=
 --∀x∃y(x ∈ y ∧ ∀z(z ∈ y → ∃w(z ∈ w ∧ w ∈ y)))
 ∀' ∃' (&1 ∈' &0 ⊓ ∀'(&0 ∈' &1 ⟹ ∃' (bd_and (&1 ∈' &0) (&0 ∈' &2))))
 
---TODO(Andrew)
+
 def axiom_of_choice : sentence L_ZFC :=
 -- for every E : A → B, there exists a function C on A such that for every a ∈ A, C a ∈ E a (if E a is nonempty).
   ∀' /-E-/  
@@ -280,6 +391,8 @@ def axiom_of_choice : sentence L_ZFC :=
                       (∃' (&0 ∈' &2)) /- b is nonempty -/
                     ) ⟹ (&0 ∈' &1))))))))))  
 -- ∀E, function(E) ⇒  ∀ A, A = dom(E) ⇒ ∃ C, ∀ a, (a ∈ A ⇒ (∀ b, (fn_app E a b) ⇒ ∀ c, (fn_app C a c ∧ (∃'z, z ∈ b)) ⇒ c ∈ b))
+
+
 -- the following axioms follow from the other axioms
 def axiom_of_emptyset : sentence L_ZFC := small ⊥
 -- todo: c can have free variables
