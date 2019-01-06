@@ -69,6 +69,8 @@ def is_emptyset : bounded_formula L_ZFC 1 := ∼ ∃' (&0 ∈' &1)
 def pair : bounded_formula L_ZFC 3 := bd_equal &0 &1 ⊔ bd_equal &0 &2
 def ordered_pair : bounded_formula L_ZFC 3 := ∀' ((&0 ∈' &1) ⟹ ((bd_or (bd_equal &0 &3) (∀' ((&0 ∈' &2) ⇔ (pair ↑' 1 # 1 ↑' 1 # 1 ))))))
 -- &0 is an ordered pair of &2 and &1 (z = ⟨x, y⟩)
+def ordered_pair' : bounded_formula L_ZFC 3 := sorry
+-- &2 is an ordered pair of &1 and &0 (x = ⟨y,z⟩)
 def is_ordered_pair : bounded_formula L_ZFC 1 := ∃' ∃' ∀' ((&0 ∈' &3) ⇔ ordered_pair ↑' 1 # 3)
 
 def identity_relation : bounded_formula L_ZFC 2 := &0 ≃ &1
@@ -94,23 +96,129 @@ def fn_domain : bounded_formula L_ZFC 2 := ∀' ((&0 ∈' &2) ⇔ ∃' ∃' (ord
 -- &1 is the domain of &0
 def fn_range : bounded_formula L_ZFC 2 := ∀' ((&0 ∈' &2) ⇔ ∃' ∃' (∀' ((&0 ∈' &1) ⇔ bd_or (bd_equal &0 &2) (pair ↑' 1 # 1 ↑' 1 # 4 ↑' 1 # 4))) )
 --&1 is the range of &0
-def inverse_relation : bounded_formula L_ZFC 2 := ∀' ((&0 ∈' &1)  ⇔ ∃' ∃' (bd_and (ordered_pair ↑' 1 # 3 ↑' 1 # 3) ∃' (bd_and (∀' (&0 ∈' &1) ⇔ bd_or (bd_equal &0 &2) (pair ↑' 1 # 3 ↑' 1 # 3 ↑' 1 # 1)) (&0 ∈' &5))))
+
+def inverse_relation : bounded_formula L_ZFC 2 := /-X := &0, Y := &1-/
+∀' /-x-/
+  ((&0 ∈' &1) ⇔ /- x ∈ X -/ 
+  ∃' /-u-/
+    ∃' /-v-/
+      (bd_and 
+        (ordered_pair' ↑' 1 # 3 ↑' 1 # 3) /-x = ⟨u,v⟩-/
+        ∃' /-y-/
+          (bd_and 
+            (∀' /-w-/
+              ((&0 ∈' &1) ⇔ /-w ∈ y-/
+              bd_or 
+                (bd_equal &0 &2) /-w = v-/
+                (pair ↑' 1 # 3 ↑' 1 # 3 ↑' 1 # 3 ↑' 1 # 1))) /-w = {v,u}-/
+            (&0 ∈' &5)))) /-y ∈ Y-/
 -- &0 is the inverse relation of &1
+
 def function_one_one : bounded_formula L_ZFC 1 := function ⊓ ∀' (inverse_relation ⟹ function ↑' 1 # 1)
-def irreflexive_relation : bounded_formula L_ZFC 2 := relation ↑' 1 # 0 ⊓ ∀' (&0 ∈' &1 ⟹ ((∀' ( ( &0 ∈' &1 ) ⇔ (bd_equal &0 &2))) ⟹ ( ∼ (&0 ∈' &3))))
+
+def irreflexive_relation : bounded_formula L_ZFC 2 := 
+relation ↑' 1 # 1 ⊓ 
+∀' 
+  ((&0 ∈' &2) 
+  ⟹ 
+    ∀' 
+      (((&0 ∈' &1) ⇔ 
+        bd_or 
+          (bd_equal &0 &2) 
+          (∀' ((&0 ∈' &1) ⇔ (bd_equal &0 &3)))
+        ⟹ 
+        (∼(&0 ∈' &3))))
 -- &0 is an irreflexive relation on &1
-def transitive_relation : bounded_formula L_ZFC 2 := relation ↑' 1 # 0 ⊓ (∀' ∀' ∀'(((bd_and (bd_and (&2 ∈' &4) (&1 ∈' &4)) (&0 ∈' &4)) ⊓ (∃' (ordered_pair ↑' 1 # 1) ⊓ &0 ∈' &4) ⊓ (∃' ordered_pair ⊓ &0 ∈' &4) ↑' 1 # 6) ↑' 2 # 5 ⟹ ∃' ((ordered_pair ↑' 1 # 2) ⊓ (&0 ∈' &5)) ↑' 2 # 6))
+
+def transitive_relation : bounded_formula L_ZFC 2 := /- X := &0, Y := &1 -/
+bd_and 
+  (relation ↑' 1 # 1)  
+  ∀' /-u-/
+    ∀' /-v-/
+      ∀' /-w-/
+        ((bd_and
+          (bd_and 
+            (bd_and 
+              (bd_and 
+                (&2 ∈' &4) /-u ∈ Y -/ 
+                (&1 ∈' &4)) /-v ∈ Y -/
+              (&0 ∈' &4)) /-w ∈ Y -/
+            (∃' /-p-/
+              bd_and 
+                (ordered_pair ↑' 1 # 1 ↑' 1 # 4 ↑' 1 # 4) /-p = ⟨u,v⟩ -/
+                (&0 ∈' &4))) /- p ∈ X -/
+            ∃' /-q-/
+              bd_and 
+                (ordered_pair ↑' 1 # 3 ↑' 1 # 3 ↑' 1 # 3) /-q = ⟨v,w⟩ -/
+                (&0 ∈' &4)) /-q ∈ X-/
+        ⟹ 
+        ∃' /-r-/
+          bd_and 
+            (ordered_pair ↑' 1 # 2 ↑' 1 # 4 ↑' 1 # 4 ) /-r = ⟨u,w⟩ -/
+            (&0 ∈' &4)) /-r ∈ X-/
 --&0 is a transitive relation on &1
 -- X Tr Y iff X is a relation and the following holds:
 -- ∀u ∀v ∀w, (u ∈ Y ∧ v ∈ Y ∧ w ∈ Y ∧ ⟨u, v⟩ ∈ X ∧ ⟨v,w⟩ ∈ X) → ⟨u,w⟩ ∈ X 
+
 def partial_order_zfc : bounded_formula L_ZFC 2 := irreflexive_relation ⊓ transitive_relation
 
---TODO(Andrew) see ⊔ error below
-def connected_relation : bounded_formula L_ZFC 2 := bd_and (relation ↑' 1 # 0) (∀' ∀' ((bd_and (bd_and (&0 ∈' &3) (&1 ∈' &3)) (∼ (bd_equal &0 &1))) ⟹ (∃' bd_and (&0 ∈' &3) (bd_or (ordered_pair ↑' 1 # 1 ↑' 1 # 3) (∀' (&0 ∈' &1) ⇔ bd_or (bd_equal &0 &2) (pair ↑' 1 # 1 ↑' 1 # 3))))))
+def connected_relation : bounded_formula L_ZFC 2 := 
+bd_and 
+  (relation ↑' 1 # 1) 
+  ∀' 
+    ∀' 
+      ((bd_and 
+        (bd_and 
+          (&0 ∈' &3) 
+          (&1 ∈' &3)) 
+        (∼ (bd_equal &0 &1))) 
+      ⟹ 
+      ∃'
+        bd_and 
+          (&0 ∈' &3) 
+          (bd_or 
+            (ordered_pair ↑' 1 # 3 ↑' 1 # 3) 
+            ∀' 
+              ((&0 ∈' &1) ⇔ 
+                bd_or 
+                  (bd_equal &0 &2) 
+                  (pair ↑' 1 # 1 ↑' 1 # 4 ↑' 1 # 4))))
 --&0 is a connected relation on &1
 -- X Con Y iff Rel(X) and ∀u ∀v (u ∈ Y ∧ v ∈ Y ∧ u ≠ v) → ⟨u,v⟩ ∈ X ∨ ⟨v, u⟩ ∈ X
+
 def total_order : bounded_formula L_ZFC 2 := irreflexive_relation ⊓ transitive_relation ⊓ connected_relation
-def well_order : bounded_formula L_ZFC 2 := bd_and (relation ↑' 1 # 0) (∀' ((bd_and (subset ↑' 1 # 2) ∃' (&0 ∈' &1)) ⟹ ∃' (bd_and (&0 ∈' &1) (∀'(bd_and (&0 ∈' &2) ( ∼ (bd_equal &0 &1))) ⟹ bd_and (∃' (bd_and (ordered_pair ↑'1 # 1)  (&0 ∈' &5))) (∼ (∃' (∀' ( &0 ∈' &1) ⇔ bd_or (bd_equal &0 &2)  (∀' (&0 ∈' &1) ⇔ (bd_equal &0 &2) ⊔ (bd_equal &0 &3))))))) ↑' 1 # 6))
+
+def well_order : bounded_formula L_ZFC 2 := /-X := &0, Y := &1-/ 
+bd_and 
+  (irreflexive_relation) 
+  ∀' /-Z-/
+    ((bd_and 
+      (subset ↑' 1 # 2) /-Z ⊆ Y -/
+      ∃' (&0 ∈' &1)) ⟹ 
+    ∃' /-y-/
+      (bd_and 
+        (&0 ∈' &1) /-y ∈ Z-/
+        ∀' /-v-/
+          (bd_and 
+            (&0 ∈' &2) /-v ∈ Z -/
+            ( ∼ (bd_equal &0 &1)) /-v ≠ y-/
+          ) ⟹ 
+          bd_and 
+            (∃' /-p-/
+              (bd_and 
+                (ordered_pair ↑' 1 # 4 ↑' 1 # 4) /-p = ⟨y,v⟩-/
+                (&0 ∈' &4))) /-p ∈ X -/
+            (∼ (∃' /-q-/
+                 bd_and /- first argument is "q = ⟨v,y⟩", second is "q ∈ X"-/
+                   (∀' 
+                     (&0 ∈' &1) ⇔ 
+                     bd_or 
+                       (bd_equal &0 &2)  
+                       (∀' 
+                         (&0 ∈' &1) ⇔ 
+                         (bd_equal &0 &3) ⊔ 
+                           (bd_equal &0 &4)))
+                   (&0 ∈' &4)))))
 --todo: debug this monstrosity
 -- &0 well-orders &1
 def membership_relation : bounded_formula L_ZFC 1 := relation ⊓ ∀' (&0 ∈' &1) ⇔ ∃' ∃' ∀' (&0 ∈' &3 ⇔ (bd_and (bd_equal &0 &2 ⊔ pair ↑' 1 # 3)) (&2 ∈' &1))
@@ -166,19 +274,11 @@ def axiom_of_choice : sentence L_ZFC :=
             ((&0 ∈' &2) ⟹         
               (∀' /-b-/
                 (bd_imp (fn_app ↑' 1 # 2 ↑' 1 # 2) /-&0 = &4(&1) ;  b = E(a)-/
-                  ((∀' 
+                  ((∀' /-c-/
                     (bd_and 
                       (fn_app ↑' 1 # 1 ↑' 1 # 4 ↑' 1 # 4) /-&0 = &3(&2) ; c = C(a)-/
                       (∃' (&0 ∈' &2)) /- b is nonempty -/
-                    ) ⟹ (&0 ∈' &1)
-                  ))
-                )
-              )
-            )
-          )
-        )
-      )
-    )  
+                    ) ⟹ (&0 ∈' &1))))))))))  
 -- ∀E, function(E) ⇒  ∀ A, A = dom(E) ⇒ ∃ C, ∀ a, (a ∈ A ⇒ (∀ b, (fn_app E a b) ⇒ ∀ c, (fn_app C a c ∧ (∃'z, z ∈ b)) ⇒ c ∈ b))
 -- the following axioms follow from the other axioms
 def axiom_of_emptyset : sentence L_ZFC := small ⊥
