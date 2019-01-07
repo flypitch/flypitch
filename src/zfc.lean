@@ -104,7 +104,7 @@ def fn_domain : bounded_formula L_ZFC 2 := ∀'(&0 ∈' &2 ⇔ ∃'∃'(ordered_
 def fn_range : bounded_formula L_ZFC 2 := ∀'(&0 ∈' &2 ⇔ ∃'∃'(∀'(&0 ∈' &1 ⇔ (&0 ≃ &2 : bounded_formula L_ZFC 6) ⊔ (pair ↑' 1 # 1).cast(lift_cast)) ⊓ &0 ∈' &3))
 --&1 is the range of &0
 
-def inverse_relation : bounded_formula L_ZFC 2 := ∀'(&0 ∈' &1 ⇔ ∃'∃'(∃'(∀'(&0 ∈' &1 ⇔ (&0 ≃ &2 : bounded_formula L_ZFC 7) ⊔ (pair ↑' 1 # 1).cast(lift_cast)) ⊓ &0 ∈' &5 : bounded_formula L_ZFC 6)) ⊓ (ordered_pair'.cast(lift_cast))
+def inverse_relation : bounded_formula L_ZFC 2 := ∀'(&0 ∈' &1 ⇔ ∃'∃'(∃'(∀'(&0 ∈' &1 ⇔ (&0 ≃ &2 : bounded_formula L_ZFC 7) ⊔ (pair ↑' 1 # 1).cast(lift_cast)) ⊓ &0 ∈' &5 : bounded_formula L_ZFC 6)) ⊓ (ordered_pair'.cast(lift_cast)))
 -- &0 is the inverse relation of &1
 
 def function_one_one : bounded_formula L_ZFC 1 := function ⊓ ∀' (inverse_relation ⟹ function.cast(lift_cast))
@@ -155,7 +155,6 @@ def ordinal_lt : bounded_formula L_ZFC 2 := (is_ordinal.cast(lift_cast)) ⊓ (is
 
 def ordinal_le : bounded_formula L_ZFC 2 := ordinal_lt ⊔ (bd_equal &0 &1)
 -- &0 ≤ &1
-#print is_uncountable_ordinal
 
 def is_first_infinite_ordinal : bounded_formula L_ZFC 1 := ∀' ((&0 ∈' &1) ⇔ (((is_emptyset ⊔ is_suc_ordinal)↑' 1 # 1) ⊓ ∀'((&0 ∈' &1) ⟹ ((is_emptyset ⊔ is_suc_ordinal).cast(lift_cast)))))
 --&0 = ω
