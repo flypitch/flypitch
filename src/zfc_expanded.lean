@@ -2,12 +2,6 @@ import .fol
 
 open fol
 
-/- 
-  note from Mario: we can write formulae in ZFC directly, without extending the language.
-  To encode "terms" of ZFC, we encode them as bounded_formula 1 (formulae with 1 free variable),
-  and a formula A should be interpreted as "&0 ∈ A"
--/
-
 namespace zfc
 
 inductive ZFC_rel : ℕ → Type
@@ -72,9 +66,6 @@ def singl : bounded_formula L_ZFC 2 := &0 ≃ &1
 def binary_union : bounded_formula L_ZFC 3 := &0 ∈' &1 ⊔ &0 ∈' &2
 def succ : bounded_formula L_ZFC 2 := bd_equal &0 &1 ⊔ &0 ∈' &1 
 --∀x∃y(x ∈ y ∧ ∀z(z ∈ y → ∃w(z ∈ w ∧ w ∈ y)))
-
-
-
 
 def ordered_pair : bounded_formula L_ZFC 3 := 
 ∀' /-w-/
@@ -432,8 +423,6 @@ def continuum_hypothesis : sentence L_ZFC :=
       (is_first_uncountable_ordinal ↑' 1 #0)) ⟹  
     zfc_equiv)
 
-
-
 def axiom_of_extensionality : sentence L_ZFC := ∀' ∀' (∀' (&0 ∈' &1 ⇔ &0 ∈' &2) ⟹ &0 ≃ &1)
 def axiom_of_union : sentence L_ZFC := ∀' (small ∃' (&1 ∈' &0 ⊓ &0 ∈' &2))
 -- todo: c can have free variables. Note that c y x is interpreted as y is the image of x
@@ -446,7 +435,6 @@ def axiom_of_powerset : sentence L_ZFC :=
 def axiom_of_infinity : sentence L_ZFC := 
 --∀x∃y(x ∈ y ∧ ∀z(z ∈ y → ∃w(z ∈ w ∧ w ∈ y)))
 ∀' ∃' (&1 ∈' &0 ⊓ ∀'(&0 ∈' &1 ⟹ ∃' (bd_and (&1 ∈' &0) (&0 ∈' &2))))
-
 
 def axiom_of_choice : sentence L_ZFC :=
 -- for every E : A → B, there exists a function C on A such that for every a ∈ A, C a ∈ E a (if E a is nonempty).
