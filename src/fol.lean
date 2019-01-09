@@ -24,6 +24,7 @@ if k < n then v k else if n < k then v (k - 1) else x
 
 notation v `[`:95 x ` // `:95 n `]`:0 := fol.subst_realize v x n
 
+/-- --/
 @[simp] lemma subst_realize_lt {S : Type u} (v : ℕ → S) (x : S) {n k : ℕ} (H : k < n) : 
   v[x // n] k = v k :=
 by simp only [H, subst_realize, if_true, eq_self_iff_true]
@@ -128,12 +129,12 @@ begin
 end
 
 namespace preterm
-@[simp] def change_arity : ∀{l l'} (h : l = l') (t : preterm L l), preterm L l'
+@[simp] def change_arity' : ∀{l l'} (h : l = l') (t : preterm L l), preterm L l'
 | _ _ h &k          := by induction h; exact &k
 | _ _ h (func f)    := func (by induction h; exact f)
-| _ _ h (app t₁ t₂) := app (change_arity (congr_arg succ h) t₁) t₂
+| _ _ h (app t₁ t₂) := app (change_arity' (congr_arg succ h) t₁) t₂
 
-@[simp] lemma change_arity_rfl : ∀{l} (t : preterm L l), change_arity rfl t = t
+@[simp] lemma change_arity'_rfl : ∀{l} (t : preterm L l), change_arity' rfl t = t
 | _ &k          := by refl
 | _ (func f)    := by refl
 | _ (app t₁ t₂) := by dsimp; simp*
@@ -141,7 +142,7 @@ namespace preterm
 end preterm
 
 -- lemma apps'_concat {l l'} (t : preterm L (l'+(l+1))) (s : term L) (ts : dvector (term L) l) :
---   apps' t (ts.concat s) = app (apps' (t.change_arity (by simp)) ts) s :=
+--   apps' t (ts.concat s) = app (apps' (t.change_arity' (by simp)) ts) s :=
 -- begin 
 --   induction ts generalizing s, 
 --   { simp }, 
@@ -188,8 +189,8 @@ lemma apps_inj {l} {f f' : L.functions l} {ts ts' : dvector (term L) l}
   (h : apps (func f) ts = apps (func f') ts') : f = f' ∧ ts = ts' :=
 by rcases apps_inj' h with ⟨h', rfl⟩; cases h'; exact ⟨rfl, rfl⟩
 
-def term_of_function {l} (f : L.functions l) : arity (term L) (term L) l :=
-arity.of_dvector_map $ apps (func f)
+def term_of_function {l} (f : L.functions l) : arity' (term L) (term L) l :=
+arity'.of_dvector_map $ apps (func f)
 
 @[elab_as_eliminator] def term.rec {C : term L → Sort v}
   (hvar : ∀(k : ℕ), C &k)
@@ -550,8 +551,8 @@ by cases ts; refl
 --   {f' : formula L} : apps_rel f ts ≠ ∀' f' :=
 -- by induction l; cases ts; [{cases ts_xs, intro h, injection h}, apply l_ih]
 
-def formula_of_relation {l} (R : L.relations l) : arity (term L) (formula L) l :=
-arity.of_dvector_map $ apps_rel (rel R)
+def formula_of_relation {l} (R : L.relations l) : arity' (term L) (formula L) l :=
+arity'.of_dvector_map $ apps_rel (rel R)
 
 @[elab_as_eliminator] def formula.rec' {C : formula L → Sort v}
   (hfalsum : C ⊥)
@@ -1538,8 +1539,8 @@ begin
 end
 
 def bounded_term_of_function {l n} (f : L.functions l) : 
-  arity (bounded_term L n) (bounded_term L n) l :=
-arity.of_dvector_map $ bd_apps (bd_func f)
+  arity' (bounded_term L n) (bounded_term L n) l :=
+arity'.of_dvector_map $ bd_apps (bd_func f)
 
 @[simp] lemma realize_bounded_term_bd_app {S : Structure L}
   {n l} (t : bounded_preterm L n (l+1)) (s : bounded_term L n) (xs : dvector S n) 
@@ -1852,8 +1853,8 @@ by cases xs; exact realize_bounded_formula_irrel'
   (by intros m hm hm'; exfalso; exact not_lt_zero m hm') f f' hf ([])
 
 def bounded_formula_of_relation {l n} (f : L.relations l) : 
-  arity (bounded_term L n) (bounded_formula L n) l :=
-arity.of_dvector_map $ bd_apps_rel (bd_rel f)
+  arity' (bounded_term L n) (bounded_formula L n) l :=
+arity'.of_dvector_map $ bd_apps_rel (bd_rel f)
 
 @[elab_as_eliminator] def bounded_preformula.rec1 {C : Πn l, bounded_preformula L (n+1) l → Sort v}
   (H0 : Π {n}, C n 0 ⊥)
