@@ -1,44 +1,46 @@
-import .fol
+import .fol set_theory.zfc tactic.tidy
 
 open fol
 
 namespace zfc
 
-inductive ZFC_rel : ℕ → Type
+inductive ZFC_rel : ℕ → Type 1
 | ϵ : ZFC_rel 2
 
-def L_ZFC : Language := 
-⟨λ_, empty, ZFC_rel⟩
+def L_ZFC : Language.{1} := 
+⟨λ_, ulift empty, ZFC_rel⟩
+
+
 
 def ZFC_el : L_ZFC.relations 2 := ZFC_rel.ϵ
 
 local infix ` ∈' `:100 := bounded_formula_of_relation ZFC_el
 
 ---ugly but working (str_formula says it's not well-founded recursion, but it evaluates anyways)
-def str_preterm : ∀ n m : ℕ, ℕ → bounded_preterm L_ZFC n m → string
-  | n m z &k := "x" ++ to_string(z - k)
-  | _ _ _ _ := "h"
-def str_term: ∀ n : ℕ, ℕ → bounded_term L_ZFC n → string
-  | n m &k := "x" ++ to_string(m - k.val)
-  | _ _ _ := "n"
-def str_preformula : ∀ n m : ℕ, ℕ → bounded_preformula L_ZFC n m → string
-  | _ _ _ (bd_falsum ) := "⊥"
-  | n m z (bd_equal a b) := str_preterm n m z a ++ " = " ++ str_preterm n m z b
-  | n m z (a ⟹ b) := str_preformula n m z a ++ " ⟹ " ++ str_preformula n m z b
-  | n m z (bd_rel _) := "∈"
-  | n m z (bd_apprel a b) := str_preformula n (m+1) z a ++ "(" ++ str_term n z b ++ ")"
-  | n m z (∀' t) := "(∀x" ++ to_string(z+1) ++ "," ++ str_preformula (n+1) m (z+1) t ++ ")"
-def str_formula : ∀ {n : ℕ}, bounded_formula L_ZFC n → ℕ → string
-  | n ((f₁ ⟹ (f₂ ⟹ bd_falsum)) ⟹ bd_falsum) m:= "(" ++ str_formula f₁ m ++ "∧" ++ str_formula f₂ m ++ ")"
-  | n ((f₁ ⟹ bd_falsum) ⟹ f₂) m := "(" ++ str_formula f₁ m ++ " ∨ " ++ str_formula f₂ m ++ ")"
-  | n (bd_equal s1 s2) m := "(" ++ str_term n m s1 ++ " = " ++ str_term n m s2 ++ ")"
-  | n (∀' f) m := "(∀x"++ to_string(m + 1) ++ "," ++ (str_formula f (m+1) ) ++ ")"
-  | _ bd_falsum _ := "⊥"
-  | n (f ⟹ bd_falsum) m := "~" ++ str_formula f m
-  | n (bd_apprel (f₁) f₂) m := str_preformula n 1 m f₁ ++ "(" ++ str_term n m f₂ ++ ")"
-  | n (bd_imp a b) m := "(" ++ str_formula a m ++ " ⟹ " ++ str_formula b m ++ ")"
-
-def print_formula : ∀ {n : ℕ}, bounded_formula L_ZFC n → string := λ n f, str_formula f n
+--def str_preterm : ∀ n m : ℕ, ℕ → bounded_preterm L_ZFC n m → string
+--  | n m z &k := "x" ++ to_string(z - k)
+--  | _ _ _ _ := "h"
+--def str_term: ∀ n : ℕ, ℕ → bounded_term L_ZFC n → string
+--  | n m &k := "x" ++ to_string(m - k.val)
+--  | _ _ _ := "n"
+--def str_preformula : ∀ n m : ℕ, ℕ → bounded_preformula L_ZFC n m → string
+--  | _ _ _ (bd_falsum ) := "⊥"
+--  | n m z (bd_equal a b) := str_preterm n m z a ++ " = " ++ str_preterm n m z b
+--  | n m z (a ⟹ b) := str_preformula n m z a ++ " ⟹ " ++ str_preformula n m z b
+--  | n m z (bd_rel _) := "∈"
+--  | n m z (bd_apprel a b) := str_preformula n (m+1) z a ++ "(" ++ str_term n z b ++ ")"
+--  | n m z (∀' t) := "(∀x" ++ to_string(z+1) ++ "," ++ str_preformula (n+1) m (z+1) t ++ ")"
+--def str_formula : ∀ {n : ℕ}, bounded_formula L_ZFC n → ℕ → string
+--  | n ((f₁ ⟹ (f₂ ⟹ bd_falsum)) ⟹ bd_falsum) m:= "(" ++ str_formula f₁ m ++ "∧" ++ str_formula f₂ m ++ ")"
+--  | n ((f₁ ⟹ bd_falsum) ⟹ f₂) m := "(" ++ str_formula f₁ m ++ " ∨ " ++ str_formula f₂ m ++ ")"
+--  | n (bd_equal s1 s2) m := "(" ++ str_term n m s1 ++ " = " ++ str_term n m s2 ++ ")"
+--  | n (∀' f) m := "(∀x"++ to_string(m + 1) ++ "," ++ (str_formula f (m+1) ) ++ ")"
+--  | _ bd_falsum _ := "⊥"
+-- | n (f ⟹ bd_falsum) m := "~" ++ str_formula f m
+--  | n (bd_apprel (f₁) f₂) m := str_preformula n 1 m f₁ ++ "(" ++ str_term n m f₂ ++ ")"
+--  | n (bd_imp a b) m := "(" ++ str_formula a m ++ " ⟹ " ++ str_formula b m ++ ")"
+--
+--def print_formula : ∀ {n : ℕ}, bounded_formula L_ZFC n → string := λ n f, str_formula f n
 
 notation `lift_cast` := by {repeat{apply nat.succ_le_succ}, apply nat.zero_le}
 
@@ -49,7 +51,8 @@ notation `lift_cast` := by {repeat{apply nat.succ_le_succ}, apply nat.zero_le}
 -- end test
 
 ----------------------------------------------------------------------------
-def Class : Type := bounded_formula L_ZFC 1
+
+def Class : Type 1 := bounded_formula L_ZFC 1
 def small {n} (c : bounded_formula L_ZFC (n+1)) : bounded_formula L_ZFC n := 
 ∃' ∀' (&0 ∈' &1 ⇔ (c ↑' 1 # 1))
 def subclass (c₁ c₂ : Class) : sentence L_ZFC := ∀' (c₁ ⟹ c₂)
@@ -179,5 +182,77 @@ def axiom_of_ordered_pairing : sentence L_ZFC := ∀' ∀' small ordered_pair
 def ZF : Theory L_ZFC := {axiom_of_extensionality, axiom_of_union, axiom_of_powerset, axiom_of_infinity} ∪ (λ(c : bounded_formula L_ZFC 2), axiom_of_replacement c) '' set.univ
 
 def ZFC : Theory L_ZFC := ZF ∪ {axiom_of_choice}
+universe variable u
+
+ 
+def L_ZFC_structure_of_Set : Structure L_ZFC :=
+begin
+  refine ⟨Set,_,_⟩,
+  {intros n f, repeat{cases f}},
+  {intros n r v, cases r, cases v, cases v_xs, exact v_x ∈ v_xs_x}
+end
+
+local notation `Set'` := L_ZFC_structure_of_Set
+
+instance  has_mem_Set'_Set' : (has_mem Set' Set') := ⟨Set.mem⟩
+
+instance has_mem_Set_Set' : has_mem Set.{0} Set' := ⟨Set.mem⟩
+
+instance has_emptyc_Set' : has_emptyc Set' := ⟨Set.empty⟩
+
+lemma  empty_subset : ∀ x: Set',  Set.empty ⊆ x := by tidy 
+
+lemma Set'_has_mem : has_mem ↥Set' ↥Set' := ⟨ Set.mem ⟩
+local notation h :: t  := dvector.cons h t
+local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`) := l
+
+example : Set' ⊨ (∃' is_emptyset) :=
+begin
+  tidy, apply a ∅, simp[is_emptyset], rw [bd_ex], repeat{simp [realize_bounded_formula]}, apply not_not_intro, tidy 
+end
+
+@[simp]lemma Set'_rel_mem {x y : Set} :  (Structure.rel_map Set' ZFC_rel.ϵ ( [x,y] ) ) = (x ∈ y) := by tidy
+ 
+@[simp] lemma Set'_mem_mem {n : ℕ} {x y : bounded_term L_ZFC n} {v : dvector ↥Set' n} : realize_bounded_formula v (x ∈' y) dvector.nil = ((realize_bounded_term v x dvector.nil) ∈ (realize_bounded_term v y dvector.nil)) :=
+begin
+simp [ZFC_el, bounded_formula_of_relation, realize_bounded_formula, bd_apps_rel]
+end
+@[simp]lemma realize_bounded_formula_biimp { n : ℕ } {L : Language } { S : Structure L} {f₁ f₂ : bounded_formula L n} {v : dvector ↥S n} : (realize_bounded_formula v (f₁ ⇔ f₂) dvector.nil) = ((realize_bounded_formula v f₁ dvector.nil) ↔ (realize_bounded_formula v f₂ dvector.nil)) := 
+by {rw[bd_biimp], tidy}
+
+lemma Set'_models_extensionality : axiom_of_extensionality ∈ Th Set' := 
+begin
+simp [has_mem.mem, set.mem, Th, set_of, axiom_of_extensionality], intros x y, intro h, apply Set.ext, intro z, revert h,  intro h, have := h z, exact this
+end
+
+lemma Set'_models_union : axiom_of_union ∈ Th Set' := 
+begin
+simp [has_mem.mem, set.mem, Th, set_of, axiom_of_union, small], intro x, simp [ bd_ex], intro a, have := a (Set.Union x),  rw [bd_and] at this, repeat { rw [bd_not] at this}, apply this, intro w, simp only [lift_bounded_formula_at], 
+end
+
+lemma Set'_models_powerset : axiom_of_powerset ∈ Th Set' := sorry
+
+lemma Set'_models_choice : axiom_of_choice ∈ Th Set' := sorry
+
+lemma Set'_models_infinity : axiom_of_infinity ∈ Th Set' :=
+begin
+simp [has_mem.mem, set.mem, Th, set_of, axiom_of_infinity,satisfied_in], 
+  intros x,
+  rw [bd_ex], repeat {simp[realize_bounded_formula]}, repeat {simp[ZFC_el]},  repeat {simp[realze_bounded_formula_bd_apps_rel]}, 
+end
+
+lemma Set'_models_replacement: ∀ c : bounded_formula L_ZFC 2, axiom_of_replacement c ∈ Th Set' := sorry
+
+lemma Set_extends_ZFC : ZFC ⊆ Th Set' :=
+begin
+intros f hf, cases hf with zf choice,
+cases zf, cases zf,
+  {rw zf,  exact Set'_models_infinity}, cases zf,
+  {rw zf, exact Set'_models_powerset}, cases zf,
+  {rw zf, exact Set'_models_union}, cases zf,
+  {rw zf, exact Set'_models_extensionality}, cases zf,
+  {rcases zf with ⟨a,⟨b,c⟩,d⟩, simp [d.symm], exact Set'_models_replacement a}, cases choice,
+  {rw choice, exact Set'_models_choice}, cases choice
+end
 
 end zfc
