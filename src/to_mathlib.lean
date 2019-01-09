@@ -80,6 +80,14 @@ inductive dvector (α : Type u) : ℕ → Type u
 | nil {} : dvector 0
 | cons : ∀{n} (x : α) (xs : dvector n), dvector (n+1)
 
+inductive dfin : ℕ → Type
+| fz {n} : dfin (n+1)
+| fs {n} : dfin n → dfin (n+1)
+
+instance has_zero_dfin {n} : has_zero $ dfin (n+1) := ⟨dfin.fz⟩
+
+-- note from Mario --- use dfin to synergize with dvector
+
 local notation h :: t  := dvector.cons h t
 local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`) := l
 
@@ -100,6 +108,10 @@ variables {α : Type u} {β : Type v} {γ : Type w} {n : ℕ}
 
 protected def nth' {n : ℕ} (xs : dvector α n) (m : fin n) : α :=
 xs.nth m.1 m.2
+
+protected def nth'' : ∀ {n : ℕ} (xs : dvector α n) (m : dfin n), α
+| _ (x::xs) dfin.fz       := x
+| _ (x::xs) (dfin.fs (m)) := nth'' xs m
 
 protected def mem : ∀{n : ℕ} (x : α) (xs : dvector α n), Prop
 | _ x []       := false

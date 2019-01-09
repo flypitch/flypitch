@@ -10,7 +10,7 @@ inductive ZFC_rel : ℕ → Type 1
 def L_ZFC : Language.{1} := 
 ⟨λ_, ulift empty, ZFC_rel⟩
 
-
+/- Note from Mario: should try using L_ZFC' -/
 
 def ZFC_el : L_ZFC.relations 2 := ZFC_rel.ϵ
 
@@ -67,6 +67,7 @@ def binary_union : bounded_formula L_ZFC 3 := &0 ∈' &1 ⊔ &0 ∈' &2
 def succ : bounded_formula L_ZFC 2 := (&0 ≃ &1 : bounded_formula L_ZFC 2) ⊔ &0 ∈' &1 
 
 def ordered_pair : bounded_formula L_ZFC 3 := ∀'(&0 ∈' &1 ⇔ (&0 ≃ &3 : bounded_formula L_ZFC 4) ⊔ ∀'(&0 ∈' &1 ⇔ pair ↑' 1 # 1 ↑' 1 # 1))
+
 -- &0 is an ordered pair of &2 and &1 (z = ⟨x, y⟩)
 
 def ordered_pair' : bounded_formula L_ZFC 3 := ∀'(&0 ∈' &3 ⇔ (&0 ≃ &2 : bounded_formula L_ZFC 4) ⊔ ∀'(&0 ∈' &1 ⇔ (pair ↑' 1 # 1).cast(lift_cast)))
@@ -156,6 +157,8 @@ def is_first_uncountable_ordinal : bounded_formula L_ZFC 1 := is_uncountable_ord
 /- Statement of CH -/
 def continuum_hypothesis : sentence L_ZFC := ∀' ∀'  ((∃'((is_first_infinite_ordinal ↑' 1 # 1 ↑' 1 # 1) ⊓ (is_powerset ↑' 1 # 2)) ⊓ (is_first_uncountable_ordinal ↑' 1 #0)) ⟹ zfc_equiv)
 
+#eval print_formula continuum_hypothesis
+
 def axiom_of_extensionality : sentence L_ZFC := ∀' ∀' (∀' (&0 ∈' &1 ⇔ &0 ∈' &2) ⟹ &0 ≃ &1)
 def axiom_of_union : sentence L_ZFC := ∀' (small ∃' (&1 ∈' &0 ⊓ &0 ∈' &2))
 -- todo: c can have free variables. Note that c y x is interpreted as y is the image of x
@@ -208,26 +211,33 @@ local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`) := l
 
 example : Set' ⊨ (∃' is_emptyset) :=
 begin
-  tidy, apply a ∅, simp[is_emptyset], rw [bd_ex], repeat{simp [realize_bounded_formula]}, apply not_not_intro, tidy 
+  unfold is_emptyset, simp[realize_sentence_ex], refine ⟨∅, _⟩, tidy
 end
 
 @[simp]lemma Set'_rel_mem {x y : Set} :  (Structure.rel_map Set' ZFC_rel.ϵ ( [x,y] ) ) = (x ∈ y) := by tidy
  
 @[simp] lemma Set'_mem_mem {n : ℕ} {x y : bounded_term L_ZFC n} {v : dvector ↥Set' n} : realize_bounded_formula v (x ∈' y) dvector.nil = ((realize_bounded_term v x dvector.nil) ∈ (realize_bounded_term v y dvector.nil)) :=
 begin
-simp [ZFC_el, bounded_formula_of_relation, realize_bounded_formula, bd_apps_rel]
+  simp [ZFC_el, bounded_formula_of_relation, realize_bounded_formula, bd_apps_rel]
 end
 @[simp]lemma realize_bounded_formula_biimp { n : ℕ } {L : Language } { S : Structure L} {f₁ f₂ : bounded_formula L n} {v : dvector ↥S n} : (realize_bounded_formula v (f₁ ⇔ f₂) dvector.nil) = ((realize_bounded_formula v f₁ dvector.nil) ↔ (realize_bounded_formula v f₂ dvector.nil)) := 
-by {rw[bd_biimp], tidy}
+  by {rw[bd_biimp], tidy}
+
+-- set_option trace.simplify.rewrite true
 
 lemma Set'_models_extensionality : axiom_of_extensionality ∈ Th Set' := 
 begin
-simp [has_mem.mem, set.mem, Th, set_of, axiom_of_extensionality], intros x y, intro h, apply Set.ext, intro z, revert h,  intro h, have := h z, exact this
+  simp [Th, axiom_of_extensionality, fin.val, has_one.one, fin.of_nat],
+  intros x y, intro h, apply Set.ext, intro z, revert h,  intro h, have := h z, exact this
 end
 
 lemma Set'_models_union : axiom_of_union ∈ Th Set' := 
 begin
-simp [has_mem.mem, set.mem, Th, set_of, axiom_of_union, small], intro x, simp [ bd_ex], intro a, have := a (Set.Union x),  rw [bd_and] at this, repeat { rw [bd_not] at this}, apply this, intro w, simp only [lift_bounded_formula_at], 
+  simp only [Th, axiom_of_union, small], intro x,
+  conv {congr, skip, congr, congr, congr, skip,
+       change (∃' (&1 ∈' &0 ⊓ &0 ∈' &3) : bounded_formula L_ZFC 3)},
+  simp, change ∃ U, ∀ z, z ∈ U ↔ ∃ w, z ∈ w ∧ w ∈ x, 
+  refine ⟨⋃ x, _⟩, intro z, rw[@Set.mem_Union x z], finish
 end
 
 lemma Set'_models_powerset : axiom_of_powerset ∈ Th Set' := sorry
@@ -237,8 +247,7 @@ lemma Set'_models_choice : axiom_of_choice ∈ Th Set' := sorry
 lemma Set'_models_infinity : axiom_of_infinity ∈ Th Set' :=
 begin
 simp [has_mem.mem, set.mem, Th, set_of, axiom_of_infinity,satisfied_in], 
-  intros x,
-  rw [bd_ex], repeat {simp[realize_bounded_formula]}, repeat {simp[ZFC_el]},  repeat {simp[realze_bounded_formula_bd_apps_rel]}, 
+sorry
 end
 
 lemma Set'_models_replacement: ∀ c : bounded_formula L_ZFC 2, axiom_of_replacement c ∈ Th Set' := sorry
@@ -246,13 +255,12 @@ lemma Set'_models_replacement: ∀ c : bounded_formula L_ZFC 2, axiom_of_replace
 lemma Set_extends_ZFC : ZFC ⊆ Th Set' :=
 begin
 intros f hf, cases hf with zf choice,
-cases zf, cases zf,
-  {rw zf,  exact Set'_models_infinity}, cases zf,
-  {rw zf, exact Set'_models_powerset}, cases zf,
-  {rw zf, exact Set'_models_union}, cases zf,
-  {rw zf, exact Set'_models_extensionality}, cases zf,
-  {rcases zf with ⟨a,⟨b,c⟩,d⟩, simp [d.symm], exact Set'_models_replacement a}, cases choice,
-  {rw choice, exact Set'_models_choice}, cases choice
+repeat{cases zf},
+  exact Set'_models_infinity, exact Set'_models_powerset,
+  exact Set'_models_union, exact Set'_models_extensionality,
+  dsimp at zf_h, cases zf_h with a b, subst b,
+  revert zf_w, simp, exact Set'_models_replacement, 
+  repeat{cases choice}, exact Set'_models_choice
 end
 
 end zfc

@@ -1,4 +1,4 @@
-import .fol tactic.tidy .abel tactic.ring .completeness
+import .fol tactic.tidy .abel tactic.ring .completeness .zfc
 
 open fol
 
@@ -48,5 +48,3 @@ by {tidy}
 
 end
 end reflection
-
-
