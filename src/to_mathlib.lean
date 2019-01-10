@@ -201,6 +201,14 @@ protected lemma concat_nth : ∀{n : ℕ} (xs : dvector α n) (x : α) (m : ℕ)
 | n x 0 xs h := by {induction n, refl, simp*}
 | (n+1) x (k+1) (y::ys) h := by simp*
 
+@[simp] protected def cast : ∀ (n : ℕ) (m : ℕ) (p : n = m), dvector α n → dvector α m := begin intros n m p, induction p, exact id end
+
+@[simp] protected def remove_mth : ∀ {n : ℕ} (m : ℕ) (xs : dvector α (n+1)) , dvector α (n)
+  | 0 _ _  := dvector.nil
+  | n 0 (dvector.cons y ys) := ys
+  | (n+1) (k+1) (dvector.cons y ys) := dvector.cons y (remove_mth k ys)
+
+
 /- how to make this protected? -/
 inductive rel [setoid α] : ∀{n}, dvector α n → dvector α n → Prop
 | rnil : rel [] []
