@@ -1406,6 +1406,10 @@ lemma subst_bounded_term_irrel {n : ℕ} : ∀{l} (t : bounded_preterm L n l) {n
 | _ (bd_func f)    xs := S.fun_map f xs
 | _ (bd_app t₁ t₂) xs := realize_bounded_term t₁ $ realize_bounded_term t₂ ([])::xs
 
+/- S[t ; v] -/
+notation S`[`:max v ` /// `:95 t`]`:0 := @fol.realize_bounded_term _ S _  v _ t (dvector.nil)
+  -- fol.realize_bounded_term v t (dvector.nil)
+
 @[reducible] def realize_closed_term (S : Structure L) (t : closed_term L) : S :=
 realize_bounded_term ([]) t ([])
 
@@ -1752,8 +1756,12 @@ subst_bounded_formula_irrel f s n.zero_le
 | _ _ v (f₁ ⟹ f₂)      xs := realize_bounded_formula v f₁ xs → realize_bounded_formula v f₂ xs
 | _ _ v (∀' f)          xs := ∀(x : S), realize_bounded_formula (x::v) f xs
 
+notation S`[`:95 f ` ;; `:95 v `]`:0 := @fol.realize_bounded_formula _ S _ 0 v f (dvector.nil)
+
 @[reducible] def realize_sentence (S : Structure L) (f : sentence L) : Prop :=
 realize_bounded_formula ([] : dvector S 0) f ([])
+
+notation S`[`:max f `]`:0 := fol.realize_sentence S f
 
 lemma realize_bounded_formula_iff {S : Structure L} : ∀{n} {v₁ : dvector S n} {v₂ : ℕ → S}
   (hv : ∀k (hk : k < n), v₁.nth k hk = v₂ k) {l} (t : bounded_preformula L n l)

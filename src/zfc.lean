@@ -157,8 +157,6 @@ def is_first_uncountable_ordinal : bounded_formula L_ZFC 1 := is_uncountable_ord
 /- Statement of CH -/
 def continuum_hypothesis : sentence L_ZFC := ∀' ∀'  ((∃'((is_first_infinite_ordinal ↑' 1 # 1 ↑' 1 # 1) ⊓ (is_powerset ↑' 1 # 2)) ⊓ (is_first_uncountable_ordinal ↑' 1 #0)) ⟹ zfc_equiv)
 
-#eval print_formula continuum_hypothesis
-
 def axiom_of_extensionality : sentence L_ZFC := ∀' ∀' (∀' (&0 ∈' &1 ⇔ &0 ∈' &2) ⟹ &0 ≃ &1)
 def axiom_of_union : sentence L_ZFC := ∀' (small ∃' (&1 ∈' &0 ⊓ &0 ∈' &2))
 -- todo: c can have free variables. Note that c y x is interpreted as y is the image of x
@@ -186,7 +184,6 @@ def ZF : Theory L_ZFC := {axiom_of_extensionality, axiom_of_union, axiom_of_powe
 
 def ZFC : Theory L_ZFC := ZF ∪ {axiom_of_choice}
 universe variable u
-
  
 def L_ZFC_structure_of_Set : Structure L_ZFC :=
 begin
@@ -236,11 +233,20 @@ begin
   simp only [Th, axiom_of_union, small], intro x,
   conv {congr, skip, congr, congr, congr, skip,
        change (∃' (&1 ∈' &0 ⊓ &0 ∈' &3) : bounded_formula L_ZFC 3)},
-  simp, change ∃ U, ∀ z, z ∈ U ↔ ∃ w, z ∈ w ∧ w ∈ x, 
+  simp, change ∃ U, ∀ z, z ∈ U ↔ ∃ w, z ∈ w ∧ w ∈ x,
   refine ⟨⋃ x, _⟩, intro z, rw[@Set.mem_Union x z], finish
 end
 
-lemma Set'_models_powerset : axiom_of_powerset ∈ Th Set' := sorry
+lemma Set'_models_powerset : axiom_of_powerset ∈ Th Set' :=
+begin
+  unfold axiom_of_powerset Th small subset,
+    simp only [fol.realize_bounded_formula_ex, fol.bounded_preformula.cast,
+    zfc.realize_bounded_formula_biimp, fol.lift_bounded_formula_at,
+    fol.realize_bounded_formula, fol.bounded_preformula.cast_rfl,
+    set.mem_set_of_eq, zfc.Set'_mem_mem, fol.realize_bounded_term,
+    dvector.nth],
+  intro x, refine ⟨Set.powerset x, _⟩, apply Set.mem_powerset
+end
 
 lemma Set'_models_choice : axiom_of_choice ∈ Th Set' := sorry
 

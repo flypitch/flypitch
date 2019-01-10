@@ -329,8 +329,24 @@ lemma shallow_induction (P : set nat) : (P(0) ∧ ∀ x, P x → P (nat.succ x))
 --  sorry
 -- end
 
+-- realization of a substitution of a bounded_term (n' + 1) at n in a bounded_formula (n'' + 1), where n + n' = n'', is the same as realization (insert S[t])
+
+
+
+lemma asjh {L} {S : Structure L} {n n' n''} {h : n + (n'+1) + 1 = n'' + 1} {t : bounded_term L (n'+1)} {f : bounded_formula L (n''+1)} {v : dvector S (n + n' + 1)} :
+  @realize_bounded_formula L S n 0 v (@subst_bounded_formula L n (n' + 1) (n'' + 1) 0 f t (by assumption) = @realize_bounded_formula L S (n+1) 0 (dvector.insert (realize_bounded_term begin end t))
+
 @[simp]lemma subst_falsum {L} {n n' n''} {h : n + n' + 1 = n''} {t : bounded_term L n'} : bd_falsum[t // n // h] = bd_falsum :=
   by tidy
+
+
+-- #reduce (ℕ')[ ([] : dvector ℕ' 0) /// (@zero 0)]
+
+
+-- #reduce (L_peano_structure_of_nat)[(p_zero_not_succ)]
+
+-- #reduce (L_peano_structure_of_nat)[(&0 ≃ zero : bounded_formula L_peano 1) ;; ([0] : dvector (ℕ') 1)] 
+
 
 @[simp]lemma subst0_falsum {L} {n} {t : bounded_term L n} : bd_falsum[t /0] = bd_falsum :=
   by {unfold subst0_bounded_formula, simpa only [subst_falsum]}
