@@ -81,9 +81,13 @@ begin
   refine ⟨⋃ x, _⟩, intro z, rw[@Set.mem_Union x z], finish
 end
 
+
+
 lemma Set'_models_powerset : axiom_of_powerset ∈ Th Set' := 
 begin
-  simp only [Th, axiom_of_powerset, small], sorry
+  simp[Th, axiom_of_powerset, small, lift_realize_formula],
+
+--- simp only [Th, axiom_of_powerset, small], simp only [lift],
 end
 
 lemma Set'_models_choice : axiom_of_choice ∈ Th Set' := sorry

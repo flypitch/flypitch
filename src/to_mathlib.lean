@@ -208,7 +208,6 @@ protected lemma concat_nth : ∀{n : ℕ} (xs : dvector α n) (x : α) (m : ℕ)
   | n 0 (dvector.cons y ys) := ys
   | (n+1) (k+1) (dvector.cons y ys) := dvector.cons y (remove_mth k ys)
 
-
 /- how to make this protected? -/
 inductive rel [setoid α] : ∀{n}, dvector α n → dvector α n → Prop
 | rnil : rel [] []
