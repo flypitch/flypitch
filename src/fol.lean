@@ -29,7 +29,7 @@ notation v `[`:95 x ` // `:95 n `]`:0 := fol.subst_realize v x n
   v[x // n] k = v k :=
 by simp only [H, subst_realize, if_true, eq_self_iff_true]
 
-@[simp] lemma subst_realiz_gt {S : Type u} (v : ℕ → S) (x : S) {n k : ℕ} (H : n < k) : 
+@[simp] lemma subst_realize_gt {S : Type u} (v : ℕ → S) (x : S) {n k : ℕ} (H : n < k) : 
   v[x // n] k = v (k-1) :=
 have h : ¬(k < n), from lt_asymm H,
 by simp only [*, subst_realize, if_true, eq_self_iff_true, if_false]

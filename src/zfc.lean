@@ -236,7 +236,7 @@ def Set_irreflexive_relation : Set → Set → Prop := λ x y, Set_relation x �
 
 def Set_transitive_relation : Set → Set → Prop := λ x y, ∀ u v w, ((u ∈ y ∧ v ∈ y ∧ w ∈ w ∧ {{u},{u,v}} ∈ x ∧ {{v},{v,w}} ∈ x) → {{u},{u,w}} ∈ x)
 
-def Set_partial_order : Set → Set → Prop := λ x y, Set_irreflexive_relation x y, Set_transitive_relation x y
+def Set_partial_order : Set → Set → Prop := λ x y, Set_irreflexive_relation x y ⊓ Set_transitive_relation x y
 
 def Set_connected_relation: Set → Set → Prop := λ x y, Set_relation x ∧ ∀ u v, (u ∈ y ∧ v ∈ y ∧ u ≠ v) → ({{u},{u,v}} ∈ x ∨ {{v},{v,u}} ∈ x) 
 
@@ -250,7 +250,7 @@ def Set_transitive : Set → Prop := λ x, ∀ w, w ∈ x → w ⊆ x
 
 def Set_fn_equiv : Set → Set → Set → Prop := λ x y z, Set_function_one_one x ∧ Set_fn_domain x y ∧ Set_fn_range x z  
 
-def Set_zfc_equiv : Set → Set → Prop := λ x y, ∃ f, Set_fn_equiv x y
+def Set_zfc_equiv : Set → Set → Prop := λ x y, ∃ f, Set_fn_equiv f x y
 
 def Set_is_suc_of : Set → Set → Prop := λ x y, ∀ w, (w ∈ x ↔ (w ∈ y ∨ w = y))
 
