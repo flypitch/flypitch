@@ -6,7 +6,7 @@
 * There is no well-formedness predicate; all elements of type "term" are well-formed.
 -/
 
-import .to_mathlib
+import .to_mathlib import tactic.tidy
 
 open nat set
 universe variables u v
@@ -1327,6 +1327,15 @@ t.cast $ n.le_add_right 1
 @[simp] lemma cast1_fst {n l} (t : bounded_preterm L n l) : 
   t.cast1.fst = t.fst := t.cast_fst _
 
+@[simp] lemma cast_eq_rfl {n m l} (h : n = m) (t : bounded_preterm L n l) : (t.cast_eq h).cast_eq h.symm = t := by ext; simp
+
+@[simp] lemma cast_eq_irrel {n m l} (h h' : n = m) (t : bounded_preterm L n l) : (t.cast_eq h) = (t.cast_eq h') := by refl
+
+@[simp]lemma cast_eq_bd_app {n m} (h : n = m) {l} {t : bounded_preterm L n (l+1)} {s : bounded_preterm L n 0} : (bd_app t s).cast_eq h = (bd_app (t.cast_eq h) (s.cast_eq h)) := by refl
+
+@[simp]lemma cast_eq_bd_apps {n m } (h : n = m) {l} {t : bounded_preterm L n l} {ts : dvector (bounded_term L n) l} : (bd_apps t ts).cast_eq h = bd_apps (t.cast_eq h) (ts.map (λ t, t.cast_eq h)) :=
+  by {induction ts generalizing t, refl, simp*}
+
 end bounded_preterm
 
 namespace closed_preterm
@@ -1407,8 +1416,10 @@ lemma subst_bounded_term_irrel {n : ℕ} : ∀{l} (t : bounded_preterm L n l) {n
 | _ (bd_app t₁ t₂) xs := realize_bounded_term t₁ $ realize_bounded_term t₂ ([])::xs
 
 /- S[t ; v] -/
-notation S`[`:max v ` /// `:95 t`]`:0 := @fol.realize_bounded_term _ S _  v _ t (dvector.nil)
-  -- fol.realize_bounded_term v t (dvector.nil)
+notation S`[`:max t ` /// `:95 v`]`:0 := @fol.realize_bounded_term _ S _  v _ t (dvector.nil)
+
+notation S`[`:max t ` /// `:95 v ` /// `:90 xs `]`:0 := @fol.realize_bounded_term _ S _  v _ t xs
+
 
 @[reducible] def realize_closed_term (S : Structure L) (t : closed_term L) : S :=
 realize_bounded_term ([]) t ([])
@@ -1437,6 +1448,9 @@ lemma realize_bounded_term_irrel {S : Structure L} {n} {v₁ : dvector S n}
   realize_bounded_term v₁ t xs = realize_closed_term S t' :=
 by cases xs; exact realize_bounded_term_irrel' 
   (by intros m hm hm'; exfalso; exact not_lt_zero m hm') t t' ht ([])
+
+@[simp]lemma realize_bounded_term_cast_eq_irrel {S : Structure L} {n m l} {h : n = m} {v : dvector S m} {t : bounded_preterm L n l} (xs : dvector S l) :
+realize_bounded_term v (t.cast_eq h) xs = realize_bounded_term (v.cast h.symm) t xs := by {subst h, simp, induction t, refl, refl, simp*}
 
 @[simp] def lift_bounded_term_at {n} : ∀{l} (t : bounded_preterm L n l) (n' m : ℕ), 
   bounded_preterm L (n + n') l
@@ -1708,6 +1722,12 @@ f.cast $ n.le_add_right 1
 @[simp] lemma cast1_fst {l n} (f : bounded_preformula L n l) : 
   f.cast1.fst = f.fst := f.cast_fst _
 
+@[simp] lemma cast_eq_rfl {l n m} (h : n = m) (f : bounded_preformula L n l) : (f.cast_eq h).cast_eq h.symm = f := by ext; simp
+
+@[simp]lemma cast_eq_irrel {l n m} (h h' : n = m) (f : bounded_preformula L n l) : (f.cast_eq h) = (f.cast_eq h') := by refl
+
+@[simp]lemma cast_eq_all {n m } (h : n = m) {f : bounded_preformula L (n+1) _} : (∀' f).cast_eq h = ∀' (f.cast_eq (by {subst h; refl})) := by refl
+
 /- A bounded_preformula is qf if the underlying preformula is qf -/
 def quantifier_free {l n} : bounded_preformula L n l → Prop := λ f, fol.quantifier_free f.fst
 
@@ -1735,7 +1755,7 @@ lemma lift_bounded_formula_irrel : ∀{n l} (f : bounded_preformula L n l) (n') 
 lemma lift_sentence_irrel (f : sentence L) : f.fst ↑ 1 = f.fst :=
 lift_bounded_formula_irrel f 1 $ le_refl 0
 
-lemma subst_bounded_formula_irrel : ∀{n l} (f : bounded_preformula L n l) {n'} (s : term L)
+@[simp]lemma subst_bounded_formula_irrel : ∀{n l} (f : bounded_preformula L n l) {n'} (s : term L)
   (h : n ≤ n'), f.fst[s // n'] = f.fst
 | _ _ bd_falsum       n' s h := by refl
 | _ _ (t₁ ≃ t₂)       n' s h := by simp [subst_bounded_term_irrel _ s h]
@@ -1756,7 +1776,9 @@ subst_bounded_formula_irrel f s n.zero_le
 | _ _ v (f₁ ⟹ f₂)      xs := realize_bounded_formula v f₁ xs → realize_bounded_formula v f₂ xs
 | _ _ v (∀' f)          xs := ∀(x : S), realize_bounded_formula (x::v) f xs
 
+notation S`[`:95 f ` ;; `:95 v ` ;; `:90 xs `]`:0 := @fol.realize_bounded_formula _ S _ _ v f xs
 notation S`[`:95 f ` ;; `:95 v `]`:0 := @fol.realize_bounded_formula _ S _ 0 v f (dvector.nil)
+
 
 @[reducible] def realize_sentence (S : Structure L) (f : sentence L) : Prop :=
 realize_bounded_formula ([] : dvector S 0) f ([])
@@ -1868,6 +1890,10 @@ lemma realize_bounded_formula_irrel {S : Structure L} {n} {v₁ : dvector S n}
   realize_bounded_formula v₁ f xs ↔ realize_sentence S f' :=
 by cases xs; exact realize_bounded_formula_irrel' 
   (by intros m hm hm'; exfalso; exact not_lt_zero m hm') f f' hf ([])
+
+@[simp]lemma realize_bounded_formula_cast_eq_irrel {S : Structure L} {n m l} {h : n = m} {v : dvector S m} {f : bounded_preformula L n l} {xs : dvector S l} :
+realize_bounded_formula v (f.cast_eq h) xs = realize_bounded_formula (v.cast h.symm) f xs :=
+  by {subst h, induction f; unfold bounded_preformula.cast_eq; simp*}
 
 def bounded_formula_of_relation {l n} (f : L.relations l) : 
   arity' (bounded_term L n) (bounded_formula L n) l :=

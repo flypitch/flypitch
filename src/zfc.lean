@@ -42,7 +42,7 @@ local infix ` ∈' `:100 := bounded_formula_of_relation ZFC_el
 --
 --def print_formula : ∀ {n : ℕ}, bounded_formula L_ZFC n → string := λ n f, str_formula f n
 
-notation `lift_cast` := by {repeat{apply nat.succ_le_succ}, apply nat.zero_le}
+local notation `lift_cast` := by {repeat{apply nat.succ_le_succ}, apply nat.zero_le}
 
 -- section test
 
@@ -183,5 +183,4 @@ def axiom_of_ordered_pairing : sentence L_ZFC := ∀' ∀' small ordered_pair
 def ZF : Theory L_ZFC := {axiom_of_extensionality, axiom_of_union, axiom_of_powerset, axiom_of_infinity} ∪ (λ(c : bounded_formula L_ZFC 2), axiom_of_replacement c) '' set.univ
 
 def ZFC : Theory L_ZFC := ZF ∪ {axiom_of_choice}
-
 end zfc

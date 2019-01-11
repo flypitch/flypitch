@@ -1,14 +1,15 @@
-import .fol tactic.tidy
+import .fol tactic.tidy tactic.linarith .realization
 
 open fol
 
-local attribute [instance, priority 0] classical.prop_decidable
+-- local attribute [instance, priority 0] classical.prop_decidable
 --local attribute [instance] classical.prop_decidable
 
 local notation h :: t  := dvector.cons h t
 local notation `[]` := dvector.nil
 local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`) := l
 
+open realization
 namespace peano
 section
 
@@ -46,7 +47,7 @@ by {convert ψ, apply zero_add}
 @[simp]lemma mpr_lemma {α β: Type*} {p q : α = β} {x : β} : eq.mpr p x = eq.mpr q x := by refl
 
 @[simp]lemma mpr_lemma2 {L} {n m : ℕ} {h : m = n} {h' : bounded_formula L m = bounded_formula L n} {h'' : bounded_formula L (m+1) = bounded_formula L (n+1)} {f : bounded_formula L (n+1)} : ∀' eq.mpr h'' f = eq.mpr h' (∀'f) :=
- by tidy
+ by {ext1, induction h, refl}
 
 -- lemma obvious3 {L : Language} {n} {ψ : bounded_formula L (n+1)} (p q :  bounded_formula L (n - n) = bounded_formula L (n - n)) : eq.mpr p (bd_alls' n n (∀' ψ)) = eq.mpr q (bd_alls' n n (∀' ψ)) :=
 -- by apply mpr_lemma -- refl also suffices here
@@ -273,6 +274,19 @@ end
 lemma shallow_induction (P : set nat) : (P(0) ∧ ∀ x, P x → P (nat.succ x)) → ∀ x, P x :=
   λ h, nat.rec h.1 h.2
 
+section notation_test
+#reduce (ℕ')[(@zero 0) /// [] ]
+
+
+#reduce (L_peano_structure_of_nat)[(p_zero_not_succ)]
+
+#reduce (L_peano_structure_of_nat)[(&0 ≃ zero : bounded_formula L_peano 1) ;; ([(1 : ℕ)] : dvector (ℕ') 1)] 
+
+-- #reduce (&0 : bounded_term L_peano 1)[zero // 0] -- elaborator fails, don't know why
+-- need to fix subst_bounded_term notation, something's not type-checking
+
+end notation_test
+
 -- @[simp]lemma subst0_subst0 {L} {n} {f : bounded_formula L (n+1)} {s₁} {s₂} : (f ↑' 1 # 1)[s₁ /0][s₂ /0] = f[s₁[s₂ /0] /0] := sorry -- this probably isn't true with careful lifting
 
 -- @[simp]lemma subst_succ_is_apply {n} {k} : (succ &0)[formal_nat n /0] = @formal_nat k (nat.succ n) :=
@@ -330,149 +344,9 @@ lemma shallow_induction (P : set nat) : (P(0) ∧ ∀ x, P x → P (nat.succ x))
 -- end
 
 -- realization of a substitution of a bounded_term (n' + 1) at n in a bounded_formula (n'' + 1), where n + n' = n'', is the same as realization (insert S[t])
+-- lemma asjh {L} {S : Structure L} {n n' n''} {h : n + (n') + 1 = n'' + 1} {t : bounded_term L (n')} {f : bounded_formula L (n''+1)} {v : dvector S (n + n' + 1)} :
+--   @realize_bounded_formula L S n 0 v (@subst_bounded_formula L n (n' + 1) (n'' + 1) 0 f t (by assumption) = @realize_bounded_formula L S (n+1) 0 (dvector.insert (realize_bounded_term begin end t)) sorry) sorry := sorry
 
-
-
-lemma asjh {L} {S : Structure L} {n n' n''} {h : n + (n'+1) + 1 = n'' + 1} {t : bounded_term L (n'+1)} {f : bounded_formula L (n''+1)} {v : dvector S (n + n' + 1)} :
-  @realize_bounded_formula L S n 0 v (@subst_bounded_formula L n (n' + 1) (n'' + 1) 0 f t (by assumption) = @realize_bounded_formula L S (n+1) 0 (dvector.insert (realize_bounded_term begin end t))
-
-@[simp]lemma subst_falsum {L} {n n' n''} {h : n + n' + 1 = n''} {t : bounded_term L n'} : bd_falsum[t // n // h] = bd_falsum :=
-  by tidy
-
-
--- #reduce (ℕ')[ ([] : dvector ℕ' 0) /// (@zero 0)]
-
-
--- #reduce (L_peano_structure_of_nat)[(p_zero_not_succ)]
-
--- #reduce (L_peano_structure_of_nat)[(&0 ≃ zero : bounded_formula L_peano 1) ;; ([0] : dvector (ℕ') 1)] 
-
-
-@[simp]lemma subst0_falsum {L} {n} {t : bounded_term L n} : bd_falsum[t /0] = bd_falsum :=
-  by {unfold subst0_bounded_formula, simpa only [subst_falsum]}
-
--- looks like here we additionally need substitution notation for bounded_term
-@[simp]lemma subst_eq {L} {n n' n''} {h : n + n' + 1 = n''} {t₁ t₂ : bounded_term L n''} {t : bounded_term L n'} : (t₁ ≃ t₂)[t // n // h] = subst_bounded_term (t₁.cast_eq h.symm) t ≃ subst_bounded_term (t₂.cast_eq h.symm) t := by tidy -- TODO replace these with the fully expanded versions
-
-@[simp]lemma subst0_eq {L} {n} {t : bounded_term L n} {t₁ t₂ : bounded_term L (n+1)} : (t₁ ≃ t₂)[t /0] = (t₁[t /0] ≃ t₂[t /0]) :=
-  by {unfold subst0_bounded_formula, simpa only [subst_eq]}
-
-@[simp]lemma subst_imp {L} {n n' n''} {h : n + n' + 1 = n''} {t : bounded_term L n'} {f₁ f₂ : bounded_formula L (n'')} : (f₁ ⟹ f₂)[t // n // h] = (f₁[t // n // h] ⟹ f₂[t // n // h]) := by tidy
-
-@[simp]lemma subst0_imp {L} {n} {t : bounded_term L n} {f₁ f₂ : bounded_formula L (n+1)} : (f₁ ⟹ f₂)[t /0] = f₁[t /0] ⟹ f₂[t /0] :=
-  by {unfold subst0_bounded_formula, simpa only [subst_imp]}
-
--- def hewwo : bounded_formula L_peano 1 := &0 ≃ zero
-
--- #reduce @realize_bounded_formula L_peano L_peano_structure_of_nat _ _ [] ((hewwo[ (succ zero) // 0 // (by simp)]).cast (by {refl})) [] -- sanity check, works as expected
-
-#reduce @fol.subst_bounded_term L_peano 0 0 0 (&0) zero
-
--- #reduce (&0 : bounded_term L_peano 1)[zero // 0] -- elaborator fails, don't know why
-
-
--- this is the suspicious simp lemma--- don't want this
--- @[simp]lemma subst0_all {L} {n} {t : closed_term L} {f : bounded_formula L (n+2)} : (∀' f)[(t.cast (by simp)) /0] = begin apply bd_all, fapply subst_bounded_formula, exact n+2, exact f, exact (t.cast (by simp)), repeat{constructor} end :=
--- begin
---   sorry
--- end
-
-@[simp]lemma subst_all {L} {n n' n''} {h : n + n' + 1 = n''} {t : closed_term L} {f : bounded_formula L (n'' + 1)} :
-  (∀'f)[t.cast0 n' // n // (by {simp[h]})]
-  = ∀'(f[(t.cast0 n' : bounded_term L n') // (n+1) // (by {tidy})]).cast_eq (by simp) :=
-  by tidy
-
-@[simp]lemma subst0_all {L} {n} {t : closed_term L} {f : bounded_formula L (n+2)} :
-  ((∀'f)[t.cast (by simp) /0] : bounded_formula L n) = ∀'((f[t.cast0 n // 1 // (by {simp} : 1 + n + 1 = n + 2)]).cast_eq (by simp)) :=
-  by tidy
-
--- {unfold subst0_bounded_formula, simp[@subst_all L n 0 (n+1) (by simp) t f], }
-
-
-lemma zero_of_lt_one (n : nat) (h : n < 1) : n = 0 :=
-  by {cases h, refl, cases nat.lt_of_succ_le h_a}
-
-@[simp]lemma realize_bounded_term_subst0 {L} {S : Structure L} {n} (s : bounded_term L (n+1)) {v : dvector S n} (t : closed_term L) : realize_bounded_term v (s[(t.cast (by simp)) /0]) [] = realize_bounded_term ((realize_closed_term S t)::v) s [] :=
-begin
-revert s, refine bounded_term.rec1 _ _,
-  {intro k, rcases k with ⟨k_val, k_H⟩, simp,
-    induction n generalizing k_val, have := zero_of_lt_one k_val (by exact k_H), subst this,
-    congr, {apply dvector.zero_eq}, {tidy}, cases nat.le_of_lt_succ k_H with H1 H2,
-    swap, repeat{sorry}
-    },
-  {sorry}
-end
-
--- intros, induction n, rw[dvector.zero_eq v],
---     {cases k, tidy,
---     have := zero_of_lt_one k_val (by exact k_is_lt), subst this,
---     congr, unfold subst0_bounded_term, tidy},
---     {
--- -- cases v, have := @n_ih v_xs, sorry
---     }
-
-lemma subst0_bounded_formula_bd_apps_rel {L} {n l} (f : bounded_preformula L (n+1) l) 
-  (t : closed_term L) (ts : dvector (bounded_term L (n+1)) l) :
-  subst0_bounded_formula (bd_apps_rel f ts) (t.cast (by simp)) = 
-  bd_apps_rel (subst0_bounded_formula f (t.cast (by simp))) (ts.map $ λt', subst0_bounded_term t' (t.cast (by simp))) :=
-begin
-  induction ts generalizing f, refl, simp[bd_apps_rel, ts_ih (bd_apprel f ts_x)], congr, tidy
-end
-
-lemma rel_subst0_irrel {L : Language} {n l} {R : L.relations l} {t : bounded_term L n} : (bd_rel R)[t /0] = (bd_rel R) := by tidy
-
--- lemma realize_bounded_formula_subst_insert {L} {S : Structure L} {n i} (f : bounded_formula L (n+1)) {v : dvector S n} (t : closed_term L) {h_i : i + 0 + 1 = n + 1}: realize_bounded_formula v (begin apply @subst_bounded_formula L i _ (n+1) _ f (by sorry), repeat{constructor} end) [] ↔ realize_bounded_formula (v.insert (realize_closed_term S t) i) f [] :=
--- begin
---   sorry
--- end
-
-     -- maybe to finish this, need to generalize over all substitution indices---substitution at n corresponds to an insertion at n, and so on -- can finish by induction on vector length and use substmax
-lemma realize_bounded_formula_subst0_gen {L} {S : Structure L} {n} {m} {m'} {h_m : m + m' + 1 = n+1} (f : bounded_formula L (n+1)) {v : dvector S n} (t : closed_term L) : realize_bounded_formula v ((f[t.cast (zero_le m') // m // h_m]).cast_eq (by {tidy})) [] ↔ realize_bounded_formula (dvector.insert (realize_closed_term S t) (m+1) v) f [] :=
-begin
-  revert n f v, refine bounded_formula.rec1 _ _ _ _ _; intros,
-  {simp, intro a, cases a},
-  {sorry}, -- this needs term version
-  {sorry}, -- this needs version for bd_apps_rel
-  {sorry},
-  {simp[*, subst_all],}
-end
-set_option pp.implicit true
-/-- realization of a subst0 is the realization with the substituted term prepended to the realizing vector --/
-lemma realize_bounded_formula_subst0 {L} {S : Structure L} {n} (f : bounded_formula L (n+1)) {v : dvector S n} (t : closed_term L) : realize_bounded_formula v (f[(t.cast0 n) /0]) [] ↔ realize_bounded_formula ((realize_closed_term S t)::v) f [] :=
-begin
-  revert n f v, refine bounded_formula.rec1 _ _ _ _ _; intros,
-  {simp},
-  {simp},
-  {rw[subst0_bounded_formula_bd_apps_rel], simp[realize_bounded_formula_bd_apps_rel, rel_subst0_irrel]},
-  {simp*},
-  {simp, apply forall_congr, clear ih, intro x, have := realize_bounded_formula_subst0_gen f t, tactic.rotate 1,
-  exact S, exact 0, exact (n+1), {simp},
-  exact (x::v), simp at this, rw[<-this],
-  conv {to_lhs, congr, skip, congr, congr,
-  skip, simp[closed_preterm.cast0]},
-   apply iff_of_eq, congr' 2, simp,
-  }
-end
-
--- begin
--- dsimp[closed_term, closed_preterm] at t,
--- have := @realize_bounded_formula_subst0_gen L S n 0 f v [] (t.cast (by simp)),
--- unfold realize_closed_term, rw[<-realize_closed_term_realize_irrel] at this,
--- simp at this, split,
--- -- rest of this lemma relies on rewriting the bounded_preterm.cast t, after which simp[this] should work
--- {intro, apply this.mp, revert a, sorry},
--- {sorry},
--- end
-
-lemma realize_bounded_formula_subst0' {L} {S : Structure L} {n} (f : bounded_formula L (n+1)) {v : dvector S n} (t : bounded_term L 1) (x : S) : realize_bounded_formula (x :: v) ((f ↑' 1 # 1)[(t.cast (by simp)) /0]) [] ↔ realize_bounded_formula ((realize_bounded_term ([x] : dvector S 1) t []) :: v) f [] := 
-begin
-revert f n v, refine bounded_formula.rec1 _ _ _ _ _; intros,
-  {tidy},
-  {sorry}, -- this requires a version of this lemma for terms
-  {sorry}, -- same issue as the corresponding case above
-  {sorry}, -- this one should be easy, just need a lemma about commutation with bd_imp
-  {sorry}, -- same issues as the corresponding case above
-end
 
 
 /- ℕ' satisfies PA induction schema -/

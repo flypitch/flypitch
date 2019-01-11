@@ -201,7 +201,12 @@ protected lemma concat_nth : ∀{n : ℕ} (xs : dvector α n) (x : α) (m : ℕ)
 | n x 0 xs h := by {induction n, refl, simp*}
 | (n+1) x (k+1) (y::ys) h := by simp*
 
-@[simp] protected def cast : ∀ (n : ℕ) (m : ℕ) (p : n = m), dvector α n → dvector α m := begin intros n m p, induction p, exact id end
+@[simp] protected def cast {n m} (p : n = m) : dvector α n → dvector α m :=
+  by subst p; exact id
+
+@[simp] protected lemma cast_irrel {n m} {p p' : n = m} {v : dvector α n} : v.cast p = v.cast p' := by refl
+
+@[simp] protected lemma cast_rfl {n m} {p : n = m} {v : dvector α n} : (v.cast p).cast (p.symm) = v := by {subst p, refl}
 
 @[simp] protected def remove_mth : ∀ {n : ℕ} (m : ℕ) (xs : dvector α (n+1)) , dvector α (n)
   | 0 _ _  := dvector.nil

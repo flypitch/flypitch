@@ -81,12 +81,21 @@ begin
   refine ⟨⋃ x, _⟩, intro z, rw[@Set.mem_Union x z], finish
 end
 
-lemma Set'_models_powerset : axiom_of_powerset ∈ Th Set' := 
+lemma Set'_models_powerset : axiom_of_powerset ∈ Th Set' :=
 begin
-  simp only [Th, axiom_of_powerset, small], sorry
+  unfold axiom_of_powerset Th small subset,
+    simp only [fol.realize_bounded_formula_ex, fol.bounded_preformula.cast,
+    realize_bounded_formula_biimp, fol.lift_bounded_formula_at,
+    fol.realize_bounded_formula, fol.bounded_preformula.cast_rfl,
+    set.mem_set_of_eq, Set'_mem_mem, fol.realize_bounded_term,
+    dvector.nth],
+  intro x, refine ⟨Set.powerset x, _⟩, apply Set.mem_powerset
 end
 
-lemma Set'_models_choice : axiom_of_choice ∈ Th Set' := sorry
+lemma Set'_models_choice : axiom_of_choice ∈ Th Set' :=
+begin
+  dsimp[Th, axiom_of_choice, fn_domain],
+end
 
 lemma Set'_models_infinity : axiom_of_infinity ∈ Th Set' :=
 begin
