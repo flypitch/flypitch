@@ -1418,9 +1418,9 @@ lemma subst_bounded_term_irrel {n : ℕ} : ∀{l} (t : bounded_preterm L n l) {n
 | _ (bd_app t₁ t₂) xs := realize_bounded_term t₁ $ realize_bounded_term t₂ ([])::xs
 
 /- S[t ; v] -/
-notation S`[`:max t ` /// `:95 v`]`:0 := @fol.realize_bounded_term _ S _  v _ t (dvector.nil)
+notation S`[`:max t ` ;;; `:95 v`]`:0 := @fol.realize_bounded_term _ S _  v _ t (dvector.nil)
 
-notation S`[`:max t ` /// `:95 v ` /// `:90 xs `]`:0 := @fol.realize_bounded_term _ S _  v _ t xs
+notation S`[`:max t ` ;;; `:95 v ` ;;; `:90 xs `]`:0 := @fol.realize_bounded_term _ S _  v _ t xs
 
 
 @[reducible] def realize_closed_term (S : Structure L) (t : closed_term L) : S :=
@@ -1499,7 +1499,7 @@ def subst_bounded_term {n n'} : ∀{l} (t : bounded_preterm L (n+n'+1) l)
 | _ (bd_func f)    s := bd_func f
 | _ (bd_app t₁ t₂) s := bd_app (subst_bounded_term t₁ s) (subst_bounded_term t₂ s)
 
-notation t `[`:max s ` // `:95 n `]`:0 := @_root_.fol.subst_bounded_term _ n _ _ t s
+notation t `[`:max s ` /// `:95 n `]`:0 := @_root_.fol.subst_bounded_term _ n _ _ t s
 -- notation t `[`:95 s ` // `:95 n `]`:0 := @fol.subst_bounded_term _ n _ _ t s 
 -- notation f `[`:95 s ` // `:95 n `]`:0 := @_root_.fol.subst_bounded_term 
 

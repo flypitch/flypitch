@@ -1,6 +1,6 @@
 /- theorems which we should (maybe) backport to mathlib -/
 
-import data.finset algebra.ordered_group tactic.squeeze
+import data.finset algebra.ordered_group tactic.squeeze tactic.tidy
 
 universe variables u v w
 
@@ -204,8 +204,19 @@ protected lemma concat_nth : ∀{n : ℕ} (xs : dvector α n) (x : α) (m : ℕ)
 protected lemma insert_cons {n k} {x y : α} {v : dvector α n} : (x::(v.insert y k)) = (x::v).insert y (k+1) :=
 by {induction v, refl, simp*}
 
+@[simp]protected def trunc : ∀ {n m : ℕ} (h : n ≤ m) (xs : dvector α m), dvector α n
+| 0 0 _ xs := []
+| 0 (m+1) _ xs := []
+| (n+1) 0 _ xs := by {exfalso, cases _x}
+| (n+1) (m+1) h xs := by {cases xs, convert (xs_x::trunc _ xs_xs), simp at h, exact h}
 
-@[simp] protected def cast {n m} (p : n = m) : dvector α n → dvector α m :=
+@[simp]protected lemma trunc_n_n {n : ℕ} {h : n ≤ n} {v : dvector α n} : dvector.trunc h v = v :=
+  by {induction v, refl, solve_by_elim}
+
+@[simp]protected lemma trunc_0_n {n : ℕ} {h : 0 ≤ n} {v : dvector α n} : dvector.trunc h v = [] :=
+  by {induction v, refl, simp}
+
+protected def cast {n m} (p : n = m) : dvector α n → dvector α m :=
   by subst p; exact id
 
 @[simp] protected lemma cast_irrel {n m} {p p' : n = m} {v : dvector α n} : v.cast p = v.cast p' := by refl
