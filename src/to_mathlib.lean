@@ -189,7 +189,7 @@ protected lemma concat_nth : ∀{n : ℕ} (xs : dvector α n) (x : α) (m : ℕ)
 | _ _ []       xs := xs
 | _ _ (x'::xs) xs' := x'::append xs xs'
 
-@[simp] protected def insert : ∀{n : ℕ} (x : α) (k : ℕ) (xs : dvector α n), dvector α (n+1)
+@[simp]protected def insert : ∀{n : ℕ} (x : α) (k : ℕ) (xs : dvector α n), dvector α (n+1)
 | n x 0 xs := (x::xs)
 | 0 x k xs := (x::xs)
 | (n+1) x (k+1) (y::ys) := (y::insert x k ys)
@@ -201,12 +201,21 @@ protected lemma concat_nth : ∀{n : ℕ} (xs : dvector α n) (x : α) (m : ℕ)
 | n x 0 xs h := by {induction n, refl, simp*}
 | (n+1) x (k+1) (y::ys) h := by simp*
 
+protected lemma insert_cons {n k} {x y : α} {v : dvector α n} : (x::(v.insert y k)) = (x::v).insert y (k+1) :=
+by {induction v, refl, simp*}
+
+
 @[simp] protected def cast {n m} (p : n = m) : dvector α n → dvector α m :=
   by subst p; exact id
 
 @[simp] protected lemma cast_irrel {n m} {p p' : n = m} {v : dvector α n} : v.cast p = v.cast p' := by refl
 
-@[simp] protected lemma cast_rfl {n m} {p : n = m} {v : dvector α n} : (v.cast p).cast (p.symm) = v := by {subst p, refl}
+@[simp] protected lemma cast_rfl {n m} {p : n = m} {q : m = n} {v : dvector α n} : (v.cast p).cast q = v := by {subst p, refl}
+
+protected lemma cast_hrfl {n m} {p : n = m} {v : dvector α n} : v.cast p == v :=
+  by subst p; refl
+
+@[simp] protected lemma cast_trans {n m o} {p : n = m} {q : m = o} {v : dvector α n} : (v.cast p).cast q = v.cast (trans p q) := by subst p; subst q; refl
 
 @[simp] protected def remove_mth : ∀ {n : ℕ} (m : ℕ) (xs : dvector α (n+1)) , dvector α (n)
   | 0 _ _  := dvector.nil

@@ -1347,6 +1347,8 @@ t.cast n.zero_le
   (t.cast0 n).fst = t.fst :=
 cast_fst _ _
 
+@[simp] lemma cast_of_cast0 {n} {l} {t : closed_preterm L l} : t.cast0 n =  t.cast n.zero_le := by refl
+
 end closed_preterm
 
 @[elab_as_eliminator] def bounded_term.rec {n} {C : bounded_term L n → Sort v}
@@ -1451,6 +1453,9 @@ by cases xs; exact realize_bounded_term_irrel'
 
 @[simp]lemma realize_bounded_term_cast_eq_irrel {S : Structure L} {n m l} {h : n = m} {v : dvector S m} {t : bounded_preterm L n l} (xs : dvector S l) :
 realize_bounded_term v (t.cast_eq h) xs = realize_bounded_term (v.cast h.symm) t xs := by {subst h, simp, induction t, refl, refl, simp*}
+
+lemma realize_bounded_term_dvector_cast_irrel {S : Structure L} {n m l} {h : n = m} {v : dvector S n} {t : bounded_preterm L n l} {xs : dvector S l} :
+realize_bounded_term (v.cast h) (t.cast (le_of_eq h)) xs = realize_bounded_term v (t.cast (by refl)) xs := by {subst h, simp}
 
 @[simp] def lift_bounded_term_at {n} : ∀{l} (t : bounded_preterm L n l) (n' m : ℕ), 
   bounded_preterm L (n + n') l
@@ -1727,6 +1732,10 @@ f.cast $ n.le_add_right 1
 @[simp]lemma cast_eq_irrel {l n m} (h h' : n = m) (f : bounded_preformula L n l) : (f.cast_eq h) = (f.cast_eq h') := by refl
 
 @[simp]lemma cast_eq_all {n m } (h : n = m) {f : bounded_preformula L (n+1) _} : (∀' f).cast_eq h = ∀' (f.cast_eq (by {subst h; refl})) := by refl
+
+@[simp]lemma cast_eq_trans {n m o l} {h : n = m} {h' : m = o} {f : bounded_preformula L n l} : (f.cast_eq h).cast_eq h' = f.cast_eq (eq.trans h h') := by substs h h'; ext; simp
+
+lemma cast_eq_hrfl {n m l} {h : n = m} {f : bounded_preformula L n l} : f.cast_eq h == f := by {subst h, simp only [heq_iff_eq], ext, simp}
 
 /- A bounded_preformula is qf if the underlying preformula is qf -/
 def quantifier_free {l n} : bounded_preformula L n l → Prop := λ f, fol.quantifier_free f.fst
@@ -2569,5 +2578,12 @@ lemma is_complete_Th (S : Structure L) (HS : nonempty S) : is_complete (Th S) :=
 
 def eliminates_quantifiers : Theory L → Prop :=
   λ T, ∀ f ∈ T, ∃ f' , bounded_preformula.quantifier_free f' ∧ (T ⊢' f ⇔ f')
+
+def L_empty : Language :=
+  ⟨λ _, empty, λ _, empty⟩
+
+def T_empty (L : Language) : Theory L := ∅
+
+@[reducible]def T_equality : Theory L_empty := T_empty L_empty
 
 end fol

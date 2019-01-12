@@ -9,7 +9,6 @@ local notation h :: t  := dvector.cons h t
 local notation `[]` := dvector.nil
 local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`) := l
 
-open realization
 namespace peano
 section
 

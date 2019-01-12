@@ -51,6 +51,7 @@ set_option trace.check true
   | n k l v (bd_func f) := sorry
   | _ _ _ _ _ := sorry
 end
+
 @[simp]lemma lift_realize_formula {n : ℕ} {k : ℕ} { l : ℕ}{L : Language} {S : Structure L}  { v : dvector ↥S (n+1)} { u : dvector ↥S l}: ∀ {f : bounded_preformula L n l}, realize_bounded_formula v ( f ↑' 1 # k) u = realize_bounded_formula (dvector.remove_mth k v) f u :=
 begin
   intros f,
