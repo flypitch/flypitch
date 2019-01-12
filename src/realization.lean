@@ -108,7 +108,7 @@ lemma dvector_cast_lemma {α : Type*} {n : ℕ} {m} {h : n = m} {h' : n+1 = m+1}
 
 lemma dvector_cast_pull_out {α : Type*} {n : ℕ} {m} {h : n = m} {h' : n+1 = m+1} {x : α} {v : dvector α n} : (x :: (v.cast h)) = (x::v).cast (h') := by subst h; refl
 
-set_option pp.implicit true
+set_option pp.implicit false
 
 lemma asjh''0 {L} {S : Structure L}  : ∀ {n n' n'' : ℕ} {n'''} {l} {h : n + n' + 1 = n''} {h' : n'' + 1 = n'''} (f : bounded_preformula L (n''') l) (t : closed_term L) (v : dvector S n'') (xs : dvector S l), (S[(f[t.cast0 n' // (n+1) // (by {substs h h', simp})]).cast_eq (by {subst h, simp}) ;; v ;; xs]) = (S[f.cast_eq (by substs h h'; simp) ;; (v.insert (S[t.cast (by {substs h h', linarith}) /// v]) (n+1)) ;; xs])
 :=
@@ -159,12 +159,10 @@ let j, swap, change realize_bounded_formula v (bounded_preformula.cast_eq k (∀
 rw[cast_eq_all], dsimp[k,j], clear k j, apply forall_congr, intro x,
      have := @f_ih xs (n+1) n' ((n+1) + n' + 1) (x::(v.cast (by simp))) (by simp) (by simp) t,
      rw[cast_eq_trans], rw[dvector_cast_pull_out] at this, swap, simp, swap, simp, simp,
-     rw[realize_bounded_formula_cast_eq_irrel], rw[realize_bounded_formula_cast_eq_irrel] at this, rw[dvector.cast_trans] at this, rw[this], clear this, clear this f_ih,
+     rw[realize_bounded_formula_cast_eq_irrel], rw[realize_bounded_formula_cast_eq_irrel] at this, rw[dvector.cast_trans] at this, rw[this], clear this this f_ih,
      rw[dvector.insert_cons], apply iff_of_eq, congr' 1, simp, swap, {apply cast_eq_hrfl},
-     {swap, simp, rw[dvector.insert_cons], simp, rw[dvector.insert_cons],--  let p, swap,
-     -- let q, swap, change p == q,
-     -- apply (@heq_iff_eq _ p (q.cast (by simp))).mpr, }}
-     congr' 1, simp, 
+     {swap, simp, rw[dvector.insert_cons], simp, rw[dvector.insert_cons],--  let p, swap, let q, swap, change p == q,
+     congr' 1, simp, sorry}}
 end
 -- AHA! so we can see here that the term itself actually needs to be lifted... by 1.
 -- note: doing just t ↦ t ↑ 1 doesn't work. need to lift the formula instead
