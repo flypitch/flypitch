@@ -295,33 +295,9 @@ end
 
 -- @[simp]lemma realize_bounded_term_subst0_gen {L} {S : Structure L} {n l} {s : bounded_preterm L (n+1) l} {v : dvector S n} 
 
-set_option pp.implicit false
+-- set_option pp.implicit false
 
 -- rw[subst0_bounded_formula_bd_apps_rel], simp[realize_bounded_formula_bd_apps_rel, rel_subst0_irrel]
-
-namespace dvector
-section
-variable {α : Type*}
-
-@[simp]protected lemma trunc_nth {n m l: ℕ} {h : n ≤ m} {h' : l < n} {v : dvector α m} : (v.trunc h).nth l h' = v.nth l (lt_of_lt_of_le h' h) :=
-begin
-  induction n generalizing m, cases h',
-  by_cases l = n_n, subst h, 
-end
-
-protected lemma nth_irrel1 : ∀{n k : ℕ} {h : k < n + 1} {h' : k < n + 1 + 1} (v : dvector α (n+1)) (x : α),
-  (x :: (v.trunc (nat.le_succ n))).nth k h = (x::v).nth k h' :=
-begin
-  sorry
-  -- intros, induction n generalizing k v, {have : k = 0, by sorry, subst this, refl},
-  -- {by_cases k = nat.succ n_n + 1,
-  --    {subst h, refl}
-
-  --   }
-end
-
-end
-end dvector
 
 @[simp]lemma realize_bounded_term_subst0 {L} {S : Structure L} {n} (s : bounded_term L (n+1)) {v : dvector S n} (t : closed_term L) : realize_bounded_term v (s[(t.cast (by simp)) /0]) [] = realize_bounded_term ((realize_closed_term S t)::v) s [] :=
 begin
@@ -332,7 +308,7 @@ revert s, refine bounded_term.rec1 _ _,
           {subst h, refl},
           {have : k_val < n_n + 1,
                 by {apply nat.lt_of_le_and_ne, exact nat.le_of_lt_succ k_H, exact h},
-          have := @n_ih (v.trunc (nat.le_succ n_n)) k_val this,
+          have := @n_ih (v.trunc _ (nat.le_succ n_n)) k_val this,
           rw[dvector.nth_irrel1] at this, swap, dedup, apply nat.lt_of_lt_of_le, exact this,
           exact nat.le_succ (n_n + 1),
           rw[<-this], apply realize_bounded_term_irrel', swap, simp,

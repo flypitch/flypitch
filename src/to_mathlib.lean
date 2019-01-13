@@ -194,7 +194,7 @@ protected lemma concat_nth : ∀{n : ℕ} (xs : dvector α n) (x : α) (m : ℕ)
 | 0 x k xs := (x::xs)
 | (n+1) x (k+1) (y::ys) := (y::insert x k ys)
 
-@[simp] protected lemma insert_at_zero : ∀{n : ℕ} (x : α) (xs : dvector α n), dvector.insert x 0 xs = (x::xs) := by {intros, induction n, refl, refl} -- why doesn't {intros, refl} work?
+@[simp] protected lemma insert_at_zero : ∀{n : ℕ} (x : α) (xs : dvector α n), dvector.insert x 0 xs = (x::xs) := by {intros, induction n; refl} -- why doesn't {intros, refl} work?
 
 @[simp] protected lemma insert_nth : ∀{n : ℕ} (x : α) (k : ℕ) (xs : dvector α n) (h : k < n+1), (dvector.insert x k xs).nth k h = x
 | 0 x k xs h := by {cases h, refl, exfalso, apply nat.not_lt_zero, exact h_a}
@@ -204,17 +204,29 @@ protected lemma concat_nth : ∀{n : ℕ} (xs : dvector α n) (x : α) (m : ℕ)
 protected lemma insert_cons {n k} {x y : α} {v : dvector α n} : (x::(v.insert y k)) = (x::v).insert y (k+1) :=
 by {induction v, refl, simp*}
 
-@[simp]protected def trunc : ∀ {n m : ℕ} (h : n ≤ m) (xs : dvector α m), dvector α n
+/- Given a proof that n ≤ m, return the nth initial segment of -/
+@[simp]protected def trunc : ∀ (n) {m : ℕ} (h : n ≤ m) (xs : dvector α m), dvector α n
 | 0 0 _ xs := []
 | 0 (m+1) _ xs := []
 | (n+1) 0 _ xs := by {exfalso, cases _x}
-| (n+1) (m+1) h xs := by {cases xs, convert (xs_x::trunc _ xs_xs), simp at h, exact h}
+| (n+1) (m+1) h (x::xs) := (x::@trunc n m (by simp at h; exact h) xs)
 
-@[simp]protected lemma trunc_n_n {n : ℕ} {h : n ≤ n} {v : dvector α n} : dvector.trunc h v = v :=
+@[simp]protected lemma trunc_n_n {n : ℕ} {h : n ≤ n} {v : dvector α n} : dvector.trunc n h v = v :=
   by {induction v, refl, solve_by_elim}
 
-@[simp]protected lemma trunc_0_n {n : ℕ} {h : 0 ≤ n} {v : dvector α n} : dvector.trunc h v = [] :=
+@[simp]protected lemma trunc_0_n {n : ℕ} {h : 0 ≤ n} {v : dvector α n} : dvector.trunc 0 h v = [] :=
   by {induction v, refl, simp}
+
+@[simp]protected lemma trunc_nth {n m l: ℕ} {h : n ≤ m} {h' : l < n} {v : dvector α m} : (v.trunc n h).nth l h' = v.nth l (lt_of_lt_of_le h' h) :=
+begin
+  induction m generalizing n l, have : n = 0, by cases h; simp, subst this, cases h',
+  cases n; cases l, {cases h'}, {cases h'}, {cases v, refl},
+  cases v, simp only [m_ih, dvector.nth, dvector.trunc]
+end
+
+protected lemma nth_irrel1 : ∀{n k : ℕ} {h : k < n + 1} {h' : k < n + 1 + 1} (v : dvector α (n+1)) (x : α),
+  (x :: (v.trunc n (nat.le_succ n))).nth k h = (x::v).nth k h' :=
+by {intros, apply @dvector.trunc_nth _ _ _ _ (by {simp, exact dec_trivial}) h (x::v)}
 
 protected def cast {n m} (p : n = m) : dvector α n → dvector α m :=
   by subst p; exact id
