@@ -1616,7 +1616,6 @@ end
 --   (v : dvector (bounded_term n') n) : bounded_preterm L n' l :=
 -- substitute_bounded_term v t.snd
 
-
 variable (L)
 inductive bounded_preformula : ℕ → ℕ → Type u
 | bd_falsum {} {n} : bounded_preformula n 0
@@ -1775,6 +1774,8 @@ lift_bounded_formula_irrel f 1 $ le_refl 0
 
 lemma subst_sentence_irrel (f : sentence L) (n) (s : term L) : f.fst[s // n] = f.fst :=
 subst_bounded_formula_irrel f s n.zero_le
+
+
 
 @[simp] def realize_bounded_formula {S : Structure L} : 
   ∀{n l} (v : dvector S n) (f : bounded_preformula L n l) (xs : dvector S l), Prop
@@ -2089,6 +2090,29 @@ lemma satisfied_in_of_realize_sentence {S : Structure L} {f : sentence L} (H : S
 lemma realize_sentence_iff_satisfied_in {S : Structure L} [HS : nonempty S] {f : sentence L} :
   S ⊨ f ↔ S ⊨ f.fst  :=
 ⟨satisfied_in_of_realize_sentence, realize_sentence_of_satisfied_in⟩
+
+
+def dvector_var_lift {m : ℕ} : ∀ {n : ℕ} (v : dvector (fin m) n), dvector (fin (m+1)) n 
+  | _ [] := []
+  | _ (x::xs) := (⟨x.val+1, by{apply nat.succ_lt_succ, exact x.is_lt}⟩) :: (dvector_var_lift xs)
+def dvector_lift_var { m : ℕ} : ∀ {n : ℕ} (v : dvector (fin m) n), dvector (fin (m+1)) (n+1) := λ n v, ⟨0, nat.zero_lt_succ(m)⟩ :: (dvector_var_lift v)
+def subst_var_bounded_term {n m : ℕ} : ∀ {l : ℕ}, bounded_preterm L n l → dvector (fin m) n → bounded_preterm L m l
+  | _ (&k) v := &(dvector.nth v (k.val) k.is_lt)
+  | _ (bd_func f) v := bd_func f
+  | _ (bd_app t s) v := bd_app (subst_var_bounded_term t v) (subst_var_bounded_term s v)
+/-What are eqn_compiler lemmas and why don't they generate for this defn? Need to fix this to use defn for simp-/ 
+--set_option trace.debug.eqn_compiler true
+set_option eqn_compiler.lemmas false
+def subst_var_bounded_formula: ∀ {l n m: ℕ}, bounded_preformula L n l → dvector (fin (m)) n → bounded_preformula L (m) l
+  | _ _ _ bd_falsum _ := bd_falsum
+  | _ _ _ (t₁ ≃ t₂) v := (subst_var_bounded_term t₁ v) ≃ (subst_var_bounded_term t₁ v)
+  | _ _ _ (bd_rel R) _ := bd_rel R
+  | _ _ _ (bd_apprel f t) v := bd_apprel (subst_var_bounded_formula f v) (subst_var_bounded_term t v) 
+  | _ _  _ (f₁ ⟹ f₂) v := (subst_var_bounded_formula f₁ v) ⟹ (subst_var_bounded_formula f₂ v)
+  | _ _ _ (∀' f) v := ∀' (subst_var_bounded_formula f (dvector_lift_var v))
+set_option eqn_compiler.lemmas true
+
+infix ` ⊚ `:50 := subst_var_bounded_formula --type with \oo 
 
 /- theories -/
 

@@ -55,6 +55,7 @@ local notation `lift_cast` := by {repeat{apply nat.succ_le_succ}, apply nat.zero
 def Class : Type 1 := bounded_formula L_ZFC 1
 def small {n} (c : bounded_formula L_ZFC (n+1)) : bounded_formula L_ZFC n := 
 ∃' ∀' (&0 ∈' &1 ⇔ (c ↑' 1 # 1))
+
 def subclass (c₁ c₂ : Class) : sentence L_ZFC := ∀' (c₁ ⟹ c₂)
 def functional {n} (c : bounded_formula L_ZFC (n+2)) : bounded_formula L_ZFC n := 
 -- ∀x ∃y ∀z, c z x ↔ z = y
@@ -72,16 +73,29 @@ def ordered_pair : bounded_formula L_ZFC 3 := ∀'(&0 ∈' &1 ⇔ (&0 ≃ &3 : b
 
 def ordered_pair' : bounded_formula L_ZFC 3 := ∀'(&0 ∈' &3 ⇔ (&0 ≃ &2 : bounded_formula L_ZFC 4) ⊔ ∀'(&0 ∈' &1 ⇔ (pair ↑' 1 # 1).cast(lift_cast)))
 -- &2 is an ordered pair of &1 and &0 (x = ⟨y,z⟩)
+-- TODO: Make defns like this unnecessary (current effort is subst_var_* in fol.lean)
 
 def is_ordered_pair : bounded_formula L_ZFC 1 := ∃' ∃' ordered_pair
 --&0 is an ordered pair of some two elements--
 
+local notation h :: t  := dvector.cons h t
+local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`) := l
+
 def relation : bounded_formula L_ZFC 1 := ∀' ((&0 ∈' &1) ⟹ is_ordered_pair ↑' 1 # 1)
 --&0 is a relation (is a set of ordered pairs)
+
+def relation' : bounded_formula L_ZFC 1 := ∀' (((&0 ∈' &1) : bounded_formula L_ZFC 2) ⟹ (is_ordered_pair ⊚ [0]))
+
+lemma chk: relation = relation' := sorry
+--ideally this should be by refl. Comment out the set_option above the defn of subst_var_bounded_formula to see the snag
+
 
 def function : bounded_formula L_ZFC 1 := relation ⊓ ∀'∀'∀'∀'∀'(&1 ∈' &5 ⊓ ordered_pair ↑' 1 # 3 ↑' 1 # 1 ↑' 1 # 0 ⊓ ((&0 ∈' &5 : bounded_formula L_ZFC 6) ⊓ (ordered_pair ↑' 1 # 2 ↑' 1 # 1).cast(lift_cast)) ⟹ (&3 ≃ &2 : bounded_formula L_ZFC 6))
 -- X is a function iff X is a relation and the following holds:
 -- ∀x ∀y ∀z ∀w ∀t, ((w ∈ X) ∧ (w = ⟨x, y⟩) ∧ (z ∈ X) ∧ (z = ⟨x, z⟩ ))) →  y = z
+
+def function' : bounded_formula L_ZFC 1 := relation ⊓ ∀'∀'∀'∀'∀'(((&1 ∈' &5 : bounded_formula L_ZFC 6) ⊓ (ordered_pair ⊚ [1,3,4]) ⊓ ((&0 ∈' &5 : bounded_formula L_ZFC 6) ⊓ (ordered_pair ⊚ [0,2,4]))) ⟹ (&3 ≃ &2 : bounded_formula L_ZFC 6))
+
 
 def fn_app : bounded_formula L_ZFC 3 := ∃'(&0 ∈' &3 ⊓ ∀'(&0 ∈' &1 ⇔ ((&0 ≃ &3): bounded_formula L_ZFC 5) ⊔ (pair ↑' 1 # 1).cast(lift_cast)))
 -- ⟨&1, &0⟩ ∈ &2 
@@ -114,7 +128,9 @@ def connected_relation : bounded_formula L_ZFC 2 := relation ↑' 1 # 1 ⊓ ∀'
 
 def total_order : bounded_formula L_ZFC 2 := irreflexive_relation ⊓ transitive_relation ⊓ connected_relation
 
-def well_order : bounded_formula L_ZFC 2 := irreflexive_relation ⊓ ∀'(subset ↑' 1 # 2 ⊓ ∃'(&0 ∈' &1) ⟹ ∃'(&0 ∈' &1 ⊓ ∀'(((&0 ∈' &2) ⊓  ∼(&0 ≃ &1 : bounded_formula L_ZFC 5)) ⟹ ∃'(ordered_pair.cast(lift_cast) ⊓ (&0 ∈' &4 : bounded_formula L_ZFC 6)) ⊓ ∼∃'(∀'(&0 ∈' &1 ⇔ (( &0 ≃ &2 : bounded_formula L_ZFC 7) ⊔ (pair ↑' 1 # 1).cast(lift_cast) )) ⊓ &0 ∈' &4))))
+
+
+def well_order : bounded_formula L_ZFC 2 := irreflexive_relation ⊓ ∀'(subset ↑' 1 # 1 ⊓ ∃'(&0 ∈' &1) ⟹ ∃'(&0 ∈' &1 ⊓ ∀'(((&0 ∈' &2) ⊓  ∼(&0 ≃ &1 : bounded_formula L_ZFC 5)) ⟹ ∃'(ordered_pair.cast(lift_cast) ⊓ (&0 ∈' &4 : bounded_formula L_ZFC 6)) ⊓ ∼∃'(∀'(&0 ∈' &1 ⇔ (( &0 ≃ &2 : bounded_formula L_ZFC 7) ⊔ (pair ↑' 1 # 1).cast(lift_cast) )) ⊓ &0 ∈' &4))))
 -- &0 well-orders &1
 
 def membership_relation : bounded_formula L_ZFC 1 := relation ⊓ ∀'(&0 ∈' &1 ⇔ ∃'∃'∀'(&0 ∈' &3 ⇔ ((bd_equal &0  &2) ⊔ pair ↑' 1 # 3 ↑' 1 # 3) ⊓ &2 ∈' &1))
@@ -183,4 +199,75 @@ def axiom_of_ordered_pairing : sentence L_ZFC := ∀' ∀' small ordered_pair
 def ZF : Theory L_ZFC := {axiom_of_extensionality, axiom_of_union, axiom_of_powerset, axiom_of_infinity} ∪ (λ(c : bounded_formula L_ZFC 2), axiom_of_replacement c) '' set.univ
 
 def ZFC : Theory L_ZFC := ZF ∪ {axiom_of_choice}
+
+
+/- ZFC formulae in terms of Mario's Set type. 
+Many of these are a lot shorter than the formulae above, largely because things like {x} and {{x},{x,y}} don't have to be existentially instantiated. It might be advantageous to refactor these to moatch the FOL formulae more precisely.
+(e.g. ({x} ∈ y) vs (∃ w, w = {x} ∧ w ∈ y) -/
+
+def Set_subset : Set → Set → Prop := Set.subset
+
+def Set_is_powerset : Set → Set → Prop := λ x y, ∀ w, w ∈ x ↔ w ⊆ y
+
+def Set_is_emptyset: Set → Prop := λ x, x = ∅ 
+
+def Set_pair : Set → Set → Set → Prop := λ x y z, x = {y,z}
+
+def Set_ordered_pair : Set → Set → Set → Prop := λ x y z, x = {{y},{y,z}}
+--TODO : angle bracket notation ⟪x,y⟫ = {{x},{x,y}}
+
+def Set_is_ordered_pair: Set → Prop := λ x, ∃ y z, Set_ordered_pair x y z
+
+def Set_relation : Set → Prop := λ x, ∀w, w ∈ x ↔ Set_is_ordered_pair w
+
+def Set_function : Set → Prop := λ x, Set_relation x ∧ ∀ a b c, ((({{a},{a,b}} ∈ x) ∧ ({{a},{a,c}} ∈ x)) → (b = c))
+
+def Set_fn_app : Set → Set → Set → Prop := λ x y z, {{x},{x,y}} ∈ z 
+
+def Set_fn_domain : Set → Set → Prop := λ x y, ∀ w, w ∈ x ↔ ∃ a b, w = {{a},{a,b}} ∧ a ∈ y
+
+def Set_fn_range: Set → Set → Prop := λ x y, ∀ w, w ∈ x ↔ ∃ a b, w = {{a},{a,b}} ∧ b ∈ y
+
+def Set_inverse_relation  : Set → Set → Prop := λ x y, ∀ a b, {{a},{a,b}} ∈ x ↔ {{b},{b,a}} ∈ y
+
+def Set_function_one_one : Set → Prop := λ x, Set_function x ∧ ∀ y, ((Set_inverse_relation x y) → Set_function y)
+
+def Set_irreflexive_relation : Set → Set → Prop := λ x y, Set_relation x ∧ ∀ z, z ∈ y → {{z},{z}} ∉ x
+
+def Set_transitive_relation : Set → Set → Prop := λ x y, ∀ u v w, ((u ∈ y ∧ v ∈ y ∧ w ∈ w ∧ {{u},{u,v}} ∈ x ∧ {{v},{v,w}} ∈ x) → {{u},{u,w}} ∈ x)
+
+def Set_partial_order : Set → Set → Prop := λ x y, Set_irreflexive_relation x y ⊓ Set_transitive_relation x y
+
+def Set_connected_relation: Set → Set → Prop := λ x y, Set_relation x ∧ ∀ u v, (u ∈ y ∧ v ∈ y ∧ u ≠ v) → ({{u},{u,v}} ∈ x ∨ {{v},{v,u}} ∈ x) 
+
+def Set_total_order : Set → Set → Prop := λ X Y, (Set_irreflexive_relation X Y) ∧ (Set_transitive_relation X Y) ∧ (Set_connected_relation X Y)
+
+def Set_well_order : Set → Set → Prop := λ x y, Set_irreflexive_relation x y ∧ ∀ z, (z ⊆ y ∧ (z ≠ ∅) → ∃w, (w ∈ z ∧ ∀ v, ((v ∈ z ∧ v ≠ w) → {{w},{w,v}} ∈ x ∧ {{v},{v,w}} ∉ x))) 
+
+def Set_membership_relation : Set → Prop := λ x, Set_relation x ∧ ∀ w ∈ x, ∃ u v, {{u},{u,v}} = w ∧ u ∈ v
+
+def Set_transitive : Set → Prop := λ x, ∀ w, w ∈ x → w ⊆ x
+
+def Set_fn_equiv : Set → Set → Set → Prop := λ x y z, Set_function_one_one x ∧ Set_fn_domain x y ∧ Set_fn_range x z  
+
+def Set_zfc_equiv : Set → Set → Prop := λ x y, ∃ f, Set_fn_equiv f x y
+
+def Set_is_suc_of : Set → Set → Prop := λ x y, ∀ w, (w ∈ x ↔ (w ∈ y ∨ w = y))
+
+def Set_is_ordinal : Set → Prop := λ x, (∀ w, (Set_membership_relation w → Set_well_order w x)) ∧ Set_transitive x
+
+def Set_is_suc_ordinal : Set → Prop := λ x, Set_is_ordinal x ∧ ∃ w, Set_is_suc_of x w
+
+def Set_ordinal_lt : Set → Set → Prop := λ x y, Set_is_ordinal x ∧ Set_is_ordinal y ∧ x ∈ y
+
+def Set_ordinal_le : Set → Set → Prop := λ x y, Set_ordinal_lt x y ∨ x = y
+
+def Set_is_first_infinite_ordinal : Set → Prop := λ x, ∀ w, (w ∈ x ↔ ((w = ∅ ∨ Set_is_suc_ordinal w) ∧ ∀ z, (z ∈ w → ((z = ∅ ∨ Set_is_suc_ordinal z)))))
+
+def Set_is_uncountable_ordinal : Set → Prop := λ x, ∀ w, (Set_is_first_infinite_ordinal w → ∀ z, (Set.subset z w → ¬ Set_zfc_equiv z x))
+
+def Set_is_first_uncountable_ordinal : Set → Prop := λ x, Set_is_uncountable_ordinal x ∧ ∀ w, (Set_is_uncountable_ordinal w → Set_ordinal_le x w)
+
+def Set_continuum_hypothesis : Prop := ∀ x y, ((∃ w, (Set_is_first_infinite_ordinal w ∧ Set_is_powerset x w)) ∧ Set_is_first_uncountable_ordinal y) → Set_zfc_equiv x y 
+
 end zfc
