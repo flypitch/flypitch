@@ -1902,7 +1902,7 @@ by cases xs; exact realize_bounded_formula_irrel'
 
 @[simp]lemma realize_bounded_formula_cast_eq_irrel {S : Structure L} {n m l} {h : n = m} {v : dvector S m} {f : bounded_preformula L n l} {xs : dvector S l} :
 realize_bounded_formula v (f.cast_eq h) xs = realize_bounded_formula (v.cast h.symm) f xs :=
-  by {subst h, induction f; unfold bounded_preformula.cast_eq; try{simp*},   }
+  by subst h; induction f; unfold bounded_preformula.cast_eq; finish
 
 def bounded_formula_of_relation {l n} (f : L.relations l) : 
   arity' (bounded_term L n) (bounded_formula L n) l :=
