@@ -1,6 +1,6 @@
 /- theorems which we should (maybe) backport to mathlib -/
 
-import data.finset algebra.ordered_group tactic.squeeze tactic.tidy
+import data.finset algebra.ordered_group tactic.squeeze
 
 universe variables u v w
 
