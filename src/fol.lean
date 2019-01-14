@@ -1452,10 +1452,10 @@ by cases xs; exact realize_bounded_term_irrel'
   (by intros m hm hm'; exfalso; exact not_lt_zero m hm') t t' ht ([])
 
 @[simp]lemma realize_bounded_term_cast_eq_irrel {S : Structure L} {n m l} {h : n = m} {v : dvector S m} {t : bounded_preterm L n l} (xs : dvector S l) :
-realize_bounded_term v (t.cast_eq h) xs = realize_bounded_term (v.cast h.symm) t xs := by {subst h, simp, induction t, refl, refl, simp*}
+realize_bounded_term v (t.cast_eq h) xs = realize_bounded_term (v.cast h.symm) t xs := by {subst h, induction t, refl, refl, simp*}
 
-lemma realize_bounded_term_dvector_cast_irrel {S : Structure L} {n m l} {h : n = m} {v : dvector S n} {t : bounded_preterm L n l} {xs : dvector S l} :
-realize_bounded_term (v.cast h) (t.cast (le_of_eq h)) xs = realize_bounded_term v (t.cast (by refl)) xs := by {subst h, simp}
+@[simp]lemma realize_bounded_term_dvector_cast_irrel {S : Structure L} {n m l} {h : n = m} {v : dvector S n} {t : bounded_preterm L n l} {xs : dvector S l} :
+realize_bounded_term (v.cast h) (t.cast (le_of_eq h)) xs = realize_bounded_term v t xs := by {subst h, simp, refl}
 
 @[simp] def lift_bounded_term_at {n} : ∀{l} (t : bounded_preterm L n l) (n' m : ℕ), 
   bounded_preterm L (n + n') l
@@ -1902,7 +1902,7 @@ by cases xs; exact realize_bounded_formula_irrel'
 
 @[simp]lemma realize_bounded_formula_cast_eq_irrel {S : Structure L} {n m l} {h : n = m} {v : dvector S m} {f : bounded_preformula L n l} {xs : dvector S l} :
 realize_bounded_formula v (f.cast_eq h) xs = realize_bounded_formula (v.cast h.symm) f xs :=
-  by {subst h, induction f; unfold bounded_preformula.cast_eq; simp*}
+  by {subst h, induction f; unfold bounded_preformula.cast_eq; try{simp*},   }
 
 def bounded_formula_of_relation {l n} (f : L.relations l) : 
   arity' (bounded_term L n) (bounded_formula L n) l :=

@@ -12,6 +12,12 @@ local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`) := l
 
 namespace realization
 
+lemma var_subst_cast_irrel {L : Language} {n n' m} {h : m = n+ n' + 1} {k : fin m} {t : bounded_term L n'} :
+  subst_bounded_term ((&k : bounded_term L m).cast_eq h) t = subst_bounded_term (by {sorry}) t
+
+@[simp]lemma func_subst_cast_irrel {L : Language} {n n' l m} {h : m = n + n' + 1} {f : L.functions l} {t : bounded_term L n'} :
+  subst_bounded_term ((bd_func f : bounded_preterm L m l).cast_eq h) t = subst_bounded_term (bd_func f) t := by refl
+
 @[simp]lemma func_subst_irrel {L : Language} {n n' l} {f : L.functions l} {t : bounded_term L n'} :
   subst_bounded_term (bd_func f : bounded_preterm L (n + n' + 1) l) t = (bd_func f) := by refl
 
@@ -137,8 +143,22 @@ lemma asjh''0_term {L : Language} {S : Structure L} : ∀ {n n' n'' : ℕ} {l f_
     realize_bounded_term (dvector.cast (h') (dvector.insert (realize_closed_term S t) (n + 1) v)) s xs :=
 begin
   intros, revert s, refine bounded_term.rec _ _; intros,
-  {sorry},
-  {sorry}
+  {rcases k with ⟨k_val, k_H⟩, 
+    -- unfold realize_bounded_term realize_closed_term, simp,
+    induction n generalizing k_val; subst h', swap,
+    by_cases k_val = n'',
+          {subst h, simp, sorry },
+          {have : k_val < n'',
+                by {apply nat.lt_of_le_and_ne, exact nat.le_of_lt_succ k_H, exact h},
+          have := @n_ih (v.trunc _ (rfl)) k_val this,
+          rw[dvector.nth_irrel1] at this, swap, dedup, apply nat.lt_of_lt_of_le, exact this,
+          exact nat.le_succ (n_n + 1),
+          rw[<-this], apply realize_bounded_term_irrel', swap, simp,
+          intros, simp only [dvector.trunc_nth]
+          }},
+  {rw[dvector.zero_eq xs], substs h h',simp[subst_bounded_term_bd_apps,
+  realize_bounded_term_bd_apps, func_subst_irrel], congr' 1,
+  apply dvector.map_congr_pmem, intros x Hx, have := ih_ts x Hx, rwa[dvector.zero_eq xs] at this}
 end
 
 set_option pp.implicit false
