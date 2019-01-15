@@ -1,4 +1,4 @@
-import .fol tactic.tidy tactic.linarith tactic.find data.int
+import .fol tactic.tidy tactic.linarith tactic.find data.zmod.basic
 
 open fol
 
