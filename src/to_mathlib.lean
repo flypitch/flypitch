@@ -80,7 +80,7 @@ inductive dfin : ℕ → Type
 | fz {n} : dfin (n+1)
 | fs {n} : dfin n → dfin (n+1)
 
-def dfin.to_nat : ∀ {n}, dfin n → ℕ
+@[simp] def dfin.to_nat : ∀ {n}, dfin n → ℕ
 | _ dfin.fz := 0
 | _ (dfin.fs n) := n.to_nat + 1
 
