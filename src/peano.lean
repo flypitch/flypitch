@@ -84,7 +84,7 @@ by {convert ψ, apply zero_add}
 
 
 
-@[simp]lemma bd_alls'_substmax {L} {n} {f : bounded_formula L (n+1)} {t : closed_term L} : (bd_alls' n 1 (f.cast_eq (by simp)))[t /0] = (bd_alls' n 0 (substmax_bounded_formula (f.cast_eq (by simp)) t)) := by {induction n, {tidy}, have := @n_ih (∀' f), simp[bounded_preformula.cast_eq] at *, exact this}
+-- @[simp]lemma bd_alls'_substmax {L} {n} {f : bounded_formula L (n+1)} {t : closed_term L} : (bd_alls' n 1 (f.cast_eq (by simp)))[t /0] = (bd_alls' n 0 (substmax_bounded_formula (f.cast_eq (by simp)) t)) := by {induction n, {tidy}, have := @n_ih (∀' f), simp[bounded_preformula.cast_eq] at *, exact this}
 
 
 lemma realize_sentence_bd_alls {L} {n} {f : bounded_formula L n} {S : Structure L} : S ⊨ (bd_alls n f) ↔ (∀ xs : dvector S n, realize_bounded_formula xs f []) :=
@@ -93,8 +93,8 @@ begin
     {tidy, convert a, apply dvector.zero_eq},
     {have := @n_ih (∀' f), simp[alls'_alls, alls'_all_commute] at this,
      cases this with this_mp this_mpr, split,
-     intros H xs, cases xs, apply this_mp (by {convert H, tidy}),
-     intro H, convert this_mpr (by {intros xs x, exact H (x :: xs)}), tidy}
+     intros H xs, cases xs, apply this_mp, {simp at *, solve_by_elim},
+     repeat{intros, simp at *}, apply this_mpr, intros, solve_by_elim}
 end
 
 @[simp] lemma alls_0 {L : Language} (ψ : formula L) : alls 0 ψ = ψ := by refl
@@ -346,17 +346,17 @@ end notation_test
 -- lemma asjh {L} {S : Structure L} {n n' n''} {h : n + (n') + 1 = n'' + 1} {t : bounded_term L (n')} {f : bounded_formula L (n''+1)} {v : dvector S (n + n' + 1)} :
 --   @realize_bounded_formula L S n 0 v (@subst_bounded_formula L n (n' + 1) (n'' + 1) 0 f t (by assumption) = @realize_bounded_formula L S (n+1) 0 (dvector.insert (realize_bounded_term begin end t)) sorry) sorry := sorry
 
-
-
 /- ℕ' satisfies PA induction schema -/
 theorem PA_standard_model_induction {index : nat} {ψ : bounded_formula L_peano (index + 1)} : ℕ' ⊨ bd_alls index (ψ[zero /0] ⊓ ∀'(ψ ⟹ (ψ ↑' 1 # 1)[succ &0 /0]) ⟹ ∀' ψ) :=
 begin
   rw[realize_sentence_bd_alls], intro xs,
   simp,
   intros H_zero H_ih, apply nat.rec,
-    {apply (realize_bounded_formula_subst0 ψ zero).mp, apply H_zero},
-    {intros n H, apply (@realize_bounded_formula_subst0' _ _ _ ψ xs (succ &0) n).mp,
-     exact H_ih n H}
+  {sorry},
+  {sorry}
+    -- {apply (realize_bounded_formula_subst0 ψ zero).mp, apply H_zero},
+    -- {intros n H, apply (@realize_bounded_formula_subst0' _ _ _ ψ xs (succ &0) n).mp,
+    --  exact H_ih n H}
 end
 
 def true_arithmetic := Th ℕ'

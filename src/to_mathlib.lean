@@ -149,11 +149,15 @@ inductive dvector (α : Type u) : ℕ → Type u
 | nil {} : dvector 0
 | cons : ∀{n} (x : α) (xs : dvector n), dvector (n+1)
 
-inductive dfin : ℕ → Type
-| fz {n} : dfin (n+1)
-| fs {n} : dfin n → dfin (n+1)
-
 instance has_zero_dfin {n} : has_zero $ dfin (n+1) := ⟨dfin.fz⟩
+
+instance has_one_dfin : ∀ {n}, has_one (dfin (nat.succ n))
+| 0 := ⟨dfin.fz⟩
+| (n+1) := ⟨dfin.fs dfin.fz⟩
+
+-- instance has_one_dfin {n} : has_one (dfin (nat.succ n))
+-- := ⟨by to_dfin 1⟩ -- hmmmm
+
 
 -- note from Mario --- use dfin to synergize with dvector
 
