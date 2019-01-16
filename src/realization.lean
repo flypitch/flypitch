@@ -55,8 +55,8 @@ namespace realization
 
 -- end fin_lemmas
 
-set_option pp.notation true
-set_option pp.all false
+-- set_option pp.notation true
+-- set_option pp.all false
 
 /- To finish this, we need to port some of the zmod lemmas 
    should write an elimination principle which reduces to the 0 case and the pos case, which then hands it off to zmod...
@@ -157,36 +157,36 @@ by {induction ts generalizing f, refl, simp[bd_apps_rel, ts_ih (bd_apprel f ts_x
 lemma zero_of_lt_one (n : nat) (h : n < 1) : n = 0 :=
   by {cases h, refl, cases nat.lt_of_succ_le h_a}
 
-lemma asjh'_term {L} {S : Structure L} {n n'} {s : bounded_term L (n + n' + 1 + 1)} {t : bounded_term L n'} {v : dvector S (n + n' + 1)} :
-S[(@subst_bounded_term _ (n+1) n' 0 (s.cast_eq (by simp)) t).cast_eq (by simp) ;;; v] = S[s ;;; (v.insert (S[t.cast (by linarith) ;;; v]) (n+1))]
- :=
-begin
-  revert s, refine bounded_term.rec1 _ _; intros,
-  {sorry},
-  {sorry}
-end
+-- lemma asjh'_term {L} {S : Structure L} {n n'} {s : bounded_term L (n + n' + 1 + 1)} {t : bounded_term L n'} {v : dvector S (n + n' + 1)} :
+-- S[(@subst_bounded_term _ (n+1) n' 0 (s.cast_eq (by simp)) t).cast_eq (by simp) ;;; v] = S[s ;;; (v.insert (S[t.cast (by linarith) ;;; v]) (n+1))]
+--  :=
+-- begin
+--   revert s, refine bounded_term.rec1 _ _; intros,
+--   {sorry},
+--   {sorry}
+-- end
 
-set_option pp.implicit false
+-- set_option pp.implicit false
 
-lemma asjh' {L} {S : Structure L} {n n' n''} {h : n + n' + 1 = n''} {t : bounded_term L (n')} {f : bounded_formula L (n''+1)} (v : dvector S n'') : (S[(f[t  // (n+1) // (by {induction h, simp})]).cast_eq (by induction h; simp) ;; v])
-= (S[f ;; (v.insert (S[t.cast (by {induction h, linarith}) ;;; v]) (n+1))]) :=
-begin 
-  revert n'' f v, refine bounded_formula.rec1 _ _ _ _ _; intros,
-  {ext, subst h, simp[subst_falsum], intros a, exact a},
-  {ext, -- simp[realize_subst_preterm, asjh'_term],
-    conv {to_lhs, rw[realize_bounded_formula_cast_eq_irrel]},
-    simp[realize_subst_preterm], induction v, simp,
-    sorry, simp*, repeat{sorry}
+-- lemma asjh' {L} {S : Structure L} {n n' n''} {h : n + n' + 1 = n''} {t : bounded_term L (n')} {f : bounded_formula L (n''+1)} (v : dvector S n'') : (S[(f[t  // (n+1) // (by {induction h, simp})]).cast_eq (by induction h; simp) ;; v])
+-- = (S[f ;; (v.insert (S[t.cast (by {induction h, linarith}) ;;; v]) (n+1))]) :=
+-- begin 
+--   revert n'' f v, refine bounded_formula.rec1 _ _ _ _ _; intros,
+--   {ext, subst h, simp[subst_falsum], intros a, exact a},
+--   {ext, -- simp[realize_subst_preterm, asjh'_term],
+--     conv {to_lhs, rw[realize_bounded_formula_cast_eq_irrel]},
+--     simp[realize_subst_preterm], induction v, simp,
+--     sorry, simp*, repeat{sorry}
 
-  --  tidy, 
-  --       sorry
-  -- -- conv {to_lhs, congr, skip, congr, congr, rw[asjh'_term],},
-    },
-  {sorry},
-  {sorry},
-  {have : n + 1 + n' + 1 = n_1 + 1, by subst h; simp, conv {to_lhs, congr, skip, congr, rw[subst_all'], skip, rw[this]}, rw[bounded_preformula.cast_eq_all], dsimp, ext, apply forall_congr, intro x, repeat{rw[realize_bounded_formula_cast_eq_irrel]}, rw[dvector.cast_trans], have := ih (x::v), simp at *, 
-  },
-end
+--   --  tidy, 
+--   --       sorry
+--   -- -- conv {to_lhs, congr, skip, congr, congr, rw[asjh'_term],},
+--     },
+--   {sorry},
+--   {sorry},
+--   {have : n + 1 + n' + 1 = n_1 + 1, by subst h; simp, conv {to_lhs, congr, skip, congr, rw[subst_all'], skip, rw[this]}, rw[bounded_preformula.cast_eq_all], dsimp, ext, apply forall_congr, intro x, repeat{rw[realize_bounded_formula_cast_eq_irrel]}, rw[dvector.cast_trans], have := ih (x::v), simp at *, 
+--   },
+-- end
 
 set_option pp.implicit false
 
@@ -197,7 +197,7 @@ lemma dvector_cast_pull_out {α : Type*} {n : ℕ} {m} {h : n = m} {h' : n+1 = m
 
 set_option pp.implicit false
 
-lemma asjh''0_term {L : Language} {S : Structure L} : ∀ {n n' n'' : ℕ} {l f_n : ℕ} (s : bounded_term L f_n) (t : closed_term L) (v : dvector ↥S n'') {h : n + n' + 1 = n''} {h' : n'' + 1 = f_n}  (xs : dvector ↥S 0), realize_bounded_term (dvector.cast (by substs h h'; simp : n'' = n + 1 + n') v)
+lemma gen_realize_bounded_term {L : Language} {S : Structure L} : ∀ {n n' n'' : ℕ} {l f_n : ℕ} (s : bounded_term L f_n) (t : closed_term L) (v : dvector ↥S n'') {h : n + n' + 1 = n''} {h' : n'' + 1 = f_n}  (xs : dvector ↥S 0), realize_bounded_term (dvector.cast (by substs h h'; simp : n'' = n + 1 + n') v)
       (subst_bounded_term (bounded_preterm.cast_eq (by {subst h; rw[<-h'],simp}) s) (bounded_preterm.cast (zero_le n') t))
       xs =
     realize_bounded_term (dvector.cast (h') (dvector.insert (realize_closed_term S t) (n + 1) v)) s xs :=
@@ -224,13 +224,13 @@ end
 
 set_option pp.implicit false
 
-lemma asjh''0 {L} {S : Structure L}  : ∀ {n n' n'' : ℕ} {n'''} {l} {h : n + n' + 1 = n''} {h' : n'' + 1 = n'''} (f : bounded_preformula L (n''') l) (t : closed_term L) (v : dvector S n'') (xs : dvector S l), (S[(f[t.cast0 n' // (n+1) // (by {substs h h', simp})]).cast_eq (by {subst h, simp}) ;; v ;; xs]) ↔ (S[f.cast_eq (by substs h h'; simp) ;; (v.insert (S[t.cast (by {substs h h', linarith}) ;;; v]) (n+1)) ;; xs])
+lemma gen_realize_bounded_formula {L} {S : Structure L}  : ∀ {n n' n'' : ℕ} {n'''} {l} {h : n + n' + 1 = n''} {h' : n'' + 1 = n'''} (f : bounded_preformula L (n''') l) (t : closed_term L) (v : dvector S n'') (xs : dvector S l), (S[(f[t.cast0 n' // (n+1) // (by {substs h h', simp})]).cast_eq (by {subst h, simp}) ;; v ;; xs]) ↔ (S[f.cast_eq (by substs h h'; simp) ;; (v.insert (S[t.cast (by {substs h h', linarith}) ;;; v]) (n+1)) ;; xs])
 :=
 begin
   intros,
   induction f generalizing n n' n'' v,
     {intros, simp},
-    {simp, apply iff_of_eq, congr' 1; apply asjh''0_term _ t v xs, all_goals{try{exact 0}, try{exact h}}},
+    {simp, apply iff_of_eq, congr' 1; apply gen_realize_bounded_term _ t v xs, all_goals{try{exact 0}, try{exact h}}},
     {simp},
     {rw[realize_bounded_formula_cast_eq_irrel,subst_bounded_formula_bd_apprel],
     conv {to_rhs, rw[realize_bounded_formula_cast_eq_irrel]},
@@ -239,7 +239,7 @@ begin
     int.coe_nat_add, add_comm, int.coe_nat_one, fol.bounded_preterm.cast, eq_self_iff_true, zero_le, fol.realize_bounded_formula,
     fol.bounded_preterm.cast_irrel, fol.realize_closed_term_v_irrel, zero_add, add_right_inj, fol.realize_bounded_term, add_left_comm,
     fol.closed_preterm.cast_of_cast0] at *,
-    erw[asjh''0_term], tactic.rotate 1, exact f_l, exact h, exact h',
+    erw[gen_realize_bounded_term], tactic.rotate 1, exact f_l, exact h, exact h',
     apply this},
 
     {have this_f := f_ih_f₁ xs v, have this_g := f_ih_f₂ xs v, simp, simp at this_f this_g, rw[<-this_f,<-this_g]},
@@ -256,29 +256,29 @@ begin
       {simp[bounded_preformula.cast_eq_rfl], apply bounded_preformula.cast_eq_hrfl}}
 end
 
-/- The statement of this isn't quite right -/
-lemma asjh'' {L} {S : Structure L}  : ∀ {n n' n'' : ℕ} {n'''} {l} {h : n + n' + 1 = n''} {h' : n'' + 1 = n'''} (f : bounded_preformula L (n''') l) (t : bounded_term L n') (v : dvector S n'') (xs : dvector S l), (S[(f[t  // (n+1) // (by {substs h h', simp})]).cast_eq (by {subst h, simp}) ;; v ;; xs]) = (S[f.cast_eq (by substs h h'; simp) ;; (v.insert (S[t.cast (by {substs h h', linarith}) ;;; v]) (n+1)) ;; xs])
-:=
-begin
-  intros,
-  induction f generalizing n n' n'' v,
-    {intros, simp},
-    {sorry},
-    {simp},
-    {sorry},
-    {have this_f := f_ih_f₁ xs v t, have this_g := f_ih_f₂ xs v t, simp, simp at this_f this_g, rw[<-this_f,<-this_g]},
-    {substs h h', have := @subst_all' L (n+1) n' (n + n' + 1 + 1) (by {simp}) t (f_f), ext, simp[this], let k, swap, change realize_bounded_formula v (bounded_preformula.cast_eq k _) _ ↔ _,
-let j, swap, change realize_bounded_formula v (bounded_preformula.cast_eq k (∀' j)) _ ↔ _,
-rw[cast_eq_all], dsimp[k,j], clear k j, apply forall_congr, intro x,
-     have := @f_ih xs (n+1) n' ((n+1) + n' + 1) (x::(v.cast (by simp))) (by simp) (by simp) t,
-     rw[cast_eq_trans], rw[<-dvector_cast_push_in] at this, swap, simp, swap, simp, simp,
-     rw[realize_bounded_formula_cast_eq_irrel], rw[realize_bounded_formula_cast_eq_irrel] at this, rw[dvector.cast_trans] at this, rw[this], clear this, clear this f_ih,
-     rw[dvector.insert_cons], apply iff_of_eq, congr' 1, simp, swap, {apply cast_eq_hrfl},
-     {swap, simp, rw[dvector.insert_cons], simp, rw[dvector.insert_cons],--  let p, swap,
-     -- let q, swap, change p == q,
-     -- apply (@heq_iff_eq _ p (q.cast (by simp))).mpr, }}
-     congr' 1, simp, sorry, sorry}}
-end
+-- /- The statement of this isn't quite right -/
+-- lemma asjh'' {L} {S : Structure L}  : ∀ {n n' n'' : ℕ} {n'''} {l} {h : n + n' + 1 = n''} {h' : n'' + 1 = n'''} (f : bounded_preformula L (n''') l) (t : bounded_term L n') (v : dvector S n'') (xs : dvector S l), (S[(f[t  // (n+1) // (by {substs h h', simp})]).cast_eq (by {subst h, simp}) ;; v ;; xs]) = (S[f.cast_eq (by substs h h'; simp) ;; (v.insert (S[t.cast (by {substs h h', linarith}) ;;; v]) (n+1)) ;; xs])
+-- :=
+-- begin
+--   intros,
+--   induction f generalizing n n' n'' v,
+--     {intros, simp},
+--     {sorry},
+--     {simp},
+--     {sorry},
+--     {have this_f := f_ih_f₁ xs v t, have this_g := f_ih_f₂ xs v t, simp, simp at this_f this_g, rw[<-this_f,<-this_g]},
+--     {substs h h', have := @subst_all' L (n+1) n' (n + n' + 1 + 1) (by {simp}) t (f_f), ext, simp[this], let k, swap, change realize_bounded_formula v (bounded_preformula.cast_eq k _) _ ↔ _,
+-- let j, swap, change realize_bounded_formula v (bounded_preformula.cast_eq k (∀' j)) _ ↔ _,
+-- rw[cast_eq_all], dsimp[k,j], clear k j, apply forall_congr, intro x,
+--      have := @f_ih xs (n+1) n' ((n+1) + n' + 1) (x::(v.cast (by simp))) (by simp) (by simp) t,
+--      rw[cast_eq_trans], rw[<-dvector_cast_push_in] at this, swap, simp, swap, simp, simp,
+--      rw[realize_bounded_formula_cast_eq_irrel], rw[realize_bounded_formula_cast_eq_irrel] at this, rw[dvector.cast_trans] at this, rw[this], clear this, clear this f_ih,
+--      rw[dvector.insert_cons], apply iff_of_eq, congr' 1, simp, swap, {apply cast_eq_hrfl},
+--      {swap, simp, rw[dvector.insert_cons], simp, rw[dvector.insert_cons],--  let p, swap,
+--      -- let q, swap, change p == q,
+--      -- apply (@heq_iff_eq _ p (q.cast (by simp))).mpr, }}
+--      congr' 1, simp, sorry, sorry}}
+-- end
 -- AHA! so we can see here that the term itself actually needs to be lifted... by 1.
 -- note: doing just t ↦ t ↑ 1 doesn't work. need to lift the formula instead
 
@@ -345,48 +345,6 @@ end
 
 
 
-
--- OK, now it's clear that i simply don't understand how to perform the recursive call on ∀' f.
-
--- so what's happening is, S[(∀'f)[t // n]] unfolds to S[∀' f[t // (n+1)]],
--- which unfolds to ∀x, realize (x::v) S[f[t // (n+1)]]
-
--- and the goal is to show that this is all equal to:
-
--- realize(v.insert S[t // v] (n+1)) (∀' f) = ∀ x, realize (x :: v.insert (S[t // v]) (n+1)) f
-
--- so it remains to check that
-
--- realize (x :: v.insert S[t // v] (n+1)) f ↔ realize (x::v) S[f[t // (n+1)]]
-
--- and this should boil down to the recursive call on the vector itself, right? i.e. this should follow immediately from
-
--- @asjh'' (n n' (n''+1) (n'''+1)) l (by assumption) (by assumption) f t v xs
-
---------
-
-        -- subst h, simp,
-        -- let k, swap, change _ = k, let j, swap, change realize_bounded_formula v (bounded_preformula.cast_eq _ ∀'j) _ = k, swap, by simp,
-        -- conv {to_lhs, congr, skip, rw[bounded_preformula.cast_eq_all],}, dsimp[k,j], clear k j,
-        -- ext, apply forall_congr, intro x, simp[realize_bounded_formula_cast_eq_irrel],
-        -- let n'' := n + n' + 1,
-        -- have h : n + n' + 1 = n'', by refl,
-        -- have := asjh'' _ n n' 0 h t -- (subst_bounded_formula f t (by simp)) v xs
-        -- -- apply asjh'',
-      
-
--- by {subst h, simp, have := @bounded_preformula.cast_eq_all _ (n + 1 + n') (n + n' + 1) (by simp),
--- let k, swap, change _ = k, show Language, exact L, let j, swap, change realize_bounded_formula v (bounded_preformula.cast_eq _ ∀'j) _ = k, swap, by simp,
--- conv {to_lhs, congr, skip, rw[bounded_preformula.cast_eq_all],}, dsimp[k,j], clear k j,
--- ext, apply forall_congr, intro x,   }
-
-
--- @[simp]lemma realize_bounded_term_subst0_gen {L} {S : Structure L} {n l} {s : bounded_preterm L (n+1) l} {v : dvector S n} 
-
--- set_option pp.implicit false
-
--- rw[subst0_bounded_formula_bd_apps_rel], simp[realize_bounded_formula_bd_apps_rel, rel_subst0_irrel]
-
 @[simp]lemma realize_bounded_term_subst0 {L} {S : Structure L} {n} (s : bounded_term L (n+1)) {v : dvector S n} (t : closed_term L) : realize_bounded_term v (s[(t.cast (by simp)) /0]) [] = realize_bounded_term ((realize_closed_term S t)::v) s [] :=
 begin
 revert s, refine bounded_term.rec1 _ _,
@@ -415,7 +373,7 @@ begin
   {simp},
   {rw[subst0_bounded_formula_bd_apps_rel], simp[realize_bounded_formula_bd_apps_rel, rel_subst0_irrel]},
   {simp*},
-  {simp[-realize_bounded_formula_cast_eq_irrel], apply forall_congr, clear ih, intro x, have := @asjh''0 L S 0 n (n+1) (n+2) 0 (by simp) (by simp) f t (x::v) [], simp at *, exact this}
+  {simp[-realize_bounded_formula_cast_eq_irrel], apply forall_congr, clear ih, intro x, have := @gen_realize_bounded_formula L S 0 n (n+1) (n+2) 0 (by simp) (by simp) f t (x::v) [], simp at *, exact this}
 end
 
 lemma realize_bounded_formula_subst0' {L} {S : Structure L} {n} (f : bounded_formula L (n+1)) {v : dvector S n} (t : bounded_term L 1) (x : S) : realize_bounded_formula (x :: v) ((f ↑' 1 # 1)[(t.cast (by simp)) /0]) [] ↔ realize_bounded_formula ((realize_bounded_term ([x] : dvector S 1) t []) :: v) f [] := 
