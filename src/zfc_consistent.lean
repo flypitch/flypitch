@@ -77,7 +77,7 @@ lemma Set'_models_union : axiom_of_union ∈ Th Set' :=
 begin
   simp only [Th, axiom_of_union, small], intro x,
   conv {congr, skip, congr, congr, congr, skip,
-       change (∃' (&1 ∈' &0 ⊓ &0 ∈' &3) : bounded_formula L_ZFC 3)},
+       change (∃' (&1 ∈' &0 ⊓ &0 ∈' &(by to_dfin 3)) : bounded_formula L_ZFC 3)},
   simp, change ∃ U, ∀ z, z ∈ U ↔ ∃ w, z ∈ w ∧ w ∈ x, 
   refine ⟨⋃ x, _⟩, intro z, rw[@Set.mem_Union x z], finish
 end
@@ -95,7 +95,7 @@ end
 
 lemma Set'_models_choice : axiom_of_choice ∈ Th Set' :=
 begin
-  dsimp[Th, axiom_of_choice, fn_domain],
+  dsimp[Th, axiom_of_choice, fn_domain], intros x y H, sorry
 end
 
 lemma Set'_models_infinity : axiom_of_infinity ∈ Th Set' :=

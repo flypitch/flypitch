@@ -2082,9 +2082,9 @@ begin
   { exact xs }
 end
 
--- def bounded_formula_of_relation {l n} (f : L.relations l) :
---   arity' (bounded_term L n) (bounded_formula L n) l :=
--- arity'.of_dvector_map $ bd_apps_rel (bd_rel f)
+def bounded_formula_of_relation {l n} (f : L.relations l) :
+  arity' (bounded_term L n) (bounded_formula L n) l :=
+arity'.of_dvector_map $ bd_apps_rel (bd_rel f)
 
 @[elab_as_eliminator] def bounded_preformula.rec1 {C : Πn l, bounded_preformula L (n+1) l → Sort v}
   (H0 : Π {n}, C n 0 ⊥)
