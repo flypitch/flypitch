@@ -30,42 +30,42 @@ section
 @[simp]lemma subst0_imp {L} {n} {t : bounded_term L n} {f₁ f₂ : bounded_formula L (n+1)} : (f₁ ⟹ f₂)[t /0] = f₁[t /0] ⟹ f₂[t /0] :=
   by refl
 
-@[simp]lemma subst_all' {L} {n n' n''} {h : n + n' + 1 = n''} {t : bounded_term L n'} {f : bounded_formula L (n + n' + 1 + 1)} :
+@[simp]lemma subst_all' {L} {n n'} {t : bounded_term L n'} {f : bounded_formula L (n + n' + 1 + 1)} :
   (∀'f)[t !! n]
-  = ∀'(f[(t : bounded_term L n') !! (n+1)]) := by ext; simp
+  = ∀'(((f.cast_eq (by simp))[(t : bounded_term L n') !! (n+1)]).cast_eq (by simp)) :=
+    by ext; simp
 
-@[simp]lemma subst_all {L} {n n' n''} {h : n + n' + 1 = n''} {t : closed_term L} {f : bounded_formula L (n'' + 1)} :
-  (∀'f)[t.cast0 n' // n // (by {simp[h]})]
-  = ∀'(f[(t.cast0 n' : bounded_term L n') // (n+1) // (by subst h; simp)]).cast_eq (by simp) :=
+@[simp]lemma subst_all {L} {n n'} {t : closed_term L} {f : bounded_formula L (n + n' + 1 + 1)} :
+  (∀'f)[t.cast0 n' !! n]
+  = ∀'((f.cast_eq (by simp))[(t.cast0 n' : bounded_term L n') !! (n+1)]).cast_eq (by simp) :=
   by {apply subst_all'}
 
 @[simp]lemma subst0_all {L} {n} {t : closed_term L} {f : bounded_formula L (n+2)} :
-  ((∀'f)[t.cast (by simp) /0] : bounded_formula L n) = ∀'((f[t.cast0 n // 1 // (by {simp} : 1 + n + 1 = n + 2)]).cast_eq (by simp)) :=
+  ((∀'f)[t.cast (by simp) /0] : bounded_formula L n) = ∀'(((f.cast_eq (by simp))[t.cast0 n !! 1]).cast_eq (by simp)) :=
   by ext; simp
 
-@[simp]lemma subst0_all_base {L} {t : closed_term L} {f : bounded_formula L 2} : (∀' f)[t /0] = ∀'(f[t // 1 // (by simp)]) :=
+@[simp]lemma subst0_all_base {L} {t : closed_term L} {f : bounded_formula L 2} : (∀' f)[t /0] = ∀'(f.cast_eq (by simp)[t !! 1]) :=
   by ext; simp
 
-@[simp]lemma rel_subst_irrel {L : Language} {n n' l} {R : L.relations l} {t : bounded_term L n'} : (bd_rel R)[t // n // (by refl)] = (bd_rel R) := by ext; simp
+@[simp]lemma rel_subst_irrel {L : Language} {n n' l} {R : L.relations l} {t : bounded_term L n'} : (bd_rel R)[t !! n] = (bd_rel R) := by refl
 
-@[simp]lemma rel_subst_irrel1 {L : Language} {n n' n'' l} {h : n + n' + 1 = n''} {R : L.relations l} {t : bounded_term L n'} : (@bd_rel L (n + n' + 1 + 1) _ R)[t // (n+1) // (by subst h; simp)] = (bd_rel R) := by ext; simp
+@[simp]lemma rel_subst_irrel1 {L : Language} {n n' l} {R : L.relations l} {t : bounded_term L n'} : (@bd_rel L (n + n' + 1 + 1) _ R).cast_eq (by simp)[t !! (n+1)] = (bd_rel R) := by refl
 
-@[simp]lemma rel_subst_irrel' {L : Language} {n n' n'' l} {h : n + n' + 1 = n''} {R : L.relations l} {t : bounded_term L n'} : (bd_rel R)[t // n // h] = (bd_rel R) := by subst h; apply rel_subst_irrel
+@[simp]lemma rel_subst_irrel' {L : Language} {n n' l} {R : L.relations l} {t : bounded_term L n'} : (bd_rel R)[t !! n] = (bd_rel R) := by refl
 
-@[simp]lemma rel_subst0_irrel {L : Language} {n l} {R : L.relations l} {t : bounded_term L n} : (bd_rel R)[t /0] = (bd_rel R) := by ext; simp
+@[simp]lemma rel_subst0_irrel {L : Language} {n l} {R : L.relations l} {t : bounded_term L n} : (bd_rel R)[t /0] = (bd_rel R) := by refl
 
 lemma realize_rel_irrel {L} {S : Structure L} {n n' l : ℕ} {t : bounded_term L n'} {R : L.relations l} {xs : dvector ↥S l} {v : dvector ↥S (n + n' + 1)} : realize_bounded_formula v (bounded_preformula.cast_eq (by refl) (bd_rel R)) xs = S.rel_map R xs := by refl
 
-@[simp]lemma subst_bounded_formula_bd_apps_rel {L} {n n' n'' l} {h : n + n' + 1 = n''} (f : bounded_preformula L (n''+1) l)
-  {t : bounded_term L n'} {ts : dvector (bounded_term L (n'' + 1)) l } :
-    (bd_apps_rel f ts)[t // (n+1) // (by {subst h, simp})] = bd_apps_rel (f[t // (n+1) // by {subst h, simp}]) (ts.map $ λ t', subst_bounded_term (t'.cast_eq (by subst h; simp)) t) :=
-  by {induction ts generalizing f, refl, simp[bd_apps_rel, ts_ih (bd_apprel f ts_x)], congr, ext, simp}
+@[simp]lemma subst_bounded_formula_bd_apps_rel {L} {n n' l} (f : bounded_preformula L (n + n' + 1+1) l) {t : bounded_term L n'} {ts : dvector (bounded_term L (n + n' + 1 + 1)) l } :
+    (bd_apps_rel (f.cast_eq ((by simp) : _ = n + 1 + n' + _)) (ts.map $ λ t', t'.cast (by simp) ))[t !! (n+1)] = bd_apps_rel (f.cast_eq (by {simp})[t !! (n+1)]) (ts.map $ λ t', subst_bounded_term (t'.cast_eq (by simp)) t) :=
+  by {induction ts generalizing f; ext, refl, simp[bd_apps_rel, ts_ih (bd_apprel f ts_x)]}
 
 @[simp]lemma subst0_bounded_formula_bd_apps_rel {L} {n l} (f : bounded_preformula L (n+1) l) 
   (t : closed_term L) (ts : dvector (bounded_term L (n+1)) l) :
   subst0_bounded_formula (bd_apps_rel f ts) (t.cast (by simp)) = 
   bd_apps_rel (subst0_bounded_formula f (t.cast (by simp))) (ts.map $ λt', subst0_bounded_term t' (t.cast (by simp))) :=
-by {induction ts generalizing f, refl, simp[bd_apps_rel, ts_ih (bd_apprel f ts_x)], congr, ext, simp}
+by {induction ts generalizing f, refl, simpa[bd_apps_rel, ts_ih (bd_apprel f ts_x)]}
 
 lemma zero_of_lt_one (n : nat) (h : n < 1) : n = 0 :=
   by {cases h, refl, cases nat.lt_of_succ_le h_a}

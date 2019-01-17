@@ -1898,6 +1898,10 @@ def quantifier_free {l n} : bounded_preformula L n l → Prop := λ f, fol.quant
 
 end bounded_preformula
 
+@[simp]lemma bd_apps_rel_fst : ∀{l n} (f : bounded_preformula L n l) (ts : dvector (bounded_term L n) l), (bd_apps_rel f ts).fst = (apps_rel (f.fst) (ts.map (λ t', t'.fst)))
+  | n l f dvector.nil := by refl
+  | n l f (x::xs) := by apply (bd_apps_rel_fst (bd_apprel f x) xs)
+
 namespace presentence
 
 @[reducible]protected def cast0 {l} (n) (f : presentence L l) : bounded_preformula L n l :=
