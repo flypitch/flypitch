@@ -69,9 +69,9 @@ begin
   {tidy},
   {intros x H, dsimp at H, unfold realize_bounded_formula, have : ∃ y : ℤ, x + y = 0,
   by exact ⟨-x, by tidy⟩, rcases this with ⟨y, hy⟩, apply H y, simp[hy], refl},
-  {tidy, conv {to_lhs, change (0 : ℤ) + x, rw[zero_add]}, refl},
-  {tidy, conv {to_lhs, change x + 0, rw[add_zero]}, refl},
-  {tidy, conv {to_lhs, change x + x_1 + x_2}, finish}
+  {intro x, change 0 + x = x, rw[zero_add]},
+  {intro x, change x + 0 = x, rw[add_zero]},
+  {intros x y z, change x + y + z = x + (y + z), rw[add_assoc]}
 end
 
 end
