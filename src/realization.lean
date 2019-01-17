@@ -110,6 +110,14 @@ lemma dvector_cast_pull_out {α : Type*} {n : ℕ} {m} {h : n = m} {h' : n+1 = m
 
 set_option pp.implicit false
 
+lemma holy_cannoli {L} {S : Structure L} {n n' l} (f : bounded_preformula L (n + n' + 1 + 1) l)  (t : closed_term L) (v : dvector S (n + n' + 1)) (xs : dvector S l) :
+S[((f.cast_eq (by simp))[t.cast0 n' !! (n+1)]).cast_eq (by simp) ;; v ;; xs] =
+S[f ;; (v.insert (S[t.cast0 _ /// v]) (n+1)) ;; xs] :=
+begin
+  let n''' := n + n' + 1 + 1, let h : n + n' + 1 + 1 = n''', by refl,
+  sorry
+end
+
 lemma asjh''0 {L} {S : Structure L}  : ∀ {n n' n'' : ℕ} {n'''} {l} {h : n + n' + 1 = n''} {h' : n'' + 1 = n'''} (f : bounded_preformula L (n''') l) (t : closed_term L) (v : dvector S n'') (xs : dvector S l), (S[(f[t.cast0 n' // (n+1) // (by {substs h h', simp})]).cast_eq (by {subst h, simp}) ;; v ;; xs]) = (S[f.cast_eq (by substs h h'; simp) ;; (v.insert (S[t.cast (by {substs h h', linarith}) /// v]) (n+1)) ;; xs])
 :=
 begin
@@ -131,6 +139,17 @@ begin
     rw[dvector.insert_cons], congr' 1, simp, apply dvector.cast_hrfl,
     simp[bounded_preformula.cast_eq_rfl], apply bounded_preformula.cast_eq_hrfl
 }
+
+
+lemma HEWWO {L} {S : Structure L} {n} {t : closed_term L} {ψ : bounded_formula L (n+1)} {v : dvector S n}: S[ψ[t.cast0 _ /0] ;; v ;; []] = S[ψ ;; (v.insert (S[t.cast0 _ /// v]) 0) ;; []] :=
+begin
+  revert n ψ v, refine bounded_formula.rec1 _ _ _ _ _; intros,
+  {refl},
+  {sorry},
+  {sorry},
+  {finish},
+  {simp[-subst_bounded_formula_fst], ext, apply forall_congr, intro x, have := @ih (x::v), simp at this, },
+end
 
 
 -- simp[this], let k, swap, change realize_bounded_formula v (bounded_preformula.cast_eq k _) _ ↔ _,

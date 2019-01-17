@@ -346,6 +346,8 @@ end notation_test
 -- lemma asjh {L} {S : Structure L} {n n' n''} {h : n + (n') + 1 = n'' + 1} {t : bounded_term L (n')} {f : bounded_formula L (n''+1)} {v : dvector S (n + n' + 1)} :
 --   @realize_bounded_formula L S n 0 v (@subst_bounded_formula L n (n' + 1) (n'' + 1) 0 f t (by assumption) = @realize_bounded_formula L S (n+1) 0 (dvector.insert (realize_bounded_term begin end t)) sorry) sorry := sorry
 
+
+
 /- ℕ' satisfies PA induction schema -/
 theorem PA_standard_model_induction {index : nat} {ψ : bounded_formula L_peano (index + 1)} : ℕ' ⊨ bd_alls index (ψ[zero /0] ⊓ ∀'(ψ ⟹ (ψ ↑' 1 # 1)[succ &0 /0]) ⟹ ∀' ψ) :=
 begin

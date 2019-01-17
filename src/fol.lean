@@ -1361,7 +1361,7 @@ local attribute [extensionality] fin.eq_of_veq
 | _ (bd_app t₁ t₂) (bd_func f')   h := by injection h
 | _ (bd_app t₁ t₂) (bd_app t₁' t₂') h := by injection h with h₁ h₂; congr1; apply eq; assumption
 
-theorem mk_fst {n : ℕ} {l} (t : bounded_preterm L n l) : mk t.fst t.fst_bounded = t :=
+@[simp]theorem mk_fst {n : ℕ} {l} (t : bounded_preterm L n l) : mk t.fst t.fst_bounded = t :=
 by ext; simp
 
 @[simp] protected def cast {n m} (h : n ≤ m) : ∀ {l} (t : bounded_preterm L n l),
@@ -1842,7 +1842,7 @@ begin
   { rw [f₁_ih h₁] }
 end
 
-theorem mk_fst {n : ℕ} {l} (t : bounded_preformula L n l) : mk t.fst t.fst_bounded = t :=
+@[simp]theorem mk_fst {n : ℕ} {l} (t : bounded_preformula L n l) : mk t.fst t.fst_bounded = t :=
 by ext; simp
 
 @[simp] protected def cast : ∀ {n m l} (h : n ≤ m) (f : bounded_preformula L n l),
