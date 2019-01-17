@@ -21,7 +21,7 @@ instance has_mem_Set_Set' : has_mem Set.{0} Set' := ⟨Set.mem⟩
 
 instance has_emptyc_Set' : has_emptyc Set' := ⟨Set.empty⟩
 
-lemma  empty_subset : ∀ x: Set',  Set.empty ⊆ x := by tidy 
+lemma empty_subset : ∀ x: Set', Set.empty ⊆ x := by tidy
 
 lemma Set'_has_mem : has_mem ↥Set' ↥Set' := ⟨ Set.mem ⟩
 local notation h :: t  := dvector.cons h t
