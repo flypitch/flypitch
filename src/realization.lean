@@ -14,25 +14,25 @@ namespace realization
 
 section
 
-@[simp]lemma subst_falsum {L} {n n' n''} {h : n + n' + 1 = n''} {t : bounded_term L n'} : bd_falsum[t // n // h] = bd_falsum :=
-  by ext; simp
+@[simp]lemma subst_falsum {L} {n n'} {t : bounded_term L n'} : bd_falsum[t !! n] = bd_falsum :=
+  by refl
 
 @[simp]lemma subst0_falsum {L} {n} {t : bounded_term L n} : bd_falsum[t /0] = bd_falsum :=
-  by ext; simp
+  by refl
 
-@[simp]lemma subst_eq {L} {n n' n''} {h : n + n' + 1 = n''} {t₁ t₂ : bounded_term L n''} {t : bounded_term L n'} : (t₁ ≃ t₂)[t // n // h] = subst_bounded_term (t₁.cast_eq h.symm) t ≃ subst_bounded_term (t₂.cast_eq h.symm) t := by ext; simp
+@[simp]lemma subst_eq {L} {n n'} {t₁ t₂ : bounded_term L $ n + n' + 1} {t : bounded_term L n'} : (t₁ ≃ t₂)[t !! n] = subst_bounded_term (t₁) t ≃ subst_bounded_term (t₂) t := by refl
 
 @[simp]lemma subst0_eq {L} {n} {t : bounded_term L n} {t₁ t₂ : bounded_term L (n+1)} : (t₁ ≃ t₂)[t /0] = (t₁[t /0] ≃ t₂[t /0]) :=
-  by {unfold subst0_bounded_formula, simpa only [subst_eq]}
+  by refl
 
-@[simp]lemma subst_imp {L} {n n' n''} {h : n + n' + 1 = n''} {t : bounded_term L n'} {f₁ f₂ : bounded_formula L (n'')} : (f₁ ⟹ f₂)[t // n // h] = (f₁[t // n // h] ⟹ f₂[t // n // h]) := by {ext1, induction h, refl}
+@[simp]lemma subst_imp {L} {n n'} {t : bounded_term L n'} {f₁ f₂ : bounded_formula L (n + n' + 1)} : (f₁ ⟹ f₂)[t !! n] = (f₁[t !! n] ⟹ f₂[t !! n]) := by refl
 
 @[simp]lemma subst0_imp {L} {n} {t : bounded_term L n} {f₁ f₂ : bounded_formula L (n+1)} : (f₁ ⟹ f₂)[t /0] = f₁[t /0] ⟹ f₂[t /0] :=
-  by {unfold subst0_bounded_formula, simpa only [subst_imp]}
+  by refl
 
-@[simp]lemma subst_all' {L} {n n' n''} {h : n + n' + 1 = n''} {t : bounded_term L n'} {f : bounded_formula L (n'' + 1)} :
-  (∀'f)[t  // n // (by {simp[h]})]
-  = ∀'(f[(t : bounded_term L n') // (n+1) // (by {subst h; simp})]).cast_eq (by simp) := by ext; simp
+@[simp]lemma subst_all' {L} {n n' n''} {h : n + n' + 1 = n''} {t : bounded_term L n'} {f : bounded_formula L (n + n' + 1 + 1)} :
+  (∀'f)[t !! n]
+  = ∀'(f[(t : bounded_term L n') !! (n+1)]) := by ext; simp
 
 @[simp]lemma subst_all {L} {n n' n''} {h : n + n' + 1 = n''} {t : closed_term L} {f : bounded_formula L (n'' + 1)} :
   (∀'f)[t.cast0 n' // n // (by {simp[h]})]

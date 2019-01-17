@@ -1308,13 +1308,14 @@ theorem lift {n l} {t : preterm L l}
 ht.lift_at
 
 /-- this is t[s//n] for bounded formulae -/
-theorem subst {m n} : ∀{l} {t : preterm L l} (ht : is_bounded_preterm (m+n+1) t) {s : term L}, is_bounded_preterm m s → is_bounded_preterm (m+n) (t[s // n])
+theorem subst {m n} : ∀{l} {t : preterm L l} (ht : is_bounded_preterm (n+m+1) t) {s : term L}, is_bounded_preterm m s → is_bounded_preterm (n+m) (t[s // n])
 | _ &k          ht s hs := begin
     unfold subst_term,
     rcases lt_trichotomy n k with h|rfl|h,
     { simp [h],
       have : 0 < k := lt_of_le_of_lt (nat.zero_le _) h,
-      exact (nat.pred_lt_iff_lt_succ this).2 ht },
+      rw[add_comm], exact (nat.pred_lt_iff_lt_succ this).2 ht
+      },
     { simp, exact hs.lift },
     { simp [h], exact lt_of_lt_of_le h (nat.le_add_left _ _) }
   end
@@ -1574,8 +1575,8 @@ bounded_preterm.mk (t.fst ↑' n' # m) (by simpa using t.fst_bounded.lift_at)
 -- by have := lift_bounded_term_at n m ht; rw [zero_add] at this; exact this
 
 /-- this is t[s//n] for bounded formulae -/
-def subst_bounded_term {n n' l} (t : bounded_preterm L (n' + n + 1) l)
-  (s : bounded_term L n') : bounded_preterm L (n'+n) l :=
+def subst_bounded_term {n n' l} (t : bounded_preterm L (n + n' + 1) l)
+  (s : bounded_term L n') : bounded_preterm L (n + n') l :=
 bounded_preterm.mk (t.fst[s.fst//n]) (t.fst_bounded.subst s.fst_bounded)
 
 -- @[simp] lemma subst_bounded_term_var_lt {n n'} (s : bounded_term L n') (k : fin (n+n'+1))
@@ -1598,7 +1599,7 @@ bounded_preterm.mk (t.fst[s.fst//n]) (t.fst_bounded.subst s.fst_bounded)
 --   subst_bounded_term (bd_app t₁ t₂) s = bd_app (subst_bounded_term t₁ s) (subst_bounded_term t₂ s) :=
 -- by refl
 
-@[simp] lemma subst_bounded_term_fst {n n' l} (t : bounded_preterm L (n'+n+1) l)
+@[simp] lemma subst_bounded_term_fst {n n' l} (t : bounded_preterm L (n+n'+1) l)
   (s : bounded_term L n') : (subst_bounded_term t s).fst = t.fst[s.fst//n] :=
 bounded_preterm.fst_mk _
 
@@ -1609,14 +1610,16 @@ bounded_preterm.fst_mk _
 def subst0_bounded_term {n l} (t : bounded_preterm L (n+1) l) (s : bounded_term L n) :
   bounded_preterm L n l :=
   bounded_preterm.mk (t.fst[s.fst//0]) $
-                     by {refine @is_bounded_preterm.subst _ n 0 _ _ _ _ _,
+                     by {have : n = 0 + n, by rw[zero_add],
+                        conv {congr, rw[this]},
+                        refine @is_bounded_preterm.subst _ n 0 _ _ _ _ _, rw[zero_add],
                          exacts [t.fst_bounded, s.fst_bounded]}
 
 notation t `[`:max s ` /0]`:0 := fol.subst0_bounded_term t s
 
--- @[simp] lemma subst0_bounded_term_fst {n l} (t : bounded_preterm L (n+1) l)
---   (s : bounded_term L n) : t[s/0].fst = t.fst[s.fst//0] :=
--- by simp [subst0_bounded_term]
+@[simp] lemma subst0_bounded_term_fst {n l} (t : bounded_preterm L (n+1) l)
+  (s : bounded_term L n) : t[s/0].fst = t.fst[s.fst//0] :=
+by simp [subst0_bounded_term]
 
 -- def substmax_bounded_term {n l} (t : bounded_preterm L (n+1) l)
 --   (s : closed_term L) : bounded_preterm L n l :=
@@ -1775,16 +1778,15 @@ lemma subst_irrel : ∀ {n : ℕ} {l} {t : preformula L l} (ht : is_bounded_pref
 | n _ (f₁ ⟹ f₂)    ht n' s h := by simp [ht.1.subst_irrel _ h, ht.2.subst_irrel _ h]
 | n _ (∀' f)       ht n' s h := by simp; exact subst_irrel (by exact ht) _ (succ_le_succ h)
 
-theorem subst {L} {n n' l} {f : preformula L l} (hf : is_bounded_preformula (n+n'+1) f)
-  {s : term L} (hs : is_bounded_preterm n' s) : is_bounded_preformula (n+n') (f.subst f s) :=
-_
-| _ _ _ _ bd_falsum       s rfl := ⊥
-| _ _ _ _ (t₁ ≃ t₂)       s rfl := subst_bounded_term t₁ s ≃ subst_bounded_term t₂ s
-| _ _ _ _ (bd_rel R)      s rfl := bd_rel R
-| _ _ _ _ (bd_apprel f t) s rfl := bd_apprel (subst_bounded_formula f s rfl) (subst_bounded_term t s)
-| _ _ _ _ (f₁ ⟹ f₂)      s rfl := subst_bounded_formula f₁ s rfl ⟹ subst_bounded_formula f₂ s rfl
-| _ _ _ _ (∀' f)          s rfl :=
-  ∀' (subst_bounded_formula f s $ by simp [succ_add]).cast_eq (succ_add _ _)
+theorem subst : ∀ {n n' l} {f : preformula L l} (hf : is_bounded_preformula (n+n'+1) f)
+  {s : term L} (hs : is_bounded_preterm n' s), is_bounded_preformula (n+n') (f[s//n]) := by sorry
+-- | n n' l f bd_falsum       s rfl := ⊥
+-- | _ _ _ _ (t₁ ≃ t₂)       s rfl := subst_bounded_term t₁ s ≃ subst_bounded_term t₂ s
+-- | _ _ _ _ (bd_rel R)      s rfl := bd_rel R
+-- | _ _ _ _ (bd_apprel f t) s rfl := bd_apprel (subst_bounded_formula f s rfl) (subst_bounded_term t s)
+-- | _ _ _ _ (f₁ ⟹ f₂)      s rfl := subst_bounded_formula f₁ s rfl ⟹ subst_bounded_formula f₂ s rfl
+-- | _ _ _ _ (∀' f)          s rfl :=
+--   ∀' (subst_bounded_formula f s $ by simp [succ_add]).cast_eq (succ_add _ _)
 
 end is_bounded_preformula
 
@@ -2011,29 +2013,34 @@ notation f ` ↑' `:90 n ` # `:90 m:90 := fol.lift_bounded_formula_at f n m -- i
 --       (f_f.cast_eq_fst _).trans pf₁).cast_eq (succ_add n n') }
 -- end
 
-@[simp] def subst_bounded_formula : ∀ {n' n n'' l} (f : bounded_preformula L (n'') l)
-  (s : bounded_term L n') {h : n' + n + 1 = n''} , bounded_preformula L (n' + n) l
-| _ _ _ _ bd_falsum       s rfl := bd_falsum
-| _ _ _ l (t₁ ≃ t₂)       s rfl := (subst_bounded_term t₁ s) ≃ (subst_bounded_term t₂ s)
-| _ _ _ _ (bd_rel R)      s rfl := bd_rel R
-| n' n n'' l (bd_apprel f t) s rfl := bd_apprel (@subst_bounded_formula _ _ _ _ f s rfl) (subst_bounded_term t s)
-| n' n n'' l (f₁ ⟹ f₂)      s rfl := (@subst_bounded_formula _ _ _ _ f₁ s rfl)  ⟹ (@subst_bounded_formula _ _ _ _ f₂ s rfl)
-| n' n n'' l (∀' f)          s rfl  := ∀' (@subst_bounded_formula (n') (n+1) _ 0 f s $ by {simp})
-  -- ∀' (by {apply subst_bounded_formula, exact f, fapply bounded_preterm.cast, exact n, simp, exact s})
+@[simp] def subst_bounded_formula {n n' l} (f : bounded_preformula L (n + n' + 1) l)
+  (s : bounded_term L n') : bounded_preformula L (n + n') l
+  := bounded_preformula.mk (by {exact f.fst[s.fst//n]}) (f.fst_bounded.subst s.fst_bounded)
+
+-- bounded_preterm.mk (t.fst[s.fst//n]) (t.fst_bounded.subst s.fst_bounded)
+-- | _ _ _ _ bd_falsum       s rfl := bd_falsum
+-- | _ _ _ l (t₁ ≃ t₂)       s rfl := (subst_bounded_term t₁ s) ≃ (subst_bounded_term t₂ s)
+-- | _ _ _ _ (bd_rel R)      s rfl := bd_rel R
+-- | n' n n'' l (bd_apprel f t) s rfl := bd_apprel (@subst_bounded_formula _ _ _ _ f s rfl) (subst_bounded_term t s)
+-- | n' n n'' l (f₁ ⟹ f₂)      s rfl := (@subst_bounded_formula _ _ _ _ f₁ s rfl)  ⟹ (@subst_bounded_formula _ _ _ _ f₂ s rfl)
+-- | n' n n'' l (∀' f)          s rfl  := ∀' (@subst_bounded_formula (n') (n+1) _ 0 f s $ by {simp})
+
 
 -- (subst_bounded_formula f s $ by simp [succ_add]).cast_eq (succ_add _ _)
 
-notation f `[`:95 s ` // `:95 n ` // `:95 h `]`:0 := @fol.subst_bounded_formula _ n _ _ _ f s h
+notation f`[`:max s ` !! `:90 n `]`:0 := @_root_.fol.subst_bounded_formula _ n _ _ f s
 
--- @[simp] def subst_bounded_formula_fst : ∀{n n' n'' l} (f : bounded_preformula L n'' l)
---   (s : bounded_term L n') (h : n+n'+1 = n''),
---   (subst_bounded_formula f s h).fst = f.fst[s.fst//n]
--- | _ _ _ _ bd_falsum       s rfl := by refl
--- | _ _ _ _ (t₁ ≃ t₂)       s rfl := by simp
--- | _ _ _ _ (bd_rel R)      s rfl := by refl
--- | _ _ _ _ (bd_apprel f t) s rfl := by simp*
--- | _ _ _ _ (f₁ ⟹ f₂)      s rfl := by simp*
--- | _ _ _ _ (∀' f)          s rfl := by simp*
+-- notation f `[`:95 s ` // `:95 n ` // `:95 h `]`:0 := @fol.subst_bounded_formula _ _ n _ _ f s h
+
+@[simp] def subst_bounded_formula_fst : ∀{n n' l} (f : bounded_preformula L (n + n' + 1) l)
+  (s : bounded_term L n'),
+  (subst_bounded_formula f s).fst = f.fst[s.fst//n]
+| _ _ _ bd_falsum       s  := by refl
+| _ _ _ (t₁ ≃ t₂)       s  := by simp
+| _ _ _ (bd_rel R)      s  := by refl
+| _ _ _ (bd_apprel f t) s  := by simp*
+| _ _ _ (f₁ ⟹ f₂)      s  := by simp*
+| _ _ _ (∀' f)          s  := by simp*
 
 -- lemma realize_bounded_formula_irrel' {S : Structure L} {n n'} {v₁ : dvector S n} {v₂ : dvector S n'}
 --   (h : ∀m (hn : m < n) (hn' : m < n'), v₁.nth m hn = v₂.nth m hn')
@@ -2172,14 +2179,19 @@ end,
 
 def subst0_bounded_formula {n l} (f : bounded_preformula L (n+1) l) (s : bounded_term L n) :
   bounded_preformula L n l :=
-by {have := subst_bounded_formula f s, swap, exact 0, exact this, refl}
+    bounded_preformula.mk (f.fst[s.fst//0]) $
+                        by {have : n = 0 + n, by rw[zero_add], conv {congr, rw[this]},
+                          refine @is_bounded_preformula.subst L 0 n _ _ _ _ _, rw[zero_add],
+                         exacts [f.fst_bounded, s.fst_bounded]}
+
+-- @subst_bounded_formula L n 0 _ f s
 -- (subst_bounded_formula f s $ zero_add (n+1)).cast_eq $ zero_add n
 
 notation f `[`:max s ` /0]`:0 := fol.subst0_bounded_formula f s
 
--- @[simp] lemma subst0_bounded_formula_fst {n l} (f : bounded_preformula L (n+1) l)
---   (s : bounded_term L n) : (subst0_bounded_formula f s).fst = f.fst[s.fst//0] :=
--- by simp [subst0_bounded_formula]
+@[simp] lemma subst0_bounded_formula_fst {n l} (f : bounded_preformula L (n+1) l)
+  (s : bounded_term L n) : (subst0_bounded_formula f s).fst = f.fst[s.fst//0] :=
+by {simp[subst0_bounded_formula], }
 
 -- def substmax_eq_subst0_formula {l} (f : bounded_preformula L 1 l) (t : closed_term L) :
 --   f[t/0] = substmax_bounded_formula f t :=

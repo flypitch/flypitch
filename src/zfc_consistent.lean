@@ -104,7 +104,10 @@ simp [has_mem.mem, set.mem, Th, set_of, axiom_of_infinity,satisfied_in],
 sorry
 end
 
-lemma Set'_models_replacement: ∀ c : bounded_formula L_ZFC 2, axiom_of_replacement c ∈ Th Set' := sorry
+lemma Set'_models_replacement: ∀ c : bounded_formula L_ZFC 2, axiom_of_replacement c ∈ Th Set' :=
+begin
+  -- intro f, unfold axiom_of_replacement functional, intro H_f, dsimp at H_f,
+end
 
 lemma Set_extends_ZFC : ZFC ⊆ Th Set' :=
 begin
