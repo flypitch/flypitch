@@ -146,12 +146,16 @@ meta instance reflect : ∀ n, has_reflect (dfin n)
 | _ fz := `(fz)
 | _ (fs n) := `(fs).subst (reflect _ n)
 
+end dfin
+
 meta def tactic.interactive.to_dfin (m : ℕ) : tactic unit := do
   n ← do {
     `(dfin %%n) ← tactic.target | return (m+1),
     tactic.eval_expr ℕ n },
-  m ← of_nat n m,
+  m ← dfin.of_nat n m,
   tactic.exact (reflect m)
+
+namespace dfin
 
 instance has_zero_dfin {n} : has_zero $ dfin (n+1) := ⟨fz⟩
 
