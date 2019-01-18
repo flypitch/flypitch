@@ -1,4 +1,4 @@
-import .fol set_theory.zfc data.pfun data.set tactic.tidy
+import .fol set_theory.zfc data.pfun data.set tactic.tidy data.set.countable
 
 open fol
 
@@ -29,4 +29,3 @@ def countable_chain_condition (α : Type*) [partial_order α] := ∀ s : set α,
 
 lemma cohen_poset_ccc : countable_chain_condition cohen_poset :=
   sorry
-
