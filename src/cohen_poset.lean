@@ -21,3 +21,12 @@ instance partial_order_cohen_poset : partial_order cohen_poset :=
   le_antisymm := λ a b h1 h2, by {have := @set.subset.antisymm _ _ _ h2 h1, cases a, cases b,
                                        congr, apply ext_graph, exact this}}
 
+def incompatible {α : Type*} [partial_order α] (a b : α) := ¬ ∃ c, c ≤ a ∧ c ≤ b
+
+def antichain {α : Type*} [partial_order α] (s : set α) := ∀ x ∈ s, ∀ y ∈ s, incompatible x y
+
+def countable_chain_condition (α : Type*) [partial_order α] := ∀ s : set α, antichain s → set.countable s
+
+lemma cohen_poset_ccc : countable_chain_condition cohen_poset :=
+  sorry
+
