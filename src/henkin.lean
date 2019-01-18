@@ -830,7 +830,7 @@ begin
 cases x with x H', have := classical.psigma_of_exists H',
 rcases this with ⟨S,a⟩, simp[*,-a] at a, cases a with a1 a2,
 have := classical.psigma_of_exists a1, cases this with a Ha,
-rw[Ha] at a2, exact ⟨a, a2⟩
+rw[← Ha] at a2, exact ⟨a, a2⟩
 end
 
 /- For every n, T_n is a theory over T in Theory L_infty -/
@@ -843,14 +843,15 @@ def henkin_theory_schain {L} (T : Theory L) (hT : is_consistent T): set (Theory_
 /- (T ∪ set.sUnion (subtype.val '' Ts)) actually is (henkinization hT) -/
 lemma iota_union_rw {L} (T : Theory L) (hT : is_consistent T) : (@ι _ T 0) ∪ ⋃₀(subtype.val '' henkin_theory_schain T hT) = henkinization hT :=
 begin
-  ext, split, all_goals{intro, repeat{auto_cases}},
+  ext, split, all_goals{intro, auto_cases}, 
 --`tidy` alone suffices to close both these goals, but it's giving me that "type mismatch at application" bug afterwards...
   {simp[henkinization, set.mem_image], refine ⟨0,_⟩,
-  unfold ι, tidy}, {simp[henkinization, set.mem_image], refine ⟨a_h_w_h_left_w,_⟩, simp*},
+  unfold ι, tidy}, {repeat {auto_cases}, simp[henkinization, set.mem_image], refine ⟨a_h_w_h_left_w,_⟩, simp*},
   simp only [*, exists_prop, set.mem_Union, set.sUnion_image, exists_and_distrib_right, subtype.exists, set.mem_union_eq],
-  apply or.inr, refine ⟨a_w,⟨⟨_,_⟩,_⟩, a_h_h⟩, 
+  auto_cases, auto_cases, auto_cases,
+  apply or.inr, refine ⟨ι a_h_w_w,⟨⟨_,_⟩,_⟩, a_h_h⟩, 
   {simp only [*, iota_inclusion_of_le, zero_le]}, {simp only [*, is_consistent_iota]},
-  simp only *, tidy
+  simp only [*, henkin_theory_schain], tidy
 end
 
 /- henkin_theory_chain satisfies the chain condition -/

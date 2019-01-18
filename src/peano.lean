@@ -274,12 +274,12 @@ lemma shallow_induction (P : set nat) : (P(0) ∧ ∀ x, P x → P (nat.succ x))
   λ h, nat.rec h.1 h.2
 
 section notation_test
-#reduce (ℕ')[(@zero 0) /// [] ]
+-- #reduce (ℕ')[(@zero 0) /// [] ]
 
 
-#reduce (L_peano_structure_of_nat)[(p_zero_not_succ)]
+-- #reduce (L_peano_structure_of_nat)[(p_zero_not_succ)]
 
-#reduce (L_peano_structure_of_nat)[(&0 ≃ zero : bounded_formula L_peano 1) ;; ([(1 : ℕ)] : dvector (ℕ') 1)] 
+-- #reduce (L_peano_structure_of_nat)[(&0 ≃ zero : bounded_formula L_peano 1) ;; ([(1 : ℕ)] : dvector (ℕ') 1)] 
 
 -- #reduce (&0 : bounded_term L_peano 1)[zero // 0] -- elaborator fails, don't know why
 -- need to fix subst_bounded_term notation, something's not type-checking
@@ -356,7 +356,7 @@ begin
   intros f hf, cases hf with not_induct induct,
   swap,
   {rcases induct with ⟨induction_schemas, ⟨⟨index, h_eq⟩, ih_right⟩⟩,
-  rw[h_eq] at ih_right, simp[set.range, set.image] at ih_right,
+  rw [←h_eq] at ih_right, simp[set.range, set.image] at ih_right,
   rcases ih_right with ⟨ψ, h_ψ⟩, subst h_ψ, apply PA_standard_model_induction},
   {repeat{cases not_induct}, tidy, contradiction}
 end

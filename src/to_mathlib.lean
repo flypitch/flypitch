@@ -437,9 +437,6 @@ end finset
 namespace nonempty
 variables {α : Type u} {β : Type v} {γ : Type w}
 
-protected def map (f : α → β) : nonempty α → nonempty β
-| ⟨x⟩ := ⟨f x⟩
-
 protected def map2 (f : α → β → γ) : nonempty α → nonempty β → nonempty γ
 | ⟨x⟩ ⟨y⟩ := ⟨f x y⟩
 

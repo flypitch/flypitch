@@ -28,16 +28,8 @@ def str_preformula : ∀ n m : ℕ, ℕ → bounded_preformula L_ZFC n m → str
   | n m z (bd_rel _) := "∈"
   | n m z (bd_apprel a b) := str_preformula n (m+1) z a ++ "(" ++ str_term n z b ++ ")"
   | n m z (∀' t) := "(∀x" ++ to_string(z+1) ++ "," ++ str_preformula (n+1) m (z+1) t ++ ")"
-def str_formula : ∀ {n : ℕ}, bounded_formula L_ZFC n → ℕ → string
-  | n ((f₁ ⟹ (f₂ ⟹ bd_falsum)) ⟹ bd_falsum) m:= "(" ++ str_formula f₁ m ++ "∧" ++ str_formula f₂ m ++ ")"
-  | n ((f₁ ⟹ bd_falsum) ⟹ f₂) m := "(" ++ str_formula f₁ m ++ " ∨ " ++ str_formula f₂ m ++ ")"
-  | n (bd_equal s1 s2) m := "(" ++ str_term n m s1 ++ " = " ++ str_term n m s2 ++ ")"
-  | n (∀' f) m := "(∀x"++ to_string(m + 1) ++ "," ++ (str_formula f (m+1) ) ++ ")"
-  | _ bd_falsum _ := "⊥"
-  | n (f ⟹ bd_falsum) m := "~" ++ str_formula f m
-  | n (bd_apprel (f₁) f₂) m := str_preformula n 1 m f₁ ++ "(" ++ str_term n m f₂ ++ ")"
-  | n (bd_imp a b) m := "(" ++ str_formula a m ++ " ⟹ " ++ str_formula b m ++ ")"
-
+def str_formula : ∀ {n : ℕ}, bounded_formula L_ZFC n → ℕ → string :=
+λn f m, str_preformula n 0 m f
 
 def print_formula : ∀ {n : ℕ}, bounded_formula L_ZFC n → string := λ n f, str_formula f n
 
