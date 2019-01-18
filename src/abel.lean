@@ -61,14 +61,21 @@ notation `ℤ'` := _root_.abel.L_abel_structure_of_int
 
 @[simp]lemma plus_is_plus_r : ∀ x y : ℤ', realize_bounded_term ([x,y]) (&1 +' &0) [] = y + x := by {intros, refl}
 
+-- instance has_add_Structure_L_abel {S : Structure L_abel} : has_add S :=
+--   ⟨λ x y, realize_bounded_term ([x,y]) (&0 +' &1) []⟩
+
+-- @[simp]lemma plus_is_plus {S : Structure L_abel} {n} {t₁ t₂ : bounded_term L_abel n} {v : dvector S n} : realize_bounded_term v (t₁ +' t₂) [] = (realize_bounded_term v t₁ []) + (realize_bounded_term v t₂ []) := by refl
+
+/- Note: the above seems to confuse the elaborator when proving the theorem below. Probably because ℤ has an existing has_add instance. -/
+
 def presburger_arithmetic : Theory L_abel := Th ℤ'
 
 theorem ℤ'_is_abelian_group : T_ab ⊆ presburger_arithmetic :=
 begin
   intros a H, repeat{cases H},
-  {tidy},
+  {intros x y, simp},
   {intros x H, dsimp at H, unfold realize_bounded_formula, have : ∃ y : ℤ, x + y = 0,
-  by exact ⟨-x, by tidy⟩, rcases this with ⟨y, hy⟩, apply H y, simp[hy], refl},
+  by {refine ⟨-x, _⟩, simp}, rcases this with ⟨y, hy⟩, apply H y, simp[hy], refl},
   {intro x, change 0 + x = x, rw[zero_add]},
   {intro x, change x + 0 = x, rw[add_zero]},
   {intros x y z, change x + y + z = x + (y + z), rw[add_assoc]}

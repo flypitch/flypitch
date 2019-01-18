@@ -30,7 +30,7 @@ end
 
 example : ∀ x y : ℤ, x + (y + y) = y + (y + x) :=
 begin
-  refine @by_reflection L_abel T_ab ℤ' (by apply_instance) (ℤ'_is_abelian_group) _ _ _ _,
+  apply @by_reflection L_abel T_ab ℤ' (by apply_instance) (ℤ'_is_abelian_group) _ _ _ _,
   exact ∀' ∀' (&1 +' (&0 +' &0) ≃ &0 +' (&0 +' &1)), {refl}, exact T_ab_proves_x_y_y
 end
 
@@ -45,6 +45,51 @@ by {simp}
 
 example : ∀ x y : ℤ, x + (y + y) = y + (y + x) :=
 by {tidy}
+
+def L_abel_structure_of_add_group (α : Type) [add_group α] : Structure L_abel :=
+begin
+  refine ⟨α, λn f, _, λn r, by {cases r}⟩,
+  {induction f, intro xs, exact 0,
+    intro xs,
+    exact (xs.nth 0 dec_trivial) + (xs.nth 1 dec_trivial)}
+end
+
+variables (α : Type) [add_group α]
+
+local notation `α'` := L_abel_structure_of_add_group α
+
+@[simp]lemma α'_α : ↥(α') = α := by refl
+
+@[reducible]instance has_zero_α' : has_zero α' := ⟨(0 : α)⟩
+
+@[reducible]instance has_add_α' : has_add α' := ⟨λx y, (x + y : α)⟩
+
+@[reducible]instance nonempty_α' : nonempty α' := ⟨0⟩
+
+@[simp]lemma zero_is_zero : @realize_bounded_term L_abel α' _ [] _ zero [] = (0 : α) := by refl
+
+@[simp]lemma plus_is_plus_l : ∀ x y : α', realize_bounded_term ([x,y]) (&0 +' &1) [] = x + y := by {intros, refl}
+
+@[simp]lemma plus_is_plus_r : ∀ x y : α', realize_bounded_term ([x,y]) (&1 +' &0) [] = y + x := by {intros, refl}
+
+theorem add_group_is_abelian_group {α : Type} [add_group α] : T_ab ⊆ Th(L_abel_structure_of_add_group α) :=
+begin
+  intros a H, repeat{cases H},
+  {intros x y, change x + y = y + x, simp[add_comm], sorry},
+  repeat{sorry}
+  -- {intros x H, dsimp at H, unfold realize_bounded_formula, have : ∃ y : ℤ, x + y = 0,
+  -- by {refine ⟨-x, _⟩, simp}, rcases this with ⟨y, hy⟩, apply H y, simp[hy], refl},
+  -- {intro x, change 0 + x = x, rw[zero_add]},
+  -- {intro x, change x + 0 = x, rw[add_zero]},
+  -- {intros x y z, change x + y + z = x + (y + z), rw[add_assoc]}
+end
+
+
+example : ∀ x y : α, x + (y + y) = y + (y + x) :=
+begin sorry
+  -- apply @by_reflection L_abel T_ab ℤ' (by apply_instance) (ℤ'_is_abelian_group) _ _ _ _,
+  -- exact ∀' ∀' (&1 +' (&0 +' &0) ≃ &0 +' (&0 +' &1)), {refl}, exact T_ab_proves_x_y_y
+end
 
 end
 end reflection
