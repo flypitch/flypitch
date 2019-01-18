@@ -1,10 +1,12 @@
 import .zfc
 open fol
 open zfc
+open dfin
 
 local infix `∈'`:100 := bounded_formula_of_relation ZFC_el
 local notation h :: t  := dvector.cons h t
 local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`:0) := l
+local notation `to_dfin` := dfin.tactic.interactive.dfin
 
 def L_ZFC_structure_of_Set : Structure L_ZFC :=
 begin
@@ -39,7 +41,7 @@ end
 @[simp]lemma realize_bounded_formula_biimp { n : ℕ } {L : Language } { S : Structure L} {f₁ f₂ : bounded_formula L n} {v : dvector ↥S n} : (realize_bounded_formula v (f₁ ⇔ f₂) dvector.nil) = ((realize_bounded_formula v f₁ dvector.nil) ↔ (realize_bounded_formula v f₂ dvector.nil)) := 
   by {rw[bd_biimp], tidy}
 
-@[simp] lemma realize_term_remove_irrel {n : ℕ} {L : Language} {S : Structure L} {v : dvector ↥S (n+1)} {j : fin n} {k : ℕ} {p : k > j} : realize_bounded_term v ((lift_bounded_term_at (bd_var j : bounded_term L n) 1 k) ) dvector.nil = realize_bounded_term (dvector.remove_mth k v)  (bd_var j) dvector.nil :=
+@[simp] lemma realize_term_remove_irrel {n : ℕ} {L : Language} {S : Structure L} {v : dvector ↥S (n+1)} {j : dfin n} {k : ℕ} {p : k > j} : realize_bounded_term v ((lift_bounded_term_at (bd_var j : bounded_term L n) 1 k) ) dvector.nil = realize_bounded_term (dvector.remove_mth k v)  (bd_var j) dvector.nil :=
 begin
 sorry
 end
@@ -77,7 +79,7 @@ lemma Set'_models_union : axiom_of_union ∈ Th Set' :=
 begin
   simp only [Th, axiom_of_union, small], intro x,
   conv {congr, skip, congr, congr, congr, skip,
-       change (∃' (&1 ∈' &0 ⊓ &0 ∈' &(by to_dfin 3)) : bounded_formula L_ZFC 3)},
+       change (∃' (&1 ∈' &0 ⊓ &0 ∈' &(3)) : bounded_formula L_ZFC 3)},
   simp, change ∃ U, ∀ z, z ∈ U ↔ ∃ w, z ∈ w ∧ w ∈ x, 
   refine ⟨⋃ x, _⟩, intro z, rw[@Set.mem_Union x z], finish
 end

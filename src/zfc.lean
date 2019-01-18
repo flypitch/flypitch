@@ -1,6 +1,6 @@
 import .fol set_theory.zfc tactic.tidy
 
-open fol
+open fol dfin
 
 namespace zfc
 
@@ -43,6 +43,8 @@ local infix ` ∈' `:100 := bounded_formula_of_relation ZFC_el
 --def print_formula : ∀ {n : ℕ}, bounded_formula L_ZFC n → string := λ n f, str_formula f n
 
 local notation `lift_cast` := by {repeat{apply nat.succ_le_succ}, apply nat.zero_le}
+
+local notation `to_dfin` := tactic.interactive.to_dfin
 
 -- section test
 

@@ -776,14 +776,4 @@ begin
 end
 
 end Lhom
-
-
 end fol
-
-
-
-
--- instance nonempty_Language_over : nonempty (Language_over) :=
---   begin fapply nonempty.intro, exact ⟨L, language_id_morphism L⟩ end
-
---TODO define map induced by a language_morphism on terms/preterms, formulas/preformulas, sets of formulas/theories
