@@ -1481,9 +1481,9 @@ t.fst_bounded.subst_irrel
 | _ (bd_app t₁ t₂) xs := realize_bounded_term t₁ $ realize_bounded_term t₂ ([])::xs
 
 /- S[t ; v] -/
-notation S`[`:max t ` /// `:95 v`]`:0 := @fol.realize_bounded_term _ S _  v _ t (dvector.nil)
+notation S`[`:max t ` ;;; `:95 v`]`:0 := @fol.realize_bounded_term _ S _  v _ t (dvector.nil)
 
-notation S`[`:max t ` /// `:95 v ` /// `:90 xs `]`:0 := @fol.realize_bounded_term _ S _  v _ t xs
+notation S`[`:max t ` ;;; `:95 v ` ;;; `:90 xs `]`:0 := @fol.realize_bounded_term _ S _  v _ t xs
 
 
 @[reducible] def realize_closed_term (S : Structure L) (t : closed_term L) : S :=
@@ -1548,6 +1548,12 @@ begin
   { simp },
   { exact xs }
 end
+
+@[simp]lemma realize_bounded_term_cast_eq_irrel {S : Structure L} {n m l} {h : n = m} {v : dvector S m} {t : bounded_preterm L n l} (xs : dvector S l) :
+realize_bounded_term v (t.cast_eq h) xs = realize_bounded_term (v.cast h.symm) t xs := by {subst h, induction t, tidy}
+
+@[simp]lemma realize_bounded_term_dvector_cast_irrel {S : Structure L} {n m l} {h : n = m} {v : dvector S n} {t : bounded_preterm L n l} {xs : dvector S l} :
+realize_bounded_term (v.cast h) (t.cast (le_of_eq h)) xs = realize_bounded_term v t xs := by {subst h, simp, refl}
 
 @[simp] def lift_bounded_term_at {n l} (t : bounded_preterm L n l) (n' m : ℕ) :
   bounded_preterm L (n + n') l :=
@@ -2284,6 +2290,29 @@ lemma satisfied_in_of_realize_sentence {S : Structure L} {f : sentence L} (H : S
 lemma realize_sentence_iff_satisfied_in {S : Structure L} [HS : nonempty S] {f : sentence L} :
   S ⊨ f ↔ S ⊨ f.fst  :=
 ⟨satisfied_in_of_realize_sentence, realize_sentence_of_satisfied_in⟩
+
+
+def dvector_var_lift {m : ℕ} : ∀ {n : ℕ} (v : dvector (fin m) n), dvector (fin (m+1)) n 
+  | _ [] := []
+  | _ (x::xs) := (⟨x.val+1, by{apply nat.succ_lt_succ, exact x.is_lt}⟩) :: (dvector_var_lift xs)
+def dvector_lift_var { m : ℕ} : ∀ {n : ℕ} (v : dvector (fin m) n), dvector (fin (m+1)) (n+1) := λ n v, ⟨0, nat.zero_lt_succ(m)⟩ :: (dvector_var_lift v)
+def subst_var_bounded_term {n m : ℕ} : ∀ {l : ℕ}, bounded_preterm L n l → dvector (fin m) n → bounded_preterm L m l
+  | _ (&k) v := &(dvector.nth v (k.val) k.is_lt)
+  | _ (bd_func f) v := bd_func f
+  | _ (bd_app t s) v := bd_app (subst_var_bounded_term t v) (subst_var_bounded_term s v)
+/-What are eqn_compiler lemmas and why don't they generate for this defn? Need to fix this to use defn for simp-/ 
+--set_option trace.debug.eqn_compiler true
+set_option eqn_compiler.lemmas false
+def subst_var_bounded_formula: ∀ {l n m: ℕ}, bounded_preformula L n l → dvector (fin (m)) n → bounded_preformula L (m) l
+  | _ _ _ bd_falsum _ := bd_falsum
+  | _ _ _ (t₁ ≃ t₂) v := (subst_var_bounded_term t₁ v) ≃ (subst_var_bounded_term t₁ v)
+  | _ _ _ (bd_rel R) _ := bd_rel R
+  | _ _ _ (bd_apprel f t) v := bd_apprel (subst_var_bounded_formula f v) (subst_var_bounded_term t v) 
+  | _ _  _ (f₁ ⟹ f₂) v := (subst_var_bounded_formula f₁ v) ⟹ (subst_var_bounded_formula f₂ v)
+  | _ _ _ (∀' f) v := ∀' (subst_var_bounded_formula f (dvector_lift_var v))
+set_option eqn_compiler.lemmas true
+
+infix ` ⊚ `:50 := subst_var_bounded_formula --type with \oo 
 
 /- theories -/
 

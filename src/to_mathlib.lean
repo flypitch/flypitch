@@ -80,86 +80,99 @@ inductive dfin : ℕ → Type
 | fz {n} : dfin (n+1)
 | fs {n} : dfin n → dfin (n+1)
 
-@[simp] def dfin.to_nat : ∀ {n}, dfin n → ℕ
-| _ dfin.fz := 0
-| _ (dfin.fs n) := n.to_nat + 1
+namespace dfin
+@[simp] def to_nat : ∀ {n}, dfin n → ℕ
+| _ fz := 0
+| _ (fs n) := n.to_nat + 1
 
-theorem dfin.to_nat_lt : ∀ {n} (x : dfin n), x.to_nat < n
-| _ dfin.fz := nat.succ_pos _
-| _ (dfin.fs n) := nat.succ_lt_succ (dfin.to_nat_lt n)
+theorem to_nat_lt : ∀ {n} (x : dfin n), x.to_nat < n
+| _ fz := nat.succ_pos _
+| _ (fs n) := nat.succ_lt_succ (to_nat_lt n)
 
-@[extensionality] theorem dfin.to_nat_inj {n} {x y : dfin n} (e : x.to_nat = y.to_nat) : x = y :=
+def to_fin : ∀ {n}, dfin n → fin n
+| 0 x := by {cases x}
+| (n+1) x := ⟨to_nat x, by apply to_nat_lt⟩
+
+@[extensionality] theorem to_nat_inj {n} {x y : dfin n} (e : x.to_nat = y.to_nat) : x = y :=
 by induction x; cases y; injection e with e; [refl, rw x_ih e]
 
-def dfin.raise : ∀ {n}, dfin n → dfin (n+1)
-| _ dfin.fz := dfin.fz
-| _ (dfin.fs n) := dfin.fs n.raise
+def raise : ∀ {n}, dfin n → dfin (n+1)
+| _ fz := fz
+| _ (fs n) := fs n.raise
 
-def dfin.elim0 {α : Sort*} : dfin 0 → α.
+def elim0 {α : Sort*} : dfin 0 → α.
 
-def dfin.cast_le : ∀ {m n}, n ≤ m → dfin n → dfin m
+def cast_le : ∀ {m n}, n ≤ m → dfin n → dfin m
 | 0 n h x := false.elim (by cases h; cases x)
-| (m+1) _ _ dfin.fz := dfin.fz
-| (m+1) _ h (@dfin.fs n s) :=
-  dfin.fs (s.cast_le (nat.le_of_succ_le_succ h))
+| (m+1) _ _ fz := fz
+| (m+1) _ h (@fs n s) :=
+  fs (s.cast_le (nat.le_of_succ_le_succ h))
 
-@[simp] theorem dfin.cast_le_to_nat : ∀ {m n}
+@[simp] theorem cast_le_to_nat : ∀ {m n}
   (h : n ≤ m) (x : dfin n), (x.cast_le h).to_nat = x.to_nat
 | 0 n h x := false.elim (by cases h; cases x)
-| (m+1) _ _ dfin.fz := rfl
-| (m+1) _ h (@dfin.fs n s) :=
-  congr_arg (+1) (dfin.cast_le_to_nat _ _)
+| (m+1) _ _ fz := rfl
+| (m+1) _ h (@fs n s) :=
+  congr_arg (+1) (cast_le_to_nat _ _)
 
-theorem dfin.cast_le_rfl {n} (x : dfin n) : x.cast_le (le_refl _) = x :=
-dfin.to_nat_inj (by simp)
+theorem cast_le_rfl {n} (x : dfin n) : x.cast_le (le_refl _) = x :=
+to_nat_inj (by simp)
 
-def dfin.last : ∀ n, dfin (n+1)
-| 0 := dfin.fz
-| (n+1) := dfin.fs (dfin.last n)
+def last : ∀ n, dfin (n+1)
+| 0 := fz
+| (n+1) := fs (last n)
 
-def dfin.of_nat : ∀ n, ℕ → option (dfin n)
+def of_nat : ∀ n, ℕ → option (dfin n)
 | 0 m := none
-| (n+1) 0 := some dfin.fz
-| (n+1) (m+1) := dfin.fs <$> dfin.of_nat n m
+| (n+1) 0 := some fz
+| (n+1) (m+1) := fs <$> of_nat n m
 
-def dfin.of_nat_lt : ∀ {n} m, m < n → dfin n
+def of_nat_lt : ∀ {n} m, m < n → dfin n
 | 0 m h := (nat.not_lt_zero _ h).elim
-| (n+1) 0 _ := dfin.fz
-| (n+1) (m+1) h := dfin.fs (dfin.of_nat_lt m (nat.lt_of_succ_lt_succ h))
+| (n+1) 0 _ := fz
+| (n+1) (m+1) h := fs (of_nat_lt m (nat.lt_of_succ_lt_succ h))
 
-@[simp] theorem dfin.of_nat_lt_to_nat : ∀ {n m} (h : m < n),
-  (dfin.of_nat_lt m h).to_nat = m
+@[simp] theorem of_nat_lt_to_nat : ∀ {n m} (h : m < n),
+  (of_nat_lt m h).to_nat = m
 | 0 m h := (nat.not_lt_zero _ h).elim
 | (n+1) 0 _ := rfl
 | (n+1) (m+1) h := congr_arg (+1)
-  (dfin.of_nat_lt_to_nat (nat.lt_of_succ_lt_succ h))
+  (of_nat_lt_to_nat (nat.lt_of_succ_lt_succ h))
 
-meta instance dfin.reflect : ∀ n, has_reflect (dfin n)
-| _ dfin.fz := `(dfin.fz)
-| _ (dfin.fs n) := `(dfin.fs).subst (dfin.reflect _ n)
+def of_fin : ∀{n}, fin n → dfin n
+| n ⟨val, h⟩ := of_nat_lt val h
+
+meta instance reflect : ∀ n, has_reflect (dfin n)
+| _ fz := `(fz)
+| _ (fs n) := `(fs).subst (reflect _ n)
 
 meta def tactic.interactive.to_dfin (m : ℕ) : tactic unit := do
   n ← do {
     `(dfin %%n) ← tactic.target | return (m+1),
     tactic.eval_expr ℕ n },
-  m ← dfin.of_nat n m,
+  m ← of_nat n m,
   tactic.exact (reflect m)
+
+instance has_zero_dfin {n} : has_zero $ dfin (n+1) := ⟨fz⟩
+
+instance has_one_dfin : ∀ {n}, has_one (dfin (nat.succ n))
+| 0 := ⟨fz⟩
+| (n+1) := ⟨fs fz⟩
+
+instance has_add_dfin {n} : has_add (dfin(n)) :=
+  ⟨λ x y, of_fin $ (to_fin x) + (to_fin y)⟩
+
+def max : ∀{n}, dfin n → dfin n → dfin n
+  | 0 x y                 := by cases x
+  | (n+1) (fz) y          := y
+  | (n+1) x (fz)          := x
+  | (n+1) (fs k₁) (fs k₂) := fs $ max k₁ k₂
+
+end dfin
 
 inductive dvector (α : Type u) : ℕ → Type u
 | nil {} : dvector 0
 | cons : ∀{n} (x : α) (xs : dvector n), dvector (n+1)
-
-instance has_zero_dfin {n} : has_zero $ dfin (n+1) := ⟨dfin.fz⟩
-
-instance has_one_dfin : ∀ {n}, has_one (dfin (nat.succ n))
-| 0 := ⟨dfin.fz⟩
-| (n+1) := ⟨dfin.fs dfin.fz⟩
-
--- instance has_one_dfin {n} : has_one (dfin (nat.succ n))
--- := ⟨by to_dfin 1⟩ -- hmmmm
-
-
--- note from Mario --- use dfin to synergize with dvector
 
 local notation h :: t  := dvector.cons h t
 local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`) := l
@@ -275,7 +288,7 @@ protected lemma concat_nth2 : ∀{n : ℕ} (xs : dvector α n) (x : α) (m : dfi
 | 0 x k xs := (x::xs)
 | (n+1) x (k+1) (y::ys) := (y::insert x k ys)
 
-@[simp] protected lemma insert_at_zero : ∀{n : ℕ} (x : α) (xs : dvector α n), dvector.insert x 0 xs = (x::xs) := by {intros, induction n, refl, refl} -- why doesn't {intros, refl} work?
+@[simp] protected lemma insert_at_zero : ∀{n : ℕ} (x : α) (xs : dvector α n), dvector.insert x 0 xs = (x::xs) := by {intros, induction n; refl} -- why doesn't {intros, refl} work?
 
 @[simp] protected lemma insert_nth : ∀{n : ℕ} (x : α) (k : ℕ) (xs : dvector α n) (h : k < n+1), (dvector.insert x k xs).nth k h = x
 | 0 x k xs h := by {cases h, refl, exfalso, apply nat.not_lt_zero, exact h_a}
@@ -285,8 +298,31 @@ protected lemma concat_nth2 : ∀{n : ℕ} (xs : dvector α n) (x : α) (m : dfi
 protected lemma insert_cons {n k} {x y : α} {v : dvector α n} : (x::(v.insert y k)) = (x::v).insert y (k+1) :=
 by {induction v, refl, simp*}
 
+/- Given a proof that n ≤ m, return the nth initial segment of -/
+@[simp]protected def trunc : ∀ (n) {m : ℕ} (h : n ≤ m) (xs : dvector α m), dvector α n
+| 0 0 _ xs := []
+| 0 (m+1) _ xs := []
+| (n+1) 0 _ xs := by {exfalso, cases _x}
+| (n+1) (m+1) h (x::xs) := (x::@trunc n m (by simp at h; exact h) xs)
 
-@[simp] protected def cast {n m} (p : n = m) : dvector α n → dvector α m :=
+@[simp]protected lemma trunc_n_n {n : ℕ} {h : n ≤ n} {v : dvector α n} : dvector.trunc n h v = v :=
+  by {induction v, refl, solve_by_elim}
+
+@[simp]protected lemma trunc_0_n {n : ℕ} {h : 0 ≤ n} {v : dvector α n} : dvector.trunc 0 h v = [] :=
+  by {induction v, refl, simp}
+
+@[simp]protected lemma trunc_nth {n m l: ℕ} {h : n ≤ m} {h' : l < n} {v : dvector α m} : (v.trunc n h).nth l h' = v.nth l (lt_of_lt_of_le h' h) :=
+begin
+  induction m generalizing n l, have : n = 0, by cases h; simp, subst this, cases h',
+  cases n; cases l, {cases h'}, {cases h'}, {cases v, refl},
+  cases v, simp only [m_ih, dvector.nth, dvector.trunc]
+end
+
+protected lemma nth_irrel1 : ∀{n k : ℕ} {h : k < n + 1} {h' : k < n + 1 + 1} (v : dvector α (n+1)) (x : α),
+  (x :: (v.trunc n (nat.le_succ n))).nth k h = (x::v).nth k h' :=
+by {intros, apply @dvector.trunc_nth _ _ _ _ (by {simp, exact dec_trivial}) h (x::v)}
+
+protected def cast {n m} (p : n = m) : dvector α n → dvector α m :=
   by subst p; exact id
 
 @[simp] protected lemma cast_irrel {n m} {p p' : n = m} {v : dvector α n} : v.cast p = v.cast p' := by refl
@@ -302,7 +338,6 @@ protected lemma cast_hrfl {n m} {p : n = m} {v : dvector α n} : v.cast p == v :
   | 0 _ _  := dvector.nil
   | n 0 (dvector.cons y ys) := ys
   | (n+1) (k+1) (dvector.cons y ys) := dvector.cons y (remove_mth k ys)
-
 
 /- how to make this protected? -/
 inductive rel [setoid α] : ∀{n}, dvector α n → dvector α n → Prop

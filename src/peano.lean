@@ -312,16 +312,6 @@ end notation_test
 --     exact 0
 -- end
 
--- @[reducible]def dvector.trunc {α : Type*} : ∀ {n m : nat} (h : n ≤ m) (xs : dvector α m), dvector α n
--- | 0 0 _ xs := []
--- | 0 (m+1) _ xs := []
--- | (n+1) 0 _ xs := by {exfalso, cases _x}
--- | (n+1) (m+1) h xs := begin cases xs, convert (xs_x::dvector.trunc _ xs_xs), tidy end
-
--- @[simp]lemma dvector_trunc_n_n {α : Type*} {n : nat} {h : n ≤ n} {v : dvector α n} : dvector.trunc h v = v := by {induction v, tidy}
-
--- @[simp]lemma dvector_trunc_0_n {α : Type*} {n : nat} {h : 0 ≤ n} {v : dvector α n} : dvector.trunc h v = [] := by {induction v, tidy}
-
 /-- Given a term t with ≤ n free variables, the realization of t only depends on the nth initial segment of the realizing dvector v.  --/
 -- lemma realize_closed_term_realize_irrel {L} {S : Structure L} {n n' : nat} {h : n' ≤ n} {t : bounded_term L n'} {v : dvector S n} : realize_bounded_term (dvector.trunc h v) t [] = realize_bounded_term v (t.cast h) [] :=
 -- begin
