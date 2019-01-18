@@ -1,12 +1,10 @@
 import .zfc
 open fol
 open zfc
-open dfin
 
 local infix `∈'`:100 := bounded_formula_of_relation ZFC_el
 local notation h :: t  := dvector.cons h t
 local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`:0) := l
-local notation `to_dfin` := dfin.tactic.interactive.dfin
 
 def L_ZFC_structure_of_Set : Structure L_ZFC :=
 begin
@@ -41,10 +39,8 @@ end
 @[simp]lemma realize_bounded_formula_biimp { n : ℕ } {L : Language } { S : Structure L} {f₁ f₂ : bounded_formula L n} {v : dvector ↥S n} : (realize_bounded_formula v (f₁ ⇔ f₂) dvector.nil) = ((realize_bounded_formula v f₁ dvector.nil) ↔ (realize_bounded_formula v f₂ dvector.nil)) := 
   by {rw[bd_biimp], tidy}
 
-@[simp] lemma realize_term_remove_irrel {n : ℕ} {L : Language} {S : Structure L} {v : dvector ↥S (n+1)} {j : dfin n} {k : ℕ} {p : k > j} : realize_bounded_term v ((lift_bounded_term_at (bd_var j : bounded_term L n) 1 k) ) dvector.nil = realize_bounded_term (dvector.remove_mth k v)  (bd_var j) dvector.nil :=
-begin
+@[simp] lemma realize_term_remove_irrel {n : ℕ} {L : Language} {S : Structure L} {v : dvector ↥S (n+1)} {j : dfin n} {k : ℕ} {p : k > j.to_nat} : realize_bounded_term v ((lift_bounded_term_at (bd_var j : bounded_term L n) 1 k) ) dvector.nil = realize_bounded_term (dvector.remove_mth k v)  (bd_var j) dvector.nil :=
 sorry
-end
 
 set_option trace.check true
  
@@ -52,14 +48,13 @@ set_option trace.check true
   | n k 0 v (bd_var x) := sorry
   | n k l v (bd_func f) := sorry
   | _ _ _ _ _ := sorry
-end
 
 @[simp]lemma lift_realize_formula {n : ℕ} {k : ℕ} { l : ℕ}{L : Language} {S : Structure L}  { v : dvector ↥S (n+1)} { u : dvector ↥S l}: ∀ {f : bounded_preformula L n l}, realize_bounded_formula v ( f ↑' 1 # k) u = realize_bounded_formula (dvector.remove_mth k v) f u :=
 begin
   intros f,
   induction f,
   simp*,
-  simp [lift_bounded_formula_at], sorry
+  simp [lift_bounded_formula_at], repeat{sorry}
 end
 
 @[simp]lemma Set'_realize_subset_2 : ∀ x y : Set, @realize_bounded_formula L_ZFC Set' 2 0 (x :: y :: dvector.nil) subset  dvector.nil  = Set.subset x y:=
@@ -107,9 +102,7 @@ sorry
 end
 
 lemma Set'_models_replacement: ∀ c : bounded_formula L_ZFC 2, axiom_of_replacement c ∈ Th Set' :=
-begin
-  -- intro f, unfold axiom_of_replacement functional, intro H_f, dsimp at H_f,
-end
+by sorry
 
 lemma Set_extends_ZFC : ZFC ⊆ Th Set' :=
 begin

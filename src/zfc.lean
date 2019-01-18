@@ -1,6 +1,6 @@
 import .fol set_theory.zfc tactic.tidy
 
-open fol dfin
+open fol
 
 namespace zfc
 
@@ -44,7 +44,7 @@ local infix ` ∈' `:100 := bounded_formula_of_relation ZFC_el
 
 local notation `lift_cast` := by {repeat{apply nat.succ_le_succ}, apply nat.zero_le}
 
-local notation `to_dfin` := tactic.interactive.to_dfin
+-- local notation `to_dfin` := tactic.interactive.to_dfin
 
 -- section test
 
@@ -90,7 +90,6 @@ def relation : bounded_formula L_ZFC 1 := ∀' ((&0 ∈' &1) ⟹ is_ordered_pair
 
 -- lemma chk: relation = relation' := sorry
 -- --ideally this should be by refl. Comment out the set_option above the defn of subst_var_bounded_formula to see the snag
-
 
 def function : bounded_formula L_ZFC 1 := relation ⊓ ∀'∀'∀'∀'∀'(&1 ∈' &5 ⊓ ordered_pair ↑' 1 # 3 ↑' 1 # 1 ↑' 1 # 0 ⊓ ((&0 ∈' &5 : bounded_formula L_ZFC 6) ⊓ (ordered_pair ↑' 1 # 2 ↑' 1 # 1).cast(lift_cast)) ⟹ (&3 ≃ &2 : bounded_formula L_ZFC 6))
 -- X is a function iff X is a relation and the following holds:
