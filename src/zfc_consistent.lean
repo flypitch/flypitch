@@ -21,7 +21,7 @@ instance has_mem_Set_Set' : has_mem Set.{0} Set' := ⟨Set.mem⟩
 
 instance has_emptyc_Set' : has_emptyc Set' := ⟨Set.empty⟩
 
-lemma empty_subset : ∀ x: Set', Set.empty ⊆ x := by tidy
+lemma  empty_subset : ∀ x: Set',  Set.empty ⊆ x := by tidy 
 
 lemma Set'_has_mem : has_mem ↥Set' ↥Set' := ⟨ Set.mem ⟩
 local notation h :: t  := dvector.cons h t
@@ -46,23 +46,17 @@ end
 
 set_option trace.check true
  
-@[simp] lemma lift_realize_term  {L : Language} {S : Structure L} : ∀ {n : ℕ} {k : ℕ} {l : ℕ} {v : dvector ↥S (n+1)} {t: bounded_preterm L (n) l}, realize_bounded_term v (lift_bounded_term_at t 1 k) = realize_bounded_term (dvector.remove_mth k v) t 
-  | n k 0 v (bd_var x) := sorry
-  | n k l v (bd_func f) := sorry
-  | _ _ _ _ _ := sorry
-end
-
-@[simp]lemma lift_realize_formula {n : ℕ} {k : ℕ} { l : ℕ}{L : Language} {S : Structure L}  { v : dvector ↥S (n+1)} { u : dvector ↥S l}: ∀ {f : bounded_preformula L n l}, realize_bounded_formula v ( f ↑' 1 # k) u = realize_bounded_formula (dvector.remove_mth k v) f u :=
-begin
-  intros f,
-  induction f,
-  simp*,
-  simp [lift_bounded_formula_at], sorry
-end
 
 @[simp]lemma Set'_realize_subset_2 : ∀ x y : Set, @realize_bounded_formula L_ZFC Set' 2 0 (x :: y :: dvector.nil) subset  dvector.nil  = Set.subset x y:=
 begin
-  simp [subset], intros, conv {to_lhs, change ∀ z, z ∈ x → z ∈ y}, rw [Set.subset]
+  simp only [subset, Set'_mem_mem, fol.realize_bounded_formula, fol.realize_bounded_term, dvector.nth],
+  intros, conv {to_lhs, change ∀ z, z ∈ x → z ∈ y}, rw [Set.subset]
+end
+set_option trace.app_builder true
+
+@[simp]lemma Set'_realize_empty : @realize_bounded_formula L_ZFC Set' 1 0 (Set.empty :: dvector.nil) is_emptyset dvector.nil :=
+begin
+rw is_emptyset, simp, intros, change x ∉ ∅, intros a, induction x, work_on_goal 0 {cases a, cases a_w, cases a_w}, refl
 end
 
 -- set_option trace.simplify.rewrite true
@@ -82,29 +76,53 @@ begin
   refine ⟨⋃ x, _⟩, intro z, rw[@Set.mem_Union x z], finish
 end
 
-lemma Set'_models_powerset : axiom_of_powerset ∈ Th Set' :=
+
+
+lemma Set'_models_powerset : axiom_of_powerset ∈ Th Set' := 
 begin
-  unfold axiom_of_powerset Th small subset,
-    simp only [fol.realize_bounded_formula_ex, fol.bounded_preformula.cast,
-    realize_bounded_formula_biimp, fol.lift_bounded_formula_at,
-    fol.realize_bounded_formula, fol.bounded_preformula.cast_rfl,
-    set.mem_set_of_eq, Set'_mem_mem, fol.realize_bounded_term,
-    dvector.nth],
-  intro x, refine ⟨Set.powerset x, _⟩, apply Set.mem_powerset
+  simp only [Th, axiom_of_powerset, small,  fol.realize_bounded_formula_ex,
+ fol.realize_bounded_formula, realize_bounded_formula_biimp, set.mem_set_of_eq],
+  intros,
+  refine ⟨Set.powerset x, _⟩,
+  intro y, change y ∈ Set.powerset x ↔ Set.subset y x,
+  exact Set.mem_powerset,
 end
 
-lemma Set'_models_choice : axiom_of_choice ∈ Th Set' :=
-begin
-  dsimp[Th, axiom_of_choice, fn_domain],
-end
+lemma Set'_models_choice : axiom_of_choice ∈ Th Set' := sorry
 
 lemma Set'_models_infinity : axiom_of_infinity ∈ Th Set' :=
 begin
 simp [has_mem.mem, set.mem, Th, set_of, axiom_of_infinity,satisfied_in], 
-sorry
+refine ⟨Set.omega, _⟩,
+refine ⟨_,_⟩,
+refine ⟨Set.empty,_⟩,
+refine ⟨Set'_realize_empty, by {change Set.empty ∈ Set.omega, exact Set.omega_zero}⟩,
+intros, refine ⟨Set.insert x x, _⟩,
+refine ⟨_,@Set.omega_succ x a⟩,
+change x ∈ Set.insert x x,
+exact (iff.mpr Set.mem_insert (or.inl (refl x)))
 end
 
-lemma Set'_models_replacement: ∀ c : bounded_formula L_ZFC 2, axiom_of_replacement c ∈ Th Set' := sorry
+@[simp]lemma Set'_functional_rw : ∀ c : bounded_formula L_ZFC 2, @realize_bounded_formula L_ZFC Set' 0 0 dvector.nil (functional c) dvector.nil = ∀ x : Set, ∃ y : Set, ∀ w, @realize_bounded_formula L_ZFC Set' 3 0  ([w,y,x]) ( (c ↑' 1 # 1) ⇔ &0 ≃ &1)  dvector.nil := 
+begin
+intros c,
+ext1, simp at *, rw [functional, realize_bounded_formula],
+simp [realize_bounded_formula_ex],
+refl
+end
+
+lemma Set'_functional : ∀ c, @realize_bounded_formula L_ZFC Set' 0 0 dvector.nil (functional c) dvector.nil → Set → Set :=
+begin
+  intro c, rw[Set'_functional_rw], intros h s, sorry
+end
+
+lemma Set'_models_replacement: ∀ c : bounded_formula L_ZFC 2, axiom_of_replacement c ∈ Th Set' := 
+begin
+intro c,
+simp only [has_mem.mem,set.mem,Th,set_of,axiom_of_replacement],
+intros a x,
+sorry
+end
 
 lemma Set_extends_ZFC : ZFC ⊆ Th Set' :=
 begin

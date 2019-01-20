@@ -183,8 +183,8 @@ def axiom_of_powerset : sentence L_ZFC :=
 -- the class of all subsets of x is small
 ∀' small subset
 def axiom_of_infinity : sentence L_ZFC := 
---∀x∃y(x ∈ y ∧ ∀z(z ∈ y → ∃w(z ∈ w ∧ w ∈ y)))
-∀' ∃' (&1 ∈' &0 ⊓ ∀'(&0 ∈' &1 ⟹ ∃' (bd_and (&1 ∈' &0) (&0 ∈' &2))))
+--∃y(∅ ∈ y ∧ ∀z(z ∈ y → ∃w(z ∈ w ∧ w ∈ y)))
+∃' ((∃' (bd_and (is_emptyset ↑' 1 # 1) (&0 ∈' &1) : bounded_formula L_ZFC 2)) ⊓ ∀'(&0 ∈' &1 ⟹ ∃' (bd_and (&1 ∈' &0) (&0 ∈' &2))))
 
 def axiom_of_choice : sentence L_ZFC := ∀'∀'(fn_domain ⟹ ∃'∀'(&0 ∈' &2 ⟹∀'(fn_app ↑' 1 # 2 ↑' 1 # 2 ⟹ (∀'(fn_app ↑' 1 # 1 ↑' 1 # 4 ↑' 1 # 4 ⊓ ∃'(&0 ∈' &2)) ⟹ &0 ∈' &1))))
 
