@@ -61,7 +61,8 @@ def functional {n} (c : bounded_formula L_ZFC (n+2)) : bounded_formula L_ZFC n :
 -- ∀x ∃y ∀z, c z x ↔ z = y
 ∀' ∃' ∀' (c ↑' 1 # 1 ⇔ &0 ≃ &1)
 def subset : bounded_formula L_ZFC 2 := ∀' (&0 ∈' &1 ⟹ &0 ∈' &2)
-def is_emptyset : bounded_formula L_ZFC 1 := ∼ ∃' (&0 ∈' &1) 
+def is_emptyset : bounded_formula L_ZFC 1 := ∼ ∃' (&0 ∈' &1)
+
 def pair : bounded_formula L_ZFC 3 := (&0 ≃ &1 : bounded_formula L_ZFC 3) ⊔ (&0 ≃ &2 : bounded_formula L_ZFC 3)
 def singl : bounded_formula L_ZFC 2 := &0 ≃ &1
 def binary_union : bounded_formula L_ZFC 3 := &0 ∈' &1 ⊔ &0 ∈' &2
@@ -183,8 +184,11 @@ def axiom_of_powerset : sentence L_ZFC :=
 -- the class of all subsets of x is small
 ∀' small subset
 def axiom_of_infinity : sentence L_ZFC := 
---∃y(∅ ∈ y ∧ ∀z(z ∈ y → ∃w(z ∈ w ∧ w ∈ y)))
+--∃ y ((∃ y', y = ∅ ∧ y' ∈ y) ∧ ∀ z (z ∈ y → ∃w(z ∈ w ∧ w ∈ y)))
 ∃' ((∃' (bd_and (is_emptyset ↑' 1 # 1) (&0 ∈' &1) : bounded_formula L_ZFC 2)) ⊓ ∀'(&0 ∈' &1 ⟹ ∃' (bd_and (&1 ∈' &0) (&0 ∈' &2))))
+
+def axiom_of_infinity' : sentence L_ZFC :=
+∃' ∀' ((is_emptyset.cast (lift_cast)  ⟹ (&0 ∈' &1) : bounded_formula L_ZFC 2) ⊓ (∀' (&0 ∈' &2 ⟹ (∃' ((&1 ∈' &0).cast (lift_cast) ⊓ (&0 ∈' &3) : bounded_formula L_ZFC 4)))))
 
 def axiom_of_choice : sentence L_ZFC := ∀'∀'(fn_domain ⟹ ∃'∀'(&0 ∈' &2 ⟹∀'(fn_app ↑' 1 # 2 ↑' 1 # 2 ⟹ (∀'(fn_app ↑' 1 # 1 ↑' 1 # 4 ↑' 1 # 4 ⊓ ∃'(&0 ∈' &2)) ⟹ &0 ∈' &1))))
 
@@ -209,7 +213,7 @@ def Set_subset : Set → Set → Prop := Set.subset
 
 def Set_is_powerset : Set → Set → Prop := λ x y, ∀ w, w ∈ x ↔ w ⊆ y
 
-def Set_is_emptyset: Set → Prop := λ x, x = ∅ 
+def Set_is_emptyset: Set → Prop := λ x, ∀ y, y ∉ x
 
 def Set_pair : Set → Set → Set → Prop := λ x y z, x = {y,z}
 
@@ -269,5 +273,12 @@ def Set_is_uncountable_ordinal : Set → Prop := λ x, ∀ w, (Set_is_first_infi
 def Set_is_first_uncountable_ordinal : Set → Prop := λ x, Set_is_uncountable_ordinal x ∧ ∀ w, (Set_is_uncountable_ordinal w → Set_ordinal_le x w)
 
 def Set_continuum_hypothesis : Prop := ∀ x y, ((∃ w, (Set_is_first_infinite_ordinal w ∧ Set_is_powerset x w)) ∧ Set_is_first_uncountable_ordinal y) → Set_zfc_equiv x y 
+
+--- shallow ZFC axioms
+
+def Set_axiom_of_infinity : Prop :=
+∃ y : Set.{0}, ((∃ x : Set, (Set_is_emptyset x ∧ x ∈ y))∧ (∀ z, z ∈ y → (∃ w, z ∈ w ∧ w ∈ y) ))
+
+def Set_axiom_of_infinity' : Prop := ∃ y : Set.{0}, ∀ x : Set, ((Set_is_emptyset x → x ∈ y) ∧ ∀ z, z ∈ y → ∃ w, (z ∈ w) ∧ w ∈ y)
 
 end zfc

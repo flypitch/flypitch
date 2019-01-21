@@ -6,7 +6,7 @@
 * There is no well-formedness predicate; all elements of type "term" are well-formed.
 -/
 
-import .to_mathlib
+import .to_mathlib tactic.tidy
 
 open nat set
 universe variables u v
@@ -1596,14 +1596,19 @@ begin
   induction ts generalizing t, refl, apply ts_ih (bd_app t ts_x)
 end
 
+@[simp]lemma realize_cast_bounded_term {S : Structure L} {n m} {h : n ≤ m} {t : bounded_term L n} {v : dvector S m} :
+realize_bounded_term v (t.cast h) dvector.nil = realize_bounded_term (v.trunc n h) t dvector.nil :=
+begin
+  revert t, apply bounded_term.rec,
+  {intro k, simp only [dvector.trunc_nth, fol.bounded_preterm.cast, fol.realize_bounded_term, dvector.nth, dvector.trunc], refl},
+  {simp[realize_bounded_term_bd_apps], intros, congr' 1, apply dvector.map_congr_pmem,
+  exact ih_ts}
+end
+
 /- When realizing a closed term, we can replace the realizing dvector with [] -/
 @[simp] lemma realize_closed_term_v_irrel {S : Structure L} {n} {v : dvector S n} {t : bounded_term L 0} : realize_bounded_term v (t.cast (by {simp})) ([]) = realize_closed_term S t :=
-begin
-  revert t, refine bounded_term.rec _ _,
-    {intro k, cases k, exfalso, exact not_lt_zero k_val k_is_lt},
-    {intros, simp[realize_bounded_term_bd_apps], congr' 1,
-      apply dvector.map_congr_pmem, intros x Hx, rw[ih_ts x Hx]}
-end
+  by simp[realize_cast_bounded_term]
+
 
 /- this is the same as realize_bounded_term, we should probably have a common generalization of this definition -/
 -- @[simp] def substitute_bounded_term {n n'} (v : dvector (bounded_term n') n) : 
@@ -1708,6 +1713,9 @@ f.cast $ le_of_eq h
 
 protected def cast_eqr {n m l} (h : n = m) (f : bounded_preformula L m l) : bounded_preformula L n l :=
 f.cast $ ge_of_eq h
+
+lemma cast_bd_apps_rel {S : Structure L} {n m} {h : n ≤ m} {l} {f : bounded_preformula L n l} {ts : dvector (bounded_term L n) l} : ((bd_apps_rel f ts).cast h) = bd_apps_rel (f.cast h) (ts.map (λ t, t.cast h)) :=
+  by {induction ts, refl, apply @ts_ih (bd_apprel f ts_x)}
 
 protected def cast1 {n l} (f : bounded_preformula L n l) : bounded_preformula L (n+1) l :=
 f.cast $ n.le_add_right 1
@@ -2060,6 +2068,16 @@ lemma realize_bounded_formula_bd_apps_rel {S : Structure L}
   realize_bounded_formula xs f (ts.map (λt, realize_bounded_term xs t ([]))) :=
 begin
   induction ts generalizing f, refl, apply ts_ih (bd_apprel f ts_x)
+end
+
+@[simp]lemma realize_cast_bounded_formula {S : Structure L} {n m} {h : n ≤ m} {f : bounded_formula L n} {v : dvector S m} :
+realize_bounded_formula v (f.cast h) dvector.nil = realize_bounded_formula (v.trunc n h) f dvector.nil :=
+begin
+  revert n f v, refine bounded_formula.rec _ _ _ _ _; intros,
+  any_goals{simp},
+  {rw[bounded_preformula.cast_bd_apps_rel], simp[realize_bounded_formula_bd_apps_rel], exact S},
+  {simp*},
+  {sorry} --- might need to prove this for preformulas
 end
 
 lemma realize_sentence_bd_apps_rel' {S : Structure L}
@@ -2609,5 +2627,8 @@ def L_empty : Language :=
 def T_empty (L : Language) : Theory L := ∅
 
 @[reducible]def T_equality : Theory L_empty := T_empty L_empty
+
+@[simp] lemma in_theory_iff_satisfied {L : Language} {S : Structure L} {f : sentence L} : f ∈ Th S ↔ S ⊨ f :=
+  by refl
 
 end fol
