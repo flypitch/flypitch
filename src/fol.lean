@@ -1886,7 +1886,7 @@ notation f `[`:95 s ` // `:95 n ` // `:95 h `]`:0 := @fol.subst_bounded_formula 
 | _ _ _ _ (f₁ ⟹ f₂)      s rfl := by simp*
 | _ _ _ _ (∀' f)          s rfl := by simp*
 
-lemma realize_bounded_formula_irrel' {S : Structure L} {n n'} {v₁ : dvector S n} {v₂ : dvector S n'} 
+lemma realize_bounded_formula_irrel' {S : Structure L} {n n'} {v₁ : dvector S n} {v₂ : dvector S n'}
   (h : ∀m (hn : m < n) (hn' : m < n'), v₁.nth m hn = v₂.nth m hn')
   {l} (f : bounded_preformula L n l) (f' : bounded_preformula L n' l) 
   (hf : f.fst = f'.fst) (xs : dvector S l) : 
@@ -2073,11 +2073,12 @@ end
 @[simp]lemma realize_cast_bounded_formula {S : Structure L} {n m} {h : n ≤ m} {f : bounded_formula L n} {v : dvector S m} :
 realize_bounded_formula v (f.cast h) dvector.nil = realize_bounded_formula (v.trunc n h) f dvector.nil :=
 begin
-  revert n f v, refine bounded_formula.rec _ _ _ _ _; intros,
-  any_goals{simp},
-  {rw[bounded_preformula.cast_bd_apps_rel], simp[realize_bounded_formula_bd_apps_rel], exact S},
-  {simp*},
-  {sorry} --- might need to prove this for preformulas
+  by_cases n = m,
+    by subst h; simp,
+    have : n < m, by apply nat.lt_of_le_and_ne; repeat{assumption},
+    ext, apply realize_bounded_formula_irrel',
+    {intros, simp},
+    {simp}
 end
 
 lemma realize_sentence_bd_apps_rel' {S : Structure L}
