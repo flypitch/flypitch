@@ -106,6 +106,9 @@ variables {α : Type u} {β : Type v} {γ : Type w} {n : ℕ}
 | _ (x::xs) 0     h := x
 | _ (x::xs) (m+1) h := nth xs m (lt_of_add_lt_add_right h)
 
+@[reducible, simp] protected def last {n : ℕ} (xs : dvector α (n+1)) : α :=
+  xs.nth n (by {repeat{constructor}})
+
 protected def nth' {n : ℕ} (xs : dvector α n) (m : fin n) : α :=
 xs.nth m.1 m.2
 
@@ -184,6 +187,10 @@ protected lemma concat_nth : ∀{n : ℕ} (xs : dvector α n) (x : α) (m : ℕ)
   (xs.concat x).nth n h = x
 | _ []      x' h := by refl
 | _ (x::xs) x' h := by dsimp; exact concat_nth_last xs x' _
+
+@[simp] protected lemma concat_nth_last' : ∀{n : ℕ} (xs : dvector α n) (x : α) (h : n < n+1), 
+  (xs.concat x).last = x
+:= by apply dvector.concat_nth_last
 
 @[simp] protected def append : ∀{n m : ℕ} (xs : dvector α n) (xs' : dvector α m), dvector α (m+n)
 | _ _ []       xs := xs
@@ -436,9 +443,6 @@ end finset
 
 namespace nonempty
 variables {α : Type u} {β : Type v} {γ : Type w}
-
-protected def map (f : α → β) : nonempty α → nonempty β
-| ⟨x⟩ := ⟨f x⟩
 
 protected def map2 (f : α → β → γ) : nonempty α → nonempty β → nonempty γ
 | ⟨x⟩ ⟨y⟩ := ⟨f x y⟩

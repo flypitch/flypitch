@@ -95,7 +95,7 @@ structure Lhom (L L' : Language) :=
 (on_function : ∀{n}, L.functions n → L'.functions n) 
 (on_relation : ∀{n}, L.relations n → L'.relations n)
 
-local infix ` →ᴸ `:10 := Lhom -- \^L
+infix ` →ᴸ `:10 := Lhom -- \^L
 
 namespace Lhom
 /- -/
@@ -694,12 +694,14 @@ restricting interpretations from L' to L --/
 def reduct (S : Structure L') : Structure L :=
 ⟨ S.carrier, λn f, S.fun_map $ ϕ.on_function f, λn R, S.rel_map $ ϕ.on_relation R⟩ 
 
+notation S`[[`:95 ϕ`]]`:90 := reduct ϕ S
+
 variable {ϕ}
 
 @[simp] def reduct_coe (S : Structure L') : ↥(reduct ϕ S) = S := 
 by refl
 
-def reduct_id {S : Structure L'} : S → reduct ϕ S := id
+def reduct_id {S : Structure L'} : S → S[[ϕ]] := id
 
 @[simp] lemma reduct_term_eq {S : Structure L'} (hϕ : ϕ.is_injective) {n} : 
   Π(xs : dvector S n) {l} (t : bounded_preterm L n l) (xs' : dvector S l), realize_bounded_term xs (on_bounded_term ϕ t) xs' = @realize_bounded_term L (reduct ϕ S) n xs l t xs'
@@ -717,11 +719,15 @@ lemma reduct_bounded_formula_iff {S : Structure L'} (hϕ : ϕ.is_injective) : Π
 | _ _ xs xs' (∀' f)           := by apply forall_congr; intro x;simp*
 
 lemma reduct_ssatisfied {S : Structure L'} {f : sentence L} (hϕ : ϕ.is_injective) 
-  (h : S ⊨ ϕ.on_sentence f) : ϕ.reduct S ⊨ f :=
+ (h : S ⊨ ϕ.on_sentence f) : ϕ.reduct S ⊨ f :=
+(reduct_bounded_formula_iff hϕ ([]) ([]) f).mp h
+
+lemma reduct_ssatisfied' {S : Structure L'} {f : sentence L} (hϕ : ϕ.is_injective) 
+ (h : S ⊨ ϕ.on_bounded_formula f) : ϕ.reduct S ⊨ f :=
 (reduct_bounded_formula_iff hϕ ([]) ([]) f).mp h
 
 def reduct_all_ssatisfied {S : Structure L'} {T : Theory L} (hϕ : ϕ.is_injective) 
-  (h : S ⊨ ϕ.on_sentence '' T) : ϕ.reduct S ⊨ T :=
+  (h : S ⊨ ϕ.on_sentence '' T) : S[[ϕ]] ⊨ T :=
 λf hf, reduct_ssatisfied hϕ $ h $ mem_image_of_mem _ hf
 
 lemma reduct_nonempty_of_nonempty {S : Structure L'} (H : nonempty S) : nonempty (reduct ϕ S) :=

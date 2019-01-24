@@ -40,8 +40,6 @@ end
  
 @[simp] lemma Set'_mem_mem {n : ℕ} {x y : bounded_term L_ZFC n} {v : dvector ↥Set' n} : realize_bounded_formula v (x ∈' y) dvector.nil = ((realize_bounded_term v x dvector.nil) ∈ (realize_bounded_term v y dvector.nil)) := begin
   simp [ZFC_el, bounded_formula_of_relation, realize_bounded_formula, bd_apps_rel] end
-@[simp]lemma realize_bounded_formula_biimp { n : ℕ } {L : Language } { S : Structure L} {f₁ f₂ : bounded_formula L n} {v : dvector ↥S n} : (realize_bounded_formula v (f₁ ⇔ f₂) dvector.nil) = ((realize_bounded_formula v f₁ dvector.nil) ↔ (realize_bounded_formula v f₂ dvector.nil)) := 
-  by {rw[bd_biimp], tidy}
 
 @[simp] lemma realize_term_remove_irrel {n : ℕ} {L : Language} {S : Structure L} {v : dvector ↥S (n+1)} {j : fin n} {k : ℕ} {p : k > j} : realize_bounded_term v ((lift_bounded_term_at (bd_var j : bounded_term L n) 1 k) ) dvector.nil = realize_bounded_term (dvector.remove_mth k v)  (bd_var j) dvector.nil :=
 begin
