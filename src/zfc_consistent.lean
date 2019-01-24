@@ -65,7 +65,7 @@ begin
    fol.realize_bounded_formula, fol.realize_bounded_formula_not, fol.realize_bounded_term],
    symmetry, apply Set.eq_empty
 end
-
+ 
 @[simp]lemma Set'_realize_empty : @realize_bounded_formula L_ZFC Set' 1 0 (Set.empty :: dvector.nil) is_emptyset dvector.nil :=
 by rw[Set'_realize_is_empty]; refl
 
@@ -141,25 +141,65 @@ example : axiom_of_infinity ∈ Th(Set') :=
 example : axiom_of_infinity' ∈ Th(Set') :=
       Set'_infinity'_shallow_infinity'.mpr $ shallow_infinity_iff_shallow_infinity'.mp Set'_models_shallow_infinity
 
-@[simp]lemma Set'_functional_rw : ∀ c : bounded_formula L_ZFC 2, @realize_bounded_formula L_ZFC Set' 0 0 dvector.nil (functional c) dvector.nil = ∀ x : Set, ∃ y : Set, ∀ w, @realize_bounded_formula L_ZFC Set' 3 0  ([w,y,x]) ( (c ↑' 1 # 1) ⇔ &0 ≃ &1)  dvector.nil := 
+
+/-TODO: generalize arity-/
+@[simp]def Set'_realize_formula_relation (c : bounded_formula L_ZFC 2) : Set → Set → Prop := λ s t, @realize_bounded_formula L_ZFC Set' 2 0 (s :: t :: dvector.nil) c dvector.nil   
+
+@[simp] lemma Set'_term_to_relation (c : bounded_formula L_ZFC 2) : ∀ s t, @realize_bounded_formula L_ZFC Set' 2 0 (s :: t :: dvector.nil) c dvector.nil ↔ Set'_realize_formula_relation c s t := by simp
+
+
+@[simp]def Set'_functional_prop (r : Set → Set → Prop) (x: Set) : Set → Prop :=  λ y, ∀ z, r x z ↔ y = z
+
+
+@[simp]def Set'_functional : (Set → Set → Prop) → Prop := λ r, ∀ s, ∃ y, ∀ z, r s z ↔ y = z
+
+
+noncomputable def Set'_functional_to_function : ∀ r : Set → Set → Prop, Set'_functional r → (Set → Set) := 
 begin
-intros c,
-ext1, simp at *, rw [functional, realize_bounded_formula],
-simp [realize_bounded_formula_ex],
-refl
+rw Set'_functional,
+intros r a s, 
+refine (classical.indefinite_description _ _).val,
+exact  λ y, ∀ z, r s z ↔ y = z,
+exact a s,
 end
 
-lemma Set'_functional : ∀ c, @realize_bounded_formula L_ZFC Set' 0 0 dvector.nil (functional c) dvector.nil → Set → Set :=
+noncomputable lemma Set'_functional_rewrite  (r : Set → Set → Prop) (a : Set'_functional r) : ∀ w z, r w z ↔ Set'_functional_to_function r a w = z :=
 begin
-  intro c, rw[Set'_functional_rw], intros h s, sorry
+rw Set'_functional_to_function,
+rw eq.mpr, simp, tidy,
+end
+
+noncomputable def Set'_functional_image : ∀ r : Set → Set → Prop, Set'_functional r → (Set → Set) := 
+begin
+intros,
+refine @Set.image _ _ a_1,
+exact Set'_functional_to_function r a,
+refine classical.all_definable _,
+end
+
+@[simp]lemma Set'_functional_mem (r : Set.{0} → Set.{0} → Prop) (a: Set'_functional r) : ∀ (x : Set) (z : Set), Set.mem z (Set'_functional_image r a x) ↔ ∃ (w : Set), r w z ∧ Set.mem w x :=
+begin
+rw Set'_functional_image, rw Set'_functional_to_function,
+simp,
+intros,
+
+end
+
+lemma Set'_shallow_replacement : ∀ r : (Set.{0} → Set.{0} → Prop), Set'_functional r → ∀ x : Set, ∃ y : Set, ∀z, Set.mem z y ↔ ∃ w : Set, (r w z) ∧ Set.mem w x := 
+begin
+  intros,
+  refine ⟨Set'_functional_to_function r a x,_⟩,
+  {rw Set'_functional_to_function,}
 end
 
 lemma Set'_models_replacement: ∀ c : bounded_formula L_ZFC 2, axiom_of_replacement c ∈ Th Set' := 
 begin
 intro c,
 simp only [has_mem.mem,set.mem,Th,set_of,axiom_of_replacement],
-intros a x,
-sorry
+intros a x, rw [small],
+rw realize_bounded_formula_ex,
+rw (Set'_functional_iff c) at a,
+simp [realize_bounded_formula],
 end
 
 lemma Set_extends_ZFC : ZFC ⊆ Th Set' :=
