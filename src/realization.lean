@@ -13,10 +13,6 @@ namespace realization
 
 /- Note: maybe some of the _irrel lemmas should be called something_elim instead -/
 
-#check fin.has_one
-
-#check fin.add
-
 -- section fin_lemmas
 
 -- open fin

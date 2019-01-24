@@ -722,6 +722,10 @@ lemma reduct_ssatisfied {S : Structure L'} {f : sentence L} (hϕ : ϕ.is_injecti
  (h : S ⊨ ϕ.on_sentence f) : ϕ.reduct S ⊨ f :=
 (reduct_bounded_formula_iff hϕ ([]) ([]) f).mp h
 
+lemma reduct_ssatisfied' {S : Structure L'} {f : sentence L} (hϕ : ϕ.is_injective) 
+ (h : S ⊨ ϕ.on_bounded_formula f) : ϕ.reduct S ⊨ f :=
+(reduct_bounded_formula_iff hϕ ([]) ([]) f).mp h
+
 def reduct_all_ssatisfied {S : Structure L'} {T : Theory L} (hϕ : ϕ.is_injective) 
   (h : S ⊨ ϕ.on_sentence '' T) : S[[ϕ]] ⊨ T :=
 λf hf, reduct_ssatisfied hϕ $ h $ mem_image_of_mem _ hf

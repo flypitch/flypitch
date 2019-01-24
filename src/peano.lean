@@ -1,7 +1,5 @@
 import .fol tactic.tidy tactic.linarith .realization
 
-open fol
-
 -- local attribute [instance, priority 0] classical.prop_decidable
 --local attribute [instance] classical.prop_decidable
 
@@ -10,142 +8,9 @@ local notation `[]` := dvector.nil
 local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`) := l
 
 namespace peano
-section
 
-/-- Given a nat k and a 0-formula ψ, return ψ with ∀' applied k times to it --/ 
-@[simp] def alls {L : Language}  :  Π n : ℕ, formula L → formula L
---:= nat.iterate all n
-| 0 f := f
-| (n+1) f := ∀' alls n f
-
-@[simp]def bd_alls' {L : Language} : Π k n : ℕ, bounded_formula L (n + k) → bounded_formula L n
-| 0 n         f := f
-| (k+1) n     f := bd_alls' k n (∀' f)
-
-
-@[simp]def bf_k_plus_zero {L} {k} : bounded_formula L (0 + k) = bounded_formula L k :=
-by {convert rfl, rw[zero_add]}
-
-
-@[simp] def bd_alls {L : Language}  : Π n : ℕ, bounded_formula L n → sentence L
-| 0     f := f
-| (n+1) f := bd_alls n (∀' f) -- bd_alls' (n+1) 0 (f.cast_eqr (zero_add (n+1)))
-
-/-- generalization of bd_alls where we can apply less than n ∀'s--/
-
-
-def bf_n_of_0_n {L : Language} {n} (ψ : bounded_formula L (0 + n)) : bounded_formula L n :=
-by {convert ψ, rw[zero_add]}
-
-def bf_0_n_of_n {L : Language} {n} (ψ : bounded_formula L n) : bounded_formula L (0 + n) :=
-by {convert ψ, apply zero_add}
-
--- set_option pp.all true
--- set_option pp.notation false
-
-@[simp]lemma mpr_lemma {α β: Type*} {p q : α = β} {x : β} : eq.mpr p x = eq.mpr q x := by refl
-
-@[simp]lemma mpr_lemma2 {L} {n m : ℕ} {h : m = n} {h' : bounded_formula L m = bounded_formula L n} {h'' : bounded_formula L (m+1) = bounded_formula L (n+1)} {f : bounded_formula L (n+1)} : ∀' eq.mpr h'' f = eq.mpr h' (∀'f) :=
- by {ext1, induction h, refl}
-
--- lemma obvious3 {L : Language} {n} {ψ : bounded_formula L (n+1)} (p q :  bounded_formula L (n - n) = bounded_formula L (n - n)) : eq.mpr p (bd_alls' n n (∀' ψ)) = eq.mpr q (bd_alls' n n (∀' ψ)) :=
--- by apply mpr_lemma -- refl also suffices here
-
--- lemma obvious4 {L : Language} {n} {ψ : bounded_formula L (n+1)} (p : bounded_formula L (n - n) = bounded_formula L (n - n)) :
--- (bd_alls' n n (∀' ψ)) = eq.mpr p (bd_alls' n n (∀' ψ)) :=
--- begin
---   have : bd_alls' n n (∀' ψ) = eq.mpr rfl (bd_alls' n n (∀' ψ)), by refl,
---   have := obvious3 rfl p, swap, exact ψ, cc
--- end
-/- Obviously, bd_alls' n 0 ψ = bd_alls ψ -/
--- bd_alls n ψ = bd_alls' n 0 (by {convert ψ, apply zero_add})
-
---protected def cast_eqr {n m l} (h : n = m) (f : bounded_preformula L m l) : bounded_preformula L n l :=
---f.cast $ ge_of_eq h
-
-
-@[simp] lemma alls'_alls {L : Language} : Π n (ψ : bounded_formula L n), bd_alls n ψ = bd_alls' n 0 (ψ.cast_eq (zero_add n).symm) :=
-  by {intros n ψ, induction n, swap, simp[n_ih (∀' ψ)], tidy}
-
--- @[simp] lemma alls'_alls {L : Language} : Π n (ψ : bounded_formula L n), bd_alls n ψ = bd_alls' n 0 (by {convert ψ, apply zero_add}) :=
--- begin
---   intros n ψ, induction n with n ih generalizing ψ, refl, simp[ih (∀' ψ)]
--- end
-
-@[simp]lemma alls'_all_commute {L : Language} {n} {k} {f : bounded_formula L (n+k+1)} : (bd_alls' k n (∀' f)) = ∀' bd_alls' k (n+1) (f.cast_eq (by simp))-- by {refine ∀' bd_alls' k (n+1) _, simp, exact f}
-:=
-  by {induction k; dsimp only [bounded_preformula.cast_eq], swap, simp[@k_ih (∀'f)], tidy}
-
--- @[simp]lemma alls'_all_commute {L : Language} {n} {k} {f : bounded_formula L (n + k + 1)} : bd_alls' k n (∀' f) = ∀' bd_alls' k (n+1) (by {simp, exact f}) :=
--- begin
---   induction k, refl, unfold bd_alls', rw[@k_ih (∀' f),<-mpr_lemma2],
---   simp only [add_comm, eq_self_iff_true, add_right_inj, add_left_comm]
--- end 
-
-
-
-@[simp]lemma bd_alls'_substmax {L} {n} {f : bounded_formula L (n+1)} {t : closed_term L} : (bd_alls' n 1 (f.cast_eq (by simp)))[t /0] = (bd_alls' n 0 (substmax_bounded_formula (f.cast_eq (by simp)) t)) := by {induction n, {tidy}, have := @n_ih (∀' f), simp[bounded_preformula.cast_eq] at *, exact this}
-
-
-lemma realize_sentence_bd_alls {L} {n} {f : bounded_formula L n} {S : Structure L} : S ⊨ (bd_alls n f) ↔ (∀ xs : dvector S n, realize_bounded_formula xs f []) :=
-begin
-  induction n,
-    {split; dsimp; intros; try{cases xs}; apply a},
-    {have := @n_ih (∀' f), 
-     cases this with this_mp this_mpr, split,
-     {intros H xs, rcases xs with ⟨x,xs⟩, revert xs_xs xs_x, exact this_mp H},
-     {intro H, exact this_mpr (by {intros xs x, exact H (x :: xs)})}}
-end
-
-@[simp] lemma alls_0 {L : Language} (ψ : formula L) : alls 0 ψ = ψ := by refl
-
---lemma bd_alls_all_commute {L : Language} : Π n (f : bounded_formula L (n+1)), bd_alls n (∀'f) = ∀' (bd_alls n (f))
-
--- @[simp] def b_alls_1 {L : Language} {n : ℕ} {f : formula L} (hf :  formula_below (n+1) f)  : formula_below n $ alls 1 f := begin
--- constructor, assumption
--- end
-
-@[simp] lemma alls_all_commute {L : Language} (f : formula L) {k : ℕ} : (alls k ∀' f) = (∀' alls k f) := by {induction k, refl, dunfold alls, rw[k_ih]}
-
-
-
-@[simp] lemma alls_succ_k {L : Language} (f : formula L) {k : ℕ} : alls (k + 1) f = ∀' alls k f := by constructor
-
--- @[simp] def b_alls_k {L : Language} {n : ℕ} {k: ℕ} :  ∀ f : formula L, formula_below (n + k) f → formula_below n (alls k f) :=
--- begin
---   induction k with k ih,
---   intros f hf, exact hf,
---   intros f hf, 
---   have H := alls_succ_k,
-
---   have hf_rw : formula_below (n + nat.succ k) f → formula_below (n+k) ∀'f, by {apply b_alls_1},
---   let hf2 := hf_rw hf,
-
---   have hooray := ih (∀'f) hf2,
---   rw[alls_all_commute, <-H] at hooray, exact hooray --hooray!!
--- end
-
-/- both b_subst and b_subst2 are consequences of formula_below_subst in fol.lean -/
--- def b_subst {L : Language} {n : ℕ} {f : formula L} (hf : formula_below (n+1) f) {t : term L} (ht : term_below 0 t) : formula_below n (f[t //0]) :=
--- begin
--- have P := @formula_below_subst L 0 n 0 f begin rw[zero_add], exact hf end t,
--- have t' : term_below n t,
---   fapply term_below_of_le,
---   exact 0,
---   exact n.zero_le,
---   exact ht,
--- have Q := P t',
--- simp only [fol.subst_formula, zero_add] at Q, assumption
--- end
-
--- def b_subst2 {L : Language} {n : ℕ} {f : formula L} (hf : formula_below n f) {t : term L} (ht : term_below n t) : formula_below n (f[t //0]) :=
--- begin
---   have P := @formula_below_subst L 0 n 0 f begin rw[zero_add], fapply formula_below_of_le, exact n, simpa end t,
---   have P' := P ht, simp only [fol.subst_formula, zero_add] at P', assumption
--- end
-
-
-/- END LEMMAS -/
+open fol
+section PA
 
 /- The language of PA -/
 inductive peano_functions : ℕ → Type -- thanks Floris!
@@ -370,6 +235,6 @@ end
 
 def PA_standard_model : Model PA := ⟨ℕ', true_arithmetic_extends_PA⟩
 
-end
+end PA
 end peano
 
