@@ -1823,6 +1823,14 @@ lemma realize_bounded_formula_iff {S : Structure L} : ∀{n} {v₁ : dvector S n
     intros k hk, cases k, refl, apply hv
   end
 
+lemma realize_bounded_formula_iff_of_fst {S : Structure L} : ∀{n} {v₁ w₁ : dvector S n}
+  {v₂ w₂ : ℕ → S} (hv₁ : ∀ k (hk : k < n), v₁.nth k hk = v₂ k)
+  (hw₁ : ∀ k (hk : k < n), w₁.nth k hk = w₂ k) {l₁ l₂}
+  (t₁ : bounded_preformula L n l₁) (t₂ : bounded_preformula L n l₂) (xs₁ : dvector S l₁)
+  (xs₂ : dvector S l₂) (H : realize_formula v₂ t₁.fst xs₁ ↔ realize_formula w₂ t₂.fst xs₂),
+  (realize_bounded_formula v₁ t₁ xs₁ ↔ realize_bounded_formula w₁ t₂ xs₂) :=
+ by intros; simpa[realize_bounded_formula_iff hv₁ t₁, realize_bounded_formula_iff hw₁ t₂]
+
 @[simp] def lift_bounded_formula_at : ∀{n l} (f : bounded_preformula L n l) (n' m : ℕ), 
   bounded_preformula L (n + n') l
 | _ _ bd_falsum       n' m := ⊥ 
@@ -1831,8 +1839,6 @@ lemma realize_bounded_formula_iff {S : Structure L} : ∀{n} {v₁ : dvector S n
 | _ _ (bd_apprel f t) n' m := bd_apprel (lift_bounded_formula_at f n' m) $ t ↑' n' # m
 | _ _ (f₁ ⟹ f₂)      n' m := lift_bounded_formula_at f₁ n' m ⟹ lift_bounded_formula_at f₂ n' m
 | _ _ (∀' f)          n' m := ∀' (lift_bounded_formula_at f n' (m+1)).cast (le_of_eq $ succ_add _ _)
-
-
 
 notation f ` ↑' `:90 n ` # `:90 m:90 := fol.lift_bounded_formula_at f n m -- input ↑ with \u or \upa
 

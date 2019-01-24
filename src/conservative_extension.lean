@@ -47,7 +47,6 @@ end const
 
 @[reducible, simp]def first_n_variables {L : Language} : ∀ n, dvector (bounded_term L n) n
 | 0 := []
-| 1 := [&0]
 | (n+1) := ((first_n_variables n).map $ λ t, bounded_preterm.cast (by repeat{constructor} : n ≤ n +1) t).concat $ &(⟨n, by {repeat{constructor}}⟩: fin (n+1))
 
 lemma first_n_variables_trunc {L : Language} : ∀ n m, (@first_n_variables L (n+m)).trunc n (by simp) = (@first_n_variables L n).map (λ t, t.cast (by simp)) := sorry
@@ -119,7 +118,9 @@ theorem by_conservativity_constant
 {L₁ L₂ : Language.{u}} {c : L₂.constants} {Γ : bounded_formula L₁ 1}
 {T₁ : Theory L₁} {T₂ : Theory L₂} {ϕ : L₁ →ᴸ L₂} {h_ϕ : is_injective ϕ}
 {h_Γ : @defines_constant L₂ T₂ (ϕ[[Γ]]) c} {h_sub : ϕ[[T₁]] ⊆ T₂} {M₁ : Structure L₁} {H_M₁ : M₁ ⊨ T₁} {M₂ : Structure L₂} {H_M₂ : M₂ ⊨ T₂} {h_exp : is_expansion ϕ M₂ M₁} {h_nonempty_1 : nonempty M₁} {h_nonempty_2 : nonempty M₂} :
+
 ∀ f : bounded_formula L₁ 1, M₂ ⊨ (ϕ[[f]])[(bd_const c) /0] → M₁ ⊨ ∀'(Γ ⟹ f) :=
+
 begin
   intro f, have := (completeness _ _).mp
           (@defines_constant_elimination L₂ T₂ c (ϕ[[f]]) (ϕ[[Γ]]) h_Γ) h_nonempty_2 H_M₂,
