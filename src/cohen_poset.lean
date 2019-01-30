@@ -1,5 +1,5 @@
 import .fol data.pfun data.set tactic.tidy data.set.countable data.set.basic .to_mathlib        
-
+-- local attribute [instance] classical.prop_decidable
 open fol
 
 /- The Cohen poset of finite partial functions (2^(2^ω)) × ω → 2 -/
@@ -26,6 +26,16 @@ end
 def functional {α β : Type*} (Γ : set (α × β)) : Prop :=
   ∀ a b₁ b₂, (a, b₁) ∈ Γ → (a, b₂) ∈ Γ → b₁ = b₂
 
+lemma congr_arg {α β : Type*} (f : α →. β) : ∀ {x} {y} (h₁ : x ∈ f.dom) (h₂ : y ∈ f.dom)
+  (h_eq : x = y), fn f x h₁ = fn f y h₂ :=
+by intros; congr; assumption
+
+lemma functional_subset {α β : Type*} (Γ Γ': set (α × β)) (h_Γ' : Γ' ⊆ Γ) (h_Γ : functional Γ) : functional Γ' :=
+  λ _ _ _ _ _, by apply h_Γ; tidy
+
+/-- The graph of a pfun is always functional -/
+lemma graph_functional {α β : Type*} (f : α →. β) : functional f.graph := by tidy
+
 /-- Given a partial functional relation, turn it into a pfun -/
 noncomputable def of_graph {α β : Type*} (Γ : set (α × β)) (h_Γ : functional Γ) : α →. β :=
   λ a, ⟨∃ c ∈ Γ, (prod.fst c) = a, λ h, @prod.snd α β $ (classical.indefinite_description _ h).val⟩
@@ -45,11 +55,8 @@ begin
   have := (classical.indefinite_description _ h).property,
   cases this with this1 this2, rw[<-this2], convert this1, ext; refl
 end
-  
-lemma graph_functional {α β : Type*} (f : α →. β) : functional f.graph :=
-  by tidy
 
-lemma graph_of_graph {α β : Type*} (Γ : set $ α × β) (h_Γ : functional Γ) : (of_graph Γ h_Γ).graph = Γ :=
+@[simp]lemma graph_of_graph {α β : Type*} (Γ : set $ α × β) (h_Γ : functional Γ) : (of_graph Γ h_Γ).graph = Γ :=
 begin
   ext, rcases x with ⟨a,b⟩, dsimp[graph],
   split; intro H, {cases H, induction H_h, cases H_w, cases H_w_h, induction H_w_h_h,
@@ -58,8 +65,24 @@ begin
   try{assumption}; refl
 end
 
-lemma of_graph_graph {α β : Type*} {f : α →. β} : of_graph (f.graph) (graph_functional f) = f :=
+@[simp]lemma of_graph_graph {α β : Type*} {f : α →. β} : of_graph (f.graph) (graph_functional f) = f :=
   by apply ext_graph; rw[graph_of_graph]
+
+@[simp]lemma dom_of_graph {α β : Type*} (Γ : set $ α × β) (h_Γ : functional Γ) : (of_graph Γ h_Γ).dom = (prod.fst '' Γ) :=
+begin
+ ext, split; intros, {tidy},
+ {cases a, cases a_h, cases a_w, induction a_h_right, dsimp at *, fsplit,
+ work_on_goal 0 { fsplit }, work_on_goal 2 {fsplit,
+ work_on_goal 0 { assumption }, refl }}
+end
+
+@[simp]lemma dom_of_graph_union {α β : Type*} (Γ : set $ α × β) (p : α × β) (h_Γ : functional Γ) (h_Γ' : functional $ Γ ∪ {p}) : (of_graph (Γ ∪ {p}) h_Γ').dom = (of_graph Γ h_Γ).dom ∪ {p.fst} :=
+  by simp[dom_of_graph, set.image_insert_eq]
+
+lemma in_dom_of_in_graph {α β : Type*} {f : α →. β} : ∀ {a} {b}, (a,b) ∈ f.graph → a ∈ f.dom :=
+  by {intros a b H, apply (pfun.dom_iff_graph _ a).mpr, exact ⟨b,H⟩}
+
+lemma lift_graph' {α β : Type*} {f : α →. β} {a : α} {b : β} (h_a : a ∈ f.dom) : (a,b) ∈ f.graph ↔ pfun.fn f a h_a = b := by tidy
 
 end pfun
 
@@ -264,13 +287,40 @@ def one_point_restriction (p : cohen_poset) : ∀(x), x ∈ p.val.dom → cohen_
          by {change set.finite (pfun.restriction p.val (not_x x)).dom,
          rw[pfun.domain_restriction], apply finite_of_inter_not_x, apply p.property}⟩
 
+def one_point_restriction' (p : cohen_poset) : ∀ (x), cohen_poset :=
+λ x, ⟨pfun.restriction p.val (not_x x),
+         by {change set.finite (pfun.restriction p.val (not_x x)).dom,
+         rw[pfun.domain_restriction], apply finite_of_inter_not_x, apply p.property}⟩
+
 lemma one_point_restriction_domain {p : cohen_poset} {x} (h : x ∈ p.val.dom) : (one_point_restriction p x h).val.dom = p.val.dom ∩ not_x x :=
 begin
   ext, split; {intros a, auto_cases, fsplit; assumption}
 end
 
+lemma one_point_restriction_domain' {p : cohen_poset} {x} : (one_point_restriction' p x).val.dom = p.val.dom ∩ not_x x :=
+begin
+  ext, split; {intros a, auto_cases, fsplit; assumption}
+end
+
+lemma one_point_restriction_graph {p : cohen_poset} {x} {h_x : x ∈ p.val.dom} : ∀ y, y ∈ (one_point_restriction p x h_x).val.graph ↔ (y ∈ p.val.graph ∧ (prod.fst y ≠ x)) := sorry
+
+-- lemma one_point_restriction_graph' {p : cohen_poset} {x} : (one_point_restriction' p x).val.graph = {y ∈ p.val.graph | y.fst ∈ not_x x} :=
+-- begin
+--   ext, split; intros, 
+-- end
+
 @[simp]lemma in_one_point_restriction_of_in_dom_and_not_x {p : cohen_poset} {x} {h : x ∈ p.val.dom} {y} : y ∈ (one_point_restriction p x h).val.dom ↔ (y ∈ p.val.dom) ∧ y ≠ x :=
   by simp[one_point_restriction_domain, not_x]; finish
+
+@[simp]lemma in_one_point_restriction'_of_in_dom_and_not_x {p : cohen_poset} {x} {y} : y ∈ (one_point_restriction' p x ).val.dom ↔ (y ∈ p.val.dom) ∧ y ≠ x :=
+  by simp[one_point_restriction_domain', not_x]; finish
+
+lemma one_point_restriction_domain'_subset {p : cohen_poset} {x} : (one_point_restriction' p x).val.dom ⊆ p.val.dom :=
+  λ y, by finish
+
+lemma one_point_restriction_domain_subset {p : cohen_poset} {x} {h_x : x ∈ p.val.dom} : (one_point_restriction p x h_x).val.dom ⊆ p.val.dom :=
+  λ y, by finish
+
 
 lemma one_point_restriction_domain_coe {p : cohen_poset} {x} {h : x ∈ p.val.dom} : p.val.dom = ↑(set.finite.to_finset p.property) := by simp
 
@@ -299,29 +349,120 @@ size_of_domain (one_point_restriction p x h_x) = n :=
 begin
   unfold size_of_domain at *, have : n = nat.pred (n+1), by refl,
   rw[this, one_point_restriction_erase, <-h], apply finset.card_erase_of_mem,
-  apply finset.mem_coe.mp, convert h_x, simp
+  apply finset.mem_coe.mp, rwa[finset.coe_to_finset]
 end
+
+def aux_c'' {p₁ p₂ : cohen_poset} {t₁ t₂ : (set $ set ℕ) × ℕ} (h_t₁ : t₁ ∈ p₁.val.dom) (h_t₂ : t₂ ∈ p₂.val.dom) (q : Prop) (h_val₁ : pfun.fn p₁.val t₁ h_t₁ = q) (h_val₂ : pfun.fn p₂.val t₂ h_t₂ = q) (c : cohen_poset) : cohen_poset :=
+  (one_point_restriction' (one_point_restriction' c t₁) t₂)
+
+lemma aux_c''_dom {p₁ p₂ : cohen_poset} {t₁ t₂ : (set $ set ℕ) × ℕ} {h_t₁ : t₁ ∈ p₁.val.dom} {h_t₂ : t₂ ∈ p₂.val.dom} {q : Prop} {h_val₁ : pfun.fn p₁.val t₁ h_t₁ = q} {h_val₂ : pfun.fn p₂.val t₂ h_t₂ = q} {c : cohen_poset} : ∀ (x), x ∈ (aux_c'' h_t₁ h_t₂ q h_val₁ h_val₂ c).val.dom → x ≠ t₁ ∧ x ≠ t₂ :=
+λ x Hx, ⟨by {apply ((in_one_point_restriction'_of_in_dom_and_not_x).mp _).right, exact c,
+            apply one_point_restriction_domain'_subset, swap, exact t₂, exact Hx},
+         by {apply ((in_one_point_restriction'_of_in_dom_and_not_x).mp _).right, exact (one_point_restriction' c t₁), exact Hx}⟩  
+
+lemma aux_c''_dom_of {p₁ p₂ : cohen_poset} {t₁ t₂ : (set $ set ℕ) × ℕ} {h_t₁ : t₁ ∈ p₁.val.dom} {h_t₂ : t₂ ∈ p₂.val.dom} {q : Prop} {h_val₁ : pfun.fn p₁.val t₁ h_t₁ = q} {h_val₂ : pfun.fn p₂.val t₂ h_t₂ = q} {c : cohen_poset} : ∀ (x), x ≠ t₁ ∧ x ≠ t₂ → x ∈ c.val.dom → x ∈ (aux_c'' h_t₁ h_t₂ q h_val₁ h_val₂ c).val.dom :=
+begin
+  intros x Hx H'x, rcases Hx with ⟨Hx_r, Hx_l⟩, dsimp[aux_c''],
+  repeat{rw[one_point_restriction_domain']}, finish
+end
+
+lemma aux_c''_graph_of {p₁ p₂ : cohen_poset} {t₁ t₂ : (set $ set ℕ) × ℕ} {h_t₁ : t₁ ∈ p₁.val.dom} {h_t₂ : t₂ ∈ p₂.val.dom} {q : Prop} {h_val₁ : pfun.fn p₁.val t₁ h_t₁ = q} {h_val₂ : pfun.fn p₂.val t₂ h_t₂ = q} {c : cohen_poset} : ∀ x, (x ∈ c.val.graph ∧ (prod.fst x ≠ t₁ ) ∧ (prod.fst x ≠ t₂)) ↔ x ∈ (aux_c'' h_t₁ h_t₂ q h_val₁ h_val₂ c).val.graph := sorry
+
+lemma aux_c''_dom_finite {p₁ p₂ : cohen_poset} {t₁ t₂ : (set $ set ℕ) × ℕ} {h_t₁ : t₁ ∈ p₁.val.dom} {h_t₂ : t₂ ∈ p₂.val.dom} {q : Prop} {h_val₁ : pfun.fn p₁.val t₁ h_t₁ = q} {h_val₂ : pfun.fn p₂.val t₂ h_t₂ = q} {c : cohen_poset} : set.finite (aux_c'' h_t₁ h_t₂ q h_val₁ h_val₂ c).val.dom :=
+begin
+  dsimp[aux_c''], repeat{rw[one_point_restriction_domain']}, repeat{apply finite_of_inter_not_x},
+  exact c.property
+end
+-- λ x Hx, ⟨by {apply ((in_one_point_restriction'_of_in_dom_and_not_x).mp _).right, exact c,
+--             apply one_point_restriction_domain'_subset, swap, exact t₂, exact Hx},
+--          by {apply ((in_one_point_restriction'_of_in_dom_and_not_x).mp _).right, exact (one_point_restriction' c t₁), exact Hx}⟩
 
 /- Let p₁ and p₂ be two partial functions such that there is a point (b₁,m) for p₁ and a point (b₂, m) for p₂ where p₁ and p₂ have the same value.
     Suppose that the one-point restrictions of p₁ and p₂ with respect to (b₁,m) and (b₂,m) have a common refinement c.
-    Then c extended by (b₁,m) and (b₂,m) is a common refinement for p₁ and p₂. -/
+    Then c (after making sure (b₁, m) and (b₂,m) are not in its domain) extended by (b₁,m) and (b₂,m) is a common refinement for p₁ and p₂. -/
 
 /-- the graph of the extension of c by (b₁,m) and (b₂,m) -/
 def one_point_restriction_refinement_extension_graph {p₁ p₂ : cohen_poset} {t₁ t₂ : (set $ set ℕ) × ℕ} (h_t₁ : t₁ ∈ p₁.val.dom) (h_t₂ : t₂ ∈ p₂.val.dom) (q : Prop) (h_val₁ : pfun.fn p₁.val t₁ h_t₁ = q) (h_val₂ : pfun.fn p₂.val t₂ h_t₂ = q) (c : cohen_poset) :=
-  (c.val.graph ∪ {(t₁,q)} ∪ {(t₂,q)})
+  ((aux_c'' h_t₁ h_t₂ q h_val₁ h_val₂ c).val.graph ∪ {(t₁,q)} ∪ {(t₂,q)})
 
 lemma one_point_restriction_refinement_extension_graph_functional {p₁ p₂ : cohen_poset} {t₁ t₂ : (set $ set ℕ) × ℕ} (h_t₁ : t₁ ∈ p₁.val.dom) (h_t₂ : t₂ ∈ p₂.val.dom) (q : Prop) (h_val₁ : pfun.fn p₁.val t₁ h_t₁ = q) (h_val₂ : pfun.fn p₂.val t₂ h_t₂ = q) (c : cohen_poset) (h_c_left : c ≤ (one_point_restriction p₁ t₁ h_t₁)) (h_c_right : c ≤ (one_point_restriction p₂ t₂ h_t₂)) :
-  pfun.functional $ one_point_restriction_refinement_extension_graph h_t₁ h_t₂ q h_val₁ h_val₂ c := sorry
+  pfun.functional $ one_point_restriction_refinement_extension_graph h_t₁ h_t₂ q h_val₁ h_val₂ c :=
+begin
+  intros x q₁ q₂ H₁ H₂, let c' := (aux_c'' h_t₁ h_t₂ q h_val₁ h_val₂ c), cases H₁; cases H₂; cases H₁; cases H₂,
+  apply pfun.graph_functional (aux_c'' h_t₁ h_t₂ q h_val₁ h_val₂ c).val, exact H₁, exact H₂,
+  {have : x ∈ c'.val.dom,
+    by {apply (pfun.dom_iff_graph c'.val x).mpr, exact ⟨q₁, H₁⟩}, have := (aux_c''_dom x this).left, suffices : x = t₁, by contradiction, repeat{cases H₂}, refl},
+  {repeat{cases H₁}, suffices : t₁ ≠ t₁, by contradiction, have : t₁ ∈ c'.val.dom,
+   by {apply (pfun.dom_iff_graph c'.val t₁).mpr, exact ⟨q₂, H₂⟩},
+   exact (aux_c''_dom t₁ this).left},
+  {cases H₁; cases H₁; cases H₂; cases H₂, cc},
+  {repeat{cases H₂}, suffices : t₂ ≠ t₂, by contradiction, have : t₂ ∈ c'.val.dom,
+   by {apply (pfun.dom_iff_graph c'.val t₂).mpr, exact ⟨q₁, H₁⟩},
+   exact (aux_c''_dom t₂ this).right},
+  {cases H₂},
+  {repeat{cases H₁}, cases H₂, refl},
+  {cases H₂},
+  {repeat{cases H₁}, suffices : t₂ ≠ t₂, by contradiction, have : t₂ ∈ c'.val.dom,
+   by {apply (pfun.dom_iff_graph c'.val t₂).mpr, refine ⟨_,_⟩, exact q₂, exact H₂},
+   exact (aux_c''_dom t₂ this).right}, {repeat{cases H₂}, cases H₁, refl},
+  {cases H₁}, {cases H₁}, {cc}, {cases H₂}, {cases H₁}, {cases H₁},
+end
 
 /-- the graph of the extension of c by (b₁,m) and (b₂,m) contains the graphs of p₁ and p₂ -/
-lemma one_point_restriction_refinement_extension_graph_extends {p₁ p₂ : cohen_poset} {t₁ t₂ : (set $ set ℕ) × ℕ} (h_t₁ : t₁ ∈ p₁.val.dom) (h_t₂ : t₂ ∈ p₂.val.dom) (q : Prop) (h_val₁ : pfun.fn p₁.val t₁ h_t₁ = q) (h_val₂ : pfun.fn p₂.val t₂ h_t₂ = q) (c : cohen_poset) (h_c_left : c ≤ (one_point_restriction p₁ t₁ h_t₁)) (h_c_right : c ≤ (one_point_restriction p₂ t₂ h_t₂)) : p₁.val.graph ⊆ (c.val.graph ∪ {(t₁,q)} ∪ {(t₂,q)}) ∧ p₂.val.graph ⊆ (c.val.graph ∪ {(t₁,q)} ∪ {(t₂,q)})  := sorry
+lemma one_point_restriction_refinement_extension_graph_extends {p₁ p₂ : cohen_poset} {t₁ t₂ : (set $ set ℕ) × ℕ} (h_t₁ : t₁ ∈ p₁.val.dom) (h_t₂ : t₂ ∈ p₂.val.dom) (q : Prop) (h_val₁ : pfun.fn p₁.val t₁ h_t₁ = q) (h_val₂ : pfun.fn p₂.val t₂ h_t₂ = q) (c : cohen_poset) (h_c_left : c ≤ (one_point_restriction p₁ t₁ h_t₁)) (h_c_right : c ≤ (one_point_restriction p₂ t₂ h_t₂)) : p₁.val.graph ⊆ (one_point_restriction_refinement_extension_graph h_t₁ h_t₂ q h_val₁ h_val₂ c) ∧ p₂.val.graph ⊆ (one_point_restriction_refinement_extension_graph h_t₁ h_t₂ q h_val₁ h_val₂ c) :=
+begin
+  split; intros x Hx; rcases x with ⟨x, q'⟩;
+  dsimp[one_point_restriction_refinement_extension_graph],
+  suffices : ((x, q') ∈ pfun.graph ((aux_c'' h_t₁ h_t₂ q h_val₁ h_val₂ c).val)) ∨ ((x, q') ∈ {(t₁, q)} ∨
+    (x, q') ∈ {(t₂, q)}), by rwa[or_assoc],
+  let H, swap, change _ ∨ H, haveI : decidable H := by apply classical.prop_decidable _,
+  by_cases H,
+    {apply or.elim h, exact λ A, or.inr $ or.inl $ A,
+                      exact λ A, or.inr $ or.inr $ A},
+    {-- dsimp[H] at h, rw[not_or_distrib] at h, apply or.inl,
+     
+  
+    -- apply (aux_c''_graph_of (x,q')).mp,
+     -- refine ⟨_, _⟩,
+
+-- dsimp[H] at h, rw[not_or_distrib] at h,
+--      have Hx' : (x,q') ∈ (c.val).graph,
+--        by {apply h_c_left, apply (one_point_restriction_graph (x,q')).mpr,
+--        refine ⟨(by assumption), _⟩, change x ≠ t₁, cases h, intro hx, apply h_left, rw[hx], simp,
+--               apply (pfun.graph_functional p₁.val), exact Hx,
+--               rw[hx], apply (pfun.lift_graph' _).mpr, exact h_val₁},
+--      apply or.inl, have : x ∈ p₁.val.dom, by apply (pfun.dom_iff_graph _ x).mpr; exact ⟨q', Hx⟩,
+--      have : x ∈ ((aux_c'' h_t₁ h_t₂ q h_val₁ h_val₂ c).val).dom,
+--        by {apply aux_c''_dom_of, {split, {change x ≠ t₁, cases h, intro hx,
+--           apply h_left, rw[hx], simp, apply (pfun.graph_functional p₁.val), exact Hx,
+--           rw[hx], apply (pfun.lift_graph' _).mpr, exact h_val₁}, {change x ≠ t₂, cases h, intro hx, apply h_right, rw[hx], simp, apply (pfun.graph_functional p₂.val), repeat{sorry} -- exact Hx, rw[hx], apply (pfun.lift_graph' _).mpr, exact h_val₂
+--               }}, {apply (pfun.dom_iff_graph _ x).mpr, exact ⟨q', Hx'⟩}},
+
+    }
+  -- by_cases H, repeat{sorry}
+  -- have : ((x, q') ∈ {(t₁, q)} ∨ (x, q') ∈ {(t₂, q)}) → (x,q') ∉ pfun.graph ((aux_c'' h_t₁ h_t₂ q h_val₁ h_val₂ c).val),
+  -- by {intros H₁ H₂, have : x ∈ (aux_c'' h_t₁ h_t₂ q h_val₁ h_val₂ c).val.dom,
+  --    by {apply (pfun.dom_iff_graph _ x).mpr, exact ⟨q', H₂⟩}, have := aux_c''_dom x this,
+  --    cases H₁, have : (x,q') = (t₁, q), from set.eq_of_mem_singleton (by assumption), finish,
+  --    have : (x,q') = (t₂, q), from set.eq_of_mem_singleton (by assumption), finish},
+  
+  
+end
 
 /-- the extension of c by (b₁, m) and (b₂,m) has finite domain -/
-lemma one_point_restriction_refinement_extension_finite {p₁ p₂ : cohen_poset} {t₁ t₂ : (set $ set ℕ) × ℕ} (h_t₁ : t₁ ∈ p₁.val.dom) (h_t₂ : t₂ ∈ p₂.val.dom) (q : Prop) (h_val₁ : pfun.fn p₁.val t₁ h_t₁ = q) (h_val₂ : pfun.fn p₂.val t₂ h_t₂ = q) (c : cohen_poset) : set.finite (pfun.of_graph (one_point_restriction_refinement_extension_graph h_t₁ h_t₂ q h_val₁ h_val₂ c) (by {apply one_point_restriction_refinement_extension_graph_functional, sorry, sorry})).dom := sorry
+lemma one_point_restriction_refinement_extension_finite {p₁ p₂ : cohen_poset} {t₁ t₂ : (set $ set ℕ) × ℕ} (h_t₁ : t₁ ∈ p₁.val.dom) (h_t₂ : t₂ ∈ p₂.val.dom) (q : Prop) (h_val₁ : pfun.fn p₁.val t₁ h_t₁ = q) (h_val₂ : pfun.fn p₂.val t₂ h_t₂ = q) (c : cohen_poset) (h_c_left : c ≤ (one_point_restriction p₁ t₁ h_t₁)) (h_c_right : c ≤ (one_point_restriction p₂ t₂ h_t₂)) : set.finite (pfun.of_graph (one_point_restriction_refinement_extension_graph h_t₁ h_t₂ q h_val₁ h_val₂ c) (by {apply one_point_restriction_refinement_extension_graph_functional, repeat{assumption}})).dom :=
+begin
+  unfold one_point_restriction_refinement_extension_graph,
+  rw[pfun.dom_of_graph_union], swap,
+  apply pfun.functional_subset (one_point_restriction_refinement_extension_graph h_t₁ h_t₂ q h_val₁ h_val₂ c),
+    by {unfold one_point_restriction_refinement_extension_graph, finish},
+  apply one_point_restriction_refinement_extension_graph_functional, repeat{assumption},
+  rw[pfun.dom_of_graph_union, pfun.of_graph_graph], simp only [set.union_singleton], repeat{apply set.finite_insert}, apply aux_c''_dom_finite
+end
 
 noncomputable def one_point_restriction_refinement_extension {p₁ p₂ : cohen_poset} {t₁ t₂ : (set $ set ℕ) × ℕ} (h_t₁ : t₁ ∈ p₁.val.dom) (h_t₂ : t₂ ∈ p₂.val.dom) (q : Prop) (h_val₁ : pfun.fn p₁.val t₁ h_t₁ = q) (h_val₂ : pfun.fn p₂.val t₂ h_t₂ = q) (c : cohen_poset) (h_c_left : c ≤ (one_point_restriction p₁ t₁ h_t₁)) (h_c_right : c ≤ (one_point_restriction p₂ t₂ h_t₂)) : cohen_poset :=
   ⟨pfun.of_graph (one_point_restriction_refinement_extension_graph h_t₁ h_t₂ q h_val₁ h_val₂ c) (by {apply one_point_restriction_refinement_extension_graph_functional, repeat{assumption}}),
-   (by apply one_point_restriction_refinement_extension_finite)⟩
+   (by {apply one_point_restriction_refinement_extension_finite, repeat{assumption}})⟩
 
 lemma one_point_restriction_refinement_extension_spec (p₁ p₂ : cohen_poset) {t₁ t₂ : (set $ set ℕ) × ℕ} {h_t₁ : t₁ ∈ p₁.val.dom} {h_t₂ : t₂ ∈ p₂.val.dom} {q : Prop} {h_val₁ : pfun.fn p₁.val t₁ h_t₁ = q} {h_val₂ : pfun.fn p₂.val t₂ h_t₂ = q} {c : cohen_poset} (h_c_left : c ≤ (one_point_restriction p₁ t₁ h_t₁)) (h_c_right : c ≤ (one_point_restriction p₂ t₂ h_t₂)) : ∃ c' : cohen_poset, c' ≤ p₁ ∧ c' ≤ p₂ :=
 begin
@@ -331,6 +472,16 @@ begin
   convert this; convert rfl; simp[one_point_restriction_refinement_extension, one_point_restriction_refinement_extension_graph, pfun.graph_of_graph]
 end
 
+lemma wit_incompatible {p₁ p₂ : cohen_poset} (h_incompat : incompatible p₁ p₂) : ∃ w ∈ p₁.val.dom ∩ p₂.val.dom, pfun.fn (p₁.val) w (by exact H.left) ≠ pfun.fn (p₂.val) w H.right :=
+begin
+  sorry
+  -- let p, swap, change p, haveI : decidable p := by apply classical.prop_decidable _,
+  -- by_contra, dsimp[p] at a, clear _inst p,
+  -- simp at a, sorry
+end
+
+lemma wit_incompatible' {p₁ p₂ : cohen_poset} (h_incompat : incompatible p₁ p₂) : ∃ w q₁ q₂, (w,q₁) ∈ p₁.val.graph ∧ (w,q₂) ∈ p₂.val.graph ∧ q₁ ≠ q₂ := sorry
+
 end one_point_restriction
 
 lemma congr_neq {α β : Type*} {f : α → β} {x' y' : α} {x y : β} {h_x : f x' = x} {h_y : f y' = y} {h_neq : x ≠ y} : x' ≠ y' := λ _, by {cc}
@@ -338,6 +489,7 @@ lemma congr_neq {α β : Type*} {f : α → β} {x' y' : α} {x y : β} {h_x : f
 lemma coe_subtype_injective {α : Type*} {s : set α} {x y : s} : (↑x = (↑y : α)) → x = y :=
   λ h, by {cases x, cases y, dsimp at h, subst h}
 
+/- The Cohen poset has the countable chain condition -/
 lemma cohen_poset_ccc : countable_chain_condition cohen_poset :=
 begin
   intros a Ha, apply countable_of_countable_fibers' a size_of_domain,
@@ -364,12 +516,22 @@ begin
                rcases H_x with ⟨x', H_x'⟩, rcases H_y with ⟨y', H_y'⟩,
                have h_neq : x' ≠ y',
                  by {apply congr_neq, exact H_x'.right, exact H_y'.right, exact H_neq},
-               refine Ha x' (x'.property.left.right) y' (y'.property.left.right)
-                            (by {intro, apply h_neq, exact coe_subtype_injective a_1}) _,
-               apply one_point_restriction_refinement_extension_spec (↑x') (↑y'),
-               convert H_cx, exact H_x'.right, convert H_cy, exact H_y'.right, exact q,
-               rcases H_x' with ⟨a₁,b⟩, cases a₁, convert a₁, cases a₁,
-               rcases H_y' with ⟨a₁,b⟩, cases a₁, convert a₁, cases a₁},
+               have : ↑x' ≠ ↑y', by {intro, apply h_neq, exact coe_subtype_injective a_1},
+               have h_incompat := Ha x' (x'.property.left.right) y' (y'.property.left.right) this,
+               have := wit_incompatible' h_incompat, rcases this with ⟨w,q₁,q₂, ⟨H₁,⟨H₂,H₃⟩⟩⟩,
+               have w_not_t₁ : w ≠ (wit (x'), m),
+                 by {intro H_eq, have := pfun.congr_arg (subtype.val (↑x'))
+                                         (pfun.in_dom_of_in_graph (by assumption))
+                                         (pfun.in_dom_of_in_graph (sorry)) H_eq, repeat{sorry}
+                     },
+               have w_not_t₂ : w.fst ≠ wit (y'), by sorry,
+               have w_in_red_1 : (w,q₁) ∈ (x).val.graph, by sorry,
+               have w_in_red_2 : (w,q₂) ∈ (y).val.graph, by sorry,
+               have w_in_c_1 : (w,q₁) ∈ c.val.graph, from H_cx w_in_red_1,
+               have w_in_c_2 : (w,q₂) ∈ c.val.graph, from H_cy w_in_red_2,
+               suffices : q₁ = q₂, by contradiction,
+               apply pfun.graph_functional c.val, exacts [w_in_c_1, w_in_c_2]
+               },
 
          have ih_rewrite : size_of_domain ⁻¹' {n} ∩ red '' A_n_m_q = red '' A_n_m_q,
            by {apply set.inter_eq_self_of_subset_right, intros x H_x,
