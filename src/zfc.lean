@@ -179,7 +179,7 @@ def axiom_of_union : sentence L_ZFC := ∀' (small ∃' (&1 ∈' &0 ⊓ &0 ∈' 
 -- todo: c can have free variables. Note that c y x is interpreted as y is the image of x
 def axiom_of_replacement (c : bounded_formula L_ZFC 2) : sentence L_ZFC := 
 -- ∀α small (λy, ∃x, x ∈ α ∧ c y x)
-functional c ⟹ ∀' (small ∃' (&0 ∈' &2 ⊓ c.cast1))
+functional c ⟹ ∀' (small ∃' (&0 ∈' &2 ⊓ ∃' ((&0 ≃ &2 : bounded_formula L_ZFC 4) ⊓ c.cast(lift_cast))))
 def axiom_of_powerset : sentence L_ZFC := 
 -- the class of all subsets of x is small
 ∀' small subset
