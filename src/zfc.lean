@@ -54,12 +54,17 @@ local notation `lift_cast` := by {repeat{apply nat.succ_le_succ}, apply nat.zero
 
 def Class : Type 1 := bounded_formula L_ZFC 1
 def small {n} (c : bounded_formula L_ZFC (n+1)) : bounded_formula L_ZFC n := 
-∃' ∀' (&0 ∈' &1 ⇔ (c ↑' 1 # 1))
+∃' ∀' (&0 ∈' &1 ⇔ c ↑' 1 # 1)
+def small' {n} (c : bounded_formula L_ZFC (n+1)) : bounded_formula L_ZFC n := 
+∃' ∀' (&0 ∈' &1 ⇔ (∀'∀' (((&0 ≃ &2 : bounded_formula L_ZFC (n+4)) ⊓ (&1 ≃ &4 : bounded_formula L_ZFC (n+4)) ) ⟹ c.cast(by {simp, exact dec_trivial}))))
+
+
 
 def subclass (c₁ c₂ : Class) : sentence L_ZFC := ∀' (c₁ ⟹ c₂)
 def functional {n} (c : bounded_formula L_ZFC (n+2)) : bounded_formula L_ZFC n := 
 -- ∀x ∃y ∀z, c z x ↔ z = y
-∀' ∃' ∀' (c ↑' 1 # 1 ⇔ &0 ≃ &1)
+∀' ∃' ∀' ((∀' ∀'((&0 ≃ &4 : bounded_formula L_ZFC (n+5)) ⊓ (&1 ≃ &2 : bounded_formula L_ZFC (n+5)) ⟹ (((c.cast(by {simp at *, exact dec_trivial}) )) ⇔ &1 ≃ &3 : bounded_formula L_ZFC (n+5)))))
+
 def subset : bounded_formula L_ZFC 2 := ∀' (&0 ∈' &1 ⟹ &0 ∈' &2)
 def is_emptyset : bounded_formula L_ZFC 1 := ∼ ∃' (&0 ∈' &1)
 
@@ -84,11 +89,6 @@ local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`) := l
 
 def relation : bounded_formula L_ZFC 1 := ∀' ((&0 ∈' &1) ⟹ is_ordered_pair ↑' 1 # 1)
 --&0 is a relation (is a set of ordered pairs)
-
-def relation' : bounded_formula L_ZFC 1 := ∀' (((&0 ∈' &1) : bounded_formula L_ZFC 2) ⟹ (is_ordered_pair ⊚ [0]))
-
-lemma chk: relation = relation' := sorry
---ideally this should be by refl. Comment out the set_option above the defn of subst_var_bounded_formula to see the snag
 
 
 def function : bounded_formula L_ZFC 1 := relation ⊓ ∀'∀'∀'∀'∀'(&1 ∈' &5 ⊓ ordered_pair ↑' 1 # 3 ↑' 1 # 1 ↑' 1 # 0 ⊓ ((&0 ∈' &5 : bounded_formula L_ZFC 6) ⊓ (ordered_pair ↑' 1 # 2 ↑' 1 # 1).cast(lift_cast)) ⟹ (&3 ≃ &2 : bounded_formula L_ZFC 6))
@@ -179,7 +179,11 @@ def axiom_of_union : sentence L_ZFC := ∀' (small ∃' (&1 ∈' &0 ⊓ &0 ∈' 
 -- todo: c can have free variables. Note that c y x is interpreted as y is the image of x
 def axiom_of_replacement (c : bounded_formula L_ZFC 2) : sentence L_ZFC := 
 -- ∀α small (λy, ∃x, x ∈ α ∧ c y x)
-functional c ⟹ ∀' (small ∃' (&0 ∈' &2 ⊓ ∃' ((&0 ≃ &2 : bounded_formula L_ZFC 4) ⊓ c.cast(lift_cast))))
+/-
+functional c ⟹ ∀' (small' ∃' (&0 ∈' &2 ⊓ ∀' ((&0 ≃ &2 : bounded_formula L_ZFC 4) ⟹ c.cast(lift_cast))))
+-/
+functional c ⟹ ∀' (small' ∃' ( c.cast(lift_cast) ⊓ &0 ∈' &2))
+
 def axiom_of_powerset : sentence L_ZFC := 
 -- the class of all subsets of x is small
 ∀' small subset
