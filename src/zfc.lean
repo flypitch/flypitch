@@ -30,7 +30,7 @@ local infix ` ∈' `:100 := bounded_formula_of_relation ZFC_el
 --  | n m z (bd_rel _) := "∈"
 --  | n m z (bd_apprel a b) := str_preformula n (m+1) z a ++ "(" ++ str_term n z b ++ ")"
 --  | n m z (∀' t) := "(∀x" ++ to_string(z+1) ++ "," ++ str_preformula (n+1) m (z+1) t ++ ")"
---def str_formula : ∀ {n : ℕ}, bounded_formula L_ZFC n → ℕ → string
+ --def str_formula : ∀ {n : ℕ}, bounded_formula L_ZFC n → ℕ → string
 --  | n ((f₁ ⟹ (f₂ ⟹ bd_falsum)) ⟹ bd_falsum) m:= "(" ++ str_formula f₁ m ++ "∧" ++ str_formula f₂ m ++ ")"
 --  | n ((f₁ ⟹ bd_falsum) ⟹ f₂) m := "(" ++ str_formula f₁ m ++ " ∨ " ++ str_formula f₂ m ++ ")"
 --  | n (bd_equal s1 s2) m := "(" ++ str_term n m s1 ++ " = " ++ str_term n m s2 ++ ")"
