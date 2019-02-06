@@ -41,6 +41,35 @@ end
 @[simp] lemma Set'_mem_mem {n : ℕ} {x y : bounded_term L_ZFC n} {v : dvector ↥Set' n} : realize_bounded_formula v (x ∈' y) dvector.nil = ((realize_bounded_term v x dvector.nil) ∈ (realize_bounded_term v y dvector.nil)) := begin
   simp [ZFC_el, bounded_formula_of_relation, realize_bounded_formula, bd_apps_rel] end 
 
+lemma Set_subset_rw {s t : Set} : @realize_bounded_formula L_ZFC Set' 2 0 ([s,t]) subset ([]) ↔ Set_subset s t :=
+ by {simp only [subset],
+    simp only [realize_bounded_formula, Set'_mem_mem, Set_subset, Set.subset], refl}
+
+lemma Set_is_powerset_rw {s t : Set}: @realize_bounded_formula L_ZFC Set' 2 0 ([t,s]) is_powerset ([]) ↔ Set_is_powerset s t :=
+by {simp only [is_powerset, realize_bounded_formula, realize_bounded_formula_biimp, Set'_mem_mem, Set_is_powerset, realize_cast_bounded_formula, dvector.trunc, Set_subset_rw, Set_subset],refl}
+
+lemma Set_is_emptyset_rw {s : Set} : @realize_bounded_formula L_ZFC Set' 1 0 ([s]) is_emptyset ([]) ↔ Set_is_emptyset s :=
+by {simp only [is_emptyset, realize_bounded_formula,realize_bounded_formula_not,realize_bounded_formula_ex,Set_is_emptyset], refl}
+
+lemma Set_pair_rw {s t p: Set} : @realize_bounded_formula L_ZFC Set' 3 0  ([p,s,t]) pair ([]) ↔ Set_pair_predicate p s t :=
+by {simp only [pair, Set_pair_predicate, realize_bounded_formula_or, realize_bounded_formula], refl}
+
+lemma Set_ordered_pair_rw' {s t p: Set} : @realize_bounded_formula L_ZFC Set' 3 0 ([p,s,t]) ordered_pair ([]) ↔ Set_ordered_pair' p s t :=
+by {simp only [ordered_pair, realize_bounded_formula_biimp, realize_bounded_formula_and, realize_bounded_formula, realize_bounded_formula_or, Set'_mem_mem, realize_cast_bounded_formula, Set_ordered_pair, dvector.trunc, Set_pair_rw], 
+  refl}
+lemma Set_ordered_pair_rw {s t p} : Set_ordered_pair s t p ↔ Set_ordered_pair s t p :=
+by {simp only [Set_ordered_pair, Set_ordered_pair'], sorry}
+--TODO : angle bracket notation ⟪x,y⟫ = {{x},{x,y}}
+
+lemma Set_is_ordered_pair_rw {p}: @realize_bounded_formula L_ZFC Set' 1 0 ([p]) is_ordered_pair ([]) ↔ Set_is_ordered_pair' p :=
+by {simp only [is_ordered_pair, Set_is_ordered_pair', realize_cast_bounded_formula, realize_bounded_formula, realize_bounded_formula_ex, dvector.trunc, Set_ordered_pair_rw'], refl}
+
+lemma Set_relation_rw {p} : @realize_bounded_formula L_ZFC Set' 1 0 ([p]) relation ([]) ↔ Set_relation p :=
+by {simp only [relation, Set_relation, realize_bounded_formula, realize_cast_bounded_formula, dvector.trunc, Set_is_ordered_pair_rw, Set'_mem_mem], refl}
+
+lemma Set_function_rw {p} : @realize_bounded_formula L_ZFC Set' 1 0 ([p]) function ([]) ↔ Set_function' p :=
+by {simp only [function, Set_function', realize_bounded_formula, realize_bounded_formula_and, realize_cast_bounded_formula, dvector.trunc, Set_ordered_pair_rw', Set'_mem_mem, Set_relation_rw],refl}
+
 @[simp]lemma Set'_realize_subset_2 : ∀ x y : Set, @realize_bounded_formula L_ZFC Set' 2 0 (x :: y :: dvector.nil) subset  dvector.nil  = Set.subset x y:=
 begin
   simp only [subset, Set'_mem_mem, fol.realize_bounded_formula, fol.realize_bounded_term, dvector.nth],
@@ -71,7 +100,10 @@ begin
   simp only [Th, axiom_of_union, small], intro x,
   conv {congr, skip, congr, congr, congr, skip,
        change (∃' (&1 ∈' &0 ⊓ &0 ∈' &3) : bounded_formula L_ZFC 3)},
-  simp, change ∃ U, ∀ z, z ∈ U ↔ ∃ w, z ∈ w ∧ w ∈ x, 
+  simp only [realize_bounded_formula, realize_bounded_formula_ex,
+      realize_bounded_formula_and, realize_bounded_formula_biimp,
+    Set'_mem_mem], 
+  change ∃ U, ∀ z, z ∈ U ↔ ∃ w, z ∈ w ∧ w ∈ x, 
   refine ⟨⋃ x, _⟩, intro z, rw[@Set.mem_Union x z], finish
 end
 
@@ -82,10 +114,23 @@ begin
   intros,
   refine ⟨Set.powerset x, _⟩,
   intro y, change y ∈ Set.powerset x ↔ Set.subset y x,
-  exact Set.mem_powerset,
+  exact Set.mem_powerset
 end
 
-lemma Set'_models_choice : axiom_of_choice ∈ Th Set' := sorry
+noncomputable def Set'_choice_function : ∀ x : Set, ∃ y : Set, y := λ x, @dite (∃ w, w ∈ x) (classical.prop_decidable (∃ w, w ∈x)) _ (λ w, {x, classical.some w}) (λ _, ∅)
+
+lemma Set'_models_shallow_simple_choice : Set_axiom_of_choice' :=
+begin
+unfold Set_axiom_of_choice', 
+intro x, refine ⟨@Set.image Set'_choice_function (classical.all_definable _ ) x , _⟩,
+intros z h, cases h with m nempty, 
+let s := Set'_choice_function z, 
+end
+
+lemma Set'_models_choice : axiom_of_choice ∈ Th Set' := 
+begin
+simp [has_mem.mem, set.mem, Th, set_of, axiom_of_choice, satisfied_in],
+end
 
 lemma Set'_models_infinity : axiom_of_infinity ∈ Th Set' :=
 begin
@@ -111,12 +156,14 @@ lemma Set'_models_shallow_infinity : Set_axiom_of_infinity :=
 begin
   unfold Set_axiom_of_infinity Set_is_emptyset, refine ⟨Set.omega, _⟩,
   split,
-    {refine ⟨∅, ⟨_, Set.omega_zero⟩⟩, apply Set.mem_empty},
+    {refine ⟨∅, ⟨_, Set.omega_zero⟩⟩, intro y, cases y, exact Set.mem_empty y_w y_h},
     {intros z H, refine ⟨Set.insert z z, ⟨iff.mpr Set.mem_insert (or.inl (by refl)), @Set.omega_succ z H⟩⟩},
 end
 
 lemma shallow_infinity_iff_shallow_infinity' : Set_axiom_of_infinity ↔ Set_axiom_of_infinity' :=
-  sorry
+begin
+sorry
+end
 
 lemma Set'_infinity_shallow_infinity : Set'[axiom_of_infinity] ↔ Set_axiom_of_infinity  :=
   sorry

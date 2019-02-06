@@ -76,14 +76,89 @@ end
 
 end list
 
-inductive dvector (α : Type u) : ℕ → Type u
-| nil {} : dvector 0
-| cons : ∀{n} (x : α) (xs : dvector n), dvector (n+1)
-
 inductive dfin : ℕ → Type
 | fz {n} : dfin (n+1)
 | fs {n} : dfin n → dfin (n+1)
 
+def dfin.to_nat : ∀ {n}, dfin n → ℕ
+| _ dfin.fz := 0
+| _ (dfin.fs n) := n.to_nat + 1
+
+theorem dfin.to_nat_lt : ∀ {n} (x : dfin n), x.to_nat < n
+| _ dfin.fz := nat.succ_pos _
+| _ (dfin.fs n) := nat.succ_lt_succ (dfin.to_nat_lt n)
+
+@[extensionality] theorem dfin.to_nat_inj {n} {x y : dfin n} (e : x.to_nat = y.to_nat) : x = y :=
+by induction x; cases y; injection e with e; [refl, rw x_ih e]
+
+def dfin.raise : ∀ {n}, dfin n → dfin (n+1)
+| _ dfin.fz := dfin.fz
+| _ (dfin.fs n) := dfin.fs n.raise
+
+def dfin.raise_by_k : ∀ {n} k , dfin n → dfin (n + k)
+  | _ 0 := id
+  | n (k+1) := λ d, dfin.raise (dfin.raise_by_k k d)
+
+def dfin.elim0 {α : Sort*} : dfin 0 → α.
+
+def dfin.cast_le : ∀ {m n}, n ≤ m → dfin n → dfin m
+| 0 n h x := false.elim (by cases h; cases x)
+| (m+1) _ _ dfin.fz := dfin.fz
+| (m+1) _ h (@dfin.fs n s) :=
+  dfin.fs (s.cast_le (nat.le_of_succ_le_succ h))
+
+@[simp] theorem dfin.cast_le_to_nat : ∀ {m n}
+  (h : n ≤ m) (x : dfin n), (x.cast_le h).to_nat = x.to_nat
+| 0 n h x := false.elim (by cases h; cases x)
+| (m+1) _ _ dfin.fz := rfl
+| (m+1) _ h (@dfin.fs n s) :=
+  congr_arg (+1) (dfin.cast_le_to_nat _ _)
+
+theorem dfin.cast_le_rfl {n} (x : dfin n) : x.cast_le (le_refl _) = x :=
+dfin.to_nat_inj (by simp)
+
+def dfin.last : ∀ n, dfin (n+1)
+| 0 := dfin.fz
+| (n+1) := dfin.fs (dfin.last n)
+
+def dfin.of_nat : ∀ n, ℕ → option (dfin n)
+| 0 m := none
+| (n+1) 0 := some dfin.fz
+| (n+1) (m+1) := dfin.fs <$> dfin.of_nat n m
+
+def dfin.of_nat_lt : ∀ {n} m, m < n → dfin n
+| 0 m h := (nat.not_lt_zero _ h).elim
+| (n+1) 0 _ := dfin.fz
+| (n+1) (m+1) h := dfin.fs (dfin.of_nat_lt m (nat.lt_of_succ_lt_succ h))
+
+@[simp] theorem dfin.of_nat_lt_to_nat : ∀ {n m} (h : m < n),
+  (dfin.of_nat_lt m h).to_nat = m
+| 0 m h := (nat.not_lt_zero _ h).elim
+| (n+1) 0 _ := rfl
+| (n+1) (m+1) h := congr_arg (+1)
+  (dfin.of_nat_lt_to_nat (nat.lt_of_succ_lt_succ h))
+
+instance has_one_dfin : ∀ n, has_one (dfin (n+1 + 1)) := λ n, ⟨dfin.fs (@dfin.fz n)⟩
+
+meta instance dfin.reflect : ∀ n, has_reflect (dfin n)
+| _ dfin.fz := `(dfin.fz)
+| _ (dfin.fs n) := `(dfin.fs).subst (dfin.reflect _ n)
+
+meta def tactic.interactive.to_dfin (m : ℕ) : tactic unit := do
+  n ← do {
+    `(dfin %%n) ← tactic.target | return (m+1),
+    tactic.eval_expr ℕ n },
+  m ← dfin.of_nat n m,
+  tactic.exact (reflect m)
+
+inductive dvector (α : Type u) : ℕ → Type u
+| nil {} : dvector 0
+| cons : ∀{n} (x : α) (xs : dvector n), dvector (n+1)
+/-
+inductive dfin : ℕ → Type
+| fz {n} : dfin (n+1)
+| fs {n} : dfin n → dfin (n+1)
+-/
 instance has_zero_dfin {n} : has_zero $ dfin (n+1) := ⟨dfin.fz⟩
 
 -- note from Mario --- use dfin to synergize with dvector
@@ -112,9 +187,9 @@ variables {α : Type u} {β : Type v} {γ : Type w} {n : ℕ}
 protected def nth' {n : ℕ} (xs : dvector α n) (m : fin n) : α :=
 xs.nth m.1 m.2
 
-protected def nth'' : ∀ {n : ℕ} (xs : dvector α n) (m : dfin n), α
-| _ (x::xs) dfin.fz       := x
-| _ (x::xs) (dfin.fs (m)) := nth'' xs m
+@[simp] protected def nth2 : ∀ {n : ℕ}, dvector α n → dfin n → α
+| _ (x::xs) dfin.fz := x
+| _ (x::xs) (dfin.fs m) := nth2 xs m
 
 protected def mem : ∀{n : ℕ} (x : α) (xs : dvector α n), Prop
 | _ x []       := false
@@ -183,14 +258,18 @@ protected lemma concat_nth : ∀{n : ℕ} (xs : dvector α n) (x : α) (m : ℕ)
 | _ (x::xs) x' 0     h' h := by refl
 | _ (x::xs) x' (m+1) h' h := by dsimp; exact concat_nth xs x' m _ _
 
+protected lemma concat_nth2 : ∀{n : ℕ} (xs : dvector α n) (x : α) (m : dfin n), (xs.concat x).nth2 m.raise = xs.nth2 m
+| _ (x::xs) x' dfin.fz     := rfl
+| _ (x::xs) x' (dfin.fs m) := concat_nth2 xs x' m
+
 @[simp] protected lemma concat_nth_last : ∀{n : ℕ} (xs : dvector α n) (x : α) (h : n < n+1), 
   (xs.concat x).nth n h = x
 | _ []      x' h := by refl
 | _ (x::xs) x' h := by dsimp; exact concat_nth_last xs x' _
 
-@[simp] protected lemma concat_nth_last' : ∀{n : ℕ} (xs : dvector α n) (x : α) (h : n < n+1), 
-  (xs.concat x).last = x
-:= by apply dvector.concat_nth_last
+@[simp] protected lemma concat_nth2_last : ∀{n : ℕ} (xs : dvector α n) (x : α), (xs.concat x).nth2 (dfin.last _) = x
+| _ []      x' := rfl
+| _ (x::xs) x' := concat_nth2_last xs x'
 
 @[simp] protected def append : ∀{n m : ℕ} (xs : dvector α n) (xs' : dvector α m), dvector α (m+n)
 | _ _ []       xs := xs
@@ -201,7 +280,7 @@ protected lemma concat_nth : ∀{n : ℕ} (xs : dvector α n) (x : α) (m : ℕ)
 | 0 x k xs := (x::xs)
 | (n+1) x (k+1) (y::ys) := (y::insert x k ys)
 
-@[simp] protected lemma insert_at_zero : ∀{n : ℕ} (x : α) (xs : dvector α n), dvector.insert x 0 xs = (x::xs) := by {intros, induction n; refl} -- why doesn't {intros, refl} work?
+@[simp] protected lemma insert_at_zero : ∀{n : ℕ} (x : α) (xs : dvector α n), dvector.insert x 0 xs = (x::xs) := by {intros, induction n, refl, refl} -- why doesn't {intros, refl} work?
 
 @[simp] protected lemma insert_nth : ∀{n : ℕ} (x : α) (k : ℕ) (xs : dvector α n) (h : k < n+1), (dvector.insert x k xs).nth k h = x
 | 0 x k xs h := by {cases h, refl, exfalso, apply nat.not_lt_zero, exact h_a}
@@ -235,7 +314,7 @@ protected lemma nth_irrel1 : ∀{n k : ℕ} {h : k < n + 1} {h' : k < n + 1 + 1}
   (x :: (v.trunc n (nat.le_succ n))).nth k h = (x::v).nth k h' :=
 by {intros, apply @dvector.trunc_nth _ _ _ _ (by {simp, exact dec_trivial}) h (x::v)}
 
-protected def cast {n m} (p : n = m) : dvector α n → dvector α m :=
+@[simp] protected def cast {n m} (p : n = m) : dvector α n → dvector α m :=
   by subst p; exact id
 
 @[simp] protected lemma cast_irrel {n m} {p p' : n = m} {v : dvector α n} : v.cast p = v.cast p' := by refl
@@ -251,6 +330,7 @@ protected lemma cast_hrfl {n m} {p : n = m} {v : dvector α n} : v.cast p == v :
   | 0 _ _  := dvector.nil
   | n 0 (dvector.cons y ys) := ys
   | (n+1) (k+1) (dvector.cons y ys) := dvector.cons y (remove_mth k ys)
+
 
 /- how to make this protected? -/
 inductive rel [setoid α] : ∀{n}, dvector α n → dvector α n → Prop
@@ -443,6 +523,9 @@ end finset
 
 namespace nonempty
 variables {α : Type u} {β : Type v} {γ : Type w}
+
+protected def map (f : α → β) : nonempty α → nonempty β
+| ⟨x⟩ := ⟨f x⟩
 
 protected def map2 (f : α → β → γ) : nonempty α → nonempty β → nonempty γ
 | ⟨x⟩ ⟨y⟩ := ⟨f x y⟩
