@@ -19,7 +19,7 @@ lemma inf_eq_of_le {α : Type*} [distrib_lattice α] {a b : α} (h : a ≤ b) : 
   by apply le_antisymm; finish[le_inf]
 
 /-- the deduction theorem in β -/
-lemma imp_top_iff_le {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⟹ a₂ = ⊤) ↔ a₁ ≤ a₂ :=
+@[simp]lemma imp_top_iff_le {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⟹ a₂ = ⊤) ↔ a₁ ≤ a₂ :=
 begin
  split; intro H,
   {have : a₁ ⊓ a₂ = a₁, from
@@ -31,15 +31,17 @@ begin
              
    finish},
  {have : a₁ ⊓ a₂ = a₁, from inf_eq_of_le H, apply top_unique,
-  have this' : ⊤ = - a₁ ⊔ a₁, by simp, rw[this', <-this, imp], simp, repeat{split},
-  suffices : (- a₁ ≤ - a₁ ⊔ - a₂ ⊔ a₂) = (- a₁ ≤ - a₁ ⊔ (- a₂ ⊔ a₂)),
-    by rw[this]; apply le_sup_left, ac_refl,
-  suffices : (-a₂ ≤ -a₁ ⊔ -a₂ ⊔ a₂) = (- a₂ ≤ - a₂ ⊔ (-a₁ ⊔ a₂)),
-    by rw[this]; apply le_sup_left, ac_refl,
-  suffices : - a₁ ⊔ - a₂ ⊔ a₂ = ⊤,
-    by rw[this]; simp, apply top_unique,
-    suffices : - a₁ ⊔ - a₂ ⊔ a₂ = - a₁ ⊔ (- a₂ ⊔ a₂),
-      by simp[this], ac_refl}
+  have this' : ⊤ = - a₁ ⊔ a₁, by rw[lattice.neg_sup_eq_top],
+  rw[this', <-this, imp], simp only [lattice.neg_inf, lattice.sup_le_iff],
+  repeat{split},
+    suffices : (- a₁ ≤ - a₁ ⊔ - a₂ ⊔ a₂) = (- a₁ ≤ - a₁ ⊔ (- a₂ ⊔ a₂)),
+      by rw[this]; apply le_sup_left, ac_refl,
+    suffices : (-a₂ ≤ -a₁ ⊔ -a₂ ⊔ a₂) = (- a₂ ≤ - a₂ ⊔ (-a₁ ⊔ a₂)),
+      by rw[this]; apply le_sup_left, ac_refl,
+    suffices : - a₁ ⊔ - a₂ ⊔ a₂ = ⊤,
+      by rw[this]; simp, apply top_unique,
+      suffices : - a₁ ⊔ - a₂ ⊔ a₂ = - a₁ ⊔ (- a₂ ⊔ a₂),
+        by simp[this], ac_refl}
 end
 end lattice
 
@@ -66,7 +68,7 @@ begin refine ⟨_,_,_⟩, exact ulift empty, intro x, repeat{cases x}, intro x, 
   some element of the second family and vice-versa. -/
 def bool_equiv : ∀ (x y : B_name β), β
 /- ∀ x ∃ y, m x y ∧ ∀ y ∃ x, m y x, but this time in ~lattice~ -/
-| (B_name.mk α A B) (B_name.mk α' A' B') := (infi $ (λ a : α, supr $ λ a', (bool_equiv (A a) (A' a')) ⊓ (B a ⊓ B' a'))) ⊓ (infi $ λ a', supr $ λ a, (bool_equiv (A a) (A' a')) ⊓ (B a ⊓ B' a'))
+| (B_name.mk α A B) (B_name.mk α' A' B') := (infi $ (λ a : α, supr $ λ a', (bool_equiv (A a) (A' a')) ⊓ (B a ⟹ B' a'))) ⊓ (infi $ λ a', supr $ λ a, (bool_equiv (A a) (A' a')) ⊓ (B' a' ⟹ B a))
 
 theorem bool_equiv_refl_empty : (@bool_equiv β _) (preempty) (preempty) = ⊤ :=
   by unfold preempty bool_equiv;
@@ -76,8 +78,8 @@ open lattice
 
 @[simp]theorem bool_equiv_refl : ∀(x), @bool_equiv β _ x x = ⊤ :=
 begin
-  intro x, induction x, simp[bool_equiv], split; intros,
-  apply top_unique, apply le_supr_of_le i, have := x_ih i,
+  intro x, induction x, simp[bool_equiv], split; intros;
+  {apply top_unique, apply le_supr_of_le i, have := x_ih i, finish}
 end
 -- by {intro x; induction x; simp[bool_equiv]; split; intros;
 -- begin end }
