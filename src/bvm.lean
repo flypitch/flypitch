@@ -56,46 +56,60 @@ lemma forall_and {α : Type*} {p q : α → Prop} : (∀ x, p x) ∧ (∀ y, q y
 inductive B_name (β : Type u) [complete_boolean_algebra β] : Type (u+1)
 | mk (α : Type u) (A : α → B_name) (B : α → β) : B_name
 
+export B_name
+
 variables {β : Type u} [complete_boolean_algebra β]
 
-instance nonempty_B_name : nonempty $ @B_name β _ := begin apply nonempty.intro, refine ⟨_,_,_⟩, exact ulift empty, intro x, repeat{cases x}, intro x, repeat{cases x} end
+instance nonempty_B_name : nonempty $ @B_name β _ :=
+  by {apply nonempty.intro, refine ⟨_,_,_⟩, exact ulift empty, intro x,
+                          repeat{cases x}, intro x, repeat{cases x}}
 
-def preempty : B_name β :=
-begin refine ⟨_,_,_⟩, exact ulift empty, intro x, repeat{cases x}, intro x, repeat{cases x} end
+def empty : B_name β :=
+  by {fsplit, exact ulift empty, intro x, repeat{cases x}, intro x, repeat{cases x}}
+
+instance has_empty_bSet : has_emptyc (B_name β) := ⟨empty⟩
 
 /-- Two Boolean-valued pre-sets are extensionally equivalent if every
   element of the first family is extensionally equivalent to
   some element of the second family and vice-versa. -/
 def bool_equiv : ∀ (x y : B_name β), β
 /- ∀ x ∃ y, m x y ∧ ∀ y ∃ x, m y x, but this time in ~lattice~ -/
-| (B_name.mk α A B) (B_name.mk α' A' B') := (infi $ (λ a : α, supr $ λ a', (bool_equiv (A a) (A' a')) ⊓ (B a ⟹ B' a'))) ⊓ (infi $ λ a', supr $ λ a, (bool_equiv (A a) (A' a')) ⊓ (B' a' ⟹ B a))
+| (mk α A B) (mk α' A' B') :=
+             (infi $ (λ a : α, B a ⟹ (supr $ λ a', (bool_equiv (A a) (A' a'))))) ⊓
+               (infi $ (λ a' : α', B' a' ⟹ (supr $ λ a, (bool_equiv (A a) (A' a')))))
 
-theorem bool_equiv_refl_empty : (@bool_equiv β _) (preempty) (preempty) = ⊤ :=
-  by unfold preempty bool_equiv;
+infix ` =ᴮ `:50 := bool_equiv
+
+theorem bool_equiv_refl_empty : (@bool_equiv β _) (empty) (empty) = ⊤ :=
+  by unfold empty bool_equiv;
   {simp only [lattice.inf_eq_top_iff, lattice.infi_eq_top], fsplit; intros i; cases i; cases i}
 
 open lattice
 
 @[simp]theorem bool_equiv_refl : ∀(x), @bool_equiv β _ x x = ⊤ :=
 begin
-  intro x, induction x, simp[bool_equiv], split; intros;
-  {apply top_unique, apply le_supr_of_le i, have := x_ih i, finish}
+  intro x, induction x, simp[bool_equiv, -imp_top_iff_le], split; intros;
+  {apply top_unique, simp, apply le_supr_of_le i, have := x_ih i, finish}
 end
--- by {intro x; induction x; simp[bool_equiv]; split; intros;
--- begin end }
-  -- from (top_unique $ le_supr_of_le i $ by {rwa[x_ih i],  })
+
+/- empty' is the singleton B_name {⟨∅, ⊥⟩}, i.e. a set whose only member is ∅ which has
+   a zero probability of actually being an element. It should be equivalent to ∅. -/
+def empty' : B_name β := mk punit (λ x, ∅) (λ x, ⊥)
+
+example : ((empty : B_name β) =ᴮ (empty' : B_name β) : β) = ⊤ :=
+  by {simp[empty, empty', bool_equiv], intro i, repeat{cases i}} -- phew
 
 /-- `x ∈ y` as Boolean-valued pre-sets if `x` is extensionally equivalent to a member
   of the family `y`. -/
 def mem : B_name β → B_name β → β
-| a (B_name.mk α' A' B') := supr (λ a', @bool_equiv β _ a (A' a'))
+| a (mk α' A' B') := supr (λ a', @bool_equiv β _ a (A' a'))
 
 infix ` ∈ᴮ `:50 := mem
 
-theorem mem.mk {α : Type*} (A : α → B_name β) (B : α → β) (a : α) : A a ∈ᴮ B_name.mk α A B = ⊤ :=
+theorem mem.mk {α : Type*} (A : α → B_name β) (B : α → β) (a : α) : A a ∈ᴮ mk α A B = ⊤ :=
 by {apply top_unique, apply le_supr_of_le a, simp}
 
 protected def subset : B_name β → B_name β → β
-| (B_name.mk α A B) b := ⨅a:α, A a ∈ᴮ b
+| (mk α A B) b := ⨅a:α, A a ∈ᴮ b
 
 end bSet
