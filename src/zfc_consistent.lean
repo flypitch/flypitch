@@ -2,6 +2,8 @@ import .zfc
 open fol
 open zfc
 
+universe u
+
 local infix `∈'`:100 := bounded_formula_of_relation ZFC_el
 local notation h :: t  := dvector.cons h t
 local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`:0) := l
@@ -117,14 +119,35 @@ begin
   exact Set.mem_powerset
 end
 
-noncomputable def Set'_choice_function : ∀ x : Set, ∃ y : Set, y := λ x, @dite (∃ w, w ∈ x) (classical.prop_decidable (∃ w, w ∈x)) _ (λ w, {x, classical.some w}) (λ _, ∅)
+def Set_pair (x y : Set.{u}) : Set.{u} := {x, y}
+
+noncomputable instance map_definable_aux (f : Set → Set) [H : pSet.definable 1 f] : pSet.definable 1 (λy, Set_pair y (f y)) :=
+@classical.all_definable 1 _
+noncomputable def Set_map (f : Set → Set) [H : pSet.definable 1 f] : Set → Set :=
+Set.image (λy, Set_pair y (f y))
+
+noncomputable def choice_map : Set → Set := λ x, @Set_map (λy, classical.epsilon (λz, z ∈ y)) (classical.all_definable _) x
 
 lemma Set'_models_shallow_simple_choice : Set_axiom_of_choice' :=
 begin
 unfold Set_axiom_of_choice', 
-intro x, refine ⟨@Set.image Set'_choice_function (classical.all_definable _ ) x , _⟩,
-intros z h, cases h with m nempty, 
-let s := Set'_choice_function z, 
+intro x, refine ⟨choice_map x, _⟩,
+intros z h, cases h with h nonempty, rw choice_map, rw Set_map, 
+refine ⟨classical.strong_indefinite_description (λ e, e ∈ z) _, _ ⟩,
+{simp},
+repeat {apply and.intro},
+{cases classical.strong_indefinite_description _ _, exact property nonempty},
+refine ⟨Set_pair z (classical.epsilon (λ (e : Set), e ∈ z)), _⟩,
+repeat {apply and.intro}, simp, refine ⟨z, _⟩, apply and.intro, 
+{assumption},
+{refl}, 
+{rw [Set_pair], exact Set.mem_insert.mpr(or.inr (Set.mem_insert.mpr (or.inl rfl)))}, 
+{rw [Set_pair],refine Set.mem_insert.mpr(or.inl _),rw [classical.epsilon, nonempty_of_inhabited], refl},
+{intros w' h, cases h with mem h, cases h with v h, cases h with a b, cases b with b c,
+simp at a, cases a with z h, rw classical.epsilon at h, rw Set_pair at h, rw← h.2 at c,
+simp at c, cases c, {rw c at mem, sorry},
+{rw c, cases nonempty_of_inhabited, sorry}
+}
 end
 
 lemma Set'_models_choice : axiom_of_choice ∈ Th Set' := 
