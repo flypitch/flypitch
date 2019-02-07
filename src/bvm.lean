@@ -75,8 +75,8 @@ instance has_empty_bSet : has_emptyc (B_name β) := ⟨empty⟩
 def bool_equiv : ∀ (x y : B_name β), β
 /- ∀ x ∃ y, m x y ∧ ∀ y ∃ x, m y x, but this time in ~lattice~ -/
 | (mk α A B) (mk α' A' B') :=
-             (infi $ (λ a : α, B a ⟹ (supr $ λ a', (bool_equiv (A a) (A' a'))))) ⊓
-               (infi $ (λ a' : α', B' a' ⟹ (supr $ λ a, (bool_equiv (A a) (A' a')))))
+             (infi $ (λ a : α, B a ⟹ (supr $ λ a', B' a' ⊓ (bool_equiv (A a) (A' a'))))) ⊓
+               (infi $ (λ a' : α', B' a' ⟹ (supr $ λ a, B a ⊓(bool_equiv (A a) (A' a')))))
 
 infix ` =ᴮ `:50 := bool_equiv
 
@@ -102,12 +102,20 @@ example : ((empty : B_name β) =ᴮ (empty' : B_name β) : β) = ⊤ :=
 /-- `x ∈ y` as Boolean-valued pre-sets if `x` is extensionally equivalent to a member
   of the family `y`. -/
 def mem : B_name β → B_name β → β
-| a (mk α' A' B') := supr (λ a', @bool_equiv β _ a (A' a'))
+| a (mk α' A' B') := supr (λ a', B' a' ⊓ (a =ᴮ (A' a')))
+
+def empty'' : B_name β := mk (ulift bool) (λ x, ∅) (λ x, by {repeat{cases x}, exact ⊥, exact ⊤})
 
 infix ` ∈ᴮ `:50 := mem
 
-theorem mem.mk {α : Type*} (A : α → B_name β) (B : α → β) (a : α) : A a ∈ᴮ mk α A B = ⊤ :=
-by {apply top_unique, apply le_supr_of_le a, simp}
+/-- ∅ appears in empty'' with probability 0 and 1, with the higher probability winning the
+    vote of membership. This demonstrates why the inequality in the following theorem is
+    necessary. -/
+example : ∅ ∈ᴮ empty'' = (⊤ : β) :=
+  by {apply top_unique, apply le_supr_of_le ⊤, swap, exact ⟨⟨(tt)⟩⟩, finish}
+
+theorem mem.mk {α : Type*} (A : α → B_name β) (B : α → β) (a : α) : A a ∈ᴮ mk α A B ≥ B a :=
+  le_supr_of_le a $ by simp
 
 protected def subset : B_name β → B_name β → β
 | (mk α A B) b := ⨅a:α, A a ∈ᴮ b
