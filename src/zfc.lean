@@ -73,25 +73,25 @@ def singl : bounded_formula L_ZFC 2 := &0 ≃ &1
 def binary_union : bounded_formula L_ZFC 3 := &0 ∈' &1 ⊔ &0 ∈' &2
 def succ : bounded_formula L_ZFC 2 := (&0 ≃ &1 : bounded_formula L_ZFC 2) ⊔ &0 ∈' &1 
 
-def ordered_pair : bounded_formula L_ZFC 3 := ∀'(&0 ∈' &1 ⇔ (&0 ≃ &3 : bounded_formula L_ZFC 4) ⊔ ∀'(&0 ∈' &1 ⇔ pair ↑' 1 # 1 ↑' 1 # 1))
-
+--def ordered_pair : bounded_formula L_ZFC 3 := ∀'(&0 ∈' &1 ⇔ (&0 ≃ &3 : bounded_formula L_ZFC 4) ⊔ ∀'(&0 ∈' &1 ⇔ pair ↑' 1 # 1 ↑' 1 # 1))
+def ordered_pair : bounded_formula L_ZFC 3 := ∀'(&0 ∈' &1 ⇔ (&0 ≃ &3 : bounded_formula L_ZFC 4) ⊔ ∀'(&0 ∈' &1 ⇔ (∀' ∀' ∀' ((bd_and (&0 ≃ &3) ((&1 ≃ &6 : bounded_formula L_ZFC 8) ⊓ (&2 ≃ &7 : bounded_formula L_ZFC 8))) ⟹ pair.cast(lift_cast)))))
 -- &0 is an ordered pair of &2 and &1 (z = ⟨x, y⟩)
 
 def ordered_pair' : bounded_formula L_ZFC 3 := ∀'(&0 ∈' &3 ⇔ (&0 ≃ &2 : bounded_formula L_ZFC 4) ⊔ ∀'(&0 ∈' &1 ⇔ (pair ↑' 1 # 1).cast(lift_cast)))
 -- &2 is an ordered pair of &1 and &0 (x = ⟨y,z⟩)
 -- TODO: Make defns like this unnecessary (current effort is subst_var_* in fol.lean)
 
-def is_ordered_pair : bounded_formula L_ZFC 1 := ∃' ∃' ordered_pair
+def is_ordered_pair : bounded_formula L_ZFC 1 := ∃' ∃' ∀' (&0 ≃ &3 ⟹ ordered_pair.cast(lift_cast))
 --&0 is an ordered pair of some two elements--
 
 local notation h :: t  := dvector.cons h t
 local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`) := l
 
-def relation : bounded_formula L_ZFC 1 := ∀' ((&0 ∈' &1) ⟹ is_ordered_pair ↑' 1 # 1)
+def relation : bounded_formula L_ZFC 1 := ∀' ((&0 ∈' &1) ⟹ is_ordered_pair.cast(lift_cast))
 --&0 is a relation (is a set of ordered pairs)
 
 
-def function : bounded_formula L_ZFC 1 := relation ⊓ ∀'∀'∀'∀'∀'(&1 ∈' &5 ⊓ ordered_pair ↑' 1 # 3 ↑' 1 # 1 ↑' 1 # 0 ⊓ ((&0 ∈' &5 : bounded_formula L_ZFC 6) ⊓ (ordered_pair ↑' 1 # 2 ↑' 1 # 1).cast(lift_cast)) ⟹ (&3 ≃ &2 : bounded_formula L_ZFC 6))
+def function : bounded_formula L_ZFC 1 := relation ⊓ ∀'∀'∀'∀'∀'(&1 ∈' &5 ⊓ (∀' ∀' ∀' ((bd_and (&0 ≃ &4 : bounded_formula L_ZFC 9) (bd_and (&1 ≃ &6) (&2 ≃ &7)))  ⟹  ordered_pair.cast(lift_cast))) ⊓ ((&0 ∈' &5 : bounded_formula L_ZFC 6) ⊓ (∀' ∀' ∀' ((bd_and (&0 ≃ &3 : bounded_formula L_ZFC 9) (bd_and (&1 ≃ &5) (&2 ≃ &7))) ⟹ ordered_pair.cast(lift_cast)))) ⟹ (&3 ≃ &2 : bounded_formula L_ZFC 6))
 -- X is a function iff X is a relation and the following holds:
 -- ∀x ∀y ∀z ∀w ∀t, ((w ∈ X) ∧ (w = ⟨x, y⟩) ∧ (z ∈ X) ∧ (z = ⟨x, z⟩ ))) →  y = z
 
@@ -145,7 +145,7 @@ def fn_zfc_equiv : bounded_formula L_ZFC 3 := ((function_one_one.cast(lift_cast)
 def zfc_equiv : bounded_formula L_ZFC 2 := ∃' fn_zfc_equiv
 --&0 ≃ &1, i.e. they are equinumerous
 
-def is_powerset : bounded_formula L_ZFC 2 := ∀' ((&0 ∈' &2) ⇔ subset ↑' 1 # 2)
+def is_powerset : bounded_formula L_ZFC 2 := ∀' ((&0 ∈' &2) ⇔ subset.cast(lift_cast))
 --&1 is P(&0)
 
 def is_suc_of : bounded_formula L_ZFC 2 := ∀' ((&0 ∈' &2) ⇔ ((&0 ∈' &1) ⊔ ( &0 ≃ &1 : bounded_formula L_ZFC 3)))
@@ -196,6 +196,8 @@ def axiom_of_infinity' : sentence L_ZFC :=
 
 def axiom_of_choice : sentence L_ZFC := ∀'∀'(fn_domain ⟹ ∃'∀'(&0 ∈' &2 ⟹∀'(fn_app ↑' 1 # 2 ↑' 1 # 2 ⟹ (∀'(fn_app ↑' 1 # 1 ↑' 1 # 4 ↑' 1 # 4 ⊓ ∃'(&0 ∈' &2)) ⟹ &0 ∈' &1))))
 
+def axiom_of_choice' : sentence L_ZFC := ∀'  ∃' ∀' (&0 ∈' &2 ⊓ ((∃' (&0 ∈' &1)) ⟹ ∃' ((&0 ∈' &1 ⊓ ∃' ((&0 ∈' &3: bounded_formula L_ZFC 5) ⊓ &2 ∈' &0 ⊓ &1 ∈' &0)) ⊓ ∀' ((&0 ∈' &2 ⊓ ∃' ((&0 ∈' &4 : bounded_formula L_ZFC 6) ⊓ &3 ∈' &0 ⊓ &1 ∈' &0)) ⟹ (&0 ≃ &1: bounded_formula L_ZFC 5)))))
+
 def axiom_of_emptyset : sentence L_ZFC := small ⊥
 -- todo: c can have free variables
 def axiom_of_separation (c : Class) : sentence L_ZFC := ∀' (small $ &0 ∈' &1 ⊓ c.cast1)
@@ -217,19 +219,23 @@ def Set_subset : Set → Set → Prop := Set.subset
 
 def Set_is_powerset : Set → Set → Prop := λ x y, ∀ w, w ∈ x ↔ w ⊆ y
 
-def Set_is_emptyset: Set → Prop := λ x, ∀ y, y ∉ x
+def Set_is_emptyset: Set → Prop := λ x, ¬ ∃ y, y ∈ x
 
-def Set_pair : Set → Set → Set → Prop := λ x y z, x = {y,z}
+def Set_pair_predicate : Set → Set → Set → Prop := λ x y z, x = y ∨ x = z
 
 def Set_ordered_pair : Set → Set → Set → Prop := λ x y z, x = {{y},{y,z}}
+def Set_ordered_pair' : Set → Set → Set → Prop := λ x y z, (∀ w, w ∈ x ↔ (w = z ∨ (∀ v, v ∈ w ↔ (∀ z' y' v', (v' = v ∧ y' = y ∧ z' = z) →  Set_pair_predicate v' y' z'))))
+
 --TODO : angle bracket notation ⟪x,y⟫ = {{x},{x,y}}
 
-def Set_is_ordered_pair: Set → Prop := λ x, ∃ y z, Set_ordered_pair x y z
+def Set_is_ordered_pair: Set → Prop := λ x, ∃ y, ∃ z, Set_ordered_pair x z y
+def Set_is_ordered_pair': Set → Prop := λ x, ∃ y, ∃ z, ∀ x', (x' = x → Set_ordered_pair' x' z y)
 
-def Set_relation : Set → Prop := λ x, ∀w, w ∈ x ↔ Set_is_ordered_pair w
+def Set_relation : Set → Prop := λ x, ∀w, w ∈ x → Set_is_ordered_pair' w
 
 def Set_function : Set → Prop := λ x, Set_relation x ∧ ∀ a b c, ((({{a},{a,b}} ∈ x) ∧ ({{a},{a,c}} ∈ x)) → (b = c))
-
+--def function : bounded_formula L_ZFC 1 := relation ⊓ ∀'∀'∀'∀'∀'(&1 ∈' &5 ⊓ ordered_pair ↑' 1 # 3 ↑' 1 # 1 ↑' 1 # 0 ⊓ ((&0 ∈' &5 : bounded_formula L_ZFC 6) ⊓ (ordered_pair ↑' 1 # 2 ↑' 1 # 1).cast(lift_cast)) ⟹ (&3 ≃ &2 : bounded_formula L_ZFC 6))
+def Set_function' : Set → Prop := λ x, Set_relation x ∧ ∀ a b c p q, ((p ∈ x ∧ ( ∀ a' b' p', (p' = p ∧ b' = b ∧ a' = a) → Set_ordered_pair' p' b' a')) ∧ ((q ∈ x ∧ ( ∀ a' c' q', (q' = q ∧ c' = c ∧ a' = a) → Set_ordered_pair' q' c' a')))) → b = c
 def Set_fn_app : Set → Set → Set → Prop := λ x y z, {{x},{x,y}} ∈ z 
 
 def Set_fn_domain : Set → Set → Prop := λ x y, ∀ w, w ∈ x ↔ ∃ a b, w = {{a},{a,b}} ∧ a ∈ y
@@ -284,5 +290,7 @@ def Set_axiom_of_infinity : Prop :=
 ∃ y : Set.{0}, ((∃ x : Set, (Set_is_emptyset x ∧ x ∈ y))∧ (∀ z, z ∈ y → (∃ w, z ∈ w ∧ w ∈ y) ))
 
 def Set_axiom_of_infinity' : Prop := ∃ y : Set.{0}, ∀ x : Set, ((Set_is_emptyset x → x ∈ y) ∧ ∀ z, z ∈ y → ∃ w, (z ∈ w) ∧ w ∈ y)
+
+def Set_axiom_of_choice' : Prop := ∀ x : Set, ∃ y : Set, ∀ z, (z ∈ x ∧ ∃e, e ∈ z) → ∃ w, (w ∈ z ∧ ∃ v, v ∈ y ∧ z ∈ v ∧ w ∈ v) ∧ ∀ w', (w' ∈ z ∧ ∃ v, (v ∈ y ∧ z ∈ v ∧ w' ∈ v)) → w' = w
 
 end zfc

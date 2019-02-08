@@ -128,6 +128,14 @@ Set.image (λy, Set_pair y (f y))
 
 noncomputable def choice_map : Set → Set := λ x, @Set_map (λy, classical.epsilon (λz, z ∈ y)) (classical.all_definable _) x
 
+lemma Set_not_mem_self: ∀ {z : Set}, z ∉ z :=
+begin
+intro z, apply Set.induction_on z,
+intros, have h:= classical.em (x ∈ x),
+cases h, {exact a x h},
+{exact h}
+end
+
 lemma Set'_models_shallow_simple_choice : Set_axiom_of_choice' :=
 begin
 unfold Set_axiom_of_choice', 
@@ -144,9 +152,11 @@ repeat {apply and.intro}, simp, refine ⟨z, _⟩, apply and.intro,
 {rw [Set_pair], exact Set.mem_insert.mpr(or.inr (Set.mem_insert.mpr (or.inl rfl)))}, 
 {rw [Set_pair],refine Set.mem_insert.mpr(or.inl _),rw [classical.epsilon, nonempty_of_inhabited], refl},
 {intros w' h, cases h with mem h, cases h with v h, cases h with a b, cases b with b c,
-simp at a, cases a with z h, rw classical.epsilon at h, rw Set_pair at h, rw← h.2 at c,
-simp at c, cases c, {rw c at mem, sorry},
-{rw c, cases nonempty_of_inhabited, sorry}
+simp at a, cases a with y h, rw← h.2 at *, rw Set_pair at *, simp at b, simp at c, cases b, cases c,
+{rw [b,c] at mem, exact false.elim (Set_not_mem_self mem)},
+{rw← b at c, rw classical.epsilon at c, exact c}, cases c,
+{rw classical.epsilon at b, cases nonempty_of_inhabited, cases c, cases classical.strong_indefinite_description _ _, rw c at mem, },
+{}
 }
 end
 
