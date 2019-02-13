@@ -186,14 +186,26 @@ begin
  rw[this], apply le_supr
 end
 
-theorem bSet_axiom_of_extensionality {x y : bSet β} :
+theorem bSet_axiom_of_extensionality (x y : bSet β) :
   x =ᴮ y = (⨅(a : x.type), x.bval a ⟹ (⨆(a' : y.type), y.bval a' ⊓ x.func a =ᴮ y.func a'))
-         ⊓ ⨅(a' : y.type), y.bval a' ⟹ (⨆(a : x.type), x.bval a ⊓ x.func a =ᴮ y.func a') :=
+          ⊓ ⨅(a' : y.type), y.bval a' ⟹ (⨆(a : x.type), x.bval a ⊓ x.func a =ᴮ y.func a') :=
   by induction x; induction y; simp
+
+/-- The axiom of weak replacement says that for every ϕ(x,y),
+    for every set u, ∀ x ∈ u, ∃ y ϕ (x,y) implies there exists a set v
+    which contains the image of u under ϕ. With the other axioms,
+    this should be equivalent to the usual axiom of replacement. -/
+theorem bSet_axiom_of_weak_replacement (ϕ : bSet β → bSet β → β) (u : bSet β) :
+  (⨅(i:u.type), (u.bval i ⟹ (⨆(y : bSet β), ϕ (u.func i) y))) ⟹
+  (⨆(v : bSet β), (⨅(i : u.type), u.bval i ⟹ (⨆(j:v.type), ϕ (u.func i) (v.func j)))) = ⊤ :=
+begin
+  simp, fapply le_supr_of_le; sorry -- todo write the choice application
+end
 
 /-- Mixing lemma, c.f. Bell's book or Lemma 1 of Hamkins-Seabold -/
 
 lemma mixing_lemma {A : set β} (h_anti : antichain A) (τ : A → bSet β) :
   ∃ x, ∀ a : β, a ∈ A → a ≤ x =ᴮ τ ⟨a, by assumption⟩ := sorry
+
 
 end bSet
