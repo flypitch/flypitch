@@ -4,16 +4,13 @@ The Flypitch project aims to produce a formal proof of the [[https://en.wikipedi
 * Documentation 
 A conventional human-readable account of the proof written in type-theoretic foundations, upon which some parts of the formalization will be based, is [[https://www.github.com/flypitch/flypitch-notes/][located here]].
 * Compilation
-To compile the Flypitch project, you will need [[https://leanprover.github.io/][Lean 3.4.1]] and a compiled copy of ~mathlib~ on your machine. After cloning the repository to ~flypitch~, navigate to ~flypitch~ and run
+To compile the Flypitch project, you will need [[https://leanprover.github.io/][Lean 3.4.2]]. The ~leanpkg.toml~ file points to a certain commit of ~mathlib~, which will be cloned into into the project directory. After cloning the repository to ~flypitch~, navigate to ~flypitch~ and run
 #+BEGIN_SRC
-leanpkg init flypitch
-git checkout -- .gitignore
-leanpkg add PATH/TO/mathlib
+leanpkg configure
+leanpkg build
 #+END_SRC
 
-After this, you can (re)build the project using ~leanpkg build~.
-
-Installation instructions for Lean (using ~elan~) can be found [[https://github.com/leanprover/mathlib/blob/master/docs/elan.md][here]].
+Installation instructions for Lean (using ~elan~) can be found [[https://github.com/leanprover-community/mathlib/blob/master/docs/elan.md][here]].
 
 * Contributors
  - [[https://www.pitt.edu/~jmh288][Jesse Han]]
