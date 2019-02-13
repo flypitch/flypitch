@@ -12,8 +12,12 @@ def imp {α : Type*} [boolean_algebra α] : α → α → α :=
 
 infix ` ⟹ `:50 := lattice.imp
 
+@[simp]lemma imp_le_of_le {α : Type*} [boolean_algebra α] {a a₁ a₂ : α} {h : a₁ ≤ a₂} : a ⟹ a₁ ≤ (a ⟹ a₂) :=
+  sup_le (by apply le_sup_left) $ le_sup_right_of_le h
+
+
 lemma imp_neg_sub {α : Type*} [boolean_algebra α] {a₁ a₂ : α} :  -(a₁ ⟹ a₂) = a₁ - a₂ :=
-  by {rw[sub_eq, imp]; finish}
+  by rw[sub_eq, imp]; finish
 
 lemma inf_eq_of_le {α : Type*} [distrib_lattice α] {a b : α} (h : a ≤ b) : a ⊓ b = a :=
   by apply le_antisymm; finish[le_inf]
@@ -66,7 +70,29 @@ lemma supr_option' {α β : Type*} [complete_lattice β] {η : α → β} {b : �
 lemma infi_option' {α β : Type*} [complete_lattice β] {η : α → β} {b : β} : (⨅(x : option α), (option.rec b η x : β) : β) = b ⊓ ⨅(a : α), η a :=
   by rw[infi_option]
 
+/-- γ is full with respect to the complete lattice β if for every P : γ → β,
+    there exists a y : γ such that ⨆(z : γ), P z ≤ P y -/
+class full (γ β : Type*) [complete_lattice β] :=
+  (has_supr_wit : ∀ P : γ → β, ∃ y : γ, ((⨆(z : γ), P z) ≤ P y))
 
+lemma full_supr_wit {γ β : Type*} [complete_lattice β] [full γ β] (P : γ → β) : ∃ y : γ, (⨆(z : γ), P z) ≤ P y :=
+  by {tactic.unfreeze_local_instances, cases _inst_2, exact has_supr_wit P}
+
+/-- Convert a Boolean-valued ∀∃-statement into a Prop-valued ∀∃-statement
+  Given A : α → γ, a binary function ϕ : γ → γ → β, a truth-value assignment
+  B : α → β, ∀ i : α, there exists a y_i : γ, such that
+  (B i ⟹ ϕ (A i) y_i) ≥ ⨅(i:α), B i ⟹ ⨆(y : γ), ϕ(A i, γ)
+
+  A more verbose, but maybe clearer way to see this is:
+  if there is an equality (⨅i-⨆j body i j) = b,
+  then for all i, there exists j, such that body i j ≥ b
+-/
+lemma choice {α β γ : Type*} [complete_boolean_algebra β] [full γ β] (A : α → γ) (B : α → β) (ϕ : γ → γ → β) :
+  ∀ i : α, ∃ y : γ, (⨅(j:α), (B j ⟹ ⨆(z : γ), ϕ (A j) z)) ≤ (B i ⟹ ϕ (A i) y) :=
+  λ i,
+    by {have := classical.indefinite_description _ (full_supr_wit (λ x, ϕ (A i) x)),
+      exact ⟨this.val,
+    by {fapply infi_le_of_le, exact i, apply imp_le_of_le; exact this.property}⟩}
 
 end lattice
 
@@ -191,6 +217,14 @@ theorem bSet_axiom_of_extensionality (x y : bSet β) :
           ⊓ ⨅(a' : y.type), y.bval a' ⟹ (⨆(a : x.type), x.bval a ⊓ x.func a =ᴮ y.func a') :=
   by induction x; induction y; simp
 
+/-- Mixing lemma, c.f. Bell's book or Lemma 1 of Hamkins-Seabold -/
+
+lemma mixing_lemma {A : set β} (h_anti : antichain A) (τ : A → bSet β) :
+  ∃ x, ∀ a : β, a ∈ A → a ≤ x =ᴮ τ ⟨a, by assumption⟩ := sorry
+
+instance bSet_full : full (bSet β) β :=
+  full.mk $ λ P, begin end
+
 /-- The axiom of weak replacement says that for every ϕ(x,y),
     for every set u, ∀ x ∈ u, ∃ y ϕ (x,y) implies there exists a set v
     which contains the image of u under ϕ. With the other axioms,
@@ -199,13 +233,17 @@ theorem bSet_axiom_of_weak_replacement (ϕ : bSet β → bSet β → β) (u : bS
   (⨅(i:u.type), (u.bval i ⟹ (⨆(y : bSet β), ϕ (u.func i) y))) ⟹
   (⨆(v : bSet β), (⨅(i : u.type), u.bval i ⟹ (⨆(j:v.type), ϕ (u.func i) (v.func j)))) = ⊤ :=
 begin
-  simp, fapply le_supr_of_le; sorry -- todo write the choice application
+  simp only [bSet.bval, lattice.imp_top_iff_le, bSet.func, bSet.type],
+  have := classical.axiom_of_choice (choice u.func u.bval ϕ),
+  rcases this with ⟨wit, wit_property⟩, dsimp at wit wit_property,
+  fapply le_supr_of_le, exact ⟨u.type, wit, λ _, ⊤⟩,
+    {simp, intro i, apply le_trans (wit_property i),
+     apply imp_le_of_le, exact le_supr (λ x, ϕ (func u i) (wit x)) i}
 end
 
-/-- Mixing lemma, c.f. Bell's book or Lemma 1 of Hamkins-Seabold -/
+-- #check classical.axiom_of_choice
 
-lemma mixing_lemma {A : set β} (h_anti : antichain A) (τ : A → bSet β) :
-  ∃ x, ∀ a : β, a ∈ A → a ≤ x =ᴮ τ ⟨a, by assumption⟩ := sorry
+
 
 
 end bSet
