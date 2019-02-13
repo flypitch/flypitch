@@ -156,6 +156,16 @@ begin
   {apply top_unique, simp, apply le_supr_of_le i, have := x_ih i, finish}
 end
 
+theorem bool_equiv_symm {x y : bSet β} : x =ᴮ y = y =ᴮ x :=
+begin
+  induction x with α A B generalizing y, induction y with α' A' B',
+  suffices : ∀ a : α, ∀ a' : α', A' a' =ᴮ A a = A a =ᴮ A' a',
+    by {simp[this, inf_comm]}, from λ _ _, by simp[x_ih ‹α›]
+end
+
+theorem bool_equiv_trans {x y z : bSet β} : x =ᴮ y ⊓ y =ᴮ z ≤ x =ᴮ z :=
+  sorry
+
 /- empty' is the singleton bSet {⟨∅, ⊥⟩}, i.e. a set whose only member is ∅ which has
    a zero probability of actually being an element. It should be equivalent to ∅. -/
 @[reducible]def empty' : bSet β := mk punit (λ _, ∅) (λ _, ⊥)
