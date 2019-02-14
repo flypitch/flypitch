@@ -48,6 +48,15 @@ begin
         by simp[this], ac_refl}
 end
 
+/- ∀ {α : Type u_1} [_inst_1 : boolean_algebra α] {a₁ a₂ : α}, a₁ ⟹ a₂ = ⊤ ↔ a₁ ≤ a₂ -/
+
+lemma curry_uncurry {α : Type*} [boolean_algebra α] {a b c : α} : ((a ⊓ b) ⟹ c) = (a ⟹ (b ⟹ c)) :=
+  by simp[imp]; ac_refl
+
+/-- the actual deduction theorem in β, thinking of ≤ as a turnstile -/
+lemma deduction {α : Type*} [boolean_algebra α] {a b c : α} : a ⊓ b ≤ c ↔ a ≤ (b ⟹ c) :=
+  by {[smt] eblast_using [curry_uncurry, imp_top_iff_le]}
+
 /-- Given an η : option α → β, where β is a complete lattice, we have that the supremum of η
     is equal to (η none) ⊔ ⨆(a:α) η (some a)-/
 @[simp]lemma supr_option {α β : Type*} [complete_lattice β] {η : option α → β} : (⨆(x : option α), η x) = (η none) ⊔ ⨆(a : α), η (some a) :=
@@ -86,6 +95,9 @@ lemma full_supr_wit {γ β : Type*} [complete_lattice β] [full γ β] (P : γ �
   A more verbose, but maybe clearer way to see this is:
   if there is an equality (⨅i-⨆j body i j) = b,
   then for all i, there exists j, such that body i j ≥ b
+
+  Actually, the maximum principle tells us that "≥" above can
+  be improved to "="
 -/
 lemma choice {α β γ : Type*} [complete_boolean_algebra β] [full γ β] (A : α → γ) (B : α → β) (ϕ : γ → γ → β) :
   ∀ i : α, ∃ y : γ, (⨅(j:α), (B j ⟹ ⨆(z : γ), ϕ (A j) z)) ≤ (B i ⟹ ϕ (A i) y) :=
@@ -156,16 +168,6 @@ begin
   {apply top_unique, simp, apply le_supr_of_le i, have := x_ih i, finish}
 end
 
-theorem bool_equiv_symm {x y : bSet β} : x =ᴮ y = y =ᴮ x :=
-begin
-  induction x with α A B generalizing y, induction y with α' A' B',
-  suffices : ∀ a : α, ∀ a' : α', A' a' =ᴮ A a = A a =ᴮ A' a',
-    by {simp[this, inf_comm]}, from λ _ _, by simp[x_ih ‹α›]
-end
-
-theorem bool_equiv_trans {x y z : bSet β} : x =ᴮ y ⊓ y =ᴮ z ≤ x =ᴮ z :=
-  sorry
-
 /- empty' is the singleton bSet {⟨∅, ⊥⟩}, i.e. a set whose only member is ∅ which has
    a zero probability of actually being an element. It should be equivalent to ∅. -/
 @[reducible]def empty' : bSet β := mk punit (λ _, ∅) (λ _, ⊥)
@@ -223,17 +225,64 @@ begin
 end
 
 theorem bSet_axiom_of_extensionality (x y : bSet β) :
-  x =ᴮ y = (⨅(a : x.type), x.bval a ⟹ (⨆(a' : y.type), y.bval a' ⊓ x.func a =ᴮ y.func a'))
-          ⊓ ⨅(a' : y.type), y.bval a' ⟹ (⨆(a : x.type), x.bval a ⊓ x.func a =ᴮ y.func a') :=
-  by induction x; induction y; simp
+  x =ᴮ y = (⨅(a : x.type), x.bval a ⟹ (x.func a ∈ᴮ y))
+          ⊓ (⨅(a' : y.type), (y.bval a' ⟹ (y.func a' ∈ᴮ x))) :=
+  by {induction x, induction y, simp[mem], sorry}
+
+theorem bSet_axiom_of_actual_extensionality (x y : bSet β) :
+  x =ᴮ y = (⨅(z : bSet β), (z ∈ᴮ x ⟹ z ∈ᴮ y) ⊓ (z ∈ᴮ y ⟹ z ∈ᴮ x)) :=
+begin
+  induction x, induction y, dsimp[mem], apply le_antisymm, simp, sorry
+end
+
+theorem bool_equiv_symm {x y : bSet β} : x =ᴮ y = y =ᴮ x :=
+begin
+  induction x with α A B generalizing y, induction y with α' A' B',
+  suffices : ∀ a : α, ∀ a' : α', A' a' =ᴮ A a = A a =ᴮ A' a',
+    by {simp[this, inf_comm]}, from λ _ _, by simp[x_ih ‹α›]
+end
+
+theorem bool_equiv_trans {x y z : bSet β} : (x =ᴮ y ⊓ y =ᴮ z) ≤ x =ᴮ z :=
+begin
+    induction x with α A B generalizing y z,
+    induction y with α' A' B',
+    induction z with α'' A'' B'',
+    unfold bool_equiv, 
+    have H1 : ∀ a : α, ∀ a' : α', ∀ a'' : α'', (((A a =ᴮ A' a') ⊓ (A' a' =ᴮ A'' a'')) ⊓ B'' a'') ≤ (A a =ᴮ A'' a'' ⊓ B'' a''),
+      by {intros a a' a'', apply inf_le_inf, exact @x_ih a (A' a') (A'' a''), refl},
+    -- have H2 : ∀ a : α, ∀ a' : α', ∀ a'' : α'', A a =ᴮ A' a' ⊓ A' a' ∈ᴮ ⟨α'', A'', B''⟩ ≤ A a ∈ᴮ ⟨α'', A'', B''⟩,
+    --   by {unfold mem, intros, fapply le_supr_of_le, exact a'',
+    --       conv {to_rhs, rw[inf_comm]}, have := H1 a a' a'',
+    --       },
+    apply le_inf,
+      {apply le_infi, intro i, apply deduction.mp,
+        change _ ≤ (A i) ∈ᴮ ⟨α'', A'', B''⟩,
+       have this1 : ⟨α, A, B⟩ =ᴮ ⟨α', A', B'⟩ ⊓ B i ≤ A i ∈ᴮ ⟨α', A', B'⟩,
+         by sorry,
+       suffices : A i ∈ᴮ ⟨α', A', B'⟩ ⊓ ⟨α', A', B'⟩ =ᴮ ⟨α'', A'', B''⟩ ≤ A i ∈ᴮ ⟨α'', A'', B''⟩,
+         from sorry, -- this should be easy
+       suffices : ∀ a', ⟨α', A', B'⟩ =ᴮ ⟨α'', A'', B''⟩ ⊓ A i =ᴮ A' a' ⊓ B' a' ≤ A i ∈ᴮ ⟨α'', A'', B''⟩,
+         from sorry, -- this should be easy, as above need to permute some inf factors and apply
+                     -- supr_le,
+       have this2 : ∀ a', ⟨α', A', B'⟩ =ᴮ ⟨α'', A'', B''⟩ ⊓ B' a' = A' a' ∈ᴮ ⟨α'', A'', B''⟩,
+         from sorry,
+       suffices : ∀ a', A i =ᴮ A' a' ⊓ A' a' ∈ᴮ ⟨α'', A'', B''⟩ ≤ A i ∈ᴮ ⟨α'', A'', B''⟩,
+         from sorry,
+       
+       
+       -- to finish the proof, look at the rest of page 25 in Bell
+       -- suffices : (mk α A B =ᴮ mk α' A' B') ⊓ B i ≤ (mk α A B) ∈ᴮ (mk α'' A'' B''),
+       --   by sorry,
+        },
+      {sorry} -- this argument should be symmetric
+end
 
 /-- Mixing lemma, c.f. Bell's book or Lemma 1 of Hamkins-Seabold -/
-
 lemma mixing_lemma {A : set β} (h_anti : antichain A) (τ : A → bSet β) :
   ∃ x, ∀ a : β, a ∈ A → a ≤ x =ᴮ τ ⟨a, by assumption⟩ := sorry
 
 instance bSet_full : full (bSet β) β :=
-  full.mk $ λ P, begin end
+  full.mk $ λ P, sorry
 
 /-- The axiom of weak replacement says that for every ϕ(x,y),
     for every set u, ∀ x ∈ u, ∃ y ϕ (x,y) implies there exists a set v
@@ -250,10 +299,5 @@ begin
     {simp, intro i, apply le_trans (wit_property i),
      apply imp_le_of_le, exact le_supr (λ x, ϕ (func u i) (wit x)) i}
 end
-
--- #check classical.axiom_of_choice
-
-
-
 
 end bSet
