@@ -12,8 +12,11 @@ def imp {α : Type*} [boolean_algebra α] : α → α → α :=
 
 infix ` ⟹ `:50 := lattice.imp
 
-@[simp]lemma imp_le_of_le {α : Type*} [boolean_algebra α] {a a₁ a₂ : α} {h : a₁ ≤ a₂} : a ⟹ a₁ ≤ (a ⟹ a₂) :=
+@[simp]lemma imp_le_of_right_le {α : Type*} [boolean_algebra α] {a a₁ a₂ : α} {h : a₁ ≤ a₂} : a ⟹ a₁ ≤ (a ⟹ a₂) :=
   sup_le (by apply le_sup_left) $ le_sup_right_of_le h
+
+@[simp]lemma imp_le_of_left_le {α : Type*} [boolean_algebra α] {a a₁ a₂ : α} {h : a₂ ≤ a₁} : a₁ ⟹ a ≤ (a₂ ⟹ a) :=
+  sup_le (le_sup_left_of_le $ neg_le_neg h) (by apply le_sup_right)
 
 
 lemma imp_neg_sub {α : Type*} [boolean_algebra α] {a₁ a₂ : α} :  -(a₁ ⟹ a₂) = a₁ - a₂ :=
@@ -104,7 +107,7 @@ lemma choice {α β γ : Type*} [complete_boolean_algebra β] [full γ β] (A : 
   λ i,
     by {have := classical.indefinite_description _ (full_supr_wit (λ x, ϕ (A i) x)),
       exact ⟨this.val,
-    by {fapply infi_le_of_le, exact i, apply imp_le_of_le; exact this.property}⟩}
+    by {fapply infi_le_of_le, exact i, apply imp_le_of_right_le; exact this.property}⟩}
 
 end lattice
 
@@ -146,9 +149,9 @@ instance nonempty_bSet : nonempty $ @bSet β _ :=
 instance has_empty_bSet : has_emptyc (bSet β) := ⟨empty⟩
 
 /-- Two Boolean-valued pre-sets are extensionally equivalent if every
-  element of the first family is extensionally equivalent to
+element of the first family is extensionally equivalent to
   some element of the second family and vice-versa. -/
-@[reducible, simp]def bool_equiv : ∀ (x y : bSet β), β
+@[reducible]def bool_equiv : ∀ (x y : bSet β), β
 /- ∀ x ∃ y, m x y ∧ ∀ y ∃ x, m y x, but this time in ~lattice~ -/
 | ⟨α, A, B⟩ ⟨α', A', B'⟩ :=
              (⨅a : α, B a ⟹ ⨆a', B' a' ⊓ bool_equiv (A a) (A' a')) ⊓
@@ -224,22 +227,27 @@ begin
  rw[this], apply le_supr
 end
 
-theorem bSet_axiom_of_extensionality (x y : bSet β) :
-  x =ᴮ y = (⨅(a : x.type), x.bval a ⟹ (x.func a ∈ᴮ y))
-          ⊓ (⨅(a' : y.type), (y.bval a' ⟹ (y.func a' ∈ᴮ x))) :=
-  by {induction x, induction y, simp[mem], sorry}
-
-theorem bSet_axiom_of_actual_extensionality (x y : bSet β) :
-  x =ᴮ y = (⨅(z : bSet β), (z ∈ᴮ x ⟹ z ∈ᴮ y) ⊓ (z ∈ᴮ y ⟹ z ∈ᴮ x)) :=
-begin
-  induction x, induction y, dsimp[mem], apply le_antisymm, simp, sorry
-end
-
 theorem bool_equiv_symm {x y : bSet β} : x =ᴮ y = y =ᴮ x :=
 begin
   induction x with α A B generalizing y, induction y with α' A' B',
   suffices : ∀ a : α, ∀ a' : α', A' a' =ᴮ A a = A a =ᴮ A' a',
-    by {simp[this, inf_comm]}, from λ _ _, by simp[x_ih ‹α›]
+    by {simp[bool_equiv, this, inf_comm]}, from λ _ _, by simp[x_ih ‹α›]
+end
+
+theorem bSet_bool_equiv_rw (x y : bSet β) :
+  x =ᴮ y = (⨅(a : x.type), x.bval a ⟹ (x.func a ∈ᴮ y))
+          ⊓ (⨅(a' : y.type), (y.bval a' ⟹ (y.func a' ∈ᴮ x))) :=
+ by induction x; induction y; simp[mem,bool_equiv,bool_equiv_symm]
+
+theorem bSet_axiom_of_extensionality (x y : bSet β) :
+(⨅(z : bSet β), (z ∈ᴮ x ⟹ z ∈ᴮ y) ⊓ (z ∈ᴮ y ⟹ z ∈ᴮ x)) ≤ x =ᴮ y :=
+begin
+  rw[bSet_bool_equiv_rw],
+  apply le_inf; apply le_infi; intro i,
+  {fapply infi_le_of_le, exact x.func i, apply inf_le_left_of_le,
+   induction x, unfold mem, simp, by apply imp_le_of_left_le; apply le_supr_of_le i; exact le_inf (by refl) (by simp[bool_equiv_refl])},
+  {fapply infi_le_of_le, exact y.func i, apply inf_le_right_of_le,
+     induction y, unfold mem, simp, by apply imp_le_of_left_le; apply le_supr_of_le i; exact le_inf (by refl) (by simp[bool_equiv_refl])},
 end
 
 theorem bool_equiv_trans {x y z : bSet β} : (x =ᴮ y ⊓ y =ᴮ z) ≤ x =ᴮ z :=
@@ -247,7 +255,7 @@ begin
     induction x with α A B generalizing y z,
     induction y with α' A' B',
     induction z with α'' A'' B'',
-    unfold bool_equiv, 
+    -- simp,
     have H1 : ∀ a : α, ∀ a' : α', ∀ a'' : α'', (((A a =ᴮ A' a') ⊓ (A' a' =ᴮ A'' a'')) ⊓ B'' a'') ≤ (A a =ᴮ A'' a'' ⊓ B'' a''),
       by {intros a a' a'', apply inf_le_inf, exact @x_ih a (A' a') (A'' a''), refl},
     -- have H2 : ∀ a : α, ∀ a' : α', ∀ a'' : α'', A a =ᴮ A' a' ⊓ A' a' ∈ᴮ ⟨α'', A'', B''⟩ ≤ A a ∈ᴮ ⟨α'', A'', B''⟩,
@@ -281,6 +289,10 @@ end
 lemma mixing_lemma {A : set β} (h_anti : antichain A) (τ : A → bSet β) :
   ∃ x, ∀ a : β, a ∈ A → a ≤ x =ᴮ τ ⟨a, by assumption⟩ := sorry
 
+-- note from floris, try using
+-- λ⟨i,a⟩, a_i ⊓ (u i).bval a for
+-- u.B instead
+
 instance bSet_full : full (bSet β) β :=
   full.mk $ λ P, sorry
 
@@ -297,7 +309,7 @@ begin
   rcases this with ⟨wit, wit_property⟩, dsimp at wit wit_property,
   fapply le_supr_of_le, exact ⟨u.type, wit, λ _, ⊤⟩,
     {simp, intro i, apply le_trans (wit_property i),
-     apply imp_le_of_le, exact le_supr (λ x, ϕ (func u i) (wit x)) i}
+     apply imp_le_of_right_le, exact le_supr (λ x, ϕ (func u i) (wit x)) i}
 end
 
 end bSet
