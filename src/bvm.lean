@@ -1,4 +1,4 @@
-import fol set_theory.zfc order.boolean_algebra order.complete_boolean_algebra .cohen_poset
+import fol set_theory.zfc order.boolean_algebra order.complete_boolean_algebra .cohen_poset tactic.rewrite tactic.monotonicity
 
 open lattice
 
@@ -7,6 +7,34 @@ universe u
 /- A β-valued model of ZFC -/
 
 namespace lattice
+
+theorem inf_supr_eq {α ι : Type*} [complete_distrib_lattice α] {a : α} {s : ι → α} :
+  a ⊓ (⨆(i:ι), s i) = ⨆(i:ι), a ⊓ s i :=
+  eq.trans inf_Sup_eq $
+    begin
+      rw[<-inf_Sup_eq], suffices : (⨆(i:ι), a ⊓ s i) = ⨆(b∈(set.range s)), a ⊓ b,
+      by {rw[this], apply inf_Sup_eq}, simp, apply le_antisymm,
+      apply supr_le, intro i, apply le_supr_of_le (s i), apply le_supr_of_le i,
+      apply le_supr_of_le rfl, refl,
+      repeat{apply supr_le, intro}, rw[<-i_2], apply le_supr_of_le i_1, refl
+    end
+
+theorem sup_infi_eq {α ι : Type*} [complete_distrib_lattice α] {a : α} {s : ι → α} :
+  a ⊔ (⨅(i:ι), s i) = ⨅(i:ι), a ⊔ s i :=
+  eq.trans sup_Inf_eq $
+    begin
+      rw[<-sup_Inf_eq], suffices : (⨅(i:ι), a ⊔ s i) = ⨅(b∈(set.range s)), a ⊔ b,
+      by {rw[this], apply sup_Inf_eq}, simp, apply le_antisymm,
+      repeat{apply le_infi, intro}, rw[<-i_2], apply infi_le_of_le i_1, refl,
+      repeat{apply infi_le_of_le}, show ι, from ‹ι›, show α, exact s i, refl, refl
+    end
+
+@[simp]lemma inf_self {α : Type*} [lattice α] {a : α} : a ⊓ a = a :=
+  by finish
+
+@[simp]lemma sup_self {α : Type*} [lattice α] {a : α} : a ⊔ a = a :=
+  by finish
+
 def imp {α : Type*} [boolean_algebra α] : α → α → α :=
   λ a₁ a₂, (- a₁) ⊔ a₂
 
@@ -124,21 +152,26 @@ inductive bSet (β : Type u) [complete_boolean_algebra β] : Type (u+1)
 namespace bSet
 variables {β : Type u} [complete_boolean_algebra β]
 
+run_cmd mk_simp_attr `cleanup
+
 /-- The underlying type of a bSet -/
-@[simp]def type : bSet β → Type u
+@[simp, cleanup]def type : bSet β → Type u
 | ⟨α, _, _⟩ := α
 
-@[simp]lemma type_infi {α : Type*} {A : α → bSet β} {B C : α → β} : (⨅(a : type (mk α A B)), C a) = ⨅(a : α), C a := by refl
+@[simp, cleanup]lemma type_infi {α : Type*} {A : α → bSet β} {B C : α → β} : (⨅(a : type (mk α A B)), C a) = ⨅(a : α), C a := by refl
 
-@[simp]lemma type_supr {α : Type*} {A : α → bSet β} {B C : α → β} : (⨆(a : type (mk α A B)), C a) = ⨆(a : α), C a := by refl
+@[simp, cleanup]lemma type_supr {α : Type*} {A : α → bSet β} {B C : α → β} : (⨆(a : type (mk α A B)), C a) = ⨆(a : α), C a := by refl
 
 /-- The indexing function of a bSet -/
-@[simp]def func : ∀ x : bSet β, x.type → bSet β
+@[simp, cleanup]def func : ∀ x : bSet β, x.type → bSet β
 | ⟨_, A, _⟩ := A
 
 /-- The boolean truth-value function of a bSet -/
-@[simp]def bval : ∀ x : bSet β, x.type → β
+@[simp, cleanup]def bval : ∀ x : bSet β, x.type → β
 | ⟨_, _, B⟩ := B
+
+@[simp, cleanup]def mk_type_func_bval : ∀ x : bSet β, mk x.type x.func x.bval = x :=
+  λ x, by induction x; {simp only with cleanup, repeat{split, repeat{refl}}}
 
 def empty : bSet β :=
   ⟨ulift empty, empty.elim ∘ ulift.down, empty.elim ∘ ulift.down⟩
@@ -244,45 +277,67 @@ theorem bSet_axiom_of_extensionality (x y : bSet β) :
 begin
   rw[bSet_bool_equiv_rw],
   apply le_inf; apply le_infi; intro i,
-  {fapply infi_le_of_le, exact x.func i, apply inf_le_left_of_le,
-   induction x, unfold mem, simp, by apply imp_le_of_left_le; apply le_supr_of_le i; exact le_inf (by refl) (by simp[bool_equiv_refl])},
-  {fapply infi_le_of_le, exact y.func i, apply inf_le_right_of_le,
-     induction y, unfold mem, simp, by apply imp_le_of_left_le; apply le_supr_of_le i; exact le_inf (by refl) (by simp[bool_equiv_refl])},
+  {fapply infi_le_of_le (x.func i), apply inf_le_left_of_le,
+   induction x, unfold mem, simp, by apply imp_le_of_left_le; apply le_supr_of_le i; exact le_inf (by refl) (by rw[bool_equiv_refl]; apply le_top)},
+  {fapply infi_le_of_le (y.func i), apply inf_le_right_of_le,
+     induction y, unfold mem, simp, by apply imp_le_of_left_le; apply le_supr_of_le i; exact le_inf (by refl) (by rw[bool_equiv_refl]; apply le_top)},
 end
 
 theorem bool_equiv_trans {x y z : bSet β} : (x =ᴮ y ⊓ y =ᴮ z) ≤ x =ᴮ z :=
 begin
     induction x with α A B generalizing y z,
-    induction y with α' A' B',
-    induction z with α'' A'' B'',
-    -- simp,
+    cases y with α' A' B',
+    induction z with α'' A'' B'' generalizing α A B α' A' B',
     have H1 : ∀ a : α, ∀ a' : α', ∀ a'' : α'', (((A a =ᴮ A' a') ⊓ (A' a' =ᴮ A'' a'')) ⊓ B'' a'') ≤ (A a =ᴮ A'' a'' ⊓ B'' a''),
-      by {intros a a' a'', apply inf_le_inf, exact @x_ih a (A' a') (A'' a''), refl},
-    -- have H2 : ∀ a : α, ∀ a' : α', ∀ a'' : α'', A a =ᴮ A' a' ⊓ A' a' ∈ᴮ ⟨α'', A'', B''⟩ ≤ A a ∈ᴮ ⟨α'', A'', B''⟩,
-    --   by {unfold mem, intros, fapply le_supr_of_le, exact a'',
-    --       conv {to_rhs, rw[inf_comm]}, have := H1 a a' a'',
-    --       },
+      by {intros a a' a'', refine inf_le_inf _ (by refl), exact @x_ih a (A' a') (A'' a'')},
+    have H2 : ∀ i'' : α'', ∀ a' : α', ∀ a : α, A'' i'' =ᴮ A' a' ⊓ A' a' =ᴮ A a ⊓ B a ≤ A'' i'' =ᴮ A a ⊓ B a,
+      by {intros a'' a' a, refine inf_le_inf _ (by refl),
+        convert @x_ih a (A' a') (A'' a'') using 1; simp[bool_equiv_symm], ac_refl},
     apply le_inf,
       {apply le_infi, intro i, apply deduction.mp,
         change _ ≤ (A i) ∈ᴮ ⟨α'', A'', B''⟩,
        have this1 : ⟨α, A, B⟩ =ᴮ ⟨α', A', B'⟩ ⊓ B i ≤ A i ∈ᴮ ⟨α', A', B'⟩,
-         by sorry,
+         by {rw[deduction], apply inf_le_left_of_le, apply infi_le},
        suffices : A i ∈ᴮ ⟨α', A', B'⟩ ⊓ ⟨α', A', B'⟩ =ᴮ ⟨α'', A'', B''⟩ ≤ A i ∈ᴮ ⟨α'', A'', B''⟩,
-         from sorry, -- this should be easy
+         by {have := le_trans (inf_le_inf this1 (by refl)) this,
+              convert this using 1, ac_refl },
        suffices : ∀ a', ⟨α', A', B'⟩ =ᴮ ⟨α'', A'', B''⟩ ⊓ A i =ᴮ A' a' ⊓ B' a' ≤ A i ∈ᴮ ⟨α'', A'', B''⟩,
-         from sorry, -- this should be easy, as above need to permute some inf factors and apply
-                     -- supr_le,
-       have this2 : ∀ a', ⟨α', A', B'⟩ =ᴮ ⟨α'', A'', B''⟩ ⊓ B' a' = A' a' ∈ᴮ ⟨α'', A'', B''⟩,
-         from sorry,
+         by {convert (supr_le this) using 1, simp[mem, inf_comm, inf_supr_eq],
+            congr, ext, ac_refl},
+       have this2 : ∀ a', ⟨α', A', B'⟩ =ᴮ ⟨α'', A'', B''⟩ ⊓ B' a' ≤ A' a' ∈ᴮ ⟨α'', A'', B''⟩,
+         by {intro a', rw[deduction], apply inf_le_left_of_le, apply infi_le},
        suffices : ∀ a', A i =ᴮ A' a' ⊓ A' a' ∈ᴮ ⟨α'', A'', B''⟩ ≤ A i ∈ᴮ ⟨α'', A'', B''⟩,
-         from sorry,
-       
-       
-       -- to finish the proof, look at the rest of page 25 in Bell
-       -- suffices : (mk α A B =ᴮ mk α' A' B') ⊓ B i ≤ (mk α A B) ∈ᴮ (mk α'' A'' B''),
-       --   by sorry,
-        },
-      {sorry} -- this argument should be symmetric
+         by {intro a', have := le_trans (inf_le_inf (by refl) (this2 a')) (this a'),
+         convert this using 1, ac_refl},
+       intro a', rw[inf_supr_eq], apply supr_le, intro a'',
+       conv {to_lhs, congr, skip, rw[inf_comm]},
+       suffices : A i =ᴮ A' a' ⊓ (A' a' =ᴮ A'' a'' ⊓ B'' a'')
+         = A i =ᴮ A' a' ⊓ A' a' =ᴮ A'' a'' ⊓ B'' a'',
+         by {rw[this], clear this, apply le_trans, exact (H1 i a' a''),
+         apply le_supr_of_le a'', rw[inf_comm]},
+       ac_refl}, 
+      {apply le_infi, intro i'', apply deduction.mp,
+        conv {to_rhs, congr, funext, rw[bool_equiv_symm]}, change _ ≤ (A'' i'') ∈ᴮ ⟨α, A, B⟩,
+        have this1 : ⟨α'', A'', B''⟩ =ᴮ ⟨α', A', B'⟩ ⊓ B'' i'' ≤ A'' i'' ∈ᴮ ⟨α', A', B'⟩,
+          by {rw[deduction], apply inf_le_left_of_le, apply infi_le},
+        suffices : A'' i'' ∈ᴮ ⟨α', A', B'⟩ ⊓ ⟨α', A', B'⟩ =ᴮ ⟨α, A, B⟩ ≤ A'' i'' ∈ᴮ ⟨α, A, B⟩,
+         by {have := le_trans (inf_le_inf this1 (by refl)) this,
+              convert this using 1, simp[bool_equiv_symm], ac_refl},
+        suffices : ∀ a', ⟨α', A', B'⟩ =ᴮ ⟨α, A, B⟩ ⊓ A'' i'' =ᴮ A' a' ⊓ B' a' ≤ A'' i'' ∈ᴮ ⟨α, A, B⟩,
+          by {convert (supr_le this) using 1, simp[mem, inf_comm, inf_supr_eq],
+            congr, ext, ac_refl},
+        have this2 : ∀ a', ⟨α', A', B'⟩ =ᴮ ⟨α, A, B⟩ ⊓ B' a' ≤ A' a' ∈ᴮ ⟨α, A, B⟩,
+          by {intro a', rw[deduction], apply inf_le_left_of_le, apply infi_le},
+        suffices : ∀ a', A'' i'' =ᴮ A' a' ⊓ A' a' ∈ᴮ ⟨α, A, B⟩ ≤ A'' i'' ∈ᴮ ⟨α, A, B⟩,
+          by {intro a', have := le_trans (inf_le_inf (by refl) (this2 a')) (this a'),
+         convert this using 1, ac_refl},
+        intro a', rw[inf_supr_eq], apply supr_le, intro a,
+        conv {to_lhs, congr, skip, rw[inf_comm]},
+        suffices : A'' i'' =ᴮ A' a' ⊓ (A' a' =ᴮ A a ⊓ B a)
+          = A'' i'' =ᴮ A' a' ⊓ A' a' =ᴮ A a ⊓ B a,
+          by {rw[this], clear this, apply le_trans, exact (H2 i'' a' a),
+          apply le_supr_of_le a, rw[inf_comm]},
+        ac_refl}
 end
 
 /-- Mixing lemma, c.f. Bell's book or Lemma 1 of Hamkins-Seabold -/
