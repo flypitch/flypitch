@@ -287,7 +287,7 @@ theorem bool_equiv_trans {x y z : bSet β} : (x =ᴮ y ⊓ y =ᴮ z) ≤ x =ᴮ 
 begin
     induction x with α A B generalizing y z,
     cases y with α' A' B',
-    induction z with α'' A'' B'' generalizing α A B α' A' B',
+    induction z with α'' A'' B'',
     have H1 : ∀ a : α, ∀ a' : α', ∀ a'' : α'', (((A a =ᴮ A' a') ⊓ (A' a' =ᴮ A'' a'')) ⊓ B'' a'') ≤ (A a =ᴮ A'' a'' ⊓ B'' a''),
       by {intros a a' a'', refine inf_le_inf _ (by refl), exact @x_ih a (A' a') (A'' a'')},
     have H2 : ∀ i'' : α'', ∀ a' : α', ∀ a : α, A'' i'' =ᴮ A' a' ⊓ A' a' =ᴮ A a ⊓ B a ≤ A'' i'' =ᴮ A a ⊓ B a,
@@ -340,13 +340,15 @@ begin
         ac_refl}
 end
 
+def mixture {ι : Type u} (a : ι → β) (u : ι → bSet β) : bSet β :=
+  ⟨Σ(i : ι), (u i).type, λ⟨i,c⟩, (u i).func c, λ⟨i, c⟩, ⨆(j:ι), a j ⊓ ((u i).func c) ∈ᴮ u j⟩
+
+def floris_mixture {ι : Type u} (a : ι → β) (u : ι → bSet β) : bSet β :=
+  ⟨Σ(i : ι), (u i).type, λ⟨i, c⟩, (u i).func c, λ⟨i,c⟩, a i ⊓ (u i).bval c⟩
+
 /-- Mixing lemma, c.f. Bell's book or Lemma 1 of Hamkins-Seabold -/
 lemma mixing_lemma {A : set β} (h_anti : antichain A) (τ : A → bSet β) :
   ∃ x, ∀ a : β, a ∈ A → a ≤ x =ᴮ τ ⟨a, by assumption⟩ := sorry
-
--- note from floris, try using
--- λ⟨i,a⟩, a_i ⊓ (u i).bval a for
--- u.B instead
 
 instance bSet_full : full (bSet β) β :=
   full.mk $ λ P, sorry
