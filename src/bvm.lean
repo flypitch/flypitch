@@ -1,4 +1,4 @@
-import fol set_theory.zfc order.boolean_algebra order.complete_boolean_algebra .cohen_poset tactic.rewrite tactic.monotonicity
+import fol set_theory.zfc order.boolean_algebra order.complete_boolean_algebra tactic.rewrite tactic.monotonicity
 
 open lattice
 
@@ -7,6 +7,8 @@ universe u
 /- A β-valued model of ZFC -/
 
 namespace lattice
+def antichain {β : Type*} [bounded_lattice β] (s : set β) :=
+  ∀ x ∈ s, ∀ y ∈ s, x ≠ y → x ⊓ y = (⊥ : β)
 
 theorem inf_supr_eq {α ι : Type*} [complete_distrib_lattice α] {a : α} {s : ι → α} :
   a ⊓ (⨆(i:ι), s i) = ⨆(i:ι), a ⊓ s i :=
@@ -46,6 +48,7 @@ infix ` ⟹ `:50 := lattice.imp
 @[simp]lemma imp_le_of_left_le {α : Type*} [boolean_algebra α] {a a₁ a₂ : α} {h : a₂ ≤ a₁} : a₁ ⟹ a ≤ (a₂ ⟹ a) :=
   sup_le (le_sup_left_of_le $ neg_le_neg h) (by apply le_sup_right)
 
+@[simp]lemma imp_bot {α : Type*} [boolean_algebra α]  {a : α} : a ⟹ ⊥ = - a := by finish[imp]
 
 lemma imp_neg_sub {α : Type*} [boolean_algebra α] {a₁ a₂ : α} :  -(a₁ ⟹ a₂) = a₁ - a₂ :=
   by rw[sub_eq, imp]; finish
@@ -87,6 +90,8 @@ lemma curry_uncurry {α : Type*} [boolean_algebra α] {a b c : α} : ((a ⊓ b) 
 /-- the actual deduction theorem in β, thinking of ≤ as a turnstile -/
 lemma deduction {α : Type*} [boolean_algebra α] {a b c : α} : a ⊓ b ≤ c ↔ a ≤ (b ⟹ c) :=
   by {[smt] eblast_using [curry_uncurry, imp_top_iff_le]}
+
+lemma deduction_simp {α : Type*} [boolean_algebra α] {a b c : α} : a ≤ (b ⟹ c) ↔ a ⊓ b ≤ c := deduction.symm
 
 /-- Given an η : option α → β, where β is a complete lattice, we have that the supremum of η
     is equal to (η none) ⊔ ⨆(a:α) η (some a)-/
@@ -351,7 +356,8 @@ lemma subst_congr_mem_left {u v w : bSet β} : u =ᴮ v ⊓ u ∈ᴮ w ≤ v ∈
 begin
   cases w,
   have : ∀ a : w_α, u =ᴮ v ⊓ w_B a ⊓ u =ᴮ w_A a ≤ w_B a ⊓ v =ᴮ w_A a,
-    by {intro a, have := inf_le_inf (by refl : w_B a ≤ w_B a) (@bool_equiv_trans _ _ v u (w_A a)), convert this using 1, simp[bool_equiv_symm, inf_comm, inf_assoc]},
+    by {intro a, have := inf_le_inf (by refl : w_B a ≤ w_B a) (@bool_equiv_trans _ _ v u (w_A a)),
+      convert this using 1, simp[bool_equiv_symm, inf_comm, inf_assoc]},
   convert supr_le_supr this, simp[inf_supr_eq], congr, ext, ac_refl
 end
 
@@ -388,11 +394,73 @@ begin
     apply le_trans this, rw[bool_equiv_symm], apply subst_congr_mem_right},
   {apply le_infi, intro i_z, rw[<-deduction], apply le_supr_of_le (sigma.mk i i_z),
   simp, apply le_supr_of_le i, apply inf_le_inf (by refl : a i ≤ a i), dsimp, cases (τ i),
-  apply le_supr_of_le i_z, apply le_inf, refl, convert le_top, apply bool_equiv_refl},
+  apply le_supr_of_le i_z, apply le_inf, refl, simp}
 end
 
+/-- In particular, the mixing lemma applies when the weights (a_i) form an antichain -/
+lemma h_star_of_antichain {ι : Type u} {a : ι → β} {τ : ι → bSet β} {h_anti : antichain (a '' set.univ)} {h_inj : function.injective a} :
+  ∀ i j : ι, a i ⊓ a j ≤ τ i =ᴮ τ j :=
+begin
+  intros i j, by_cases a i = a j, simp[h_inj h],
+  have := h_anti _ _ _ _ h, simp[this], tidy
+end
+
+/- The next two lemmas use the fact that β : Type u to extract a small set witnessing quantification over all of bSet β -/
+
+/- i.e., in bSet β, any existential quantification is equivalent to a bounded existential quantification-/
+section smallness
+variable {ϕ : bSet β → β}
+
+@[reducible, simp]noncomputable def fiber_lift (b : ϕ '' set.univ) :=
+classical.indefinite_description (λ a : bSet β, ϕ a = b.val)
+  begin cases b.property, use w, exact h.right end
+
+noncomputable def B_small_witness : bSet β :=
+⟨ϕ '' set.univ, λ b, (fiber_lift b).val, λ _, ⊤⟩
+
+@[simp]lemma B_small_witness_spec : ∀ b, ϕ ((@B_small_witness _ _ ϕ).func b) = b.val :=
+  λ b, (fiber_lift b).property
+
+lemma B_small_witness_supr : (⨆(x : bSet β), ϕ x) = ⨆(b : (@B_small_witness _ _ ϕ).type), ϕ (B_small_witness.func b) :=
+begin
+ apply le_antisymm,
+ apply supr_le, intro x, let b : type B_small_witness := by {use ϕ x, simp, exact ⟨x, rfl⟩},
+ fapply le_supr_of_le, exact b, have := B_small_witness_spec b, dsimp at this, rw[this],
+ apply supr_le, intro b, apply le_supr_of_le, swap, exact (fiber_lift b).val, refl
+end
+
+@[reducible, simp]def not_b (b : β) : set β := λ y, y ≠ b
+
+def witness_antichain :=
+  (λ b : type (@B_small_witness _ _ ϕ), b.val - (⨆(b' : (not_b b.val)), b'.val))
+
+def witness_antichain_injective : function.injective (@witness_antichain _ _ ϕ) :=
+begin
+  dsimp[witness_antichain], tidy, sorry -- hmm, this is a problem
+end
+
+lemma witness_antichain_antichain : antichain ((@witness_antichain _ _ ϕ) '' set.univ) :=
+begin
+  intros x h_x y h_y h_neq, simp at h_x h_y, rcases h_y with ⟨w_y, h_y⟩,
+  rcases h_x with ⟨w_x, h_x⟩, rw[<-h_y, <-h_x], dsimp[witness_antichain],
+  simp[sub_eq, neg_supr], rw[<-inf_assoc], apply bot_unique, apply inf_le_left_of_le,
+  rw[inf_assoc], apply inf_le_right_of_le, rw[deduction, imp_bot],
+  fapply infi_le_of_le, use w_y.val, swap, refl, change w_y.val ≠ w_x.val, by_contra,
+  have : w_y = w_x, by {tidy}, cc
+end
+
+lemma witness_antichain_property : ∀ b, (@witness_antichain _ _ ϕ) b ≤ b.val :=
+  λ b, by finish[witness_antichain, sub_eq, neg_supr]
+
+end smallness
+
 instance bSet_full : full (bSet β) β :=
-  full.mk $ λ P, sorry
+  full.mk $ λ ϕ,
+  begin
+    let w := @B_small_witness _ _ ϕ,
+    rw[B_small_witness_supr], sorry
+    
+  end
 
 /-- The axiom of weak replacement says that for every ϕ(x,y),
     for every set u, ∀ x ∈ u, ∃ y ϕ (x,y) implies there exists a set v
