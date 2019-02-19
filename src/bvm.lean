@@ -152,6 +152,8 @@ inductive bSet (β : Type u) [complete_boolean_algebra β] : Type (u+1)
 namespace bSet
 variables {β : Type u} [complete_boolean_algebra β]
 
+noncomputable instance decidable_eq_β : decidable_eq β := λ _ _, classical.prop_decidable _
+
 run_cmd mk_simp_attr `cleanup
 
 /-- The underlying type of a bSet -/
@@ -278,9 +280,11 @@ begin
   rw[bSet_bool_equiv_rw],
   apply le_inf; apply le_infi; intro i,
   {fapply infi_le_of_le (x.func i), apply inf_le_left_of_le,
-   induction x, unfold mem, simp, by apply imp_le_of_left_le; apply le_supr_of_le i; exact le_inf (by refl) (by rw[bool_equiv_refl]; apply le_top)},
+   induction x, unfold mem, simp, by apply imp_le_of_left_le; apply le_supr_of_le i;
+   exact le_inf (by refl) (by rw[bool_equiv_refl]; apply le_top)},
   {fapply infi_le_of_le (y.func i), apply inf_le_right_of_le,
-     induction y, unfold mem, simp, by apply imp_le_of_left_le; apply le_supr_of_le i; exact le_inf (by refl) (by rw[bool_equiv_refl]; apply le_top)},
+   induction y, unfold mem, simp, by apply imp_le_of_left_le; apply le_supr_of_le i;
+   exact le_inf (by refl) (by rw[bool_equiv_refl]; apply le_top)},
 end
 
 theorem bool_equiv_trans {x y z : bSet β} : (x =ᴮ y ⊓ y =ᴮ z) ≤ x =ᴮ z :=
@@ -288,9 +292,11 @@ begin
     induction x with α A B generalizing y z,
     cases y with α' A' B',
     induction z with α'' A'' B'',
-    have H1 : ∀ a : α, ∀ a' : α', ∀ a'' : α'', (((A a =ᴮ A' a') ⊓ (A' a' =ᴮ A'' a'')) ⊓ B'' a'') ≤ (A a =ᴮ A'' a'' ⊓ B'' a''),
+    have H1 : ∀ a : α, ∀ a' : α', ∀ a'' : α'',
+           (((A a =ᴮ A' a') ⊓ (A' a' =ᴮ A'' a'')) ⊓ B'' a'') ≤ (A a =ᴮ A'' a'' ⊓ B'' a''),
       by {intros a a' a'', refine inf_le_inf _ (by refl), exact @x_ih a (A' a') (A'' a'')},
-    have H2 : ∀ i'' : α'', ∀ a' : α', ∀ a : α, A'' i'' =ᴮ A' a' ⊓ A' a' =ᴮ A a ⊓ B a ≤ A'' i'' =ᴮ A a ⊓ B a,
+    have H2 : ∀ i'' : α'', ∀ a' : α', ∀ a : α,
+           A'' i'' =ᴮ A' a' ⊓ A' a' =ᴮ A a ⊓ B a ≤ A'' i'' =ᴮ A a ⊓ B a,
       by {intros a'' a' a, refine inf_le_inf _ (by refl),
         convert @x_ih a (A' a') (A'' a'') using 1; simp[bool_equiv_symm], ac_refl},
     apply le_inf,
@@ -340,15 +346,49 @@ begin
         ac_refl}
 end
 
+/-- If u = v and u ∈ w, then this implies that v ∈ w -/
+lemma subst_congr_mem_left {u v w : bSet β} : u =ᴮ v ⊓ u ∈ᴮ w ≤ v ∈ᴮ w :=
+begin
+  cases w,
+  have : ∀ a : w_α, u =ᴮ v ⊓ w_B a ⊓ u =ᴮ w_A a ≤ w_B a ⊓ v =ᴮ w_A a,
+    by {intro a, have := inf_le_inf (by refl : w_B a ≤ w_B a) (@bool_equiv_trans _ _ v u (w_A a)), convert this using 1, simp[bool_equiv_symm, inf_comm, inf_assoc]},
+  convert supr_le_supr this, simp[inf_supr_eq], congr, ext, ac_refl
+end
+
+/-- If v = w and u ∈ v, then this implies that u ∈ w -/
+lemma subst_congr_mem_right {u v w : bSet β} : (v =ᴮ w ⊓ u ∈ᴮ v) ≤ u ∈ᴮ w :=
+begin
+  induction v, rw[inf_supr_eq], apply supr_le, intro i,
+  suffices : mk v_α ‹_› ‹_› =ᴮ w ⊓ v_B i ≤ v_A i ∈ᴮ w,
+  have := le_trans (inf_le_inf this (by refl : u =ᴮ v_A i ≤ u =ᴮ v_A i)) _,
+  rw[<-inf_assoc], convert this using 1,
+  rw[bool_equiv_symm, inf_comm], apply subst_congr_mem_left,
+  rw[deduction], cases w, apply inf_le_left_of_le, apply infi_le
+end
+
 def mixture {ι : Type u} (a : ι → β) (u : ι → bSet β) : bSet β :=
-  ⟨Σ(i : ι), (u i).type, λ⟨i,c⟩, (u i).func c, λ⟨i, c⟩, ⨆(j:ι), a j ⊓ ((u i).func c) ∈ᴮ u j⟩
+  ⟨Σ(i : ι), (u i).type, λx, (u x.fst).func x.snd, λx, ⨆(j:ι), a j ⊓ ((u x.fst).func x.snd) ∈ᴮ u j⟩
+
+@[simp]lemma bval_mixture {ι : Type u} {a : ι → β} {u : ι → bSet β} :
+  (mixture a u).bval = λx, ⨆(j:ι), a j ⊓ ((u x.fst).func x.snd) ∈ᴮ u j :=
+  by refl
 
 def floris_mixture {ι : Type u} (a : ι → β) (u : ι → bSet β) : bSet β :=
-  ⟨Σ(i : ι), (u i).type, λ⟨i, c⟩, (u i).func c, λ⟨i,c⟩, a i ⊓ (u i).bval c⟩
+  ⟨Σ(i : ι), (u i).type, λx, (u x.fst).func x.snd, λx, a x.fst ⊓ (u x.fst).bval x.snd⟩
 
 /-- Mixing lemma, c.f. Bell's book or Lemma 1 of Hamkins-Seabold -/
-lemma mixing_lemma {A : set β} (h_anti : antichain A) (τ : A → bSet β) :
-  ∃ x, ∀ a : β, a ∈ A → a ≤ x =ᴮ τ ⟨a, by assumption⟩ := sorry
+lemma mixing_lemma {ι : Type u} (a : ι → β) (τ : ι → bSet β) (h_star : ∀ i j : ι, a i ⊓ a j ≤ τ i =ᴮ τ j) : ∃ x, ∀ i : ι, a i ≤ x =ᴮ τ i :=
+begin
+  refine ⟨mixture a τ, λ i, _⟩, rw[bSet_bool_equiv_rw], apply le_inf,
+  apply le_infi, intro i', apply deduction.mp, simp, rw[inf_supr_eq], apply supr_le,
+  intro i'', rw[<-inf_assoc],
+  have : a i ⊓ a i'' ⊓ func (τ (i'.fst)) (i'.snd) ∈ᴮ τ i'' ≤ (τ i =ᴮ τ i'') ⊓ func (τ (i'.fst)) (i'.snd) ∈ᴮ τ i'',
+    by {apply inf_le_inf (h_star i i''), refl},
+  apply le_trans this,
+  repeat{sorry}
+ -- apply le_inf, apply le_infi, intro i',
+  -- apply deduction.mp,
+end
 
 instance bSet_full : full (bSet β) β :=
   full.mk $ λ P, sorry
