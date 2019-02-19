@@ -379,15 +379,16 @@ def floris_mixture {ι : Type u} (a : ι → β) (u : ι → bSet β) : bSet β 
 /-- Mixing lemma, c.f. Bell's book or Lemma 1 of Hamkins-Seabold -/
 lemma mixing_lemma {ι : Type u} (a : ι → β) (τ : ι → bSet β) (h_star : ∀ i j : ι, a i ⊓ a j ≤ τ i =ᴮ τ j) : ∃ x, ∀ i : ι, a i ≤ x =ᴮ τ i :=
 begin
-  refine ⟨mixture a τ, λ i, _⟩, rw[bSet_bool_equiv_rw], apply le_inf,
-  apply le_infi, intro i', apply deduction.mp, simp, rw[inf_supr_eq], apply supr_le,
-  intro i'', rw[<-inf_assoc],
-  have : a i ⊓ a i'' ⊓ func (τ (i'.fst)) (i'.snd) ∈ᴮ τ i'' ≤ (τ i =ᴮ τ i'') ⊓ func (τ (i'.fst)) (i'.snd) ∈ᴮ τ i'',
-    by {apply inf_le_inf (h_star i i''), refl},
-  apply le_trans this,
-  repeat{sorry}
- -- apply le_inf, apply le_infi, intro i',
-  -- apply deduction.mp,
+  refine ⟨mixture a τ, λ i, _⟩, rw[bSet_bool_equiv_rw],
+  apply le_inf,
+    {apply le_infi, intro i_z, apply deduction.mp, simp, rw[inf_supr_eq], apply supr_le,
+    intro j, rw[<-inf_assoc],
+    have : a i ⊓ a j ⊓ func (τ (i_z.fst)) (i_z.snd) ∈ᴮ τ j ≤ (τ i =ᴮ τ j) ⊓ func (τ (i_z.fst)) (i_z.snd) ∈ᴮ τ j,
+      by {apply inf_le_inf (h_star i j), refl},
+    apply le_trans this, rw[bool_equiv_symm], apply subst_congr_mem_right},
+  {apply le_infi, intro i_z, rw[<-deduction], apply le_supr_of_le (sigma.mk i i_z),
+  simp, apply le_supr_of_le i, apply inf_le_inf (by refl : a i ≤ a i), dsimp, cases (τ i),
+  apply le_supr_of_le i_z, apply le_inf, refl, convert le_top, apply bool_equiv_refl},
 end
 
 instance bSet_full : full (bSet β) β :=
