@@ -115,32 +115,32 @@ lemma supr_option' {α β : Type*} [complete_lattice β] {η : α → β} {b : �
 lemma infi_option' {α β : Type*} [complete_lattice β] {η : α → β} {b : β} : (⨅(x : option α), (option.rec b η x : β) : β) = b ⊓ ⨅(a : α), η a :=
   by rw[infi_option]
 
-/-- γ is full with respect to the complete lattice β if for every P : γ → β,
-    there exists a y : γ such that ⨆(z : γ), P z ≤ P y -/
-class full (γ β : Type*) [complete_lattice β] :=
-  (has_supr_wit : ∀ P : γ → β, ∃ y : γ, ((⨆(z : γ), P z) ≤ P y))
+-- /-- γ is full with respect to the complete lattice β if for every P : γ → β,
+--     there exists a y : γ such that ⨆(z : γ), P z ≤ P y -/
+-- class full (γ β : Type*) [complete_lattice β] :=
+--   (has_supr_wit : ∀ P : γ → β, ∃ y : γ, ((⨆(z : γ), P z) ≤ P y))
 
-lemma full_supr_wit {γ β : Type*} [complete_lattice β] [full γ β] (P : γ → β) : ∃ y : γ, (⨆(z : γ), P z) ≤ P y :=
-  by {tactic.unfreeze_local_instances, cases _inst_2, exact has_supr_wit P}
+-- lemma full_supr_wit {γ β : Type*} [complete_lattice β] [full γ β] (P : γ → β) : ∃ y : γ, (⨆(z : γ), P z) ≤ P y :=
+--   by {tactic.unfreeze_local_instances, cases _inst_2, exact has_supr_wit P}
 
-/-- Convert a Boolean-valued ∀∃-statement into a Prop-valued ∀∃-statement
-  Given A : α → γ, a binary function ϕ : γ → γ → β, a truth-value assignment
-  B : α → β, ∀ i : α, there exists a y_i : γ, such that
-  (B i ⟹ ϕ (A i) y_i) ≥ ⨅(i:α), B i ⟹ ⨆(y : γ), ϕ(A i, γ)
+-- /-- Convert a Boolean-valued ∀∃-statement into a Prop-valued ∀∃-statement
+--   Given A : α → γ, a binary function ϕ : γ → γ → β, a truth-value assignment
+--   B : α → β, ∀ i : α, there exists a y_i : γ, such that
+--   (B i ⟹ ϕ (A i) y_i) ≥ ⨅(i:α), B i ⟹ ⨆(y : γ), ϕ(A i, γ)
 
-  A more verbose, but maybe clearer way to see this is:
-  if there is an equality (⨅i-⨆j body i j) = b,
-  then for all i, there exists j, such that body i j ≥ b
+--   A more verbose, but maybe clearer way to see this is:
+--   if there is an equality (⨅i-⨆j body i j) = b,
+--   then for all i, there exists j, such that body i j ≥ b
 
-  Actually, the maximum principle tells us that "≥" above can
-  be improved to "="
--/
-lemma choice {α β γ : Type*} [complete_boolean_algebra β] [full γ β] (A : α → γ) (B : α → β) (ϕ : γ → γ → β) :
-  ∀ i : α, ∃ y : γ, (⨅(j:α), (B j ⟹ ⨆(z : γ), ϕ (A j) z)) ≤ (B i ⟹ ϕ (A i) y) :=
-  λ i,
-    by {have := classical.indefinite_description _ (full_supr_wit (λ x, ϕ (A i) x)),
-      exact ⟨this.val,
-    by {fapply infi_le_of_le, exact i, apply imp_le_of_right_le; exact this.property}⟩}
+--   Actually, the maximum principle tells us that "≥" above can
+--   be improved to "="
+-- -/
+-- lemma choice {α β γ : Type*} [complete_boolean_algebra β] [full γ β] (A : α → γ) (B : α → β) (ϕ : γ → γ → β) :
+--   ∀ i : α, ∃ y : γ, (⨅(j:α), (B j ⟹ ⨆(z : γ), ϕ (A j) z)) ≤ (B i ⟹ ϕ (A i) y) :=
+--   λ i,
+--     by {have := classical.indefinite_description _ (full_supr_wit (λ x, ϕ (A i) x)),
+--       exact ⟨this.val,
+--     by {fapply infi_le_of_le, exact i, apply imp_le_of_right_le; exact this.property}⟩}
 
 end lattice
 
@@ -397,17 +397,24 @@ begin
   apply le_supr_of_le i_z, apply le_inf, refl, simp}
 end
 
-/-- In particular, the mixing lemma applies when the weights (a_i) form an antichain -/
-lemma h_star_of_antichain {ι : Type u} {a : ι → β} {τ : ι → bSet β} {h_anti : antichain (a '' set.univ)} {h_inj : function.injective a} :
+/-- In particular, the mixing lemma applies when the weights (a_i) form an antichain and the indexing is injective -/
+lemma h_star_of_antichain_injective {ι : Type u} {a : ι → β} {τ : ι → bSet β} {h_anti : antichain (a '' set.univ)} {h_inj : function.injective a} :
   ∀ i j : ι, a i ⊓ a j ≤ τ i =ᴮ τ j :=
 begin
   intros i j, by_cases a i = a j, simp[h_inj h],
   have := h_anti _ _ _ _ h, simp[this], tidy
 end
 
+/- Note: this is the special condition assumed of indexed antichains by Bell-/
+lemma h_star_of_antichain_index {ι : Type u} {a : ι → β} {τ : ι → bSet β} {h_anti : antichain (a '' set.univ)} {h_index : ∀ i j : ι, i ≠ j → a i ⊓ a j = ⊥} :
+  ∀ i j : ι, a i ⊓ a j ≤ τ i =ᴮ τ j :=
+  λ i j, by {haveI : decidable_eq ι := λ _ _,
+  by apply classical.prop_decidable _,
+    by_cases i = j, simp[h], finish[h_index i j]}
+
 /- The next two lemmas use the fact that β : Type u to extract a small set witnessing quantification over all of bSet β -/
 
-/- i.e., in bSet β, any existential quantification is equivalent to a bounded existential quantification-/
+/- i.e., in bSet β, any existential quantification is equivalent to a bounded existential quantification. this is one place where it's crucial that β lives in the type universe out of which bSet β is being built -/
 section smallness
 variable {ϕ : bSet β → β}
 
@@ -431,48 +438,84 @@ end
 
 @[reducible, simp]def not_b (b : β) : set β := λ y, y ≠ b
 
+/- TODO(jesse) change this definition to use the well-ordering principle,
+   so that the final proof obligation for the maximum principle can be fulfilled -/
 def witness_antichain :=
   (λ b : type (@B_small_witness _ _ ϕ), b.val - (⨆(b' : (not_b b.val)), b'.val))
 
-def witness_antichain_injective : function.injective (@witness_antichain _ _ ϕ) :=
+lemma injective_of_preserves_neq {α β : Type*} {f : α → β} {h_neq : ∀ x y : α, x ≠ y → f x ≠ f y} : function.injective f :=
+  by finish
+
+def witness_antichain_index : ∀ {i j}, i ≠ j → (@witness_antichain _ _ ϕ) i ⊓ (@witness_antichain _ _ ϕ) j = ⊥ :=
+λ x y h_neq,
 begin
-  dsimp[witness_antichain], tidy, sorry -- hmm, this is a problem
+  dsimp[witness_antichain],
+  simp[sub_eq, neg_supr], rw[<-inf_assoc], apply bot_unique, apply inf_le_left_of_le, rw[inf_assoc], apply inf_le_right_of_le, rw[deduction, imp_bot],
+  fapply infi_le_of_le, use y.val, tidy
 end
 
 lemma witness_antichain_antichain : antichain ((@witness_antichain _ _ ϕ) '' set.univ) :=
 begin
   intros x h_x y h_y h_neq, simp at h_x h_y, rcases h_y with ⟨w_y, h_y⟩,
-  rcases h_x with ⟨w_x, h_x⟩, rw[<-h_y, <-h_x], dsimp[witness_antichain],
-  simp[sub_eq, neg_supr], rw[<-inf_assoc], apply bot_unique, apply inf_le_left_of_le,
-  rw[inf_assoc], apply inf_le_right_of_le, rw[deduction, imp_bot],
-  fapply infi_le_of_le, use w_y.val, swap, refl, change w_y.val ≠ w_x.val, by_contra,
-  have : w_y = w_x, by {tidy}, cc
+  rcases h_x with ⟨w_x, h_x⟩, rw[<-h_y, <-h_x],
+  apply witness_antichain_index, by_contra, cc
 end
 
 lemma witness_antichain_property : ∀ b, (@witness_antichain _ _ ϕ) b ≤ b.val :=
-  λ b, by finish[witness_antichain, sub_eq, neg_supr]
+  λ b, by simp[witness_antichain, sub_eq]
 
 end smallness
 
-instance bSet_full : full (bSet β) β :=
-  full.mk $ λ ϕ,
-  begin
-    let w := @B_small_witness _ _ ϕ,
-    rw[B_small_witness_supr], sorry
-    
-  end
+lemma maximum_principle (ϕ : bSet β → β) (h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y) : ∃ u, (⨆(x:bSet β), ϕ x) = ϕ u :=
+begin
+  let w := @B_small_witness _ _ ϕ,
+    have from_mixing_lemma := mixing_lemma (witness_antichain) (w.func)
+      (λ i j, by {by_cases i = j, finish, simp[witness_antichain_index h]}),
+    rcases from_mixing_lemma with ⟨u, H_w⟩,
+    use u, fapply le_antisymm,
+    {rw[B_small_witness_supr],
+     have H1 : (⨆(b : type B_small_witness), witness_antichain b) ≤ ϕ u,
+       show bSet β → β, from ϕ, apply supr_le, intro ξ,
+    have this'' : ∀ b, witness_antichain b ≤ u =ᴮ func w b ⊓ b.val,
+      by {intro b, apply le_inf, apply H_w b, apply witness_antichain_property},
+    have this''' : ∀ b, u =ᴮ func w b ⊓ (ϕ (func B_small_witness b)) ≤ ϕ u,
+      intro b, dsimp[w], rw[bool_equiv_symm], apply h_congr, apply le_trans,
+      exact this'' ξ, convert this''' ξ, apply (B_small_witness_spec _).symm,
+   suffices H2 : (⨆(b' : type (@B_small_witness _ _ ϕ)), ϕ (func B_small_witness b')) ≤ ⨆(b : type (@B_small_witness _ _ ϕ)), witness_antichain b,
+   from le_trans H2 H1,
+   sorry},
+    {apply le_supr}
+end
+
+/-- Convert a Boolean-valued ∀∃-statement into a Prop-valued ∀∃-statement
+  Given A : α → bSet β, a binary function ϕ : bSet β → bSet β → β, a truth-value assignment
+  B : α → β, ∀ i : α, there exists a y_i : bSet β, such that
+  (B i ⟹ ϕ (A i) y_i) ≥ ⨅(i:α), B i ⟹ ⨆(y : bSet β), ϕ(A i, bSet β)
+
+  A more verbose, but maybe clearer way to see this is:
+  if there is an equality (⨅i-⨆j body i j) = b,
+  then for all i, there exists j, such that body i j ≥ b
+
+  This is a consequence of the maximum principle.
+-/
+lemma AE_convert {α β: Type*} [complete_boolean_algebra β] (A : α → bSet β) (B : α → β) (ϕ : bSet β → bSet β → β) (h_congr : ∀ x y z, x =ᴮ y ⊓ ϕ z x ≤ ϕ z y) :
+  ∀ i : α, ∃ y : bSet β, (⨅(j:α), (B j ⟹ ⨆(z : bSet β), ϕ (A j) z)) ≤ (B i ⟹ ϕ (A i) y) :=
+  λ i,
+    by {have := maximum_principle (λ y, ϕ (A i) y)
+                  (by {intros x y, apply h_congr}),
+    rcases this with ⟨u', H'⟩, use u', apply infi_le_of_le i,
+    apply imp_le_of_right_le, from le_of_eq H'}
 
 /-- The axiom of weak replacement says that for every ϕ(x,y),
     for every set u, ∀ x ∈ u, ∃ y ϕ (x,y) implies there exists a set v
     which contains the image of u under ϕ. With the other axioms,
     this should be equivalent to the usual axiom of replacement. -/
-theorem bSet_axiom_of_weak_replacement (ϕ : bSet β → bSet β → β) (u : bSet β) :
+theorem bSet_axiom_of_weak_replacement (ϕ : bSet β → bSet β → β) (h_congr : ∀ x y z, x =ᴮ y ⊓ ϕ z x ≤ ϕ z y) (u : bSet β) :
   (⨅(i:u.type), (u.bval i ⟹ (⨆(y : bSet β), ϕ (u.func i) y))) ⟹
   (⨆(v : bSet β), (⨅(i : u.type), u.bval i ⟹ (⨆(j:v.type), ϕ (u.func i) (v.func j)))) = ⊤ :=
 begin
   simp only [bSet.bval, lattice.imp_top_iff_le, bSet.func, bSet.type],
-  have := classical.axiom_of_choice (choice u.func u.bval ϕ),
-  rcases this with ⟨wit, wit_property⟩, dsimp at wit wit_property,
+  rcases (classical.axiom_of_choice (AE_convert u.func u.bval ϕ h_congr)) with ⟨wit, wit_property⟩, dsimp at wit wit_property,
   fapply le_supr_of_le, exact ⟨u.type, wit, λ _, ⊤⟩,
     {simp, intro i, apply le_trans (wit_property i),
      apply imp_le_of_right_le, exact le_supr (λ x, ϕ (func u i) (wit x)) i}
