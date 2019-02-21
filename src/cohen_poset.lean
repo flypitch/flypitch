@@ -420,7 +420,7 @@ begin
     {apply or.elim h, exact λ A, or.inr $ or.inl $ A,
                       exact λ A, or.inr $ or.inr $ A},
     {-- dsimp[H] at h, rw[not_or_distrib] at h, apply or.inl,
-     
+    repeat{sorry}
   
     -- apply (aux_c''_graph_of (x,q')).mp,
      -- refine ⟨_, _⟩,
@@ -438,14 +438,14 @@ begin
 --           rw[hx], apply (pfun.lift_graph' _).mpr, exact h_val₁}, {change x ≠ t₂, cases h, intro hx, apply h_right, rw[hx], simp, apply (pfun.graph_functional p₂.val), repeat{sorry} -- exact Hx, rw[hx], apply (pfun.lift_graph' _).mpr, exact h_val₂
 --               }}, {apply (pfun.dom_iff_graph _ x).mpr, exact ⟨q', Hx'⟩}},
 
-    }
+    },
   -- by_cases H, repeat{sorry}
   -- have : ((x, q') ∈ {(t₁, q)} ∨ (x, q') ∈ {(t₂, q)}) → (x,q') ∉ pfun.graph ((aux_c'' h_t₁ h_t₂ q h_val₁ h_val₂ c).val),
   -- by {intros H₁ H₂, have : x ∈ (aux_c'' h_t₁ h_t₂ q h_val₁ h_val₂ c).val.dom,
   --    by {apply (pfun.dom_iff_graph _ x).mpr, exact ⟨q', H₂⟩}, have := aux_c''_dom x this,
   --    cases H₁, have : (x,q') = (t₁, q), from set.eq_of_mem_singleton (by assumption), finish,
   --    have : (x,q') = (t₂, q), from set.eq_of_mem_singleton (by assumption), finish},
-  
+  repeat{sorry}
   
 end
 
@@ -489,71 +489,71 @@ lemma congr_neq {α β : Type*} {f : α → β} {x' y' : α} {x y : β} {h_x : f
 lemma coe_subtype_injective {α : Type*} {s : set α} {x y : s} : (↑x = (↑y : α)) → x = y :=
   λ h, by {cases x, cases y, dsimp at h, subst h}
 
-/- The Cohen poset has the countable chain condition -/
-lemma cohen_poset_ccc : countable_chain_condition cohen_poset :=
-begin
-  intros a Ha, apply countable_of_countable_fibers' a size_of_domain,
-  intro n, induction n with n ih generalizing a,
-    {apply countable_subsingleton, apply size_of_domain_0_inter_subsingleton},
-    {let A_n, swap, change set.countable A_n,
-      have : A_n ⊆ ⋃ m, is_defined_at m, by {dsimp[A_n], apply inter_subset_right',
-             apply is_defined_at_covers, apply nat.zero_lt_succ},
-     rw[@cover_Union_eq _ _ A_n is_defined_at this], apply set.countable_Union,
-     intro m, let A_n_m, swap, change set.countable A_n_m,
-       have choice_aux : ∀ p : A_n_m, ∃ b : (set $ set ℕ), (b,m) ∈ (pfun.dom p.val.val),
-         by {intros p, cases p, cases p_property, cases p_val, assumption},
-       have := classical.axiom_of_choice choice_aux, cases this with wit wit_spec,
-       let eval : A_n_m → Prop :=
-             λ (p : ↥A_n_m), pfun.fn ((p.val).val) (wit p, m) (by apply wit_spec),
-       apply countable_of_countable_fibers'' _ eval, intro q,
-       let A_n_m_q, swap, change set.countable A_n_m_q,
+-- /- The Cohen poset has the countable chain condition -/
+-- lemma cohen_poset_ccc : countable_chain_condition cohen_poset :=
+-- begin
+--   intros a Ha, apply countable_of_countable_fibers' a size_of_domain,
+--   intro n, induction n with n ih generalizing a,
+--     {apply countable_subsingleton, apply size_of_domain_0_inter_subsingleton},
+--     {let A_n, swap, change set.countable A_n,
+--       have : A_n ⊆ ⋃ m, is_defined_at m, by {dsimp[A_n], apply inter_subset_right',
+--              apply is_defined_at_covers, apply nat.zero_lt_succ},
+--      rw[@cover_Union_eq _ _ A_n is_defined_at this], apply set.countable_Union,
+--      intro m, let A_n_m, swap, change set.countable A_n_m,
+--        have choice_aux : ∀ p : A_n_m, ∃ b : (set $ set ℕ), (b,m) ∈ (pfun.dom p.val.val),
+--          by {intros p, cases p, cases p_property, cases p_val, assumption},
+--        have := classical.axiom_of_choice choice_aux, cases this with wit wit_spec,
+--        let eval : A_n_m → Prop :=
+--              λ (p : ↥A_n_m), pfun.fn ((p.val).val) (wit p, m) (by apply wit_spec),
+--        apply countable_of_countable_fibers'' _ eval, intro q,
+--        let A_n_m_q, swap, change set.countable A_n_m_q,
      
-         let red : A_n_m → cohen_poset :=
-           λ X, one_point_restriction X.val (wit X, m) (by apply wit_spec),
+--          let red : A_n_m → cohen_poset :=
+--            λ X, one_point_restriction X.val (wit X, m) (by apply wit_spec),
 
-         have h_anti : antichain (red '' A_n_m_q) :=
-           by {intros x H_x y H_y H_neq H_compat, rcases H_compat with ⟨c, ⟨H_cx,H_cy⟩⟩,
-               rcases H_x with ⟨x', H_x'⟩, rcases H_y with ⟨y', H_y'⟩,
-               have h_neq : x' ≠ y',
-                 by {apply congr_neq, exact H_x'.right, exact H_y'.right, exact H_neq},
-               have : ↑x' ≠ ↑y', by {intro, apply h_neq, exact coe_subtype_injective a_1},
-               have h_incompat := Ha x' (x'.property.left.right) y' (y'.property.left.right) this,
-               have := wit_incompatible' h_incompat, rcases this with ⟨w,q₁,q₂, ⟨H₁,⟨H₂,H₃⟩⟩⟩,
-               have w_not_t₁ : w ≠ (wit (x'), m),
-                 by {intro H_eq, have := pfun.congr_arg (subtype.val (↑x'))
-                                         (pfun.in_dom_of_in_graph (by assumption))
-                                         (pfun.in_dom_of_in_graph (sorry)) H_eq, repeat{sorry}
-                     },
-               have w_not_t₂ : w.fst ≠ wit (y'), by sorry,
-               have w_in_red_1 : (w,q₁) ∈ (x).val.graph, by sorry,
-               have w_in_red_2 : (w,q₂) ∈ (y).val.graph, by sorry,
-               have w_in_c_1 : (w,q₁) ∈ c.val.graph, from H_cx w_in_red_1,
-               have w_in_c_2 : (w,q₂) ∈ c.val.graph, from H_cy w_in_red_2,
-               suffices : q₁ = q₂, by contradiction,
-               apply pfun.graph_functional c.val, exacts [w_in_c_1, w_in_c_2]
-               },
+--          have h_anti : antichain (red '' A_n_m_q) :=
+--            by {intros x H_x y H_y H_neq H_compat, rcases H_compat with ⟨c, ⟨H_cx,H_cy⟩⟩,
+--                rcases H_x with ⟨x', H_x'⟩, rcases H_y with ⟨y', H_y'⟩,
+--                have h_neq : x' ≠ y',
+--                  by {apply congr_neq, exact H_x'.right, exact H_y'.right, exact H_neq},
+--                have : ↑x' ≠ ↑y', by {intro, apply h_neq, exact coe_subtype_injective a_1},
+--                have h_incompat := Ha x' (x'.property.left.right) y' (y'.property.left.right) this,
+--                have := wit_incompatible' h_incompat, rcases this with ⟨w,q₁,q₂, ⟨H₁,⟨H₂,H₃⟩⟩⟩,
+--                have w_not_t₁ : w ≠ (wit (x'), m),
+--                  by {intro H_eq, have := pfun.congr_arg (subtype.val (↑x'))
+--                                          (pfun.in_dom_of_in_graph (by assumption))
+--                                          (pfun.in_dom_of_in_graph (sorry)) H_eq, repeat{sorry}
+--                      },
+--                have w_not_t₂ : w.fst ≠ wit (y'), by sorry,
+--                have w_in_red_1 : (w,q₁) ∈ (x).val.graph, by sorry,
+--                have w_in_red_2 : (w,q₂) ∈ (y).val.graph, by sorry,
+--                have w_in_c_1 : (w,q₁) ∈ c.val.graph, from H_cx w_in_red_1,
+--                have w_in_c_2 : (w,q₂) ∈ c.val.graph, from H_cy w_in_red_2,
+--                suffices : q₁ = q₂, by contradiction,
+--                apply pfun.graph_functional c.val, exacts [w_in_c_1, w_in_c_2]
+--                },
 
-         have ih_rewrite : size_of_domain ⁻¹' {n} ∩ red '' A_n_m_q = red '' A_n_m_q,
-           by {apply set.inter_eq_self_of_subset_right, intros x H_x,
-              simp only [set.mem_singleton_iff, set.mem_preimage_eq],
-              dsimp[red] at H_x, cases H_x, rw[<-H_x_h.right],
-              apply one_point_restriction_decrease_size,
-              apply size_of_domain_fiber H_x_w.property.left.left},
+--          have ih_rewrite : size_of_domain ⁻¹' {n} ∩ red '' A_n_m_q = red '' A_n_m_q,
+--            by {apply set.inter_eq_self_of_subset_right, intros x H_x,
+--               simp only [set.mem_singleton_iff, set.mem_preimage_eq],
+--               dsimp[red] at H_x, cases H_x, rw[<-H_x_h.right],
+--               apply one_point_restriction_decrease_size,
+--               apply size_of_domain_fiber H_x_w.property.left.left},
 
-         have h_inj : set.inj_on red A_n_m_q,
-           by {intros x' y' H_x' H_y',
-              haveI : decidable_eq ↥A_n_m := λ _ _, classical.prop_decidable _,
-              by_cases x' = y', exact λ _, ‹x' = y'›, rename h h_neq,
-              intro H, exfalso, 
-               refine Ha x' (x'.property.left.right) y' (y'.property.left.right)
-                           (by {intro, apply h_neq, exact coe_subtype_injective a_1}) _,
-              apply one_point_restriction_refinement_extension_spec (↑x') (↑y'),
-              have : red x' ≤ red x', by {apply le_of_eq rfl},
-              convert this, convert (le_of_eq H), exact q,
-               cases H_x', convert H_x', cases H_x',
-               cases H_y', convert H_y', cases H_y'},
+--          have h_inj : set.inj_on red A_n_m_q,
+--            by {intros x' y' H_x' H_y',
+--               haveI : decidable_eq ↥A_n_m := λ _ _, classical.prop_decidable _,
+--               by_cases x' = y', exact λ _, ‹x' = y'›, rename h h_neq,
+--               intro H, exfalso, 
+--                refine Ha x' (x'.property.left.right) y' (y'.property.left.right)
+--                            (by {intro, apply h_neq, exact coe_subtype_injective a_1}) _,
+--               apply one_point_restriction_refinement_extension_spec (↑x') (↑y'),
+--               have : red x' ≤ red x', by {apply le_of_eq rfl},
+--               convert this, convert (le_of_eq H), exact q,
+--                cases H_x', convert H_x', cases H_x',
+--                cases H_y', convert H_y', cases H_y'},
 
-         have ih' := ih (red '' A_n_m_q) h_anti,
+--          have ih' := ih (red '' A_n_m_q) h_anti,
 
-         exact set.countable_of_injective_of_countable_image h_inj (by rwa[<-ih_rewrite])}
-end
+--          exact set.countable_of_injective_of_countable_image h_inj (by rwa[<-ih_rewrite])}
+-- end

@@ -1,10 +1,12 @@
 import fol set_theory.zfc set_theory.ordinal order.boolean_algebra order.complete_boolean_algebra tactic.rewrite tactic.monotonicity tactic.elide
 
+local infix ` ⟹ `:65 := lattice.imp
+
+local infix ` ⇔ `:50 := lattice.biimp
+
 open lattice
 
 universe u
-
-/- A β-valued model of ZFC -/
 
 namespace pSet
 
@@ -22,190 +24,8 @@ end
 
 end pSet
 
-namespace lattice
-instance degenerate_boolean_algebra : boolean_algebra unit :=
-{ sup := λ _ _, (),
-  le := λ _ _, true,
-  lt := λ _ _, false,
-  le_refl := dec_trivial,
-  le_trans := dec_trivial
-  lt_iff_le_not_le := dec_trivial,
-  le_antisymm := dec_trivial,
-  le_sup_left :=  dec_trivial,
-  le_sup_right :=  dec_trivial,
-  sup_le :=  dec_trivial,
-  inf := λ _ _, (),
-  inf_le_left :=  dec_trivial,
-  inf_le_right :=  dec_trivial,
-  le_inf :=  dec_trivial,
-  le_sup_inf :=  dec_trivial,
-  top := (),
-  le_top :=  dec_trivial,
-  bot := (),
-  bot_le :=  dec_trivial,
-  neg := λ _, (),
-  sub := λ _ _, (),
-  inf_neg_eq_bot :=  dec_trivial,
-  sup_neg_eq_top :=  dec_trivial,
-  sub_eq :=  dec_trivial}
 
-class nondegenerate (α : Type*) extends bounded_lattice α :=
-  {bot_neq_top : (⊥ : α) ≠ (⊤ : α)}
-
-def antichain {β : Type*} [bounded_lattice β] (s : set β) :=
-  ∀ x ∈ s, ∀ y ∈ s, x ≠ y → x ⊓ y = (⊥ : β)
-
-theorem inf_supr_eq {α ι : Type*} [complete_distrib_lattice α] {a : α} {s : ι → α} :
-  a ⊓ (⨆(i:ι), s i) = ⨆(i:ι), a ⊓ s i :=
-  eq.trans inf_Sup_eq $
-    begin
-      rw[<-inf_Sup_eq], suffices : (⨆(i:ι), a ⊓ s i) = ⨆(b∈(set.range s)), a ⊓ b,
-      by {rw[this], apply inf_Sup_eq}, simp, apply le_antisymm,
-      apply supr_le, intro i, apply le_supr_of_le (s i), apply le_supr_of_le i,
-      apply le_supr_of_le rfl, refl,
-      repeat{apply supr_le, intro}, rw[<-i_2], apply le_supr_of_le i_1, refl
-    end
-
-theorem sup_infi_eq {α ι : Type*} [complete_distrib_lattice α] {a : α} {s : ι → α} :
-  a ⊔ (⨅(i:ι), s i) = ⨅(i:ι), a ⊔ s i :=
-  eq.trans sup_Inf_eq $
-    begin
-      rw[<-sup_Inf_eq], suffices : (⨅(i:ι), a ⊔ s i) = ⨅(b∈(set.range s)), a ⊔ b,
-      by {rw[this], apply sup_Inf_eq}, simp, apply le_antisymm,
-      repeat{apply le_infi, intro}, rw[<-i_2], apply infi_le_of_le i_1, refl,
-      repeat{apply infi_le_of_le}, show ι, from ‹ι›, show α, exact s i, refl, refl
-    end
-
-@[simp]lemma inf_self {α : Type*} [lattice α] {a : α} : a ⊓ a = a :=
-  by finish
-
-@[simp]lemma sup_self {α : Type*} [lattice α] {a : α} : a ⊔ a = a :=
-  by finish
-
-def imp {α : Type*} [boolean_algebra α] : α → α → α :=
-  λ a₁ a₂, (- a₁) ⊔ a₂
-
-infix ` ⟹ `:65 := lattice.imp
-
-@[reducible, simp]def biimp {α : Type*} [boolean_algebra α] : α → α → α :=
-  λ a₁ a₂, (a₁ ⟹ a₂) ⊓ (a₂ ⟹ a₁)
-
-infix ` ⇔ `:50 := lattice.biimp
-
-lemma biimp_mp {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⇔ a₂) ≤ (a₁ ⟹ a₂) :=
-  by apply inf_le_left
-
-lemma biimp_mpr {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⇔ a₂) ≤ (a₂ ⟹ a₁) :=
-  by apply inf_le_right
-
-@[simp]lemma imp_le_of_right_le {α : Type*} [boolean_algebra α] {a a₁ a₂ : α} {h : a₁ ≤ a₂} : a ⟹ a₁ ≤ (a ⟹ a₂) :=
-  sup_le (by apply le_sup_left) $ le_sup_right_of_le h
-
-@[simp]lemma imp_le_of_left_le {α : Type*} [boolean_algebra α] {a a₁ a₂ : α} {h : a₂ ≤ a₁} : a₁ ⟹ a ≤ (a₂ ⟹ a) :=
-  sup_le (le_sup_left_of_le $ neg_le_neg h) (by apply le_sup_right)
-
-@[simp]lemma imp_bot {α : Type*} [boolean_algebra α]  {a : α} : a ⟹ ⊥ = - a := by simp[imp]
-
-@[simp]lemma top_imp {α : Type*} [boolean_algebra α] {a : α} : ⊤ ⟹ a = a := by simp[imp]
-
-lemma imp_neg_sub {α : Type*} [boolean_algebra α] {a₁ a₂ : α} :  -(a₁ ⟹ a₂) = a₁ - a₂ :=
-  by rw[sub_eq, imp]; finish
-
-lemma inf_eq_of_le {α : Type*} [distrib_lattice α] {a b : α} (h : a ≤ b) : a ⊓ b = a :=
-  by apply le_antisymm; finish[le_inf]
-
-/-- the deduction theorem in β -/
-@[simp]lemma imp_top_iff_le {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⟹ a₂ = ⊤) ↔ a₁ ≤ a₂ :=
-begin
- split; intro H,
-  {have : a₁ ⊓ a₂ = a₁, from
-    calc a₁ ⊓ a₂ = ⊥ ⊔ (a₁ ⊓ a₂) : by simp
-             ... = (a₁ ⊓ - a₁) ⊔ (a₁ ⊓ a₂) : by simp
-             ... = a₁ ⊓ (- a₁ ⊔ a₂) : by {rw[inf_sup_left]}
-             ... = a₁ ⊓ ⊤ : by {rw[<-H], refl}
-             ... = a₁ : by {simp},
-             
-   finish},
- {have : a₁ ⊓ a₂ = a₁, from inf_eq_of_le H, apply top_unique,
-  have this' : ⊤ = - a₁ ⊔ a₁, by rw[lattice.neg_sup_eq_top],
-  rw[this', <-this, imp], simp only [lattice.neg_inf, lattice.sup_le_iff],
-  repeat{split},
-    suffices : (- a₁ ≤ - a₁ ⊔ - a₂ ⊔ a₂) = (- a₁ ≤ - a₁ ⊔ (- a₂ ⊔ a₂)),
-      by rw[this]; apply le_sup_left, ac_refl,
-    suffices : (-a₂ ≤ -a₁ ⊔ -a₂ ⊔ a₂) = (- a₂ ≤ - a₂ ⊔ (-a₁ ⊔ a₂)),
-      by rw[this]; apply le_sup_left, ac_refl,
-    suffices : - a₁ ⊔ - a₂ ⊔ a₂ = ⊤,
-      by rw[this]; simp, apply top_unique,
-      suffices : - a₁ ⊔ - a₂ ⊔ a₂ = - a₁ ⊔ (- a₂ ⊔ a₂),
-        by simp[this], ac_refl}
-end
-
-/- ∀ {α : Type u_1} [_inst_1 : boolean_algebra α] {a₁ a₂ : α}, a₁ ⟹ a₂ = ⊤ ↔ a₁ ≤ a₂ -/
-
-lemma curry_uncurry {α : Type*} [boolean_algebra α] {a b c : α} : ((a ⊓ b) ⟹ c) = (a ⟹ (b ⟹ c)) :=
-  by simp[imp]; ac_refl
-
-/-- the actual deduction theorem in β, thinking of ≤ as a turnstile -/
-lemma deduction {α : Type*} [boolean_algebra α] {a b c : α} : a ⊓ b ≤ c ↔ a ≤ (b ⟹ c) :=
-  by {[smt] eblast_using [curry_uncurry, imp_top_iff_le]}
-
-lemma deduction_simp {α : Type*} [boolean_algebra α] {a b c : α} : a ≤ (b ⟹ c) ↔ a ⊓ b ≤ c := deduction.symm
-
-/-- Given an η : option α → β, where β is a complete lattice, we have that the supremum of η
-    is equal to (η none) ⊔ ⨆(a:α) η (some a)-/
-@[simp]lemma supr_option {α β : Type*} [complete_lattice β] {η : option α → β} : (⨆(x : option α), η x) = (η none) ⊔ ⨆(a : α), η (some a) :=
-begin
-  apply le_antisymm, tidy, cases i, apply le_sup_left,
-  apply le_sup_right_of_le, apply le_supr (λ x, η (some x)) i, apply le_supr, apply le_supr
-end
-
-/-- Given an η : option α → β, where β is a complete lattice, we have that the infimum of η
-    is equal to (η none) ⊓ ⨅(a:α) η (some a)-/
-@[simp]lemma infi_option {α β : Type*} [complete_lattice β] {η : option α → β} : (⨅(x : option α), η x) = (η none) ⊓ ⨅(a : α), η (some a) :=
-begin
-  apply le_antisymm, tidy, tactic.rotate 2, cases i, apply inf_le_left,
-  apply inf_le_right_of_le, apply infi_le (λ x, η (some x)) i, apply infi_le, apply infi_le
-end
-
-lemma supr_option' {α β : Type*} [complete_lattice β] {η : α → β} {b : β} : (⨆(x : option α), (option.rec b η x : β) : β) = b ⊔ ⨆(a : α), η a :=
-  by rw[supr_option]
-
-lemma infi_option' {α β : Type*} [complete_lattice β] {η : α → β} {b : β} : (⨅(x : option α), (option.rec b η x : β) : β) = b ⊓ ⨅(a : α), η a :=
-  by rw[infi_option]
-
--- /-- γ is full with respect to the complete lattice β if for every P : γ → β,
---     there exists a y : γ such that ⨆(z : γ), P z ≤ P y -/
--- class full (γ β : Type*) [complete_lattice β] :=
---   (has_supr_wit : ∀ P : γ → β, ∃ y : γ, ((⨆(z : γ), P z) ≤ P y))
-
--- lemma full_supr_wit {γ β : Type*} [complete_lattice β] [full γ β] (P : γ → β) : ∃ y : γ, (⨆(z : γ), P z) ≤ P y :=
---   by {tactic.unfreeze_local_instances, cases _inst_2, exact has_supr_wit P}
-
--- /-- Convert a Boolean-valued ∀∃-statement into a Prop-valued ∀∃-statement
---   Given A : α → γ, a binary function ϕ : γ → γ → β, a truth-value assignment
---   B : α → β, ∀ i : α, there exists a y_i : γ, such that
---   (B i ⟹ ϕ (A i) y_i) ≥ ⨅(i:α), B i ⟹ ⨆(y : γ), ϕ(A i, γ)
-
---   A more verbose, but maybe clearer way to see this is:
---   if there is an equality (⨅i-⨆j body i j) = b,
---   then for all i, there exists j, such that body i j ≥ b
-
---   Actually, the maximum principle tells us that "≥" above can
---   be improved to "="
--- -/
--- lemma choice {α β γ : Type*} [complete_boolean_algebra β] [full γ β] (A : α → γ) (B : α → β) (ϕ : γ → γ → β) :
---   ∀ i : α, ∃ y : γ, (⨅(j:α), (B j ⟹ ⨆(z : γ), ϕ (A j) z)) ≤ (B i ⟹ ϕ (A i) y) :=
---   λ i,
---     by {have := classical.indefinite_description _ (full_supr_wit (λ x, ϕ (A i) x)),
---       exact ⟨this.val,
---     by {fapply infi_le_of_le, exact i, apply imp_le_of_right_le; exact this.property}⟩}
-
-end lattice
-
--- note: use forall_and_distrib in core, which is the same statement but with the ↔ reversed
-
--- lemma forall_and {α : Type*} {p q : α → Prop} : (∀ x, p x) ∧ (∀ y, q y) ↔ ∀ x, p x ∧ q x :=
---   by finish
+/- A β-valued model of ZFC -/
 
 -- τ is a B-name if and only if τ is a set of pairs of the form ⟨σ, b⟩, where σ is
 -- a B-name and b ∈ B.
@@ -601,7 +421,7 @@ lemma check_bv_eq_dichotomy {x y : pSet} :
   (x̌ =ᴮ y̌ = (⊤ : β)) ∨ (x̌ =ᴮ y̌ = (⊥ : β)) :=
 begin
   induction x generalizing y, cases y,
-  
+  sorry
 end
 
 lemma check_bv_eq_top_of_equiv {x y : pSet} :
@@ -684,7 +504,7 @@ def bv_powerset (u : bSet β) : bSet β :=
 
 theorem bSet_axiom_of_powerset : (⨅(u : bSet β), ⨆(v : _), ⨅(x : bSet β), x∈ᴮ v ⇔ ⨅(y : x.type), (x.func y ∈ᴮ u)) = ⊤:=
 begin
- squeeze_simp, intro u, apply top_unique, apply le_supr_of_le (bv_powerset u), sorry
+ simp, intro u, apply top_unique, apply le_supr_of_le (bv_powerset u), sorry
 end
 
 @[simp, reducible]def axiom_of_infinity_spec (u : bSet β) : β :=

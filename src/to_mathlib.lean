@@ -1,6 +1,6 @@
 /- theorems which we should (maybe) backport to mathlib -/
 
-import data.finset algebra.ordered_group tactic.squeeze
+import data.finset algebra.ordered_group tactic.squeeze tactic.tidy
 
 universe variables u v w
 
@@ -552,3 +552,157 @@ lemma arity'_iff_rfl {α : Type} {n : ℕ} {f : arity' α Prop n} : arity'_iff f
 arity'_iff_refl f
 
 end arity'
+
+
+namespace lattice
+instance degenerate_boolean_algebra : boolean_algebra unit :=
+{ sup := λ _ _, (),
+  le := λ _ _, true,
+  lt := λ _ _, false,
+  le_refl := by tidy,
+  le_trans := by tidy,
+  lt_iff_le_not_le := by tidy,
+  le_antisymm := by tidy,
+  le_sup_left :=  by tidy,
+  le_sup_right :=  by tidy,
+  sup_le :=  by tidy,
+  inf := λ _ _, (),
+  inf_le_left :=  by tidy,
+  inf_le_right :=  by tidy,
+  le_inf :=  by tidy,
+  le_sup_inf :=  by tidy,
+  top := (),
+  le_top :=  by tidy,
+  bot := (),
+  bot_le :=  by tidy,
+  neg := λ _, (),
+  sub := λ _ _, (),
+  inf_neg_eq_bot :=  by tidy,
+  sup_neg_eq_top :=  by tidy,
+  sub_eq :=  by tidy}
+
+class nondegenerate (α : Type*) extends bounded_lattice α :=
+  {bot_neq_top : (⊥ : α) ≠ (⊤ : α)}
+
+def antichain {β : Type*} [bounded_lattice β] (s : set β) :=
+  ∀ x ∈ s, ∀ y ∈ s, x ≠ y → x ⊓ y = (⊥ : β)
+
+theorem inf_supr_eq {α ι : Type*} [complete_distrib_lattice α] {a : α} {s : ι → α} :
+  a ⊓ (⨆(i:ι), s i) = ⨆(i:ι), a ⊓ s i :=
+  eq.trans inf_Sup_eq $
+    begin
+      rw[<-inf_Sup_eq], suffices : (⨆(i:ι), a ⊓ s i) = ⨆(b∈(set.range s)), a ⊓ b,
+      by {rw[this], apply inf_Sup_eq}, simp, apply le_antisymm,
+      apply supr_le, intro i, apply le_supr_of_le (s i), apply le_supr_of_le i,
+      apply le_supr_of_le rfl, refl,
+      repeat{apply supr_le, intro}, rw[<-i_2], apply le_supr_of_le i_1, refl
+    end
+
+theorem sup_infi_eq {α ι : Type*} [complete_distrib_lattice α] {a : α} {s : ι → α} :
+  a ⊔ (⨅(i:ι), s i) = ⨅(i:ι), a ⊔ s i :=
+  eq.trans sup_Inf_eq $
+    begin
+      rw[<-sup_Inf_eq], suffices : (⨅(i:ι), a ⊔ s i) = ⨅(b∈(set.range s)), a ⊔ b,
+      by {rw[this], apply sup_Inf_eq}, simp, apply le_antisymm,
+      repeat{apply le_infi, intro}, rw[<-i_2], apply infi_le_of_le i_1, refl,
+      repeat{apply infi_le_of_le}, show ι, from ‹ι›, show α, exact s i, refl, refl
+    end
+
+@[simp]lemma inf_self {α : Type*} [lattice α] {a : α} : a ⊓ a = a :=
+  by finish
+
+@[simp]lemma sup_self {α : Type*} [lattice α] {a : α} : a ⊔ a = a :=
+  by finish
+
+def imp {α : Type*} [boolean_algebra α] : α → α → α :=
+  λ a₁ a₂, (- a₁) ⊔ a₂
+
+local infix ` ⟹ `:65 := lattice.imp
+
+@[reducible, simp]def biimp {α : Type*} [boolean_algebra α] : α → α → α :=
+  λ a₁ a₂, (a₁ ⟹ a₂) ⊓ (a₂ ⟹ a₁)
+
+local infix ` ⇔ `:50 := lattice.biimp
+
+lemma biimp_mp {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⇔ a₂) ≤ (a₁ ⟹ a₂) :=
+  by apply inf_le_left
+
+lemma biimp_mpr {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⇔ a₂) ≤ (a₂ ⟹ a₁) :=
+  by apply inf_le_right
+
+@[simp]lemma imp_le_of_right_le {α : Type*} [boolean_algebra α] {a a₁ a₂ : α} {h : a₁ ≤ a₂} : a ⟹ a₁ ≤ (a ⟹ a₂) :=
+  sup_le (by apply le_sup_left) $ le_sup_right_of_le h
+
+@[simp]lemma imp_le_of_left_le {α : Type*} [boolean_algebra α] {a a₁ a₂ : α} {h : a₂ ≤ a₁} : a₁ ⟹ a ≤ (a₂ ⟹ a) :=
+  sup_le (le_sup_left_of_le $ neg_le_neg h) (by apply le_sup_right)
+
+@[simp]lemma imp_bot {α : Type*} [boolean_algebra α]  {a : α} : a ⟹ ⊥ = - a := by simp[imp]
+
+@[simp]lemma top_imp {α : Type*} [boolean_algebra α] {a : α} : ⊤ ⟹ a = a := by simp[imp]
+
+lemma imp_neg_sub {α : Type*} [boolean_algebra α] {a₁ a₂ : α} :  -(a₁ ⟹ a₂) = a₁ - a₂ :=
+  by rw[sub_eq, imp]; finish
+
+lemma inf_eq_of_le {α : Type*} [distrib_lattice α] {a b : α} (h : a ≤ b) : a ⊓ b = a :=
+  by apply le_antisymm; finish[le_inf]
+
+/-- the deduction theorem in β -/
+@[simp]lemma imp_top_iff_le {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⟹ a₂ = ⊤) ↔ a₁ ≤ a₂ :=
+begin
+ split; intro H,
+  {have : a₁ ⊓ a₂ = a₁, from
+    calc a₁ ⊓ a₂ = ⊥ ⊔ (a₁ ⊓ a₂) : by simp
+             ... = (a₁ ⊓ - a₁) ⊔ (a₁ ⊓ a₂) : by simp
+             ... = a₁ ⊓ (- a₁ ⊔ a₂) : by {rw[inf_sup_left]}
+             ... = a₁ ⊓ ⊤ : by {rw[<-H], refl}
+             ... = a₁ : by {simp},
+             
+   finish},
+ {have : a₁ ⊓ a₂ = a₁, from inf_eq_of_le H, apply top_unique,
+  have this' : ⊤ = - a₁ ⊔ a₁, by rw[lattice.neg_sup_eq_top],
+  rw[this', <-this, imp], simp only [lattice.neg_inf, lattice.sup_le_iff],
+  repeat{split},
+    suffices : (- a₁ ≤ - a₁ ⊔ - a₂ ⊔ a₂) = (- a₁ ≤ - a₁ ⊔ (- a₂ ⊔ a₂)),
+      by rw[this]; apply le_sup_left, ac_refl,
+    suffices : (-a₂ ≤ -a₁ ⊔ -a₂ ⊔ a₂) = (- a₂ ≤ - a₂ ⊔ (-a₁ ⊔ a₂)),
+      by rw[this]; apply le_sup_left, ac_refl,
+    suffices : - a₁ ⊔ - a₂ ⊔ a₂ = ⊤,
+      by rw[this]; simp, apply top_unique,
+      suffices : - a₁ ⊔ - a₂ ⊔ a₂ = - a₁ ⊔ (- a₂ ⊔ a₂),
+        by simp[this], ac_refl}
+end
+
+/- ∀ {α : Type u_1} [_inst_1 : boolean_algebra α] {a₁ a₂ : α}, a₁ ⟹ a₂ = ⊤ ↔ a₁ ≤ a₂ -/
+
+lemma curry_uncurry {α : Type*} [boolean_algebra α] {a b c : α} : ((a ⊓ b) ⟹ c) = (a ⟹ (b ⟹ c)) :=
+  by simp[imp]; ac_refl
+
+/-- the actual deduction theorem in β, thinking of ≤ as a turnstile -/
+lemma deduction {α : Type*} [boolean_algebra α] {a b c : α} : a ⊓ b ≤ c ↔ a ≤ (b ⟹ c) :=
+  by {[smt] eblast_using [curry_uncurry, imp_top_iff_le]}
+
+lemma deduction_simp {α : Type*} [boolean_algebra α] {a b c : α} : a ≤ (b ⟹ c) ↔ a ⊓ b ≤ c := deduction.symm
+
+/-- Given an η : option α → β, where β is a complete lattice, we have that the supremum of η
+    is equal to (η none) ⊔ ⨆(a:α) η (some a)-/
+@[simp]lemma supr_option {α β : Type*} [complete_lattice β] {η : option α → β} : (⨆(x : option α), η x) = (η none) ⊔ ⨆(a : α), η (some a) :=
+begin
+  apply le_antisymm, tidy, cases i, apply le_sup_left,
+  apply le_sup_right_of_le, apply le_supr (λ x, η (some x)) i, apply le_supr, apply le_supr
+end
+
+/-- Given an η : option α → β, where β is a complete lattice, we have that the infimum of η
+    is equal to (η none) ⊓ ⨅(a:α) η (some a)-/
+@[simp]lemma infi_option {α β : Type*} [complete_lattice β] {η : option α → β} : (⨅(x : option α), η x) = (η none) ⊓ ⨅(a : α), η (some a) :=
+begin
+  apply le_antisymm, tidy, tactic.rotate 2, cases i, apply inf_le_left,
+  apply inf_le_right_of_le, apply infi_le (λ x, η (some x)) i, apply infi_le, apply infi_le
+end
+
+lemma supr_option' {α β : Type*} [complete_lattice β] {η : α → β} {b : β} : (⨆(x : option α), (option.rec b η x : β) : β) = b ⊔ ⨆(a : α), η a :=
+  by rw[supr_option]
+
+lemma infi_option' {α β : Type*} [complete_lattice β] {η : α → β} {b : β} : (⨅(x : option α), (option.rec b η x : β) : β) = b ⊓ ⨅(a : α), η a :=
+  by rw[infi_option]
+
+end lattice
