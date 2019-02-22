@@ -705,4 +705,23 @@ lemma supr_option' {α β : Type*} [complete_lattice β] {η : α → β} {b : �
 lemma infi_option' {α β : Type*} [complete_lattice β] {η : α → β} {b : β} : (⨅(x : option α), (option.rec b η x : β) : β) = b ⊓ ⨅(a : α), η a :=
   by rw[infi_option]
 
+/-- Let A : α → β such that b = ⨆(a : α) A a. Let c < b. If, for all a : α, A a ≠ b → A a ≤ c,
+then there exists some x : α such that A x = b. -/
+lemma supr_max_of_bounded {α β : Type*} [complete_lattice β] {A : α → β} {b c : β}
+{h : b = ⨆(a:α), A a} {h_lt : c < b} {h_bounded : ∀ a : α, A a ≠ b → A a ≤ c} :
+  ∃ x : α, A x = b :=
+begin
+  haveI : decidable ∃ (x : α), A x = b := by apply classical.prop_decidable,
+  by_contra, rw[h] at a, simp at a,
+  suffices : b ≤ c, by {suffices : c < c, by {exfalso, have this' := lt_irrefl,
+  show Type*, exact β, show preorder (id β), by {dsimp, apply_instance}, exact this' c this},
+  exact lt_of_lt_of_le h_lt this},
+  rw[h], apply supr_le, intro a', from h_bounded a' (by convert a a')
+end
+
+/-- As a consequence of the previous lemma, if ⨆(a : α), A a = ⊤ such that whenever A a ≠ ⊤ → A α = ⊥, there exists some x : α such that A x = ⊤. -/
+lemma supr_eq_top_max {α β : Type*} [complete_lattice β] {A : α → β} {h_nondeg : ⊥ < (⊤ : β)}
+{h_top : (⨆(a : α), A a) = ⊤} {h_bounded : ∀ a : α, A a ≠ ⊤ → A a = ⊥} : ∃ x : α, A x = ⊤ :=
+  by {apply supr_max_of_bounded, cc, exact h_nondeg, tidy}
+
 end lattice
