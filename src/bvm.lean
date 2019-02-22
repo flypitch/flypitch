@@ -1,4 +1,4 @@
-import fol set_theory.zfc set_theory.ordinal order.boolean_algebra order.complete_boolean_algebra tactic.rewrite tactic.monotonicity tactic.elide
+import fol set_theory.zfc set_theory.ordinal order.boolean_algebra order.complete_boolean_algebra tactic.rewrite tactic.monotonicity .to_mathlib
 
 local infix ` ⟹ `:65 := lattice.imp
 
@@ -33,7 +33,7 @@ inductive bSet (β : Type u) [complete_boolean_algebra β] : Type (u+1)
 | mk (α : Type u) (A : α → bSet) (B : α → β) : bSet
 
 namespace bSet
-variables {β : Type u} [complete_boolean_algebra β]
+variables {β : Type u} [nontrivial_complete_boolean_algebra β]
 
 noncomputable instance decidable_eq_β : decidable_eq β := λ _ _, classical.prop_decidable _
 
@@ -131,9 +131,11 @@ protected def insert' : bSet β → β → bSet β → bSet β
 instance insert_bSet : has_insert (bSet β) (bSet β) :=
   ⟨λ u v, bSet.insert1 u v⟩
 
-@[simp]lemma insert_rw {y z : bSet β} : insert y z = bSet.insert y ⊤ z :=     by refl
+@[simp]lemma insert_rw {y z : bSet β} : insert y z = bSet.insert y ⊤ z :=
+  by refl
 
-@[simp]theorem mem_insert {x y z : bSet β} {b : β} : x ∈ᴮ bSet.insert y b z = (b ⊓ x =ᴮ y) ⊔ x ∈ᴮ z :=
+@[simp]theorem mem_insert {x y z : bSet β} {b : β} :
+  x ∈ᴮ bSet.insert y b z = (b ⊓ x =ᴮ y) ⊔ x ∈ᴮ z :=
   by induction y; induction z; simp
 
 theorem mem_insert1 {x y z : bSet β} : x ∈ᴮ insert y z = x =ᴮ y ⊔ x ∈ᴮ z :=
@@ -141,7 +143,8 @@ theorem mem_insert1 {x y z : bSet β} : x ∈ᴮ insert y z = x =ᴮ y ⊔ x ∈
 
 example : {∅} =ᴮ empty'' = (⊤ : β) :=
 begin
-  simp[empty'', singleton, insert, has_insert.insert], simp[has_emptyc.emptyc, empty], refine ⟨_, by intro i; repeat{cases i}⟩, apply top_unique,
+  simp[empty'', singleton, insert, has_insert.insert], simp[has_emptyc.emptyc, empty],
+  refine ⟨_, by intro i; repeat{cases i}⟩, apply top_unique,
  have : ⊤ = (ulift.rec (bool.rec ⊥ ⊤) : ulift bool → β) (ulift.up tt),
    by refl,
  rw[this], apply le_supr
@@ -397,7 +400,7 @@ lemma maximum_principle_bounded_top {ϕ : bSet β → β} {h_congr : ∀ x y, x 
 
   This is a consequence of the maximum principle.
 -/
-lemma AE_convert {α β : Type*} [complete_boolean_algebra β] (A : α → bSet β) (B : α → β) (ϕ : bSet β → bSet β → β) (h_congr : ∀ x y z, x =ᴮ y ⊓ ϕ z x ≤ ϕ z y) :
+lemma AE_convert {α β : Type*} [nontrivial_complete_boolean_algebra β] (A : α → bSet β) (B : α → β) (ϕ : bSet β → bSet β → β) (h_congr : ∀ x y z, x =ᴮ y ⊓ ϕ z x ≤ ϕ z y) :
   ∀ i : α, ∃ y : bSet β, (⨅(j:α), (B j ⟹ ⨆(z : bSet β), ϕ (A j) z)) ≤ (B i ⟹ ϕ (A i) y) :=
   λ i,
     by {have := maximum_principle (λ y, ϕ (A i) y)
@@ -417,24 +420,15 @@ postfix `̌ `:90 := check
 example : let x := pSet.empty in (x̌ : bSet β) = bSet.empty :=
   by dsimp[check, pSet.empty, bSet.empty]; simp; fsplit; ext1; repeat{cases x}
 
-lemma check_bv_eq_dichotomy {x y : pSet} :
-  (x̌ =ᴮ y̌ = (⊤ : β)) ∨ (x̌ =ᴮ y̌ = (⊥ : β)) :=
-begin
-  induction x generalizing y, cases y,
-  sorry
-end
-
 lemma check_bv_eq_top_of_equiv {x y : pSet} :
   pSet.equiv x y → x̌ =ᴮ y̌ = (⊤ : β) :=
 begin
   induction x generalizing y, cases y,
   dsimp[check], simp only [pSet.equiv, lattice.top_le_iff, bSet.check,
-    lattice.top_inf_eq, lattice.imp_top_iff_le, lattice.inf_eq_top_iff, lattice.infi_eq_top],
-    intros a, cases a, split; intro i,
-     {apply top_unique, rcases a_left i with ⟨w, h⟩,  apply le_supr_of_le w,
-   simp only [lattice.top_le_iff, bSet.check], apply (x_ih _), exact h},
-  {apply top_unique, rcases a_right i with ⟨w, h⟩,  apply le_supr_of_le w,
-   simp only [lattice.top_le_iff, bSet.check], apply (x_ih _), exact h},
+  lattice.top_inf_eq, lattice.imp_top_iff_le, lattice.inf_eq_top_iff, lattice.infi_eq_top],
+  intros a, cases a, split; intro i;
+  apply top_unique; [rcases a_left i with ⟨w, h⟩, rcases a_right i with ⟨w,h⟩];
+  apply le_supr_of_le w; simp only [lattice.top_le_iff, bSet.check]; apply (x_ih _); exact h
 end
 
 lemma check_bv_eq_bot_of_not_equiv {x y : pSet} :
@@ -442,9 +436,15 @@ lemma check_bv_eq_bot_of_not_equiv {x y : pSet} :
 begin
   induction x generalizing y, cases y, dsimp[check], intro H, apply bot_unique,
   cases pSet.not_equiv H with H H; cases H with w H_w;
-  -- [apply inf_le_left_of_le, apply 
   [apply inf_le_left_of_le, apply inf_le_right_of_le]; apply infi_le_of_le (w); simp[-le_bot_iff];
   intro a'; rw[le_bot_iff]; apply x_ih; apply H_w
+end
+
+lemma check_bv_eq_dichotomy (x y : pSet) :
+  (x̌ =ᴮ y̌ = (⊤ : β)) ∨ (x̌ =ᴮ y̌ = (⊥ : β)) :=
+begin
+  haveI : decidable (pSet.equiv x y) := by apply classical.prop_decidable,
+  by_cases pSet.equiv x y; [left, right]; [apply check_bv_eq_top_of_equiv, apply check_bv_eq_bot_of_not_equiv]; assumption
 end
 
 lemma check_bv_eq_iff {x y : pSet} 
@@ -462,8 +462,12 @@ begin
    simp only [lattice.top_le_iff, bSet.check], apply (x_ih _).mp, exact h},
   {apply top_unique, rcases a_right i with ⟨w, h⟩,  apply le_supr_of_le w,
    simp only [lattice.top_le_iff, bSet.check], apply (x_ih _).mp, exact h},
-  {sorry}, -- note: here, we need to argue that since the values of check-membership are only ⊥ or ⊤, we have a bounded maximum principle
-  {sorry}, -- this case should be symmetric to the previous one
+  {have := supr_eq_top_max, cases this with w h, use w, apply (x_ih _).mpr, apply h,
+   exact nontrivial.bot_lt_top, apply a_left, intros a' H,
+   have := check_bv_eq_dichotomy (x_A a) (y_A a'), tidy},
+  {have := supr_eq_top_max, cases this with w h, use w, apply (x_ih _).mpr, apply h,
+   exact nontrivial.bot_lt_top, apply a_right, intros a' H,
+   have := check_bv_eq_dichotomy (x_A a') (y_A b), tidy}
 end
 
 end check_names

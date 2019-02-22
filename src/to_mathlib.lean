@@ -555,7 +555,7 @@ end arity'
 
 
 namespace lattice
-instance degenerate_boolean_algebra : boolean_algebra unit :=
+instance complete_degenerate_boolean_algebra : complete_boolean_algebra unit :=
 { sup := λ _ _, (),
   le := λ _ _, true,
   lt := λ _ _, false,
@@ -579,10 +579,21 @@ instance degenerate_boolean_algebra : boolean_algebra unit :=
   sub := λ _ _, (),
   inf_neg_eq_bot :=  by tidy,
   sup_neg_eq_top :=  by tidy,
-  sub_eq :=  by tidy}
+  sub_eq :=  by tidy,
+  Sup := λ _, (),
+  Inf := λ _, (),
+  le_Sup := by tidy,
+  Sup_le := by tidy,
+  Inf_le := by tidy,
+  le_Inf := by tidy,
+  infi_sup_le_sup_Inf := by tidy,
+  inf_Sup_le_supr_inf := by tidy}
 
-class nondegenerate (α : Type*) extends bounded_lattice α :=
-  {bot_neq_top : (⊥ : α) ≠ (⊤ : α)}
+class nontrivial_complete_boolean_algebra (α : Type*) extends complete_boolean_algebra α :=
+  {bot_lt_top : (⊥ : α) < (⊤ : α)}
+
+@[simp]lemma nontrivial.bot_lt_top {α : Type*} [H : nontrivial_complete_boolean_algebra α] : (⊥ : α) < ⊤ :=
+H.bot_lt_top
 
 def antichain {β : Type*} [bounded_lattice β] (s : set β) :=
   ∀ x ∈ s, ∀ y ∈ s, x ≠ y → x ⊓ y = (⊥ : β)
