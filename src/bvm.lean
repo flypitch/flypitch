@@ -462,12 +462,9 @@ begin
    simp only [lattice.top_le_iff, bSet.check], apply (x_ih _).mp, exact h},
   {apply top_unique, rcases a_right i with ⟨w, h⟩,  apply le_supr_of_le w,
    simp only [lattice.top_le_iff, bSet.check], apply (x_ih _).mp, exact h},
-  {have := supr_eq_top_max, cases this with w h, use w, apply (x_ih _).mpr, apply h,
-   exact nontrivial.bot_lt_top, apply a_left, intros a' H,
-   have := check_bv_eq_dichotomy (x_A a) (y_A a'), tidy},
-  {have := supr_eq_top_max, cases this with w h, use w, apply (x_ih _).mpr, apply h,
-   exact nontrivial.bot_lt_top, apply a_right, intros a' H,
-   have := check_bv_eq_dichotomy (x_A a') (y_A b), tidy}
+   all_goals{have := supr_eq_top_max, cases this with w h, use w, apply (x_ih _).mpr, apply h,
+   exact nontrivial.bot_lt_top}, apply a_left, work_on_goal 1 {apply a_right},
+   all_goals{intros a' H, have := check_bv_eq_dichotomy (x_A ‹x_α›) (y_A ‹y_α›), tidy}
 end
 
 end check_names
