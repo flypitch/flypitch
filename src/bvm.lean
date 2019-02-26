@@ -4,6 +4,9 @@ local infix ` ⟹ `:65 := lattice.imp
 
 local infix ` ⇔ `:50 := lattice.biimp
 
+-- uncomment in case of emergency
+-- @[tidy] meta def big_bertha : tactic unit := `[finish]
+
 open lattice
 
 universe u
@@ -330,10 +333,76 @@ end
 
 @[reducible, simp]def not_b (b : β) : set β := λ y, y ≠ b
 
+section well_ordering
+variables {α : Type*} (r : α → α → Prop) [is_well_order α r]
+local infix `≺`:50 := r
+
+def down_set (a : α): set α := {a' | a' ≺ a}
+
+end well_ordering
+
+section witness_antichain2
+
+variable (r : type (@B_small_witness _ _ ϕ) → type (@B_small_witness _ _ ϕ) → Prop)
+variable [is_well_order _ r]
+local infix `≺`:50 := r
+
+def witness_antichain2 : _ → β :=
+(λ b : type (@B_small_witness _ _ ϕ), b.val - (⨆(b' : (down_set r b)), b'.val.val))
+
+def trichotomy := (is_well_order.is_trichotomous r).trichotomous
+
+lemma dichotomy_of_neq (x y) : x ≠ y → x ≺ y ∨ y ≺ x :=
+λ H, by {[smt] eblast_using [trichotomy r x y]}
+
+lemma not_ge_of_in_down_set (a b) : a ∈ down_set r b → ¬ b ≺ a :=
+begin
+  intros H H', have H'' : a ≺ b, by {simpa[down_set]},
+  cases (show (is_asymm _ r), by apply_instance),
+  specialize asymm a b H'', contradiction
+end
+
+run_cmd mk_simp_attr `reassoc
+@[reassoc]lemma abcd_reassoc_sup {a b c d : β} : (a ⊔ b) ⊔ (c ⊔ d) = a ⊔ b ⊔ c ⊔ d
+:= by ac_refl
+
+@[reassoc]lemma abcd_reassoc_inf {a b c d : β} : (a ⊓ b) ⊓ (c ⊓ d) = a ⊓ b ⊓ c ⊓ d
+:= by ac_refl
+
+-- @[reassoc]lemma inf_reassoc := sorry
+
+lemma abcd_rw_cabd_sup {a b c d : β} : a ⊔ b ⊔ c ⊔ d = c ⊔ b ⊔ a ⊔ d :=
+by {ac_refl}
+
+lemma abcd_rw_cabd_inf {a b c d : β} : a ⊓ b ⊓ c ⊓ d = c ⊓ b ⊓ a ⊓ d :=
+by ac_refl
+
+lemma abcd_rw_bcad_inf {a b c d : β} : a ⊓ b ⊓ c ⊓ d = b ⊓ c ⊓ a ⊓ d :=
+by ac_refl
+
+def witness_antichain2_index : ∀ {i j}, i ≠ j → (@witness_antichain2 _ _ ϕ r _) i ⊓ (@witness_antichain2 _ _ ϕ r _) j = ⊥ :=
+λ x y h_neq,
+begin
+  dsimp[witness_antichain2], simp[sub_eq, neg_supr], 
+  apply bot_unique, cases dichotomy_of_neq r _ _ h_neq,
+  {simp only with reassoc, rw[abcd_rw_cabd_inf],
+  rw[<-abcd_reassoc_inf], apply inf_le_right_of_le,
+  rw[inf_comm, deduction], apply infi_le_of_le,
+  swap, use x, exact h, simp},
+  
+  {simp only with reassoc, rw[abcd_rw_bcad_inf],
+  rw[<-abcd_reassoc_inf], apply inf_le_left_of_le,
+  rw[deduction], apply infi_le_of_le, swap, exact ⟨y, h⟩, simp}
+end
+
+end witness_antichain2
+
+
+
 /- TODO(jesse) change this definition to use the well-ordering principle,
    so that the final proof obligation for the maximum principle can be fulfilled -/
-def witness_antichain :=
-  (λ b : type (@B_small_witness _ _ ϕ), b.val - (⨆(b' : (not_b b.val)), b'.val))
+def witness_antichain : _ → β :=
+(λ b : type (@B_small_witness _ _ ϕ), b.val - (⨆(b' : (not_b b.val)), b'.val))
 
 lemma injective_of_preserves_neq {α β : Type*} {f : α → β} {h_neq : ∀ x y : α, x ≠ y → f x ≠ f y} : function.injective f :=
   by finish
@@ -384,7 +453,7 @@ lemma maximum_principle_verbose {ϕ : bSet β → β} {h_congr : ∀ x y, x =ᴮ
 
 /-- "∃ x ∈ u, ϕ x implies ∃ x : bSet β, ϕ x", but this time, say it in Boolean -/
 lemma weaken_ex_scope {α : Type*} (A : α → bSet β) (ϕ : bSet β → β)  : (⨆(a : α), ϕ (A a)) ≤ (⨆(x : bSet β), ϕ x) :=
-  supr_le $ λ a, le_supr_of_le (A a) (by refl)
+supr_le $ λ a, le_supr_of_le (A a) (by refl)
 
 lemma maximum_principle_bounded_top {ϕ : bSet β → β} {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} {α : Type*} {A : α → bSet β} (h_eq_top : (⨆(a:α), ϕ (A a)) = ⊤) : ∃ u, ϕ u = ⊤ :=
 @maximum_principle_verbose β (by apply_instance) ϕ h_congr ⊤ (by {have := weaken_ex_scope A ϕ, finish}) (by {have := weaken_ex_scope A ϕ, finish})
@@ -400,13 +469,14 @@ lemma maximum_principle_bounded_top {ϕ : bSet β → β} {h_congr : ∀ x y, x 
 
   This is a consequence of the maximum principle.
 -/
-lemma AE_convert {α β : Type*} [nontrivial_complete_boolean_algebra β] (A : α → bSet β) (B : α → β) (ϕ : bSet β → bSet β → β) (h_congr : ∀ x y z, x =ᴮ y ⊓ ϕ z x ≤ ϕ z y) :
+lemma AE_convert {α β : Type*} [nontrivial_complete_boolean_algebra β] (A : α → bSet β)
+  (B : α → β) (ϕ : bSet β → bSet β → β) (h_congr : ∀ x y z, x =ᴮ y ⊓ ϕ z x ≤ ϕ z y) :
   ∀ i : α, ∃ y : bSet β, (⨅(j:α), (B j ⟹ ⨆(z : bSet β), ϕ (A j) z)) ≤ (B i ⟹ ϕ (A i) y) :=
-  λ i,
-    by {have := maximum_principle (λ y, ϕ (A i) y)
-                  (by {intros x y, apply h_congr}),
-    rcases this with ⟨u', H'⟩, use u', apply infi_le_of_le i,
-    apply imp_le_of_right_le, from le_of_eq H'}  
+λ i,
+  by {have := maximum_principle (λ y, ϕ (A i) y)
+                (by {intros x y, apply h_congr}),
+      rcases this with ⟨u', H'⟩, use u', apply infi_le_of_le i,
+      apply imp_le_of_right_le, from le_of_eq H'}  
 
 section check_names
 /- `check` is the canonical embedding of pSet into bSet.
@@ -444,7 +514,8 @@ lemma check_bv_eq_dichotomy (x y : pSet) :
   (x̌ =ᴮ y̌ = (⊤ : β)) ∨ (x̌ =ᴮ y̌ = (⊥ : β)) :=
 begin
   haveI : decidable (pSet.equiv x y) := by apply classical.prop_decidable,
-  by_cases pSet.equiv x y; [left, right]; [apply check_bv_eq_top_of_equiv, apply check_bv_eq_bot_of_not_equiv]; assumption
+  by_cases pSet.equiv x y; [left, right];
+  [apply check_bv_eq_top_of_equiv, apply check_bv_eq_bot_of_not_equiv]; assumption
 end
 
 lemma check_bv_eq_iff {x y : pSet} 
