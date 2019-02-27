@@ -735,4 +735,40 @@ lemma supr_eq_top_max {α β : Type*} [complete_lattice β] {A : α → β} {h_n
 {h_top : (⨆(a : α), A a) = ⊤} {h_bounded : ∀ a : α, A a ≠ ⊤ → A a = ⊥} : ∃ x : α, A x = ⊤ :=
   by {apply supr_max_of_bounded, cc, exact h_nondeg, tidy}
 
+/-- "eoc" means the opposite of "coe", of course -/
+lemma eoc_supr {ι β : Type*} {s : ι → β} [complete_lattice β] {X : set ι} :
+  (⨆(i : X), s i) = ⨆(i ∈ X), s i :=
+begin
+  apply le_antisymm; repeat{apply supr_le; intro},
+  apply le_supr_of_le i.val, apply le_supr_of_le, exact i.property, refl,
+  apply le_supr_of_le, swap, use i, assumption, refl
+end
+
+/- Can reindex sup over all sets -/
+lemma supr_all_sets {ι β : Type*} {s : ι → β} [complete_lattice β] :
+  (⨆(i:ι), s i) = ⨆(X : set ι), (⨆(x : X), s x) :=
+begin
+  apply le_antisymm,
+    {apply supr_le, intro i, apply le_supr_of_le {i}, apply le_supr_of_le, swap,
+     use i, from set.mem_singleton i, simp},
+    {apply supr_le, intro X, apply supr_le, intro i, apply le_supr}
+end
+
+lemma supr_all_sets' {ι β : Type*} {s : ι → β} [complete_lattice β] :
+  (⨆(i:ι), s i) = ⨆(X : set ι), (⨆(x ∈ X), s x) :=
+by {convert supr_all_sets using 1, simp[eoc_supr]}
+
+-- `b ≤ ⨆(i:ι) c i` if there exists an s : set ι such that b ≤ ⨆ (i : s), c s
+lemma le_supr_of_le' {ι β : Type*} {s : ι → β} {b : β} [complete_lattice β]
+  (H : ∃ X : set ι, b ≤ ⨆(x:X), s x) : b ≤ ⨆(i:ι), s i :=
+begin
+  rcases H with ⟨X, H_X⟩, apply le_trans H_X,
+  conv{to_rhs, rw[supr_all_sets]},
+  from le_supr_of_le X (by refl)
+end
+
+lemma le_supr_of_le'' {ι β : Type*} {s : ι → β} {b : β} [complete_lattice β]
+  (H : ∃ X : set ι, b ≤ ⨆(x ∈ X), s x) : b ≤ ⨆(i:ι), s i :=
+by {apply le_supr_of_le', convert H using 1, simp[eoc_supr]}
+  
 end lattice

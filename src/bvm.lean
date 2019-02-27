@@ -1,4 +1,4 @@
-import fol set_theory.zfc set_theory.ordinal order.boolean_algebra order.complete_boolean_algebra tactic.rewrite tactic.monotonicity .to_mathlib
+import fol set_theory.zfc set_theory.ordinal order.boolean_algebra order.complete_boolean_algebra tactic.rewrite tactic.monotonicity .to_mathlib tactic.monotonicity
 
 local infix ` ⟹ `:65 := lattice.imp
 
@@ -337,7 +337,15 @@ section well_ordering
 variables {α : Type*} (r : α → α → Prop) [is_well_order α r]
 local infix `≺`:50 := r
 
-def down_set (a : α): set α := {a' | a' ≺ a}
+def down_set (a : α) : set α := {a' | a' ≺ a}
+
+def down_set' (a : α) : set α := insert a $ down_set r a
+
+lemma down_set_trans {a b} {h : a ≺ b} : down_set r a ⊆ down_set r b :=
+begin
+  intros x H, have := is_well_order.is_trans r, cases this, apply this,
+  exact H, exact h
+end
 
 end well_ordering
 
@@ -346,6 +354,22 @@ section witness_antichain2
 variable (r : type (@B_small_witness _ _ ϕ) → type (@B_small_witness _ _ ϕ) → Prop)
 variable [is_well_order _ r]
 local infix `≺`:50 := r
+
+lemma down_set_mono_supr {a b} {h : a ≺ b} {s : type (@B_small_witness _ _ ϕ) → β} :
+ (⨆(i ∈ down_set r a), s i) ≤ (⨆(i ∈ down_set r b), s i) :=
+begin
+  apply supr_le_supr, intro i, apply supr_le, intro H, apply le_supr_of_le,
+  apply down_set_trans, exact h, exact H, refl
+end
+
+lemma down_set'_mono_supr {a b} {h : a ≺ b} {s : type (@B_small_witness _ _ ϕ) → β} :
+ (⨆(i ∈ down_set' r a), s i) ≤ (⨆(i ∈ down_set' r b), s i) :=
+begin
+  apply supr_le_supr, intro i, apply supr_le, intro H,
+ apply le_supr_of_le,
+  cases H, apply or.inr, rw[H], exact h, apply or.inr,
+  apply down_set_trans, exact h, exact H, refl
+end
 
 def witness_antichain2 : _ → β :=
 (λ b : type (@B_small_witness _ _ ϕ), b.val - (⨆(b' : (down_set r b)), b'.val.val))
@@ -363,16 +387,20 @@ begin
 end
 
 run_cmd mk_simp_attr `reassoc
-@[reassoc]lemma abcd_reassoc_sup {a b c d : β} : (a ⊔ b) ⊔ (c ⊔ d) = a ⊔ b ⊔ c ⊔ d
-:= by ac_refl
+@[reassoc]lemma sup_reassoc {a b c : β} : a ⊔ (b ⊔ c) = a ⊔ b ⊔ c :=
+by ac_refl
 
-@[reassoc]lemma abcd_reassoc_inf {a b c d : β} : (a ⊓ b) ⊓ (c ⊓ d) = a ⊓ b ⊓ c ⊓ d
-:= by ac_refl
+@[reassoc]lemma inf_reassoc {a b c : β} : a ⊓ (b ⊓ c) = a ⊓ b ⊓ c :=
+by ac_refl
 
--- @[reassoc]lemma inf_reassoc := sorry
+@[reassoc]lemma abcd_reassoc_sup {a b c d : β} : (a ⊔ b) ⊔ (c ⊔ d) = a ⊔ b ⊔ c ⊔ d :=
+by rw[sup_reassoc]
+
+@[reassoc]lemma abcd_reassoc_inf {a b c d : β} : (a ⊓ b) ⊓ (c ⊓ d) = a ⊓ b ⊓ c ⊓ d :=
+by rw[inf_reassoc]
 
 lemma abcd_rw_cabd_sup {a b c d : β} : a ⊔ b ⊔ c ⊔ d = c ⊔ b ⊔ a ⊔ d :=
-by {ac_refl}
+by ac_refl
 
 lemma abcd_rw_cabd_inf {a b c d : β} : a ⊓ b ⊓ c ⊓ d = c ⊓ b ⊓ a ⊓ d :=
 by ac_refl
@@ -393,6 +421,40 @@ begin
   {simp only with reassoc, rw[abcd_rw_bcad_inf],
   rw[<-abcd_reassoc_inf], apply inf_le_left_of_le,
   rw[deduction], apply infi_le_of_le, swap, exact ⟨y, h⟩, simp}
+end
+
+lemma witness_antichain2_antichain : antichain ((@witness_antichain2 _ _ ϕ r _) '' set.univ) :=
+begin
+  intros x h_x y h_y h_neq, simp at h_x h_y, rcases h_y with ⟨w_y, h_y⟩,
+  rcases h_x with ⟨w_x, h_x⟩, rw[<-h_y, <-h_x],
+  apply witness_antichain2_index, by_contra, cc
+end
+
+lemma witness_antichain2_property : ∀ b, (@witness_antichain2 _ _ ϕ r _) b ≤ b.val :=
+  λ b, by simp[witness_antichain2, sub_eq]
+
+lemma supr_antichain2_contains : (⨆ (b' : type (@B_small_witness _ _ ϕ)), ϕ (func (@B_small_witness _ _ ϕ) b')) ≤
+    ⨆ (b : type (@B_small_witness _ _ ϕ)), witness_antichain2 r b :=
+begin
+  apply supr_le, intro i, apply le_supr_of_le'', fsplit,
+  exact down_set' r i, rw[B_small_witness_spec i],
+  apply @acc.rec_on _ r _ i,
+    by {have := (is_well_order.wf r), cases this, apply this},
+  intros,
+
+
+ rw[down_set',supr_insert], unfold witness_antichain2,
+  rw[sub_eq], rw[sup_inf_right], apply le_inf, apply le_sup_left,
+  -- simp[neg_supr, sub_eq],
+  apply le_trans (@le_top _ _ x.val),
+     let A := _, change ⊤ ≤ (A ⊔ _ : β), apply le_trans (by simp : ⊤ ≤ A ⊔ -A), apply sup_le_sup, refl, dsimp[A],
+   rw[lattice.neg_neg], 
+   apply supr_le, intro j,
+   apply le_trans (ih j j.property), unfold witness_antichain2,
+   apply supr_le_supr, intro i', apply supr_le, intro H',
+   cases H', subst H', apply le_supr_of_le, exact j.property, refl,
+   apply le_supr_of_le, apply down_set_trans, exact j.property, exact H',
+   refl
 end
 
 end witness_antichain2
@@ -445,6 +507,29 @@ begin
    suffices H2 : (⨆(b' : type (@B_small_witness _ _ ϕ)), ϕ (func B_small_witness b')) ≤ ⨆(b : type (@B_small_witness _ _ ϕ)), witness_antichain b,
    from le_trans H2 H1,
    sorry},
+    {apply le_supr}
+end
+
+lemma maximum_principle2 (ϕ : bSet β → β) (h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y) : ∃ u, (⨆(x:bSet β), ϕ x) = ϕ u :=
+begin
+  have := classical.indefinite_description _ (@well_ordering_thm (type (@B_small_witness _ _ ϕ))),
+  cases this with r inst_r,
+  haveI : is_well_order _ r := by assumption,
+  let w := @B_small_witness _ _ ϕ,
+    have from_mixing_lemma := mixing_lemma ((witness_antichain2 r)) (w.func)
+      (λ i j, by {by_cases i = j, finish, simp[witness_antichain2_index r h]}),
+    rcases from_mixing_lemma with ⟨u, H_w⟩,
+    use u, fapply le_antisymm,
+    {rw[B_small_witness_supr],
+     have H1 : (⨆(b : type B_small_witness), (witness_antichain2 r) b) ≤ ϕ u,
+     apply supr_le, intro ξ,
+    have this'' : ∀ b, (witness_antichain2 r) b ≤ u =ᴮ func w b ⊓ b.val,
+      by {intro b, apply le_inf, apply H_w b, apply witness_antichain2_property},
+    have this''' : ∀ b, u =ᴮ func w b ⊓ (ϕ (func B_small_witness b)) ≤ ϕ u,
+      intro b, dsimp[w], rw[bv_eq_symm], apply h_congr, apply le_trans,
+      exact this'' ξ, convert this''' ξ, apply (B_small_witness_spec _).symm,
+   suffices H2 : (⨆(b' : type (@B_small_witness _ _ ϕ)), ϕ (func B_small_witness b')) ≤ ⨆(b : type (@B_small_witness _ _ ϕ)), (witness_antichain2 r) b,
+   from le_trans H2 H1, apply supr_antichain2_contains},
     {apply le_supr}
 end
 
