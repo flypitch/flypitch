@@ -349,8 +349,6 @@ end
 
 end well_ordering
 
-section witness_antichain2
-
 variable (r : type (@B_small_witness _ _ ϕ) → type (@B_small_witness _ _ ϕ) → Prop)
 variable [is_well_order _ r]
 local infix `≺`:50 := r
@@ -371,7 +369,7 @@ begin
   apply down_set_trans, exact h, exact H, refl
 end
 
-def witness_antichain2 : _ → β :=
+def witness_antichain : _ → β :=
 (λ b : type (@B_small_witness _ _ ϕ), b.val - (⨆(b' : (down_set r b)), b'.val.val))
 
 def trichotomy := (is_well_order.is_trichotomous r).trichotomous
@@ -386,6 +384,7 @@ begin
   specialize asymm a b H'', contradiction
 end
 
+--TODO(jesse) clean this up later, maybe write ac_transpose?
 run_cmd mk_simp_attr `reassoc
 @[reassoc]lemma sup_reassoc {a b c : β} : a ⊔ (b ⊔ c) = a ⊔ b ⊔ c :=
 by ac_refl
@@ -408,10 +407,10 @@ by ac_refl
 lemma abcd_rw_bcad_inf {a b c d : β} : a ⊓ b ⊓ c ⊓ d = b ⊓ c ⊓ a ⊓ d :=
 by ac_refl
 
-def witness_antichain2_index : ∀ {i j}, i ≠ j → (@witness_antichain2 _ _ ϕ r _) i ⊓ (@witness_antichain2 _ _ ϕ r _) j = ⊥ :=
+def witness_antichain_index : ∀ {i j}, i ≠ j → (@witness_antichain _ _ ϕ r _) i ⊓ (@witness_antichain _ _ ϕ r _) j = ⊥ :=
 λ x y h_neq,
 begin
-  dsimp[witness_antichain2], simp[sub_eq, neg_supr], 
+  dsimp[witness_antichain], simp[sub_eq, neg_supr], 
   apply bot_unique, cases dichotomy_of_neq r _ _ h_neq,
   {simp only with reassoc, rw[abcd_rw_cabd_inf],
   rw[<-abcd_reassoc_inf], apply inf_le_right_of_le,
@@ -423,18 +422,18 @@ begin
   rw[deduction], apply infi_le_of_le, swap, exact ⟨y, h⟩, simp}
 end
 
-lemma witness_antichain2_antichain : antichain ((@witness_antichain2 _ _ ϕ r _) '' set.univ) :=
+lemma witness_antichain_antichain : antichain ((@witness_antichain _ _ ϕ r _) '' set.univ) :=
 begin
   intros x h_x y h_y h_neq, simp at h_x h_y, rcases h_y with ⟨w_y, h_y⟩,
   rcases h_x with ⟨w_x, h_x⟩, rw[<-h_y, <-h_x],
-  apply witness_antichain2_index, by_contra, cc
+  apply witness_antichain_index, by_contra, cc
 end
 
-lemma witness_antichain2_property : ∀ b, (@witness_antichain2 _ _ ϕ r _) b ≤ b.val :=
-  λ b, by simp[witness_antichain2, sub_eq]
+lemma witness_antichain_property : ∀ b, (@witness_antichain _ _ ϕ r _) b ≤ b.val :=
+  λ b, by simp[witness_antichain, sub_eq]
 
 lemma supr_antichain2_contains : (⨆ (b' : type (@B_small_witness _ _ ϕ)), ϕ (func (@B_small_witness _ _ ϕ) b')) ≤
-    ⨆ (b : type (@B_small_witness _ _ ϕ)), witness_antichain2 r b :=
+    ⨆ (b : type (@B_small_witness _ _ ϕ)), witness_antichain r b :=
 begin
   apply supr_le, intro i, apply le_supr_of_le'', fsplit,
   exact down_set' r i, rw[B_small_witness_spec i],
@@ -443,92 +442,41 @@ begin
   intros,
 
 
- rw[down_set',supr_insert], unfold witness_antichain2,
+ rw[down_set',supr_insert], unfold witness_antichain,
   rw[sub_eq], rw[sup_inf_right], apply le_inf, apply le_sup_left,
   -- simp[neg_supr, sub_eq],
   apply le_trans (@le_top _ _ x.val),
      let A := _, change ⊤ ≤ (A ⊔ _ : β), apply le_trans (by simp : ⊤ ≤ A ⊔ -A), apply sup_le_sup, refl, dsimp[A],
    rw[lattice.neg_neg], 
    apply supr_le, intro j,
-   apply le_trans (ih j j.property), unfold witness_antichain2,
+   apply le_trans (ih j j.property), unfold witness_antichain,
    apply supr_le_supr, intro i', apply supr_le, intro H',
    cases H', subst H', apply le_supr_of_le, exact j.property, refl,
    apply le_supr_of_le, apply down_set_trans, exact j.property, exact H',
    refl
 end
-
-end witness_antichain2
-
-
-
-/- TODO(jesse) change this definition to use the well-ordering principle,
-   so that the final proof obligation for the maximum principle can be fulfilled -/
-def witness_antichain : _ → β :=
-(λ b : type (@B_small_witness _ _ ϕ), b.val - (⨆(b' : (not_b b.val)), b'.val))
-
-lemma injective_of_preserves_neq {α β : Type*} {f : α → β} {h_neq : ∀ x y : α, x ≠ y → f x ≠ f y} : function.injective f :=
-  by finish
-
-def witness_antichain_index : ∀ {i j}, i ≠ j → (@witness_antichain _ _ ϕ) i ⊓ (@witness_antichain _ _ ϕ) j = ⊥ :=
-λ x y h_neq,
-begin
-  dsimp[witness_antichain],
-  simp[sub_eq, neg_supr], rw[<-inf_assoc], apply bot_unique, apply inf_le_left_of_le, rw[inf_assoc], apply inf_le_right_of_le, rw[deduction, imp_bot],
-  fapply infi_le_of_le, use y.val, tidy
-end
-
-lemma witness_antichain_antichain : antichain ((@witness_antichain _ _ ϕ) '' set.univ) :=
-begin
-  intros x h_x y h_y h_neq, simp at h_x h_y, rcases h_y with ⟨w_y, h_y⟩,
-  rcases h_x with ⟨w_x, h_x⟩, rw[<-h_y, <-h_x],
-  apply witness_antichain_index, by_contra, cc
-end
-
-lemma witness_antichain_property : ∀ b, (@witness_antichain _ _ ϕ) b ≤ b.val :=
-  λ b, by simp[witness_antichain, sub_eq]
-
 end smallness
 
-lemma maximum_principle (ϕ : bSet β → β) (h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y) : ∃ u, (⨆(x:bSet β), ϕ x) = ϕ u :=
-begin
-  let w := @B_small_witness _ _ ϕ,
-    have from_mixing_lemma := mixing_lemma (witness_antichain) (w.func)
-      (λ i j, by {by_cases i = j, finish, simp[witness_antichain_index h]}),
-    rcases from_mixing_lemma with ⟨u, H_w⟩,
-    use u, fapply le_antisymm,
-    {rw[B_small_witness_supr],
-     have H1 : (⨆(b : type B_small_witness), witness_antichain b) ≤ ϕ u,
-       show bSet β → β, from ϕ, apply supr_le, intro ξ,
-    have this'' : ∀ b, witness_antichain b ≤ u =ᴮ func w b ⊓ b.val,
-      by {intro b, apply le_inf, apply H_w b, apply witness_antichain_property},
-    have this''' : ∀ b, u =ᴮ func w b ⊓ (ϕ (func B_small_witness b)) ≤ ϕ u,
-      intro b, dsimp[w], rw[bv_eq_symm], apply h_congr, apply le_trans,
-      exact this'' ξ, convert this''' ξ, apply (B_small_witness_spec _).symm,
-   suffices H2 : (⨆(b' : type (@B_small_witness _ _ ϕ)), ϕ (func B_small_witness b')) ≤ ⨆(b : type (@B_small_witness _ _ ϕ)), witness_antichain b,
-   from le_trans H2 H1,
-   sorry},
-    {apply le_supr}
-end
 
-lemma maximum_principle2 (ϕ : bSet β → β) (h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y) : ∃ u, (⨆(x:bSet β), ϕ x) = ϕ u :=
+lemma maximum_principle (ϕ : bSet β → β) (h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y) : ∃ u, (⨆(x:bSet β), ϕ x) = ϕ u :=
 begin
   have := classical.indefinite_description _ (@well_ordering_thm (type (@B_small_witness _ _ ϕ))),
   cases this with r inst_r,
   haveI : is_well_order _ r := by assumption,
   let w := @B_small_witness _ _ ϕ,
-    have from_mixing_lemma := mixing_lemma ((witness_antichain2 r)) (w.func)
-      (λ i j, by {by_cases i = j, finish, simp[witness_antichain2_index r h]}),
+    have from_mixing_lemma := mixing_lemma ((witness_antichain r)) (w.func)
+      (λ i j, by {by_cases i = j, finish, simp[witness_antichain_index r h]}),
     rcases from_mixing_lemma with ⟨u, H_w⟩,
     use u, fapply le_antisymm,
     {rw[B_small_witness_supr],
-     have H1 : (⨆(b : type B_small_witness), (witness_antichain2 r) b) ≤ ϕ u,
+     have H1 : (⨆(b : type B_small_witness), (witness_antichain r) b) ≤ ϕ u,
      apply supr_le, intro ξ,
-    have this'' : ∀ b, (witness_antichain2 r) b ≤ u =ᴮ func w b ⊓ b.val,
-      by {intro b, apply le_inf, apply H_w b, apply witness_antichain2_property},
+    have this'' : ∀ b, (witness_antichain r) b ≤ u =ᴮ func w b ⊓ b.val,
+      by {intro b, apply le_inf, apply H_w b, apply witness_antichain_property},
     have this''' : ∀ b, u =ᴮ func w b ⊓ (ϕ (func B_small_witness b)) ≤ ϕ u,
       intro b, dsimp[w], rw[bv_eq_symm], apply h_congr, apply le_trans,
       exact this'' ξ, convert this''' ξ, apply (B_small_witness_spec _).symm,
-   suffices H2 : (⨆(b' : type (@B_small_witness _ _ ϕ)), ϕ (func B_small_witness b')) ≤ ⨆(b : type (@B_small_witness _ _ ϕ)), (witness_antichain2 r) b,
+   suffices H2 : (⨆(b' : type (@B_small_witness _ _ ϕ)), ϕ (func B_small_witness b')) ≤ ⨆(b : type (@B_small_witness _ _ ϕ)), (witness_antichain r) b,
    from le_trans H2 H1, apply supr_antichain2_contains},
     {apply le_supr}
 end
