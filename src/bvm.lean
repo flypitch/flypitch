@@ -114,7 +114,7 @@ infix ` ∈ᴮ `:80 := mem
 example : ∅ ∈ᴮ empty'' = (⊤ : β) :=
   by {apply top_unique, apply le_supr_of_le ⊤, swap, exact ⟨⟨(tt)⟩⟩, finish}
 
-theorem mem.mk {α : Type*} (A : α → bSet β) (B : α → β) (a : α) : A a ∈ᴮ mk α A B ≥ B a :=
+theorem mem.mk {α : Type*} (A : α → bSet β) (B : α → β) (a : α) : B a ≤ A a ∈ᴮ mk α A B :=
   le_supr_of_le a $ by simp
 
 protected def subset : bSet β → bSet β → β
@@ -236,6 +236,10 @@ begin
           apply le_supr_of_le a, rw[inf_comm]},
         ac_refl}
 end
+
+lemma bv_eq_le_congr_right {u v w} {h : v = w} : u =ᴮ v ≤ (u =ᴮ w : β) := by rw[h]
+
+lemma bv_eq_le_congr_left {u v w} {h : v = w} : v =ᴮ u ≤ (w =ᴮ u : β) := by rw[h]
 
 /-- If u = v and u ∈ w, then this implies that v ∈ w -/
 lemma subst_congr_mem_left {u v w : bSet β} : u =ᴮ v ⊓ u ∈ᴮ w ≤ v ∈ᴮ w :=
@@ -557,8 +561,7 @@ begin
   induction x generalizing y, cases y,
   dsimp[check], simp only [pSet.equiv, lattice.top_le_iff, bSet.check,
     lattice.top_inf_eq, lattice.imp_top_iff_le, lattice.inf_eq_top_iff, lattice.infi_eq_top],
-  /- `tidy` says -/
-  dsimp at *, fsplit, 
+  fsplit, 
   work_on_goal 0 { intros a, cases a, fsplit, work_on_goal 0 { intros i },
   work_on_goal 1 { intros i } }, work_on_goal 2 { intros a, cases a, fsplit,
   work_on_goal 0 { intros a}}, work_on_goal 3 {intros b},
@@ -593,12 +596,30 @@ def bv_union (u : bSet β) : bSet β :=
   ⟨Σ(i : u.type), (u.func i).type, λ x, (u.func x.1).func x.2,
        λ x, ⨆(y : u.type), (u.func x.1).func x.2 ∈ᴮ (u.func y)⟩
 
+lemma func_cast {u x : bSet β} {i_y : u.type} {α : Type u} {A : α → bSet β} {B : α → β} {h : func u i_y = mk α A B} {i_x' : α} : func (func u i_y) (eq.mpr (by rw[h]; refl) i_x') = A i_x' :=
+begin
+  change _ = (mk α A B).func i_x',
+  have : func (mk α A B) (eq.mpr rfl i_x') = func (mk α A B) i_x', by refl,
+  convert this
+end
+
 theorem bSet_axiom_of_union : (⨅ (u : bSet β), (⨆(v : _), ⨅(x : _), (x ∈ᴮ v ⇔ (⨆(y : u.type), x ∈ᴮ u.func y)))) = ⊤ :=
 begin
   simp only [bSet.mem, lattice.biimp, bSet.func, lattice.infi_eq_top, bSet.type], intro u,
   apply top_unique, apply le_supr_of_le (bv_union u),
-  simp at *, intros i, fsplit, work_on_goal 1 { intros i_1 },
-  repeat{sorry}
+  simp only [lattice.top_le_iff, bSet.mem, lattice.imp_top_iff_le,
+  lattice.inf_eq_top_iff, bSet.func, lattice.le_infi_iff, bSet.type, lattice.supr_le_iff],
+  intros x, fsplit, work_on_goal 1 { intros i_y },
+  {dsimp[bv_union], apply supr_le, rintro ⟨i_y', i_x'⟩,
+   rw[supr_inf_eq], apply supr_le, intro i_y'', dsimp,
+   apply le_supr_of_le i_y'', cases (func u i_y''),
+   unfold mem, rw[supr_inf_eq], apply supr_le_supr, intro j,
+   rw[inf_assoc], apply inf_le_inf, refl, rw[inf_comm], apply bv_eq_trans},
+  {unfold bv_union, dsimp, destruct (func u i_y), intros α A B h, rw[h], apply supr_le, intro i_x',
+   fapply le_supr_of_le, use i_y, rw[h], exact i_x', dsimp,
+   rw[supr_inf_eq], apply le_supr_of_le i_y, apply inf_le_inf,
+   swap, apply bv_eq_le_congr_right, apply func_cast.symm, repeat{assumption},
+   have := @mem.mk β _ α A B i_x', convert this, apply func_cast, repeat{assumption}}
 end
 
 @[reducible, simp]def set_of_indicator {u : bSet β} (f : u.type → β) : bSet β :=

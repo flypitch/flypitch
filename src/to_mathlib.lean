@@ -609,6 +609,10 @@ theorem inf_supr_eq {α ι : Type*} [complete_distrib_lattice α] {a : α} {s : 
       repeat{apply supr_le, intro}, rw[<-i_2], apply le_supr_of_le i_1, refl
     end
 
+theorem supr_inf_eq {α ι : Type*} [complete_distrib_lattice α] {a : α} {s : ι → α} :
+  (⨆(i:ι), s i) ⊓ a = ⨆(i:ι), s i ⊓ a :=
+by simp[inf_comm,inf_supr_eq]
+
 theorem sup_infi_eq {α ι : Type*} [complete_distrib_lattice α] {a : α} {s : ι → α} :
   a ⊔ (⨅(i:ι), s i) = ⨅(i:ι), a ⊔ s i :=
   eq.trans sup_Inf_eq $
@@ -618,6 +622,10 @@ theorem sup_infi_eq {α ι : Type*} [complete_distrib_lattice α] {a : α} {s : 
       repeat{apply le_infi, intro}, rw[<-i_2], apply infi_le_of_le i_1, refl,
       repeat{apply infi_le_of_le}, show ι, from ‹ι›, show α, exact s i, refl, refl
     end
+
+theorem infi_sup_eq {α ι : Type*} [complete_distrib_lattice α] {a : α} {s : ι → α} :
+ (⨅(i:ι), s i) ⊔ a = ⨅(i:ι), s i ⊔ a :=
+by {rw[sup_comm], conv{to_rhs, simp[sup_comm]}, apply sup_infi_eq}
 
 @[simp]lemma inf_self {α : Type*} [lattice α] {a : α} : a ⊓ a = a :=
   by finish
