@@ -650,14 +650,21 @@ lemma biimp_mpr {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⇔ a
   by apply inf_le_right
 
 @[simp]lemma imp_le_of_right_le {α : Type*} [boolean_algebra α] {a a₁ a₂ : α} {h : a₁ ≤ a₂} : a ⟹ a₁ ≤ (a ⟹ a₂) :=
-  sup_le (by apply le_sup_left) $ le_sup_right_of_le h
+sup_le (by apply le_sup_left) $ le_sup_right_of_le h
 
 @[simp]lemma imp_le_of_left_le {α : Type*} [boolean_algebra α] {a a₁ a₂ : α} {h : a₂ ≤ a₁} : a₁ ⟹ a ≤ (a₂ ⟹ a) :=
-  sup_le (le_sup_left_of_le $ neg_le_neg h) (by apply le_sup_right)
+sup_le (le_sup_left_of_le $ neg_le_neg h) (by apply le_sup_right)
+
+@[simp]lemma imp_le_of_left_right_le {α : Type*} [boolean_algebra α] {a₁ a₂ b₁ b₂ : α}
+{h₁ : b₁ ≤ a₁} {h₂ : a₂ ≤ b₂} :
+  a₁ ⟹ a₂ ≤ b₁ ⟹ b₂ :=
+sup_le (le_sup_left_of_le (neg_le_neg h₁)) (le_sup_right_of_le h₂)
 
 @[simp]lemma imp_bot {α : Type*} [boolean_algebra α]  {a : α} : a ⟹ ⊥ = - a := by simp[imp]
 
 @[simp]lemma top_imp {α : Type*} [boolean_algebra α] {a : α} : ⊤ ⟹ a = a := by simp[imp]
+
+@[simp]lemma imp_self {α : Type*} [boolean_algebra α] {a : α} : a ⟹ a = ⊤ := by simp[imp]
 
 lemma imp_neg_sub {α : Type*} [boolean_algebra α] {a₁ a₂ : α} :  -(a₁ ⟹ a₂) = a₁ - a₂ :=
   by rw[sub_eq, imp]; finish
@@ -778,5 +785,9 @@ end
 lemma le_supr_of_le'' {ι β : Type*} {s : ι → β} {b : β} [complete_lattice β]
   (H : ∃ X : set ι, b ≤ ⨆(x ∈ X), s x) : b ≤ ⨆(i:ι), s i :=
 by {apply le_supr_of_le', convert H using 1, simp[eoc_supr]}
+
+lemma infi_congr {ι β : Type*} {s₁ s₂ : ι → β} [complete_lattice β] {h : ∀ i : ι, s₁ i = s₂ i} :
+  (⨅(i:ι), s₁ i) = ⨅(i:ι), s₂ i :=
+by finish
   
 end lattice

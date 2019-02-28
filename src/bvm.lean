@@ -7,6 +7,34 @@ local infix ` ⇔ `:50 := lattice.biimp
 -- uncomment in case of emergency
 -- @[tidy] meta def big_bertha : tactic unit := `[finish]
 
+namespace lattice
+section natded
+variables {β : Type*} [complete_boolean_algebra β]
+
+lemma bv_or_elim {ι : Type*} {s : ι → β} {b : β} :
+  (⨆(i:ι), s i) ⟹ b = (⨅(i:ι), s i ⟹ b) :=
+by {unfold imp, rw[neg_supr, infi_sup_eq]}
+
+lemma bv_imp_elim {a b : β} : (a ⟹ b) ⊓ a ≤ b :=
+  by simp[imp, inf_sup_right]
+
+lemma bv_imp_intro {a b c : β} {h : a ⊓ b ≤ c} :
+  a ≤ b ⟹ c := by rwa[deduction] at h
+
+end natded
+end lattice
+
+namespace tactic.interactive
+section natded_tactics
+open lean.parser lean tactic tactic.interactive interactive.types interactive
+local postfix `?`:9001 := optional
+meta def bv_intro : parse ident_? → tactic unit
+| none := propagate_tags (`[apply le_infi] >> intro1 >> tactic.skip)
+| (some n) := propagate_tags (`[apply lattice.le_infi] >> tactic.intro n >> tactic.skip)
+
+end natded_tactics
+end tactic.interactive
+
 open lattice
 
 universe u
@@ -117,10 +145,13 @@ example : ∅ ∈ᴮ empty'' = (⊤ : β) :=
 theorem mem.mk {α : Type*} (A : α → bSet β) (B : α → β) (a : α) : B a ≤ A a ∈ᴮ mk α A B :=
   le_supr_of_le a $ by simp
 
-protected def subset : bSet β → bSet β → β
+@[simp, reducible]protected def subset : bSet β → bSet β → β
 | (mk α A B) b := ⨅a:α, B a ⟹ (A a ∈ᴮ b)
 
 infix ` ⊆ᴮ `:80 := bSet.subset
+
+@[simp]lemma subset_unfold {x u : bSet β} : x ⊆ᴮ u = (⨅(j : x.type), x.bval j ⟹ x.func j ∈ᴮ u) :=
+by induction x; dsimp; congr
 
 @[simp]protected def insert : bSet β → β → bSet β → bSet β
 | u b ⟨α, A, B⟩ := ⟨option α, λo, option.rec u A o, λo, option.rec b B o⟩
@@ -260,6 +291,33 @@ begin
   rw[<-inf_assoc], convert this using 1,
   rw[bv_eq_symm, inf_comm], apply subst_congr_mem_left,
   rw[deduction], cases w, apply inf_le_left_of_le, apply infi_le
+end
+
+lemma bounded_quantification {v : bSet β} {ϕ : bSet β → β } {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} :
+  (⨅(i_x : v.type), (v.bval i_x ⟹ ϕ (v.func i_x))) = (⨅(x : bSet β), x ∈ᴮ v ⟹ ϕ x)  :=
+begin
+  apply le_antisymm,
+    {apply le_infi, intro x, cases v, simp, rw[bv_or_elim],
+     apply le_infi, intro i_y, apply infi_le_of_le i_y,
+     rw[<-deduction,<-inf_assoc], apply le_trans, apply inf_le_inf,
+     apply bv_imp_elim, refl, rw[inf_comm, bv_eq_symm], apply h_congr},
+         {apply le_infi, intro i_x', apply infi_le_of_le (func v i_x'), apply imp_le_of_left_le,
+     cases v, simp, apply le_supr_of_le i_x',
+       apply le_inf, refl, rw[bv_eq_refl], apply le_top}
+end
+
+
+lemma subst_congr_subset_left {x v u} : ((v ⊆ᴮ u) ⊓ (x =ᴮ v) : β) ≤ (x ⊆ᴮ u) :=
+begin
+  simp only [subset_unfold],
+  have H₁ := @bounded_quantification _ _ v (λ x, x ∈ᴮ u)
+    (by {intros, apply subst_congr_mem_left}),
+  have H₂ := @bounded_quantification _ _ x (λ x, x ∈ᴮ u)
+    (by {intros, apply subst_congr_mem_left}),
+  rw[H₁, H₂], dsimp, bv_intro z, rw[deduction],
+  apply infi_le_of_le z, rw[<-deduction, <-deduction], rw[inf_assoc],
+  apply le_trans, apply inf_le_inf, refl, apply subst_congr_mem_right,
+  apply bv_imp_elim -- todo write tactics to make these calculations easier
 end
 
 def is_definite (u : bSet β) : Prop := ∀ i : u.type, u.bval i = ⊤
@@ -441,19 +499,16 @@ lemma supr_antichain2_contains : (⨆ (b' : type (@B_small_witness _ _ ϕ)), ϕ 
 begin
   apply supr_le, intro i, apply le_supr_of_le'', fsplit,
   exact down_set' r i, rw[B_small_witness_spec i],
-  apply @acc.rec_on _ r _ i,
-    by {have := (is_well_order.wf r), cases this, apply this},
+  have := (is_well_order.wf r).apply i, induction this,
   intros,
-
-
  rw[down_set',supr_insert], unfold witness_antichain,
   rw[sub_eq], rw[sup_inf_right], apply le_inf, apply le_sup_left,
   -- simp[neg_supr, sub_eq],
-  apply le_trans (@le_top _ _ x.val),
+  apply le_trans (@le_top _ _ this_x.val),
      let A := _, change ⊤ ≤ (A ⊔ _ : β), apply le_trans (by simp : ⊤ ≤ A ⊔ -A), apply sup_le_sup, refl, dsimp[A],
    rw[lattice.neg_neg], 
    apply supr_le, intro j,
-   apply le_trans (ih j j.property), unfold witness_antichain,
+   apply le_trans (this_ih j j.property), unfold witness_antichain,
    apply supr_le_supr, intro i', apply supr_le, intro H',
    cases H', subst H', apply le_supr_of_le, exact j.property, refl,
    apply le_supr_of_le, apply down_set_trans, exact j.property, exact H',
@@ -625,12 +680,52 @@ end
 @[reducible, simp]def set_of_indicator {u : bSet β} (f : u.type → β) : bSet β :=
   ⟨u.type, u.func, f⟩
 
+@[reducible, simp]def set_of_indicator' {u : bSet β} (f : u.type → β) : bSet β :=
+  ⟨u.type, u.func, λ i, f i ⊓ u.bval i⟩
+
 def bv_powerset (u : bSet β) : bSet β :=
 ⟨u.type → β, λ f, set_of_indicator f, λ f, set_of_indicator f ⊆ᴮ u⟩
 
-theorem bSet_axiom_of_powerset : (⨅(u : bSet β), ⨆(v : _), ⨅(x : bSet β), x∈ᴮ v ⇔ ⨅(y : x.type), (x.func y ∈ᴮ u)) = ⊤:=
+def bv_powerset' (u : bSet β) : bSet β :=
+⟨u.type → β, λ f, set_of_indicator' f, λ f, ⊤⟩
+
+--TODO (jesse) try proving bv_powerset and bv_powerset' are equivalent
+
+example {u : bSet β} : bv_powerset u =ᴮ bv_powerset' u = ⊤ :=
 begin
- simp, intro u, apply top_unique, apply le_supr_of_le (bv_powerset u), sorry
+  apply top_unique, apply le_trans, swap, apply bSet_axiom_of_extensionality,
+  bv_intro z, apply le_inf; apply bv_imp_intro; simp[top_inf_eq],
+  {unfold bv_powerset, dsimp, apply supr_le, intro f,
+  unfold bv_powerset', simp, apply le_supr_of_le f, sorry},
+  {sorry}
+end
+
+theorem bSet_axiom_of_powerset : (⨅(u : bSet β), ⨆(v : _), ⨅(x : bSet β), x∈ᴮ v ⇔ ⨅(y : x.type), x.bval y ⟹ (x.func y ∈ᴮ u)) = ⊤:=
+begin
+  simp, intro u, apply top_unique, apply le_supr_of_le (bv_powerset u),
+  apply le_infi, intro x, apply le_inf,
+  {rw[<-deduction, top_inf_eq], 
+   unfold bv_powerset, dsimp, apply supr_le, intro χ,
+   suffices : ((set_of_indicator χ) ⊆ᴮ u ⊓ (x =ᴮ (set_of_indicator χ)) : β) ≤ x ⊆ᴮ u,
+     by {convert this, simp},
+   apply subst_congr_subset_left},
+  {simp, have := @bounded_quantification _ _ x (λ y, (y ∈ᴮ u)) (by {intros x y, apply subst_congr_mem_left}), rw[this],
+  dsimp,
+  unfold bv_powerset, simp, fapply le_supr_of_le,
+  from λ i, u.func i ∈ᴮ x,  have := @bounded_quantification _ _ u (λ y, (y ∈ᴮ u)) (by {intros x y, apply subst_congr_mem_left}), apply le_inf,
+  bv_intro i_a, apply infi_le_of_le (u.func i_a), refl,
+  rw[bSet_bv_eq_rw], apply le_inf,
+  bv_intro a, apply infi_le_of_le (func x a),
+  apply imp_le_of_left_right_le,
+  -- have := @bounded_quantification _ _ u (λ y, (y ∈ᴮ u)) (by {intros x y, apply subst_congr_mem_left}), rw[this],
+  -- bv_intro a, dsimp, apply infi_le_of_le a, simp,
+  
+}
+ -- simp, intro u, apply top_unique, apply le_supr_of_le (bv_powerset u),
+ -- apply le_infi, intro u', apply le_inf,
+ -- rw[<-deduction], simp only [bSet.mem, lattice.top_inf_eq, bSet.func, lattice.le_infi_iff, bSet.type], intro i_x, unfold bv_powerset, dsimp,
+ -- apply supr_le, intro χ, cases u, dsimp, unfold bSet.subset,
+ -- tidy,
 end
 
 @[simp, reducible]def axiom_of_infinity_spec (u : bSet β) : β :=
