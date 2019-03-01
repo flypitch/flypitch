@@ -18,6 +18,10 @@ by {unfold imp, rw[neg_supr, infi_sup_eq]}
 lemma bv_imp_elim {a b : β} : (a ⟹ b) ⊓ a ≤ b :=
   by simp[imp, inf_sup_right]
 
+lemma bv_imp_elim' {a b : β} : (a ⟹ b) ⊓ a ≤ a ⊓ b :=
+by {simp[imp, inf_sup_right]}
+
+
 lemma bv_imp_intro {a b c : β} {h : a ⊓ b ≤ c} :
   a ≤ b ⟹ c := by rwa[deduction] at h
 
@@ -32,6 +36,29 @@ meta def bv_intro : parse ident_? → tactic unit
 | none := propagate_tags (`[apply le_infi] >> intro1 >> tactic.skip)
 | (some n) := propagate_tags (`[apply lattice.le_infi] >> tactic.intro n >> tactic.skip)
 
+meta def ac_change (r : parse texpr) : tactic unit :=
+do 
+   v₁ <- mk_mvar,
+   v₂ <- mk_mvar,
+   refine ``(eq.mpr %%v₁ (%%v₂ : %%r)),
+   gs <- get_goals,
+   set_goals (list.cons v₁ list.nil),
+   -- `[try{simp only [bv_eq_symm]}],
+   try ac_refl,
+   gs' <- get_goals,
+   set_goals $ gs' ++ gs
+
+-- example {α : Type*} [lattice.boolean_algebra α] {a₁ a₂ a₃ a₄ : α} :
+--   (a₁ ⊔ a₂) ⊔ (a₃ ⊔ a₄) = ⊤
+-- :=
+-- begin
+--   ac_change a₁ ⊔ (a₂ ⊔ a₃ ⊔ a₄) = ⊤,
+-- -- α : Type ?,
+-- -- _inst_1 : lattice.boolean_algebra α,
+-- -- a₁ a₂ a₃ a₄ : α
+-- -- ⊢ a₁ ⊔ (a₂ ⊔ a₃ ⊔ a₄) = ⊤
+-- end
+   
 end natded_tactics
 end tactic.interactive
 
@@ -136,6 +163,10 @@ example : empty =ᴮ empty = (⊤ : β) := by simp
 
 infix ` ∈ᴮ `:80 := mem
 
+lemma mem_unfold {u v : bSet β} : u ∈ᴮ v = ⨆(i : v.type), v.bval i ⊓ u =ᴮ v.func i :=
+by cases v; simp
+
+
 /-- ∅ appears in empty'' with probability 0 and 1, with the higher probability winning the
     vote of membership. This demonstrates why the inequality in the following theorem is
     necessary. -/
@@ -188,7 +219,7 @@ begin
  rw[this], apply le_supr
 end
 
-theorem bv_eq_symm {x y : bSet β} : x =ᴮ y = y =ᴮ x :=
+@[symm]theorem bv_eq_symm {x y : bSet β} : x =ᴮ y = y =ᴮ x :=
 begin
   induction x with α A B generalizing y, induction y with α' A' B',
   suffices : ∀ a : α, ∀ a' : α', A' a' =ᴮ A a = A a =ᴮ A' a',
@@ -722,25 +753,49 @@ begin
   simp, intro u, apply top_unique, apply le_supr_of_le (bv_powerset u),
   apply le_infi, intro x, apply le_inf,
   {rw[<-deduction, top_inf_eq], 
-   unfold bv_powerset, dsimp, apply supr_le, intro χ,
+   unfold bv_powerset, apply supr_le, intro χ,
    suffices : ((set_of_indicator χ) ⊆ᴮ u ⊓ (x =ᴮ (set_of_indicator χ)) : β) ≤ x ⊆ᴮ u,
      by {convert this, simp},
    apply subst_congr_subset_left},
-
-  -- { },
-
   {simp, have := @bounded_quantification _ _ x (λ y, (y ∈ᴮ u)) (by {intros x y, apply subst_congr_mem_left}), rw[this],
   dsimp,
   unfold bv_powerset, simp, fapply le_supr_of_le,
   from λ i, u.func i ∈ᴮ x,  have this' := @bounded_quantification _ _ (set_of_indicator (λ y, (u.func y ∈ᴮ x))) (λ y, (y ∈ᴮ u)) (by {intros x y, apply subst_congr_mem_left}), dsimp at this', rw[this'],
-  apply le_inf, 
-  bv_intro i_a, apply infi_le_of_le (u.func i_a), refl,--  apply imp_le_of_left_le,
-  -- simp,
+  apply le_inf, bv_intro a', apply infi_le_of_le a', rw[bv_or_elim],
+  apply le_infi, intro i_y, apply imp_le_of_left_right_le, swap, refl,
+  rw[inf_comm, bv_eq_symm], apply subst_congr_mem_left,
+  
   rw[bSet_bv_eq_rw], apply le_inf,
-  {bv_intro a, apply infi_le_of_le (func x a),
-  apply imp_le_of_left_right_le, apply mem.mk',
-  cases u, apply supr_le, intro i_a', apply le_supr_of_le i_a',
-  simp, sorry},
+  {conv {to_rhs, dsimp}, have := @bounded_quantification _ _ x (λ y, ⨆ (a' :    type u), func u a' ∈ᴮ x ⊓ y =ᴮ func u a'), rw[this], swap,
+  intros a₁ a₂, dsimp, rw[inf_supr_eq], apply supr_le, intro i,
+
+  apply le_supr_of_le i,
+  ac_change (a₂ =ᴮ a₁ ⊓  a₁ =ᴮ func u i) ⊓ func u i ∈ᴮ x ≤ func u i ∈ᴮ x ⊓ a₂ =ᴮ func u i, rw[bv_eq_symm], ac_refl,
+  
+  apply le_trans, apply inf_le_inf, apply bv_eq_trans, refl,
+  rw[inf_comm],
+  
+  {bv_intro a₁, dsimp, apply infi_le_of_le a₁, rw[<-deduction],
+   apply le_trans, apply bv_imp_elim', rw[inf_comm, deduction],
+   rw[mem_unfold], apply supr_le, intro i, rw[<-deduction],
+   apply le_supr_of_le i,
+   ac_change bval u i ⊓ a₁ ∈ᴮ x ⊓ a₁ =ᴮ func u i ≤ func u i ∈ᴮ x ⊓ a₁ =ᴮ func u i, apply inf_le_inf, apply inf_le_left_of_le, swap, refl,
+  
+},
+    
+},
+  {sorry}
+  },
+
+
+
+  -- bv_intro i_a, apply infi_le_of_le (u.func i_a), refl,--  apply imp_le_of_left_le,
+  -- -- simp,
+  -- rw[bSet_bv_eq_rw], apply le_inf,
+  -- {bv_intro a, apply infi_le_of_le (func x a),
+  -- apply imp_le_of_left_right_le, apply mem.mk',
+  -- cases u, apply supr_le, intro i_a', apply le_supr_of_le i_a',
+  -- simp, sorry
 
   {apply le_infi, intro i_c,
     apply infi_le_of_le (u.func i_c),
@@ -748,7 +803,7 @@ begin
    cases u, dsimp, apply supr_le, intro i,
    cases x, dsimp, fapply le_supr_of_le,
 },
-}
+
  -- simp, intro u, apply top_unique, apply le_supr_of_le (bv_powerset u),
  -- apply le_infi, intro u', apply le_inf,
  -- rw[<-deduction], simp only [bSet.mem, lattice.top_inf_eq, bSet.func, lattice.le_infi_iff, bSet.type], intro i_x, unfold bv_powerset, dsimp,
