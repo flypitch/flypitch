@@ -1,4 +1,4 @@
-import fol set_theory.zfc set_theory.ordinal order.boolean_algebra order.complete_boolean_algebra tactic.rewrite tactic.monotonicity .to_mathlib tactic.monotonicity
+import fol set_theory.zfc set_theory.ordinal order.boolean_algebra order.complete_boolean_algebra tactic.rewrite tactic.monotonicity .to_mathlib tactic.monotonicity bv_prf
 
 local infix ` ⟹ `:65 := lattice.imp
 
@@ -6,31 +6,6 @@ local infix ` ⇔ `:50 := lattice.biimp
 
 -- uncomment in case of emergency
 -- @[tidy] meta def big_bertha : tactic unit := `[finish]
-
-namespace lattice
-section natded
-variables {β : Type*} [complete_boolean_algebra β]
-
-lemma bv_or_elim {ι : Type*} {s : ι → β} {b : β} :
-  (⨆(i:ι), s i) ⟹ b = (⨅(i:ι), s i ⟹ b) :=
-by {unfold imp, rw[neg_supr, infi_sup_eq]}
-
-lemma bv_imp_elim {a b : β} : (a ⟹ b) ⊓ a ≤ b :=
-  by simp[imp, inf_sup_right]
-
-lemma bv_imp_elim' {a b : β} : (a ⟹ b) ⊓ a ≤ a ⊓ b :=
-by {simp[imp, inf_sup_right]}
-
-lemma bv_and_intro {a b₁ b₂ : β} (h₁ : a ≤ b₁) (h₂ : a ≤ b₂) : a ≤ b₁ ⊓ b₂ := le_inf h₁ h₂
-
-lemma from_empty_context {a b : β} (h : ⊤ ≤ b) : a ≤ b :=
-  by refine le_trans _ h; apply le_top
-
-lemma bv_imp_intro {a b c : β} {h : a ⊓ b ≤ c} :
-  a ≤ b ⟹ c := by rwa[deduction] at h
-
-end natded
-end lattice
 
 namespace tactic.interactive
 section natded_tactics
@@ -65,6 +40,64 @@ do
    
 end natded_tactics
 end tactic.interactive
+
+namespace lattice
+section natded
+variables {β : Type*} [complete_boolean_algebra β]
+
+lemma supr_imp_eq {ι : Type*} {s : ι → β} {b : β} :
+  (⨆(i:ι), s i) ⟹ b = (⨅(i:ι), s i ⟹ b) :=
+by {unfold imp, rw[neg_supr, infi_sup_eq]}
+
+lemma bv_Or_elim  {ι : Type*} {s : ι → β} {c : β} :
+(∀ i : ι, (s i ≤ c)) → ((⨆(i:ι), s i) ≤ c) :=
+λ H, by apply supr_le; from H
+
+lemma bv_And_intro {ι : Type*} {s : ι → β} {b c : β} :
+(∀ i : ι, (c ≤ s i)) → (c ≤ ⨅(i:ι), s i) :=
+λ H, by {apply le_infi, from H}
+
+lemma bv_or_elim {b₁ b₂ c : β} {h : b₁ ≤ c} {h' : b₂ ≤ c} : b₁ ⊔ b₂ ≤ c :=
+by apply sup_le; assumption
+
+lemma bv_exfalso {a b : β} {h : a ≤ ⊥} : a ≤ b :=
+by finish
+
+lemma bv_cases_left {ι : Type*} {s : ι → β} {c b : β} {h : ∀ i : ι, (s i ⊓ c ≤ b)} :
+  ((⨆(i:ι), s i) ⊓ c) ≤ b :=
+by finish[deduction]
+
+lemma bv_cases_right {ι : Type*} {s : ι → β} {c b : β} {h : ∀ i : ι, (c ⊓ s i ≤ b)} :
+  (c ⊓ (⨆(i:ι), s i)) ≤ b :=
+by {rw[inf_comm], apply bv_cases_left, finish}
+
+lemma bv_specialize {ι : Type*} {s : ι → β} (i : ι) {b : β} {h : s i ≤ b} :
+(⨅(i:ι), s i) ≤ b := infi_le_of_le i h
+
+lemma bv_specialize_left {ι : Type*} {s : ι → β} {c b : β} (i : ι)
+  {h : s i ⊓ c ≤ b} : (⨅(i:ι), s i) ⊓ c ≤ b :=
+by {rw[deduction], apply bv_specialize i, rwa[<-deduction]}
+
+lemma bv_specialize_right {ι : Type*} {s :ι → β} {c b : β} (i : ι)
+  {h : c ⊓ s i ≤ b} : c ⊓ (⨅(i:ι), s i) ≤ b :=
+by {rw[inf_comm], apply bv_specialize_left i, finish}
+  
+lemma bv_imp_elim {a b : β} : (a ⟹ b) ⊓ a ≤ b :=
+by simp[imp, inf_sup_right]
+
+lemma bv_imp_elim' {a b : β} : (a ⟹ b) ⊓ a ≤ a ⊓ b :=
+by {simp[imp, inf_sup_right]}
+
+lemma bv_and_intro {a b₁ b₂ : β} (h₁ : a ≤ b₁) (h₂ : a ≤ b₂) : a ≤ b₁ ⊓ b₂ := le_inf h₁ h₂
+
+lemma from_empty_context {a b : β} (h : ⊤ ≤ b) : a ≤ b :=
+  by refine le_trans _ h; apply le_top
+
+lemma bv_imp_intro {a b c : β} {h : a ⊓ b ≤ c} :
+  a ≤ b ⟹ c := by rwa[deduction] at h
+
+end natded
+end lattice
 
 open lattice
 
@@ -230,6 +263,15 @@ begin
     by {simp[bv_eq, this, inf_comm]}, from λ _ _, by simp[x_ih ‹α›]
 end
 
+-- example {x y : bSet β} : x =ᴮ y = y =ᴮ x :=
+-- begin
+--   fapply le_antisymm; fapply bv_prf,
+--   exact [x=ᴮy], simp, tactic.rotate 1, exact [y=ᴮx], simp,
+--   induction x with α A B generalizing y, induction y with α' A' B',
+--   rw[bv_eq], apply bv_cases_head,
+--   apply bv_prf_and_intro, sorry
+-- end
+
 theorem bSet_bv_eq_rw (x y : bSet β) :
   x =ᴮ y = (⨅(a : x.type), x.bval a ⟹ (x.func a ∈ᴮ y))
           ⊓ (⨅(a' : y.type), (y.bval a' ⟹ (y.func a' ∈ᴮ x))) :=
@@ -336,7 +378,7 @@ lemma bounded_quantification {v : bSet β} {ϕ : bSet β → β } {h_congr : ∀
   (⨅(i_x : v.type), (v.bval i_x ⟹ ϕ (v.func i_x))) = (⨅(x : bSet β), x ∈ᴮ v ⟹ ϕ x)  :=
 begin
   apply le_antisymm,
-    {apply le_infi, intro x, cases v, simp, rw[bv_or_elim],
+    {apply le_infi, intro x, cases v, simp, rw[supr_imp_eq],
      apply le_infi, intro i_y, apply infi_le_of_le i_y,
      rw[<-deduction,<-inf_assoc], apply le_trans, apply inf_le_inf,
      apply bv_imp_elim, refl, rw[inf_comm, bv_eq_symm], apply h_congr},
@@ -349,7 +391,7 @@ end
 --   (⨅(i_x : v.type), (v.bval i_x ⟹ ϕ (v.func i_x))) = (⨅(x : bSet β), x ∈ᴮ v ⟹ ϕ x)  :=
 -- begin
 --   apply le_antisymm,
---     {apply le_infi, intro x, cases v, simp, rw[bv_or_elim],
+--     {apply le_infi, intro x, cases v, simp, rw[supr_imp_eq],
 --      apply le_infi, intro i_y, apply infi_le_of_le i_y,
 --      rw[<-deduction,<-inf_assoc], apply le_trans, apply inf_le_inf,
 --      apply bv_imp_elim, refl, rw[inf_comm, bv_eq_symm], apply h_congr},
@@ -753,14 +795,14 @@ begin
    refine le_trans _ (by apply bSet_axiom_of_extensionality),
    bv_intro z',
    have := @bounded_quantification _ _ (set_of_indicator f) (λ x, x ∈ᴮ u), dsimp[set_of_indicator] at this, rw[this],
-   rw[deduction], apply infi_le_of_le z', rw[bv_or_elim],
+   rw[deduction], apply infi_le_of_le z', rw[supr_imp_eq],
    apply bv_imp_intro, apply le_inf, apply bv_imp_intro,
    ac_change  (⨅ (i : type u), f i ⊓ z' =ᴮ func u i ⟹ z' ∈ᴮ u) ⊓ (z =ᴮ mk (type u) (func u) f ⊓ z' ∈ᴮ z) ≤ z' ∈ᴮ mk (type u) (func u) (λ (i : type u), f i ⊓ bval u i),
    apply le_trans, apply inf_le_inf, refl, apply subst_congr_mem_right,
    rw[inf_comm], rw[deduction], apply supr_le, intro i',
    rw[<-deduction], apply le_supr_of_le i', dsimp,
    repeat{apply le_inf}, apply inf_le_left_of_le, apply inf_le_left_of_le, refl,
-   
+   repeat{sorry}
 
 },
   {sorry}
@@ -781,7 +823,7 @@ begin
   dsimp,
   unfold bv_powerset, simp, fapply le_supr_of_le,
   from λ i, u.func i ∈ᴮ x,  have this' := @bounded_quantification _ _ (set_of_indicator (λ y, (u.func y ∈ᴮ x))) (λ y, (y ∈ᴮ u)) (by {intros x y, apply subst_congr_mem_left}), dsimp at this', rw[this'],
-  apply le_inf, bv_intro a', apply infi_le_of_le a', rw[bv_or_elim],
+  apply le_inf, bv_intro a', apply infi_le_of_le a', rw[supr_imp_eq],
   apply le_infi, intro i_y, apply imp_le_of_left_right_le, swap, refl,
   rw[inf_comm, bv_eq_symm], apply subst_congr_mem_left,
   
@@ -805,7 +847,7 @@ begin
 
    {have := @bounded_quantification _ _ (set_of_indicator (λ y, func _ y ∈ᴮ x)) (λ y, y ∈ᴮ x), rw[this], swap, simp[subst_congr_mem_left],
    bv_intro a₁, apply infi_le_of_le a₁,
-   unfold set_of_indicator, dsimp, rw[bv_or_elim],
+   unfold set_of_indicator, dsimp, rw[supr_imp_eq],
    bv_intro i, apply from_empty_context,
    rw[inf_comm, bv_eq_symm], simp[subst_congr_mem_left]}},
 end
@@ -818,6 +860,11 @@ begin
   simp, apply top_unique, apply le_supr_of_le, repeat{sorry}
 end -- maybe we can just define boolean-valued ω in this case directly
 
--- TODO(jesse) start the Zorn's lemma argument
+theorem bSet_axiom_of_regularity (ϕ : bSet β → β) (h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y) :
+  (⨅(x : bSet β), ((⨅(y : bSet β), y ∈ᴮ x ⟹ ϕ y) ⟹ ϕ x)) ⟹ (⨅(x : bSet β), ϕ x) = ⊤ :=
+begin
+  simp, intro x, apply bv_specialize x, conv {to_lhs, congr, congr, funext, rw[mem_unfold]},
+  induction x, simp only with cleanup, simp only [supr_imp_eq],
+end
 
 end bSet
