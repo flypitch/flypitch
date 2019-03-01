@@ -145,6 +145,10 @@ example : ∅ ∈ᴮ empty'' = (⊤ : β) :=
 theorem mem.mk {α : Type*} (A : α → bSet β) (B : α → β) (a : α) : B a ≤ A a ∈ᴮ mk α A B :=
   le_supr_of_le a $ by simp
 
+theorem mem.mk' (x : bSet β) (a : x.type) : x.bval a ≤ x.func a ∈ᴮ x :=
+by {cases x, apply le_supr_of_le a, simp}
+
+
 @[simp, reducible]protected def subset : bSet β → bSet β → β
 | (mk α A B) b := ⨅a:α, B a ⟹ (A a ∈ᴮ b)
 
@@ -305,6 +309,19 @@ begin
      cases v, simp, apply le_supr_of_le i_x',
        apply le_inf, refl, rw[bv_eq_refl], apply le_top}
 end
+
+-- lemma bounded_quantification' {ϕ : bSet β → β } {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} {v : bSet β} :
+--   (⨅(i_x : v.type), (v.bval i_x ⟹ ϕ (v.func i_x))) = (⨅(x : bSet β), x ∈ᴮ v ⟹ ϕ x)  :=
+-- begin
+--   apply le_antisymm,
+--     {apply le_infi, intro x, cases v, simp, rw[bv_or_elim],
+--      apply le_infi, intro i_y, apply infi_le_of_le i_y,
+--      rw[<-deduction,<-inf_assoc], apply le_trans, apply inf_le_inf,
+--      apply bv_imp_elim, refl, rw[inf_comm, bv_eq_symm], apply h_congr},
+--          {apply le_infi, intro i_x', apply infi_le_of_le (func v i_x'), apply imp_le_of_left_le,
+--      cases v, simp, apply le_supr_of_le i_x',
+--        apply le_inf, refl, rw[bv_eq_refl], apply le_top}
+-- end
 
 
 lemma subst_congr_subset_left {x v u} : ((v ⊆ᴮ u) ⊓ (x =ᴮ v) : β) ≤ (x ⊆ᴮ u) :=
@@ -709,17 +726,28 @@ begin
    suffices : ((set_of_indicator χ) ⊆ᴮ u ⊓ (x =ᴮ (set_of_indicator χ)) : β) ≤ x ⊆ᴮ u,
      by {convert this, simp},
    apply subst_congr_subset_left},
+
+  -- { },
+
   {simp, have := @bounded_quantification _ _ x (λ y, (y ∈ᴮ u)) (by {intros x y, apply subst_congr_mem_left}), rw[this],
   dsimp,
   unfold bv_powerset, simp, fapply le_supr_of_le,
-  from λ i, u.func i ∈ᴮ x,  have := @bounded_quantification _ _ u (λ y, (y ∈ᴮ u)) (by {intros x y, apply subst_congr_mem_left}), apply le_inf,
-  bv_intro i_a, apply infi_le_of_le (u.func i_a), refl,
+  from λ i, u.func i ∈ᴮ x,  have this' := @bounded_quantification _ _ (set_of_indicator (λ y, (u.func y ∈ᴮ x))) (λ y, (y ∈ᴮ u)) (by {intros x y, apply subst_congr_mem_left}), dsimp at this', rw[this'],
+  apply le_inf, 
+  bv_intro i_a, apply infi_le_of_le (u.func i_a), refl,--  apply imp_le_of_left_le,
+  -- simp,
   rw[bSet_bv_eq_rw], apply le_inf,
-  bv_intro a, apply infi_le_of_le (func x a),
-  apply imp_le_of_left_right_le,
-  -- have := @bounded_quantification _ _ u (λ y, (y ∈ᴮ u)) (by {intros x y, apply subst_congr_mem_left}), rw[this],
-  -- bv_intro a, dsimp, apply infi_le_of_le a, simp,
-  
+  {bv_intro a, apply infi_le_of_le (func x a),
+  apply imp_le_of_left_right_le, apply mem.mk',
+  cases u, apply supr_le, intro i_a', apply le_supr_of_le i_a',
+  simp, sorry},
+
+  {apply le_infi, intro i_c,
+    apply infi_le_of_le (u.func i_c),
+   apply imp_le_of_left_right_le, refl,
+   cases u, dsimp, apply supr_le, intro i,
+   cases x, dsimp, fapply le_supr_of_le,
+},
 }
  -- simp, intro u, apply top_unique, apply le_supr_of_le (bv_powerset u),
  -- apply le_infi, intro u', apply le_inf,
