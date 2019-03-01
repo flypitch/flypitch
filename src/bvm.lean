@@ -499,41 +499,42 @@ begin
 end
 
 --TODO(jesse) clean this up later, maybe write ac_transpose?
-run_cmd mk_simp_attr `reassoc
-@[reassoc]lemma sup_reassoc {a b c : β} : a ⊔ (b ⊔ c) = a ⊔ b ⊔ c :=
-by ac_refl
+-- run_cmd mk_simp_attr `reassoc
+-- @[reassoc]lemma sup_reassoc {a b c : β} : a ⊔ (b ⊔ c) = a ⊔ b ⊔ c :=
+-- by ac_refl
 
-@[reassoc]lemma inf_reassoc {a b c : β} : a ⊓ (b ⊓ c) = a ⊓ b ⊓ c :=
-by ac_refl
+-- @[reassoc]lemma inf_reassoc {a b c : β} : a ⊓ (b ⊓ c) = a ⊓ b ⊓ c :=
+-- by ac_refl
 
-@[reassoc]lemma abcd_reassoc_sup {a b c d : β} : (a ⊔ b) ⊔ (c ⊔ d) = a ⊔ b ⊔ c ⊔ d :=
-by rw[sup_reassoc]
+-- @[reassoc]lemma abcd_reassoc_sup {a b c d : β} : (a ⊔ b) ⊔ (c ⊔ d) = a ⊔ b ⊔ c ⊔ d :=
+-- by rw[sup_reassoc]
 
-@[reassoc]lemma abcd_reassoc_inf {a b c d : β} : (a ⊓ b) ⊓ (c ⊓ d) = a ⊓ b ⊓ c ⊓ d :=
-by rw[inf_reassoc]
+-- @[reassoc]lemma abcd_reassoc_inf {a b c d : β} : (a ⊓ b) ⊓ (c ⊓ d) = a ⊓ b ⊓ c ⊓ d :=
+-- by rw[inf_reassoc]
 
-lemma abcd_rw_cabd_sup {a b c d : β} : a ⊔ b ⊔ c ⊔ d = c ⊔ b ⊔ a ⊔ d :=
-by ac_refl
+-- lemma abcd_rw_cabd_sup {a b c d : β} : a ⊔ b ⊔ c ⊔ d = c ⊔ b ⊔ a ⊔ d :=
+-- by ac_refl
 
-lemma abcd_rw_cabd_inf {a b c d : β} : a ⊓ b ⊓ c ⊓ d = c ⊓ b ⊓ a ⊓ d :=
-by ac_refl
+-- lemma abcd_rw_cabd_inf {a b c d : β} : a ⊓ b ⊓ c ⊓ d = c ⊓ b ⊓ a ⊓ d :=
+-- by ac_refl
 
-lemma abcd_rw_bcad_inf {a b c d : β} : a ⊓ b ⊓ c ⊓ d = b ⊓ c ⊓ a ⊓ d :=
-by ac_refl
+-- lemma abcd_rw_bcad_inf {a b c d : β} : a ⊓ b ⊓ c ⊓ d = b ⊓ c ⊓ a ⊓ d :=
+-- by ac_refl
 
 def witness_antichain_index : ∀ {i j}, i ≠ j → (@witness_antichain _ _ ϕ r _) i ⊓ (@witness_antichain _ _ ϕ r _) j = ⊥ :=
 λ x y h_neq,
 begin
   dsimp[witness_antichain], simp[sub_eq, neg_supr], 
   apply bot_unique, cases dichotomy_of_neq r _ _ h_neq,
-  {simp only with reassoc, rw[abcd_rw_cabd_inf],
-  rw[<-abcd_reassoc_inf], apply inf_le_right_of_le,
+  {ac_change (y.val ⊓ ⨅ (i : {x_1 // x_1 ∈ down_set r x}), -(i.val).val) ⊓
+    (x.val ⊓ ⨅ (i : {x // x ∈ down_set r y}), -(i.val).val) ≤ ⊥,
+    apply inf_le_right_of_le,
   rw[inf_comm, deduction], apply infi_le_of_le,
   swap, use x, exact h, simp},
   
-  {simp only with reassoc, rw[abcd_rw_bcad_inf],
-  rw[<-abcd_reassoc_inf], apply inf_le_left_of_le,
-  rw[deduction], apply infi_le_of_le, swap, exact ⟨y, h⟩, simp}
+  {ac_change (⨅ (i : {x_1 // x_1 ∈ down_set r x}), -(i.val).val) ⊓ y.val ⊓
+      (x.val ⊓ ⨅ (i : {x // x ∈ down_set r y}), -(i.val).val) ≤ ⊥,
+      apply inf_le_left_of_le, rw[deduction], apply infi_le_of_le, swap, exact ⟨y, h⟩, simp}
 end
 
 lemma witness_antichain_antichain : antichain ((@witness_antichain _ _ ϕ r _) '' set.univ) :=
@@ -748,7 +749,20 @@ begin
   apply top_unique, apply le_trans, swap, apply bSet_axiom_of_extensionality,
   bv_intro z, apply le_inf; apply bv_imp_intro; simp[top_inf_eq],
   {unfold bv_powerset, dsimp, apply supr_le, intro f,
-  unfold bv_powerset', simp, apply le_supr_of_le f, sorry},
+  unfold bv_powerset', simp, apply le_supr_of_le f,
+   refine le_trans _ (by apply bSet_axiom_of_extensionality),
+   bv_intro z',
+   have := @bounded_quantification _ _ (set_of_indicator f) (λ x, x ∈ᴮ u), dsimp[set_of_indicator] at this, rw[this],
+   rw[deduction], apply infi_le_of_le z', rw[bv_or_elim],
+   apply bv_imp_intro, apply le_inf, apply bv_imp_intro,
+   ac_change  (⨅ (i : type u), f i ⊓ z' =ᴮ func u i ⟹ z' ∈ᴮ u) ⊓ (z =ᴮ mk (type u) (func u) f ⊓ z' ∈ᴮ z) ≤ z' ∈ᴮ mk (type u) (func u) (λ (i : type u), f i ⊓ bval u i),
+   apply le_trans, apply inf_le_inf, refl, apply subst_congr_mem_right,
+   rw[inf_comm], rw[deduction], apply supr_le, intro i',
+   rw[<-deduction], apply le_supr_of_le i', dsimp,
+   repeat{apply le_inf}, apply inf_le_left_of_le, apply inf_le_left_of_le, refl,
+   
+
+},
   {sorry}
 end
 
