@@ -21,6 +21,10 @@ lemma bv_imp_elim {a b : β} : (a ⟹ b) ⊓ a ≤ b :=
 lemma bv_imp_elim' {a b : β} : (a ⟹ b) ⊓ a ≤ a ⊓ b :=
 by {simp[imp, inf_sup_right]}
 
+lemma bv_and_intro {a b₁ b₂ : β} (h₁ : a ≤ b₁) (h₂ : a ≤ b₂) : a ≤ b₁ ⊓ b₂ := le_inf h₁ h₂
+
+lemma from_empty_context {a b : β} (h : ⊤ ≤ b) : a ≤ b :=
+  by refine le_trans _ h; apply le_top
 
 lemma bv_imp_intro {a b c : β} {h : a ⊓ b ≤ c} :
   a ≤ b ⟹ c := by rwa[deduction] at h
@@ -750,13 +754,15 @@ end
 
 theorem bSet_axiom_of_powerset : (⨅(u : bSet β), ⨆(v : _), ⨅(x : bSet β), x∈ᴮ v ⇔ ⨅(y : x.type), x.bval y ⟹ (x.func y ∈ᴮ u)) = ⊤:=
 begin
-  simp, intro u, apply top_unique, apply le_supr_of_le (bv_powerset u),
+  simp only [bSet.bval, bSet.mem, lattice.biimp, bSet.func, lattice.infi_eq_top, bSet.type],
+  intro u, apply top_unique, apply le_supr_of_le (bv_powerset u),
   apply le_infi, intro x, apply le_inf,
   {rw[<-deduction, top_inf_eq], 
    unfold bv_powerset, apply supr_le, intro χ,
    suffices : ((set_of_indicator χ) ⊆ᴮ u ⊓ (x =ᴮ (set_of_indicator χ)) : β) ≤ x ⊆ᴮ u,
      by {convert this, simp},
    apply subst_congr_subset_left},
+
   {simp, have := @bounded_quantification _ _ x (λ y, (y ∈ᴮ u)) (by {intros x y, apply subst_congr_mem_left}), rw[this],
   dsimp,
   unfold bv_powerset, simp, fapply le_supr_of_le,
@@ -772,43 +778,22 @@ begin
   apply le_supr_of_le i,
   ac_change (a₂ =ᴮ a₁ ⊓  a₁ =ᴮ func u i) ⊓ func u i ∈ᴮ x ≤ func u i ∈ᴮ x ⊓ a₂ =ᴮ func u i, rw[bv_eq_symm], ac_refl,
   
-  apply le_trans, apply inf_le_inf, apply bv_eq_trans, refl,
-  rw[inf_comm],
+  apply le_trans, apply inf_le_inf, apply bv_eq_trans, refl, rw[inf_comm],
   
   {bv_intro a₁, dsimp, apply infi_le_of_le a₁, rw[<-deduction],
    apply le_trans, apply bv_imp_elim', rw[inf_comm, deduction],
    rw[mem_unfold], apply supr_le, intro i, rw[<-deduction],
    apply le_supr_of_le i,
-   ac_change bval u i ⊓ a₁ ∈ᴮ x ⊓ a₁ =ᴮ func u i ≤ func u i ∈ᴮ x ⊓ a₁ =ᴮ func u i, apply inf_le_inf, apply inf_le_left_of_le, swap, refl,
-  
-},
-    
-},
-  {sorry}
-  },
+   apply le_inf, rw[inf_assoc], apply inf_le_right_of_le,
+   apply subst_congr_mem_left,
+   ac_change a₁ =ᴮ func u i ⊓ (bval u i ⊓ a₁ ∈ᴮ x) ≤ a₁ =ᴮ func u i,
+   apply inf_le_left_of_le, refl}},
 
-
-
-  -- bv_intro i_a, apply infi_le_of_le (u.func i_a), refl,--  apply imp_le_of_left_le,
-  -- -- simp,
-  -- rw[bSet_bv_eq_rw], apply le_inf,
-  -- {bv_intro a, apply infi_le_of_le (func x a),
-  -- apply imp_le_of_left_right_le, apply mem.mk',
-  -- cases u, apply supr_le, intro i_a', apply le_supr_of_le i_a',
-  -- simp, sorry
-
-  {apply le_infi, intro i_c,
-    apply infi_le_of_le (u.func i_c),
-   apply imp_le_of_left_right_le, refl,
-   cases u, dsimp, apply supr_le, intro i,
-   cases x, dsimp, fapply le_supr_of_le,
-},
-
- -- simp, intro u, apply top_unique, apply le_supr_of_le (bv_powerset u),
- -- apply le_infi, intro u', apply le_inf,
- -- rw[<-deduction], simp only [bSet.mem, lattice.top_inf_eq, bSet.func, lattice.le_infi_iff, bSet.type], intro i_x, unfold bv_powerset, dsimp,
- -- apply supr_le, intro χ, cases u, dsimp, unfold bSet.subset,
- -- tidy,
+   {have := @bounded_quantification _ _ (set_of_indicator (λ y, func _ y ∈ᴮ x)) (λ y, y ∈ᴮ x), rw[this], swap, simp[subst_congr_mem_left],
+   bv_intro a₁, apply infi_le_of_le a₁,
+   unfold set_of_indicator, dsimp, rw[bv_or_elim],
+   bv_intro i, apply from_empty_context,
+   rw[inf_comm, bv_eq_symm], simp[subst_congr_mem_left]}},
 end
 
 @[simp, reducible]def axiom_of_infinity_spec (u : bSet β) : β :=
