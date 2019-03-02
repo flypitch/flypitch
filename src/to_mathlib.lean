@@ -794,4 +794,6 @@ lemma infi_congr {ι β : Type*} {s₁ s₂ : ι → β} [complete_lattice β] {
   (⨅(i:ι), s₁ i) = ⨅(i:ι), s₂ i :=
 by finish
   
+lemma imp_iff {β : Type*} {a b : β} [complete_boolean_algebra β] : a ⟹ b = -a ⊔ b := by refl
+
 end lattice

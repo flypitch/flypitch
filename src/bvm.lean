@@ -96,6 +96,9 @@ lemma from_empty_context {a b : β} (h : ⊤ ≤ b) : a ≤ b :=
 lemma bv_imp_intro {a b c : β} {h : a ⊓ b ≤ c} :
   a ≤ b ⟹ c := by rwa[deduction] at h
 
+lemma bv_have {a b c : β} (h : a ≤ b) {h' : a ⊓ b ≤ c} : a ≤ c :=
+by {rw[show a = a ⊓ a, by simp], apply le_trans, apply inf_le_inf, refl, exact h, exact h'}
+
 end natded
 end lattice
 
@@ -863,8 +866,19 @@ end -- maybe we can just define boolean-valued ω in this case directly
 theorem bSet_axiom_of_regularity (ϕ : bSet β → β) (h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y) :
   (⨅(x : bSet β), ((⨅(y : bSet β), y ∈ᴮ x ⟹ ϕ y) ⟹ ϕ x)) ⟹ (⨅(x : bSet β), ϕ x) = ⊤ :=
 begin
-  simp, intro x, apply bv_specialize x, conv {to_lhs, congr, congr, funext, rw[mem_unfold]},
-  induction x, simp only with cleanup, simp only [supr_imp_eq],
+  apply top_unique, apply bv_imp_intro, rw[top_inf_eq],
+  apply le_infi, intro x, let b := _, change b ≤ _,
+  induction x with α A B ih, dsimp at *,
+  have : b ≤ ⨅(i_y:α), B i_y ⟹ ϕ (A i_y),
+    by {bv_intro i_y, specialize ih i_y, apply le_trans ih,
+    rw[<-deduction], apply inf_le_left},
+  have h := @bounded_quantification _ _ (mk α A B) ϕ h_congr,
+  simp only with cleanup at h, rw[h] at this, 
+  -- simp only with cleanup at this, rw[this],
+  apply bv_have this,
+  have : b ≤ (⨅ (y : bSet β), (y) ∈ᴮ (mk α A B) ⟹ ϕ (y)) ⟹ ϕ (mk α A B),
+    by {apply bv_specialize (mk α A B), refl},
+  rw[deduction], apply le_trans this, rw[<-deduction], apply bv_imp_elim
 end
 
 end bSet
