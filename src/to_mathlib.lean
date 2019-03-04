@@ -708,7 +708,7 @@ lemma curry_uncurry {α : Type*} [boolean_algebra α] {a b c : α} : ((a ⊓ b) 
   by simp[imp]; ac_refl
 
 /-- the actual deduction theorem in β, thinking of ≤ as a turnstile -/
-lemma deduction {α : Type*} [boolean_algebra α] {a b c : α} : a ⊓ b ≤ c ↔ a ≤ (b ⟹ c) :=
+@[ematch]lemma deduction {α : Type*} [boolean_algebra α] {a b c : α} : a ⊓ b ≤ c ↔ a ≤ (b ⟹ c) :=
   by {[smt] eblast_using [curry_uncurry, imp_top_iff_le]}
 
 lemma deduction_simp {α : Type*} [boolean_algebra α] {a b c : α} : a ≤ (b ⟹ c) ↔ a ⊓ b ≤ c := deduction.symm

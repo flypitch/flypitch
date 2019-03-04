@@ -42,6 +42,7 @@ end natded_tactics
 end tactic.interactive
 
 namespace lattice
+
 section natded
 variables {β : Type*} [complete_boolean_algebra β]
 
@@ -55,7 +56,7 @@ lemma bv_Or_elim  {ι : Type*} {s : ι → β} {c : β} :
 
 lemma bv_And_intro {ι : Type*} {s : ι → β} {b c : β} :
 (∀ i : ι, (c ≤ s i)) → (c ≤ ⨅(i:ι), s i) :=
-λ H, by {apply le_infi, from H}
+λ H, by {apply le_infi, from H} -- this is superceded by tactic.interactive.bv_intro
 
 lemma bv_or_elim {b₁ b₂ c : β} {h : b₁ ≤ c} {h' : b₂ ≤ c} : b₁ ⊔ b₂ ≤ c :=
 by apply sup_le; assumption
@@ -306,10 +307,10 @@ begin
       by {intros a'' a' a, refine inf_le_inf _ (by refl),
         convert @x_ih a (A' a') (A'' a'') using 1; simp[bv_eq_symm], ac_refl},
     apply le_inf,
-      {apply le_infi, intro i, apply deduction.mp,
+      {bv_intro i, apply deduction.mp,
         change _ ≤ (A i) ∈ᴮ ⟨α'', A'', B''⟩,
        have this1 : ⟨α, A, B⟩ =ᴮ ⟨α', A', B'⟩ ⊓ B i ≤ A i ∈ᴮ ⟨α', A', B'⟩,
-         by {rw[deduction], apply inf_le_left_of_le, apply infi_le},
+       by  {rw[deduction], from inf_le_left_of_le (infi_le _ _)},
        suffices : A i ∈ᴮ ⟨α', A', B'⟩ ⊓ ⟨α', A', B'⟩ =ᴮ ⟨α'', A'', B''⟩ ≤ A i ∈ᴮ ⟨α'', A'', B''⟩,
          by {have := le_trans (inf_le_inf this1 (by refl)) this,
               convert this using 1, ac_refl },
@@ -328,7 +329,7 @@ begin
          by {rw[this], clear this, apply le_trans, exact (H1 i a' a''),
          apply le_supr_of_le a'', rw[inf_comm]},
        ac_refl}, 
-      {apply le_infi, intro i'', apply deduction.mp,
+      {bv_intro i'', apply deduction.mp,
         conv {to_rhs, congr, funext, rw[bv_eq_symm]}, change _ ≤ (A'' i'') ∈ᴮ ⟨α, A, B⟩,
         have this1 : ⟨α'', A'', B''⟩ =ᴮ ⟨α', A', B'⟩ ⊓ B'' i'' ≤ A'' i'' ∈ᴮ ⟨α', A', B'⟩,
           by {rw[deduction], apply inf_le_left_of_le, apply infi_le},
@@ -381,11 +382,11 @@ lemma bounded_quantification {v : bSet β} {ϕ : bSet β → β } {h_congr : ∀
   (⨅(i_x : v.type), (v.bval i_x ⟹ ϕ (v.func i_x))) = (⨅(x : bSet β), x ∈ᴮ v ⟹ ϕ x)  :=
 begin
   apply le_antisymm,
-    {apply le_infi, intro x, cases v, simp, rw[supr_imp_eq],
-     apply le_infi, intro i_y, apply infi_le_of_le i_y,
+    {bv_intro x, cases v, simp, rw[supr_imp_eq],
+     bv_intro i_y, apply infi_le_of_le i_y,
      rw[<-deduction,<-inf_assoc], apply le_trans, apply inf_le_inf,
      apply bv_imp_elim, refl, rw[inf_comm, bv_eq_symm], apply h_congr},
-         {apply le_infi, intro i_x', apply infi_le_of_le (func v i_x'), apply imp_le_of_left_le,
+         {bv_intro i_x', apply infi_le_of_le (func v i_x'), apply imp_le_of_left_le,
      cases v, simp, apply le_supr_of_le i_x',
        apply le_inf, refl, rw[bv_eq_refl], apply le_top}
 end
@@ -394,11 +395,11 @@ end
 --   (⨅(i_x : v.type), (v.bval i_x ⟹ ϕ (v.func i_x))) = (⨅(x : bSet β), x ∈ᴮ v ⟹ ϕ x)  :=
 -- begin
 --   apply le_antisymm,
---     {apply le_infi, intro x, cases v, simp, rw[supr_imp_eq],
---      apply le_infi, intro i_y, apply infi_le_of_le i_y,
+--     {bv_intro x, cases v, simp, rw[supr_imp_eq],
+--      bv_intro i_y, apply infi_le_of_le i_y,
 --      rw[<-deduction,<-inf_assoc], apply le_trans, apply inf_le_inf,
 --      apply bv_imp_elim, refl, rw[inf_comm, bv_eq_symm], apply h_congr},
---          {apply le_infi, intro i_x', apply infi_le_of_le (func v i_x'), apply imp_le_of_left_le,
+--          {bv_intro i_x', apply infi_le_of_le (func v i_x'), apply imp_le_of_left_le,
 --      cases v, simp, apply le_supr_of_le i_x',
 --        apply le_inf, refl, rw[bv_eq_refl], apply le_top}
 -- end
@@ -439,14 +440,16 @@ lemma mixing_lemma {ι : Type u} (a : ι → β) (τ : ι → bSet β) (h_star :
 begin
   refine ⟨mixture a τ, λ i, _⟩, rw[bSet_bv_eq_rw],
   apply le_inf,
-    {apply le_infi, intro i_z, apply deduction.mp, simp, rw[inf_supr_eq], apply supr_le,
+    {bv_intro i_z, apply bv_imp_intro,
+    simp only [bSet.bval, bSet.mem, bSet.func, bSet.type, bSet.bval_mixture],
+    rw[inf_supr_eq], apply bv_Or_elim,
     intro j, rw[<-inf_assoc],
     have : a i ⊓ a j ⊓ func (τ (i_z.fst)) (i_z.snd) ∈ᴮ τ j ≤ (τ i =ᴮ τ j) ⊓ func (τ (i_z.fst)) (i_z.snd) ∈ᴮ τ j,
       by {apply inf_le_inf (h_star i j), refl},
     apply le_trans this, rw[bv_eq_symm], apply subst_congr_mem_right},
-  {apply le_infi, intro i_z, rw[<-deduction], apply le_supr_of_le (sigma.mk i i_z),
+  {bv_intro i_z, rw[<-deduction], apply le_supr_of_le (sigma.mk i i_z),
   simp, apply le_supr_of_le i, apply inf_le_inf (by refl : a i ≤ a i), dsimp, cases (τ i),
-  apply le_supr_of_le i_z, apply le_inf, refl, simp}
+  apply le_supr_of_le i_z, from le_inf (by refl) (by simp)}
 end
 
 -- TODO(jesse) try proving mixing_lemma with floris_mixture and see if anything goes wrong
@@ -815,7 +818,7 @@ theorem bSet_axiom_of_powerset : (⨅(u : bSet β), ⨆(v : _), ⨅(x : bSet β)
 begin
   simp only [bSet.bval, bSet.mem, lattice.biimp, bSet.func, lattice.infi_eq_top, bSet.type],
   intro u, apply top_unique, apply le_supr_of_le (bv_powerset u),
-  apply le_infi, intro x, apply le_inf,
+  bv_intro x, apply le_inf,
   {rw[<-deduction, top_inf_eq], 
    unfold bv_powerset, apply supr_le, intro χ,
    suffices : ((set_of_indicator χ) ⊆ᴮ u ⊓ (x =ᴮ (set_of_indicator χ)) : β) ≤ x ⊆ᴮ u,
@@ -827,7 +830,7 @@ begin
   unfold bv_powerset, simp, fapply le_supr_of_le,
   from λ i, u.func i ∈ᴮ x,  have this' := @bounded_quantification _ _ (set_of_indicator (λ y, (u.func y ∈ᴮ x))) (λ y, (y ∈ᴮ u)) (by {intros x y, apply subst_congr_mem_left}), dsimp at this', rw[this'],
   apply le_inf, bv_intro a', apply infi_le_of_le a', rw[supr_imp_eq],
-  apply le_infi, intro i_y, apply imp_le_of_left_right_le, swap, refl,
+  bv_intro i_y, apply imp_le_of_left_right_le, swap, refl,
   rw[inf_comm, bv_eq_symm], apply subst_congr_mem_left,
   
   rw[bSet_bv_eq_rw], apply le_inf,
@@ -867,18 +870,39 @@ theorem bSet_axiom_of_regularity (ϕ : bSet β → β) (h_congr : ∀ x y, x =�
   (⨅(x : bSet β), ((⨅(y : bSet β), y ∈ᴮ x ⟹ ϕ y) ⟹ ϕ x)) ⟹ (⨅(x : bSet β), ϕ x) = ⊤ :=
 begin
   apply top_unique, apply bv_imp_intro, rw[top_inf_eq],
-  apply le_infi, intro x, let b := _, change b ≤ _,
+  bv_intro x, let b := _, change b ≤ _,
   induction x with α A B ih, dsimp at *,
   have : b ≤ ⨅(i_y:α), B i_y ⟹ ϕ (A i_y),
     by {bv_intro i_y, specialize ih i_y, apply le_trans ih,
     rw[<-deduction], apply inf_le_left},
   have h := @bounded_quantification _ _ (mk α A B) ϕ h_congr,
-  simp only with cleanup at h, rw[h] at this, 
+  simp only with cleanup at h, rw[h] at this,
   -- simp only with cleanup at this, rw[this],
   apply bv_have this,
   have : b ≤ (⨅ (y : bSet β), (y) ∈ᴮ (mk α A B) ⟹ ϕ (y)) ⟹ ϕ (mk α A B),
     by {apply bv_specialize (mk α A B), refl},
   rw[deduction], apply le_trans this, rw[<-deduction], apply bv_imp_elim
+end
+
+/-- ∃! x, ϕ x ↔ ∃ x ∀ y, ϕ(x) ⊓ ϕ (y) → y = x -/
+@[reducible]def bv_exists_unique (ϕ : bSet β → β) : β :=
+  ⨆(x:bSet β), (⨅(y : bSet β), ϕ y ⟹ (y =ᴮ x))
+
+local notation `⨆!` binders `, ` r:(scoped f, bv_exists_unique f) := r
+
+
+/-- This is the abbreviated version of AC found at http://us.metamath.org/mpeuni/ac3.html
+    It is provably equivalent over ZF to the usual formulation of AC
+    After we have the Boolean soundness theorem, we can transport the proof via completeness
+    from the 2-valued setting to the β-valued setting -/
+-- ∀x ∃𝑦 ∀𝑧 ∈ 𝑥 (𝑧 ≠ ∅ → ∃!𝑤 ∈ 𝑧 ∃𝑣 ∈ 𝑦 (𝑧 ∈ 𝑣 ∧ 𝑤 ∈ 𝑣))
+theorem bSet_axiom_of_choice :
+(⨅(x : bSet β), ⨆(y : bSet β), ⨅(z : bSet β),
+  z ∈ᴮ x ⟹ ((- (z =ᴮ ∅)) ⟹
+  (⨆!(w : bSet β), w ∈ᴮ z ⟹
+    ⨆(v : bSet β), v ∈ᴮ y ⟹ (z ∈ᴮ v ⊓ w ∈ᴮ v)))) = ⊤ :=
+begin
+  apply top_unique, bv_intro x, unfold bv_exists_unique, sorry
 end
 
 end bSet
