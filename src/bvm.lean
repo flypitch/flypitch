@@ -759,7 +759,8 @@ begin
   convert this
 end
 
-theorem bSet_axiom_of_union : (⨅ (u : bSet β), (⨆(v : _), ⨅(x : _), (x ∈ᴮ v ⇔ (⨆(y : u.type), x ∈ᴮ u.func y)))) = ⊤ :=
+theorem bSet_axiom_of_union : (⨅ (u : bSet β), (⨆(v : _), ⨅(x : _),
+  (x ∈ᴮ v ⇔ (⨆(y : u.type), x ∈ᴮ u.func y)))) = ⊤ :=
 begin
   simp only [bSet.mem, lattice.biimp, bSet.func, lattice.infi_eq_top, bSet.type], intro u,
   apply top_unique, apply le_supr_of_le (bv_union u),
@@ -890,19 +891,26 @@ end
 
 local notation `⨆!` binders `, ` r:(scoped f, bv_exists_unique f) := r
 
+def core {α : Type u} (u : bSet β) (S : α → bSet β) : Prop :=
+(∀ x : α, S x ∈ᴮ u = ⊤) ∧ (∀ y : bSet β, y ∈ᴮ u = ⊤ → ∃! x_y : α, y =ᴮ S x_y = ⊤)
 
-/-- This is the abbreviated version of AC found at http://us.metamath.org/mpeuni/ac3.html
-    It is provably equivalent over ZF to the usual formulation of AC
-    After we have the Boolean soundness theorem, we can transport the proof via completeness
-    from the 2-valued setting to the β-valued setting -/
--- ∀x ∃𝑦 ∀𝑧 ∈ 𝑥 (𝑧 ≠ ∅ → ∃!𝑤 ∈ 𝑧 ∃𝑣 ∈ 𝑦 (𝑧 ∈ 𝑣 ∧ 𝑤 ∈ 𝑣))
-theorem bSet_axiom_of_choice :
-(⨅(x : bSet β), ⨆(y : bSet β), ⨅(z : bSet β),
-  z ∈ᴮ x ⟹ ((- (z =ᴮ ∅)) ⟹
-  (⨆!(w : bSet β), w ∈ᴮ z ⟹
-    ⨆(v : bSet β), v ∈ᴮ y ⟹ (z ∈ᴮ v ⊓ w ∈ᴮ v)))) = ⊤ :=
-begin
-  apply top_unique, bv_intro x, unfold bv_exists_unique, sorry
-end
+lemma core.mk (u : bSet β) : ∃ α : Type u, ∃ S : α → bSet β, core u S :=
+sorry -- TODO(jesse) make the appropriate smallness argument.
+
+theorem bSet_zorns_lemma : sorry := sorry
+
+-- /-- This is the abbreviated version of AC found at http://us.metamath.org/mpeuni/ac3.html
+--     It is provably equivalent over ZF to the usual formulation of AC
+--     After we have the Boolean soundness theorem, we can transport the proof via completeness
+--     from the 2-valued setting to the β-valued setting -/
+-- -- ∀x ∃𝑦 ∀𝑧 ∈ 𝑥 (𝑧 ≠ ∅ → ∃!𝑤 ∈ 𝑧 ∃𝑣 ∈ 𝑦 (𝑧 ∈ 𝑣 ∧ 𝑤 ∈ 𝑣))
+-- theorem bSet_axiom_of_choice :
+-- (⨅(x : bSet β), ⨆(y : bSet β), ⨅(z : bSet β),
+--   z ∈ᴮ x ⟹ ((- (z =ᴮ ∅)) ⟹
+--   (⨆!(w : bSet β), w ∈ᴮ z ⟹
+--     ⨆(v : bSet β), v ∈ᴮ y ⟹ (z ∈ᴮ v ⊓ w ∈ᴮ v)))) = ⊤ :=
+-- begin
+--   apply top_unique, bv_intro x, unfold bv_exists_unique, sorry
+-- end
 
 end bSet
