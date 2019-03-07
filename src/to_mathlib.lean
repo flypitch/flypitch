@@ -842,4 +842,21 @@ by simp*
 
 lemma imp_iff {β : Type*} {a b : β} [complete_boolean_algebra β] : a ⟹ b = -a ⊔ b := by refl
 
+lemma sup_inf_left_right_eq {β} [distrib_lattice β] {a b c d : β} :
+  (a ⊓ b) ⊔ (c ⊓ d) = (a ⊔ c) ⊓ (a ⊔ d) ⊓ (b ⊔ c) ⊓ (b ⊔ d) :=
+by {rw[sup_inf_right, sup_inf_left, sup_inf_left]; ac_refl}
+-- by {[smt] eblast_using[sup_inf_right, sup_inf_left]}
+-- interesting, this takes like 5 seconds
+-- probably because both of those rules can be applied pretty much everywhere in the goal
+-- and eblast is trying all of them
+
+lemma eq_neg_of_partition {β} [boolean_algebra β] {a₁ a₂ : β} (h_anti : a₁ ⊓ a₂ = ⊥) (h_partition : a₁ ⊔ a₂ = ⊤) :
+  a₂ = - a₁ :=
+begin
+  rw[show -a₁ = ⊤ ⊓ -a₁, by simp], rw[<-sub_eq],
+  rw[<-h_partition,sub_eq], rw[inf_sup_right],
+  simp*, rw[<-sub_eq], rw[inf_comm] at h_anti,
+  from (sub_eq_left h_anti).symm
+end
+
 end lattice

@@ -44,61 +44,70 @@ end tactic.interactive
 namespace lattice
 
 section natded
-variables {β : Type*} [complete_boolean_algebra β]
+variables {𝔹 : Type*} [complete_boolean_algebra 𝔹]
 
-lemma supr_imp_eq {ι : Type*} {s : ι → β} {b : β} :
+lemma supr_imp_eq {ι : Type*} {s : ι → 𝔹} {b : 𝔹} :
   (⨆(i:ι), s i) ⟹ b = (⨅(i:ι), s i ⟹ b) :=
 by {unfold imp, rw[neg_supr, infi_sup_eq]}
 
-lemma bv_Or_elim  {ι : Type*} {s : ι → β} {c : β} :
+lemma bv_Or_elim  {ι : Type*} {s : ι → 𝔹} {c : 𝔹} :
 (∀ i : ι, (s i ≤ c)) → ((⨆(i:ι), s i) ≤ c) :=
 λ H, by apply supr_le; from H
 
-lemma bv_And_intro {ι : Type*} {s : ι → β} {b c : β} :
+lemma bv_And_intro {ι : Type*} {s : ι → 𝔹} {b c : 𝔹} :
 (∀ i : ι, (c ≤ s i)) → (c ≤ ⨅(i:ι), s i) :=
 λ H, by {apply le_infi, from H} -- this is superceded by tactic.interactive.bv_intro
 
-lemma bv_or_elim {b₁ b₂ c : β} {h : b₁ ≤ c} {h' : b₂ ≤ c} : b₁ ⊔ b₂ ≤ c :=
-by apply sup_le; assumption
+lemma bv_or_elim {b₁ b₂ c : 𝔹} {h : b₁ ≤ c} {h' : b₂ ≤ c} : b₁ ⊔ b₂ ≤ c :=
+  by apply sup_le; assumption
 
-lemma bv_exfalso {a b : β} {h : a ≤ ⊥} : a ≤ b :=
+lemma bv_or_elim_left {b₁ b₂ c d : 𝔹} {h₁ : b₁ ⊓ d ≤ c} {h₂ : b₂ ⊓ d ≤ c} : (b₁ ⊔ b₂) ⊓ d ≤ c :=
+  by {rw[deduction], apply bv_or_elim; finish}
+
+lemma bv_or_elim_right {b₁ b₂ c d : 𝔹} {h₁ : d ⊓ b₁ ≤ c} {h₂ : d ⊓ b₂ ≤ c} : d ⊓ (b₁ ⊔ b₂) ≤ c :=
+  by {rw[inf_comm] at ⊢ h₁ h₂; apply bv_or_elim_left; assumption}
+
+lemma bv_exfalso {a b : 𝔹} {h : a ≤ ⊥} : a ≤ b :=
 by finish
 
-lemma bv_cases_left {ι : Type*} {s : ι → β} {c b : β} {h : ∀ i : ι, (s i ⊓ c ≤ b)} :
+lemma bv_cases_left {ι : Type*} {s : ι → 𝔹} {c b : 𝔹} {h : ∀ i : ι, (s i ⊓ c ≤ b)} :
   ((⨆(i:ι), s i) ⊓ c) ≤ b :=
 by finish[deduction]
 
-lemma bv_cases_right {ι : Type*} {s : ι → β} {c b : β} {h : ∀ i : ι, (c ⊓ s i ≤ b)} :
+lemma bv_cases_right {ι : Type*} {s : ι → 𝔹} {c b : 𝔹} {h : ∀ i : ι, (c ⊓ s i ≤ b)} :
   (c ⊓ (⨆(i:ι), s i)) ≤ b :=
 by {rw[inf_comm], apply bv_cases_left, finish}
 
-lemma bv_specialize {ι : Type*} {s : ι → β} (i : ι) {b : β} {h : s i ≤ b} :
+lemma bv_specialize {ι : Type*} {s : ι → 𝔹} (i : ι) {b : 𝔹} {h : s i ≤ b} :
 (⨅(i:ι), s i) ≤ b := infi_le_of_le i h
 
-lemma bv_specialize_left {ι : Type*} {s : ι → β} {c b : β} (i : ι)
+lemma bv_specialize_left {ι : Type*} {s : ι → 𝔹} {c b : 𝔹} (i : ι)
   {h : s i ⊓ c ≤ b} : (⨅(i:ι), s i) ⊓ c ≤ b :=
 by {rw[deduction], apply bv_specialize i, rwa[<-deduction]}
 
-lemma bv_specialize_right {ι : Type*} {s :ι → β} {c b : β} (i : ι)
+lemma bv_specialize_right {ι : Type*} {s :ι → 𝔹} {c b : 𝔹} (i : ι)
   {h : c ⊓ s i ≤ b} : c ⊓ (⨅(i:ι), s i) ≤ b :=
 by {rw[inf_comm], apply bv_specialize_left i, finish}
   
-lemma bv_imp_elim {a b : β} : (a ⟹ b) ⊓ a ≤ b :=
+@[ematch] lemma bv_imp_elim {a b : 𝔹} : (a ⟹ b) ⊓ a ≤ b :=
 by simp[imp, inf_sup_right]
 
-lemma bv_imp_elim' {a b : β} : (a ⟹ b) ⊓ a ≤ a ⊓ b :=
+@[ematch] lemma bv_imp_elim' {a b : 𝔹} : (a ⟹ b) ⊓ a ≤ a ⊓ b :=
 by {simp[imp, inf_sup_right]}
 
-lemma bv_and_intro {a b₁ b₂ : β} (h₁ : a ≤ b₁) (h₂ : a ≤ b₂) : a ≤ b₁ ⊓ b₂ := le_inf h₁ h₂
+lemma bv_and_intro {a b₁ b₂ : 𝔹} (h₁ : a ≤ b₁) (h₂ : a ≤ b₂) : a ≤ b₁ ⊓ b₂ := le_inf h₁ h₂
 
-lemma from_empty_context {a b : β} (h : ⊤ ≤ b) : a ≤ b :=
+@[ematch] lemma from_empty_context {a b : 𝔹} (h : ⊤ ≤ b) : a ≤ b :=
   by refine le_trans _ h; apply le_top
 
-lemma bv_imp_intro {a b c : β} {h : a ⊓ b ≤ c} :
+lemma bv_imp_intro {a b c : 𝔹} {h : a ⊓ b ≤ c} :
   a ≤ b ⟹ c := by rwa[deduction] at h
 
-lemma bv_have {a b c : β} (h : a ≤ b) {h' : a ⊓ b ≤ c} : a ≤ c :=
+lemma bv_have {a b c : 𝔹} (h : a ≤ b) {h' : a ⊓ b ≤ c} : a ≤ c :=
 by {rw[show a = a ⊓ a, by simp], apply le_trans, apply inf_le_inf, refl, exact h, exact h'}
+
+lemma bv_use {ι : Type*} (i : ι) {s : ι → 𝔹} {b : 𝔹}  {h : b ≤ s i} : b ≤ ⨆(j:ι), s j :=
+  le_supr_of_le i h
 
 end natded
 end lattice
@@ -124,51 +133,51 @@ end
 end pSet
 
 
-/- A β-valued model of ZFC -/
+/- A 𝔹-valued model of ZFC -/
 
 -- τ is a B-name if and only if τ is a set of pairs of the form ⟨σ, b⟩, where σ is
 -- a B-name and b ∈ B.
-inductive bSet (β : Type u) [complete_boolean_algebra β] : Type (u+1)
-| mk (α : Type u) (A : α → bSet) (B : α → β) : bSet
+inductive bSet (𝔹 : Type u) [complete_boolean_algebra 𝔹] : Type (u+1)
+| mk (α : Type u) (A : α → bSet) (B : α → 𝔹) : bSet
 
 namespace bSet
-variables {β : Type u} [nontrivial_complete_boolean_algebra β]
+variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 
-noncomputable instance decidable_eq_β : decidable_eq β := λ _ _, classical.prop_decidable _
+noncomputable instance decidable_eq_𝔹 : decidable_eq 𝔹 := λ _ _, classical.prop_decidable _
 
 run_cmd mk_simp_attr `cleanup
 
 /-- The underlying type of a bSet -/
-@[simp, cleanup]def type : bSet β → Type u
+@[simp, cleanup]def type : bSet 𝔹 → Type u
 | ⟨α, _, _⟩ := α
 
-@[simp, cleanup]lemma type_infi {α : Type*} {A : α → bSet β} {B C : α → β} : (⨅(a : type (mk α A B)), C a) = ⨅(a : α), C a := by refl
+@[simp, cleanup]lemma type_infi {α : Type*} {A : α → bSet 𝔹} {B C : α → 𝔹} : (⨅(a : type (mk α A B)), C a) = ⨅(a : α), C a := by refl
 
-@[simp, cleanup]lemma type_supr {α : Type*} {A : α → bSet β} {B C : α → β} : (⨆(a : type (mk α A B)), C a) = ⨆(a : α), C a := by refl
+@[simp, cleanup]lemma type_supr {α : Type*} {A : α → bSet 𝔹} {B C : α → 𝔹} : (⨆(a : type (mk α A B)), C a) = ⨆(a : α), C a := by refl
 
 /-- The indexing function of a bSet -/
-@[simp, cleanup]def func : ∀ x : bSet β, x.type → bSet β
+@[simp, cleanup]def func : ∀ x : bSet 𝔹, x.type → bSet 𝔹
 | ⟨_, A, _⟩ := A
 
 /-- The boolean truth-value function of a bSet -/
-@[simp, cleanup]def bval : ∀ x : bSet β, x.type → β
+@[simp, cleanup]def bval : ∀ x : bSet 𝔹, x.type → 𝔹
 | ⟨_, _, B⟩ := B
 
-@[simp, cleanup]def mk_type_func_bval : ∀ x : bSet β, mk x.type x.func x.bval = x :=
+@[simp, cleanup]def mk_type_func_bval : ∀ x : bSet 𝔹, mk x.type x.func x.bval = x :=
   λ x, by induction x; {simp only with cleanup, repeat{split, repeat{refl}}}
 
-def empty : bSet β :=
+def empty : bSet 𝔹 :=
   ⟨ulift empty, empty.elim ∘ ulift.down, empty.elim ∘ ulift.down⟩
 
-instance nonempty_bSet : nonempty $ @bSet β _ :=
+instance nonempty_bSet : nonempty $ @bSet 𝔹 _ :=
   ⟨empty⟩
 
-instance has_empty_bSet : has_emptyc (bSet β) := ⟨empty⟩
+instance has_empty_bSet : has_emptyc (bSet 𝔹) := ⟨empty⟩
 
 /-- Two Boolean-valued pre-sets are extensionally equivalent if every
 element of the first family is extensionally equivalent to
   some element of the second family and vice-versa. -/
-@[reducible]def bv_eq : ∀ (x y : bSet β), β
+@[reducible]def bv_eq : ∀ (x y : bSet 𝔹), 𝔹
 /- ∀ x ∃ y, m x y ∧ ∀ y ∃ x, m y x, but this time in ~lattice~ -/
 | ⟨α, A, B⟩ ⟨α', A', B'⟩ :=
              (⨅a : α, B a ⟹ ⨆a', B' a' ⊓ bv_eq (A a) (A' a')) ⊓
@@ -176,13 +185,13 @@ element of the first family is extensionally equivalent to
 
 infix ` =ᴮ `:80 := bv_eq
 
-theorem bv_eq_refl_empty : (@bv_eq β _) (empty) (empty) = ⊤ :=
+theorem bv_eq_refl_empty : (@bv_eq 𝔹 _) (empty) (empty) = ⊤ :=
   by unfold empty bv_eq;
   {simp only [lattice.inf_eq_top_iff, lattice.infi_eq_top], fsplit; intros i; cases i; cases i}
 
 open lattice
 
-@[simp]theorem bv_eq_refl : ∀ x, @bv_eq β _ x x = ⊤ :=
+@[simp]theorem bv_eq_refl : ∀ x, @bv_eq 𝔹 _ x x = ⊤ :=
 begin
   intro x, induction x, simp[bv_eq, -imp_top_iff_le], split; intros;
   {apply top_unique, simp, apply le_supr_of_le i, have := x_ih i, finish}
@@ -190,84 +199,84 @@ end
 
 /- empty' is the singleton bSet {⟨∅, ⊥⟩}, i.e. a set whose only member is ∅ which has
    a zero probability of actually being an element. It should be equivalent to ∅. -/
-@[reducible]def empty' : bSet β := mk punit (λ _, ∅) (λ _, ⊥)
+@[reducible]def empty' : bSet 𝔹 := mk punit (λ _, ∅) (λ _, ⊥)
 
-example : empty =ᴮ empty = (⊤ : β) := by simp
+example : empty =ᴮ empty = (⊤ : 𝔹) := by simp
 
 /-- `x ∈ y` as Boolean-valued pre-sets if `x` is extensionally equivalent to a member
   of the family `y`. -/
-@[reducible, simp]def mem : bSet β → bSet β → β
+@[reducible, simp]def mem : bSet 𝔹 → bSet 𝔹 → 𝔹
 | a (mk α' A' B') := ⨆a', B' a' ⊓ a =ᴮ A' a'
 
-@[reducible]def empty'' : bSet β :=
+@[reducible]def empty'' : bSet 𝔹 :=
   mk (ulift bool) (λ x, ∅) (λ x, by {repeat{cases x}, exact ⊥, exact ⊤})
 
 infix ` ∈ᴮ `:80 := mem
 
-lemma mem_unfold {u v : bSet β} : u ∈ᴮ v = ⨆(i : v.type), v.bval i ⊓ u =ᴮ v.func i :=
+lemma mem_unfold {u v : bSet 𝔹} : u ∈ᴮ v = ⨆(i : v.type), v.bval i ⊓ u =ᴮ v.func i :=
 by cases v; simp
 
 
 /-- ∅ appears in empty'' with probability 0 and 1, with the higher probability winning the
     vote of membership. This demonstrates why the inequality in the following theorem is
     necessary. -/
-example : ∅ ∈ᴮ empty'' = (⊤ : β) :=
+example : ∅ ∈ᴮ empty'' = (⊤ : 𝔹) :=
   by {apply top_unique, apply le_supr_of_le ⊤, swap, exact ⟨⟨(tt)⟩⟩, finish}
 
-theorem mem.mk {α : Type*} (A : α → bSet β) (B : α → β) (a : α) : B a ≤ A a ∈ᴮ mk α A B :=
+theorem mem.mk {α : Type*} (A : α → bSet 𝔹) (B : α → 𝔹) (a : α) : B a ≤ A a ∈ᴮ mk α A B :=
   le_supr_of_le a $ by simp
 
-theorem mem.mk' (x : bSet β) (a : x.type) : x.bval a ≤ x.func a ∈ᴮ x :=
+theorem mem.mk' (x : bSet 𝔹) (a : x.type) : x.bval a ≤ x.func a ∈ᴮ x :=
 by {cases x, apply le_supr_of_le a, simp}
 
 
-@[simp, reducible]protected def subset : bSet β → bSet β → β
+@[simp, reducible]protected def subset : bSet 𝔹 → bSet 𝔹 → 𝔹
 | (mk α A B) b := ⨅a:α, B a ⟹ (A a ∈ᴮ b)
 
 infix ` ⊆ᴮ `:80 := bSet.subset
 
-@[simp]lemma subset_unfold {x u : bSet β} : x ⊆ᴮ u = (⨅(j : x.type), x.bval j ⟹ x.func j ∈ᴮ u) :=
+@[simp]lemma subset_unfold {x u : bSet 𝔹} : x ⊆ᴮ u = (⨅(j : x.type), x.bval j ⟹ x.func j ∈ᴮ u) :=
 by induction x; dsimp; congr
 
-@[simp]protected def insert : bSet β → β → bSet β → bSet β
+@[simp]protected def insert : bSet 𝔹 → 𝔹 → bSet 𝔹 → bSet 𝔹
 | u b ⟨α, A, B⟩ := ⟨option α, λo, option.rec u A o, λo, option.rec b B o⟩
 
-protected def insert' : bSet β → β → bSet β → bSet β
+protected def insert' : bSet 𝔹 → 𝔹 → bSet 𝔹 → bSet 𝔹
 | u b ⟨α, A, B⟩ := ⟨unit ⊕ α, λ o, sum.rec (λ_, u) A o, λ o, sum.rec (λ_, b) B o⟩
 
-@[reducible, simp]protected def insert1 : bSet β → bSet β → bSet β
+@[reducible, simp]protected def insert1 : bSet 𝔹 → bSet 𝔹 → bSet 𝔹
 | u v := bSet.insert u ⊤ v
 
-instance insert_bSet : has_insert (bSet β) (bSet β) :=
+instance insert_bSet : has_insert (bSet 𝔹) (bSet 𝔹) :=
   ⟨λ u v, bSet.insert1 u v⟩
 
-@[simp]lemma insert_rw {y z : bSet β} : insert y z = bSet.insert y ⊤ z :=
+@[simp]lemma insert_rw {y z : bSet 𝔹} : insert y z = bSet.insert y ⊤ z :=
   by refl
 
-@[simp]theorem mem_insert {x y z : bSet β} {b : β} :
+@[simp]theorem mem_insert {x y z : bSet 𝔹} {b : 𝔹} :
   x ∈ᴮ bSet.insert y b z = (b ⊓ x =ᴮ y) ⊔ x ∈ᴮ z :=
   by induction y; induction z; simp
 
-theorem mem_insert1 {x y z : bSet β} : x ∈ᴮ insert y z = x =ᴮ y ⊔ x ∈ᴮ z :=
+theorem mem_insert1 {x y z : bSet 𝔹} : x ∈ᴮ insert y z = x =ᴮ y ⊔ x ∈ᴮ z :=
   by simp
 
-example : {∅} =ᴮ empty'' = (⊤ : β) :=
+example : {∅} =ᴮ empty'' = (⊤ : 𝔹) :=
 begin
   simp[empty'', singleton, insert, has_insert.insert], simp[has_emptyc.emptyc, empty],
   refine ⟨_, by intro i; repeat{cases i}⟩, apply top_unique,
- have : ⊤ = (ulift.rec (bool.rec ⊥ ⊤) : ulift bool → β) (ulift.up tt),
+ have : ⊤ = (ulift.rec (bool.rec ⊥ ⊤) : ulift bool → 𝔹) (ulift.up tt),
    by refl,
  rw[this], apply le_supr
 end
 
-@[symm]theorem bv_eq_symm {x y : bSet β} : x =ᴮ y = y =ᴮ x :=
+@[symm]theorem bv_eq_symm {x y : bSet 𝔹} : x =ᴮ y = y =ᴮ x :=
 begin
   induction x with α A B generalizing y, induction y with α' A' B',
   suffices : ∀ a : α, ∀ a' : α', A' a' =ᴮ A a = A a =ᴮ A' a',
     by {simp[bv_eq, this, inf_comm]}, from λ _ _, by simp[x_ih ‹α›]
 end
 
--- example {x y : bSet β} : x =ᴮ y = y =ᴮ x :=
+-- example {x y : bSet 𝔹} : x =ᴮ y = y =ᴮ x :=
 -- begin
 --   fapply le_antisymm; fapply bv_prf,
 --   exact [x=ᴮy], simp, tactic.rotate 1, exact [y=ᴮx], simp,
@@ -276,13 +285,13 @@ end
 --   apply bv_prf_and_intro, sorry
 -- end
 
-theorem bSet_bv_eq_rw (x y : bSet β) :
+theorem bSet_bv_eq_rw (x y : bSet 𝔹) :
   x =ᴮ y = (⨅(a : x.type), x.bval a ⟹ (x.func a ∈ᴮ y))
           ⊓ (⨅(a' : y.type), (y.bval a' ⟹ (y.func a' ∈ᴮ x))) :=
  by induction x; induction y; simp[mem,bv_eq,bv_eq_symm]
 
-theorem bSet_axiom_of_extensionality (x y : bSet β) :
-(⨅(z : bSet β), (z ∈ᴮ x ⟹ z ∈ᴮ y) ⊓ (z ∈ᴮ y ⟹ z ∈ᴮ x)) ≤ x =ᴮ y :=
+theorem bSet_axiom_of_extensionality (x y : bSet 𝔹) :
+(⨅(z : bSet 𝔹), (z ∈ᴮ x ⟹ z ∈ᴮ y) ⊓ (z ∈ᴮ y ⟹ z ∈ᴮ x)) ≤ x =ᴮ y :=
 begin
   rw[bSet_bv_eq_rw],
   apply le_inf; apply le_infi; intro i,
@@ -294,7 +303,7 @@ begin
    exact le_inf (by refl) (by rw[bv_eq_refl]; apply le_top)},
 end
 
-theorem bv_eq_trans {x y z : bSet β} : (x =ᴮ y ⊓ y =ᴮ z) ≤ x =ᴮ z :=
+theorem bv_eq_trans {x y z : bSet 𝔹} : (x =ᴮ y ⊓ y =ᴮ z) ≤ x =ᴮ z :=
 begin
     induction x with α A B generalizing y z,
     cases y with α' A' B',
@@ -353,12 +362,12 @@ begin
         ac_refl}
 end
 
-lemma bv_eq_le_congr_right {u v w} {h : v = w} : u =ᴮ v ≤ (u =ᴮ w : β) := by rw[h]
+lemma bv_eq_le_congr_right {u v w} {h : v = w} : u =ᴮ v ≤ (u =ᴮ w : 𝔹) := by rw[h]
 
-lemma bv_eq_le_congr_left {u v w} {h : v = w} : v =ᴮ u ≤ (w =ᴮ u : β) := by rw[h]
+lemma bv_eq_le_congr_left {u v w} {h : v = w} : v =ᴮ u ≤ (w =ᴮ u : 𝔹) := by rw[h]
 
 /-- If u = v and u ∈ w, then this implies that v ∈ w -/
-lemma subst_congr_mem_left {u v w : bSet β} : u =ᴮ v ⊓ u ∈ᴮ w ≤ v ∈ᴮ w :=
+lemma subst_congr_mem_left {u v w : bSet 𝔹} : u =ᴮ v ⊓ u ∈ᴮ w ≤ v ∈ᴮ w :=
 begin
   cases w,
   have : ∀ a : w_α, u =ᴮ v ⊓ w_B a ⊓ u =ᴮ w_A a ≤ w_B a ⊓ v =ᴮ w_A a,
@@ -368,7 +377,7 @@ begin
 end
 
 /-- If v = w and u ∈ v, then this implies that u ∈ w -/
-lemma subst_congr_mem_right {u v w : bSet β} : (v =ᴮ w ⊓ u ∈ᴮ v) ≤ u ∈ᴮ w :=
+lemma subst_congr_mem_right {u v w : bSet 𝔹} : (v =ᴮ w ⊓ u ∈ᴮ v) ≤ u ∈ᴮ w :=
 begin
   induction v, rw[inf_supr_eq], apply supr_le, intro i,
   suffices : mk v_α ‹_› ‹_› =ᴮ w ⊓ v_B i ≤ v_A i ∈ᴮ w,
@@ -378,8 +387,8 @@ begin
   rw[deduction], cases w, apply inf_le_left_of_le, apply infi_le
 end
 
-lemma bounded_quantification {v : bSet β} {ϕ : bSet β → β } {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} :
-  (⨅(i_x : v.type), (v.bval i_x ⟹ ϕ (v.func i_x))) = (⨅(x : bSet β), x ∈ᴮ v ⟹ ϕ x)  :=
+lemma bounded_quantification {v : bSet 𝔹} {ϕ : bSet 𝔹 → 𝔹 } {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} :
+  (⨅(i_x : v.type), (v.bval i_x ⟹ ϕ (v.func i_x))) = (⨅(x : bSet 𝔹), x ∈ᴮ v ⟹ ϕ x)  :=
 begin
   apply le_antisymm,
     {bv_intro x, cases v, simp, rw[supr_imp_eq],
@@ -391,8 +400,14 @@ begin
        apply le_inf, refl, rw[bv_eq_refl], apply le_top}
 end
 
--- lemma bounded_quantification' {ϕ : bSet β → β } {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} {v : bSet β} :
---   (⨅(i_x : v.type), (v.bval i_x ⟹ ϕ (v.func i_x))) = (⨅(x : bSet β), x ∈ᴮ v ⟹ ϕ x)  :=
+lemma subset_unfold' {x u : bSet 𝔹} : x ⊆ᴮ u = ⨅(w : bSet 𝔹), w ∈ᴮ x ⟹ w ∈ᴮ u :=
+begin
+  simp only [subset_unfold], have := @bounded_quantification 𝔹 _ x (λ y, y∈ᴮ u),
+  dsimp at this, rw[this], intros, apply subst_congr_mem_left
+end
+
+-- lemma bounded_quantification' {ϕ : bSet 𝔹 → 𝔹 } {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} {v : bSet 𝔹} :
+--   (⨅(i_x : v.type), (v.bval i_x ⟹ ϕ (v.func i_x))) = (⨅(x : bSet 𝔹), x ∈ᴮ v ⟹ ϕ x)  :=
 -- begin
 --   apply le_antisymm,
 --     {bv_intro x, cases v, simp, rw[supr_imp_eq],
@@ -405,7 +420,7 @@ end
 -- end
 
 
-lemma subst_congr_subset_left {x v u} : ((v ⊆ᴮ u) ⊓ (x =ᴮ v) : β) ≤ (x ⊆ᴮ u) :=
+lemma subst_congr_subset_left {x v u} : ((v ⊆ᴮ u) ⊓ (x =ᴮ v) : 𝔹) ≤ (x ⊆ᴮ u) :=
 begin
   simp only [subset_unfold],
   have H₁ := @bounded_quantification _ _ v (λ x, x ∈ᴮ u)
@@ -418,29 +433,54 @@ begin
   apply bv_imp_elim -- todo write tactics to make these calculations easier
 end
 
-def is_definite (u : bSet β) : Prop := ∀ i : u.type, u.bval i = ⊤
+def is_definite (u : bSet 𝔹) : Prop := ∀ i : u.type, u.bval i = ⊤
 
 /-- ϕ (x) is true if and only if the Boolean truth-value of ϕ(x̌) is ⊤-/
 /- To even state this theorem, we need to set up more general machinery for
    Boolean-valued structures and the interpretation of formulas within them -/
 -- theorem check_transfer : sorry := sorry
 
-def mixture {ι : Type u} (a : ι → β) (u : ι → bSet β) : bSet β :=
+def mixture {ι : Type u} (a : ι → 𝔹) (u : ι → bSet 𝔹) : bSet 𝔹 :=
   ⟨Σ(i : ι), (u i).type,
     λx, (u x.fst).func x.snd,
       λx, ⨆(j:ι), a j ⊓ ((u x.fst).func x.snd) ∈ᴮ u j⟩
 
-@[simp]lemma bval_mixture {ι : Type u} {a : ι → β} {u : ι → bSet β} :
+/-- Given a₁ a₂ : 𝔹, return the canonical map from ulift bool to 𝔹 given by ff ↦ a₁ and tt ↦ a₂-/
+@[reducible]def bool.map {α : Type*} (a₁ a₂ : α) : (ulift bool) → α :=
+  λ x, bool.rec_on (x.down) a₁ a₂ 
+
+def two_term_mixture (a₁ a₂ : 𝔹) (h_anti : a₁ ⊓ a₂ = ⊥) (u₁ u₂ : bSet 𝔹) : bSet 𝔹 :=
+@mixture 𝔹 _ (ulift bool) (bool.map a₁ a₂) (bool.map u₁ u₂)
+
+-- @[simp]lemma two_term_mixture_type (a₁ a₂ : 𝔹) (h_anti : a₁ ⊓ a₂ = ⊥) (u₁ u₂ : bSet 𝔹) :
+--   (two_term_mixture a₁ a₂ h_anti u₁ u₂).type = (Σ(i : ulift bool), ((bool.map u₁ u₂) i).type) := sorry 
+
+lemma two_term_mixture_h_star (a₁ a₂ : 𝔹) (h_anti : a₁ ⊓ a₂ = ⊥) (u₁ u₂ : bSet 𝔹) :
+  ∀ i j : (ulift bool), (bool.map a₁ a₂) i ⊓ (bool.map a₁ a₂) j ≤ (bool.map u₁ u₂) i =ᴮ (bool.map u₁ u₂) j :=
+begin
+  intros i j, cases i, cases j, cases i; cases j; try{simp*},
+  change a₂ ⊓ a₁ ≤ _, rw[inf_comm, h_anti], apply bot_le
+end
+
+@[simp]lemma bval_mixture {ι : Type u} {a : ι → 𝔹} {u : ι → bSet 𝔹} :
   (mixture a u).bval = λx, ⨆(j:ι), a j ⊓ ((u x.fst).func x.snd) ∈ᴮ u j :=
   by refl
 
-def floris_mixture {ι : Type u} (a : ι → β) (u : ι → bSet β) : bSet β :=
+@[simp]lemma two_term_mixture_bval (a₁ a₂ : 𝔹) (h_anti : a₁ ⊓ a₂ = ⊥) (u₁ u₂ : bSet 𝔹) : ∀ i,
+  (two_term_mixture a₁ a₂ h_anti u₁ u₂).bval i = (a₁ ⊓ ((two_term_mixture a₁ a₂ h_anti u₁ u₂).func i ∈ᴮ u₁)) ⊔ (a₂ ⊓ ((two_term_mixture a₁ a₂ h_anti u₁ u₂).func i ∈ᴮ u₂)) := λ i,
+begin
+  dsimp[two_term_mixture], tidy, apply le_antisymm, apply supr_le, intro j, repeat{cases j},
+  apply le_sup_left_of_le, refl, apply le_sup_right_of_le, refl,
+  apply bv_or_elim; [apply bv_use (ulift.up ff), apply bv_use (ulift.up tt)]; refl
+end
+
+def floris_mixture {ι : Type u} (a : ι → 𝔹) (u : ι → bSet 𝔹) : bSet 𝔹 :=
   ⟨Σ(i : ι), (u i).type, λx, (u x.fst).func x.snd, λx, a x.fst ⊓ (u x.fst).bval x.snd⟩
 
 /-- Mixing lemma, c.f. Bell's book or Lemma 1 of Hamkins-Seabold -/
-lemma mixing_lemma {ι : Type u} (a : ι → β) (τ : ι → bSet β) (h_star : ∀ i j : ι, a i ⊓ a j ≤ τ i =ᴮ τ j) : ∃ x, ∀ i : ι, a i ≤ x =ᴮ τ i :=
+lemma mixing_lemma' {ι : Type u} (a : ι → 𝔹) (τ : ι → bSet 𝔹) (h_star : ∀ i j : ι, a i ⊓ a j ≤ τ i =ᴮ τ j) : ∀ i : ι, a i ≤ (mixture a τ) =ᴮ τ i := λ i,
 begin
-  refine ⟨mixture a τ, λ i, _⟩, rw[bSet_bv_eq_rw],
+rw[bSet_bv_eq_rw],
   apply le_inf,
     {bv_intro i_z, apply bv_imp_intro,
     simp only [bSet.bval, bSet.mem, bSet.func, bSet.type, bSet.bval_mixture],
@@ -454,10 +494,21 @@ begin
   apply le_supr_of_le i_z, from le_inf (by refl) (by simp)}
 end
 
+lemma mixing_lemma {ι : Type u} (a : ι → 𝔹) (τ : ι → bSet 𝔹) (h_star : ∀ i j : ι, a i ⊓ a j ≤ τ i =ᴮ τ j) : ∃ x, ∀ i : ι, a i ≤ x =ᴮ τ i :=
+ by refine ⟨mixture a τ, λ i, _⟩; apply mixing_lemma'; assumption
+
+lemma mixing_lemma_two_term (a₁ a₂ : 𝔹) (h_anti : a₁ ⊓ a₂ = ⊥) (u₁ u₂ : bSet 𝔹) :
+  a₁ ≤ (two_term_mixture a₁ a₂ h_anti u₁ u₂ =ᴮ u₁) ∧ a₂ ≤ (two_term_mixture a₁ a₂ h_anti u₁ u₂ =ᴮ u₂) :=
+begin
+  have := mixing_lemma' (bool.map a₁ a₂) (bool.map u₁ u₂)
+    (by {apply two_term_mixture_h_star, exact h_anti}),
+  split; [specialize this (ulift.up ff), specialize this (ulift.up tt)]; exact this
+end
+
 -- TODO(jesse) try proving mixing_lemma with floris_mixture and see if anything goes wrong
 
 /-- In particular, the mixing lemma applies when the weights (a_i) form an antichain and the indexing is injective -/
-lemma h_star_of_antichain_injective {ι : Type u} {a : ι → β} {τ : ι → bSet β} {h_anti : antichain (a '' set.univ)} {h_inj : function.injective a} :
+lemma h_star_of_antichain_injective {ι : Type u} {a : ι → 𝔹} {τ : ι → bSet 𝔹} {h_anti : antichain (a '' set.univ)} {h_inj : function.injective a} :
   ∀ i j : ι, a i ⊓ a j ≤ τ i =ᴮ τ j :=
 begin
   intros i j, by_cases a i = a j, simp[h_inj h],
@@ -465,29 +516,67 @@ begin
 end
 
 /- Note: this is the special condition assumed of indexed antichains by Bell-/
-lemma h_star_of_antichain_index {ι : Type u} {a : ι → β} {τ : ι → bSet β} {h_anti : antichain (a '' set.univ)} {h_index : ∀ i j : ι, i ≠ j → a i ⊓ a j = ⊥} :
+lemma h_star_of_antichain_index {ι : Type u} {a : ι → 𝔹} {τ : ι → bSet 𝔹} {h_anti : antichain (a '' set.univ)} {h_index : ∀ i j : ι, i ≠ j → a i ⊓ a j = ⊥} :
   ∀ i j : ι, a i ⊓ a j ≤ τ i =ᴮ τ j :=
   λ i j, by {haveI : decidable_eq ι := λ _ _,
   by apply classical.prop_decidable _,
     by_cases i = j, simp[h], finish[h_index i j]}
 
-/- The next two lemmas use the fact that β : Type u to extract a small set witnessing quantification over all of bSet β -/
+section mixing_corollaries
+-- The lemmas in this section are corollaries of the mixing lemma
+variables (X u₁ u₂ : bSet 𝔹) (a₁ a₂ : 𝔹) (h_anti : a₁ ⊓ a₂ = ⊥) (h_partition : a₁ ⊔ a₂ = ⊤)
 
-/- i.e., in bSet β, any existential quantification is equivalent to a bounded existential quantification. this is one place where it's crucial that β lives in the type universe out of which bSet β is being built -/
+include h_partition
+lemma two_term_mixture_mem_top (h₁ : u₁ ∈ᴮ X = ⊤) (h₂ : u₂ ∈ᴮ X = ⊤) :
+  two_term_mixture a₁ a₂ h_anti u₁ u₂ ∈ᴮ X = ⊤:=
+begin
+  let U := _, change U ∈ᴮ X= _, apply top_unique,
+  have : ⊤ ≤ U =ᴮ u₁ ⊔ U =ᴮ u₂,
+    by {rw[h_partition.symm],
+       have := mixing_lemma_two_term a₁ a₂ h_anti u₁ u₂,apply sup_le_sup, tidy},
+  have : ⊤ ≤ (U =ᴮ u₁ ⊔ U =ᴮ u₂) ⊓ (u₁ ∈ᴮ X ⊓ u₂ ∈ᴮ X),
+    by finish,
+  apply le_trans this, apply bv_or_elim_left;
+    [rw[<-inf_assoc], ac_change (U =ᴮ u₂ ⊓ u₂ ∈ᴮ X) ⊓ u₁ ∈ᴮ X ≤ U ∈ᴮ X];
+    apply inf_le_left_of_le; rw[bv_eq_symm]; apply subst_congr_mem_left
+end
+
+lemma two_term_mixture_subset_top (H : a₁ = u₂ ⊆ᴮ u₁) :
+  ⊤ ≤ u₂ ⊆ᴮ (two_term_mixture a₁ a₂ h_anti u₁ u₂) :=
+begin
+  let U := _, change _ ≤ u₂ ⊆ᴮ U,
+  rw[subset_unfold'], bv_intro w, apply bv_imp_intro,
+  rw[top_inf_eq], simp only [mem_unfold], apply bv_Or_elim,
+  intro i, fapply bv_use, exact ⟨ulift.up tt,i⟩, refine inf_le_inf _ (by refl),
+  simp, rw[sup_inf_left_right_eq], repeat{apply bv_and_intro},
+  {rw[h_partition], apply le_top},
+  {apply le_sup_right_of_le, cases u₂, apply mem.mk},
+  {have : a₂ = - a₁, by apply eq_neg_of_partition; assumption,
+   conv {to_rhs, congr, skip, rw[this, H]}, rw[sup_comm], change _ ≤ _ ⟹ _,
+   apply bv_imp_intro, rw[inf_comm], simp only [subset_unfold],
+   apply bv_specialize_left i, apply bv_imp_elim},
+  {apply le_sup_right_of_le, cases u₂, apply mem.mk}
+end
+
+end mixing_corollaries
+
+/- The next two lemmas use the fact that 𝔹 : Type u to extract a small set witnessing quantification over all of bSet 𝔹 -/
+
+/- i.e., in bSet 𝔹, any existential quantification is equivalent to a bounded existential quantification. this is one place where it's crucial that 𝔹 lives in the type universe out of which bSet 𝔹 is being built -/
 section smallness
-variable {ϕ : bSet β → β}
+variable {ϕ : bSet 𝔹 → 𝔹}
 
 @[reducible, simp]noncomputable def fiber_lift (b : ϕ '' set.univ) :=
-classical.indefinite_description (λ a : bSet β, ϕ a = b.val)
+classical.indefinite_description (λ a : bSet 𝔹, ϕ a = b.val)
   begin cases b.property, use w, exact h.right end
 
-noncomputable def B_small_witness : bSet β :=
+noncomputable def B_small_witness : bSet 𝔹 :=
 ⟨ϕ '' set.univ, λ b, (fiber_lift b).val, λ _, ⊤⟩
 
 @[simp]lemma B_small_witness_spec : ∀ b, ϕ ((@B_small_witness _ _ ϕ).func b) = b.val :=
   λ b, (fiber_lift b).property
 
-lemma B_small_witness_supr : (⨆(x : bSet β), ϕ x) = ⨆(b : (@B_small_witness _ _ ϕ).type), ϕ (B_small_witness.func b) :=
+lemma B_small_witness_supr : (⨆(x : bSet 𝔹), ϕ x) = ⨆(b : (@B_small_witness _ _ ϕ).type), ϕ (B_small_witness.func b) :=
 begin
  apply le_antisymm,
  apply supr_le, intro x, let b : type B_small_witness := by {use ϕ x, simp, exact ⟨x, rfl⟩},
@@ -495,7 +584,7 @@ begin
  apply supr_le, intro b, apply le_supr_of_le, swap, exact (fiber_lift b).val, refl
 end
 
-@[reducible, simp]def not_b (b : β) : set β := λ y, y ≠ b
+@[reducible, simp]def not_b (b : 𝔹) : set 𝔹 := λ y, y ≠ b
 
 section well_ordering
 variables {α : Type*} (r : α → α → Prop) [is_well_order α r]
@@ -517,14 +606,14 @@ variable (r : type (@B_small_witness _ _ ϕ) → type (@B_small_witness _ _ ϕ) 
 variable [is_well_order _ r]
 local infix `≺`:50 := r
 
-lemma down_set_mono_supr {a b} {h : a ≺ b} {s : type (@B_small_witness _ _ ϕ) → β} :
+lemma down_set_mono_supr {a b} {h : a ≺ b} {s : type (@B_small_witness _ _ ϕ) → 𝔹} :
  (⨆(i ∈ down_set r a), s i) ≤ (⨆(i ∈ down_set r b), s i) :=
 begin
   apply supr_le_supr, intro i, apply supr_le, intro H, apply le_supr_of_le,
   apply down_set_trans, exact h, exact H, refl
 end
 
-lemma down_set'_mono_supr {a b} {h : a ≺ b} {s : type (@B_small_witness _ _ ϕ) → β} :
+lemma down_set'_mono_supr {a b} {h : a ≺ b} {s : type (@B_small_witness _ _ ϕ) → 𝔹} :
  (⨆(i ∈ down_set' r a), s i) ≤ (⨆(i ∈ down_set' r b), s i) :=
 begin
   apply supr_le_supr, intro i, apply supr_le, intro H,
@@ -533,7 +622,7 @@ begin
   apply down_set_trans, exact h, exact H, refl
 end
 
-def witness_antichain : _ → β :=
+def witness_antichain : _ → 𝔹 :=
 (λ b : type (@B_small_witness _ _ ϕ), b.val - (⨆(b' : (down_set r b)), b'.val.val))
 
 def trichotomy := (is_well_order.is_trichotomous r).trichotomous
@@ -550,25 +639,25 @@ end
 
 --TODO(jesse) clean this up later, maybe write ac_transpose?
 -- run_cmd mk_simp_attr `reassoc
--- @[reassoc]lemma sup_reassoc {a b c : β} : a ⊔ (b ⊔ c) = a ⊔ b ⊔ c :=
+-- @[reassoc]lemma sup_reassoc {a b c : 𝔹} : a ⊔ (b ⊔ c) = a ⊔ b ⊔ c :=
 -- by ac_refl
 
--- @[reassoc]lemma inf_reassoc {a b c : β} : a ⊓ (b ⊓ c) = a ⊓ b ⊓ c :=
+-- @[reassoc]lemma inf_reassoc {a b c : 𝔹} : a ⊓ (b ⊓ c) = a ⊓ b ⊓ c :=
 -- by ac_refl
 
--- @[reassoc]lemma abcd_reassoc_sup {a b c d : β} : (a ⊔ b) ⊔ (c ⊔ d) = a ⊔ b ⊔ c ⊔ d :=
+-- @[reassoc]lemma abcd_reassoc_sup {a b c d : 𝔹} : (a ⊔ b) ⊔ (c ⊔ d) = a ⊔ b ⊔ c ⊔ d :=
 -- by rw[sup_reassoc]
 
--- @[reassoc]lemma abcd_reassoc_inf {a b c d : β} : (a ⊓ b) ⊓ (c ⊓ d) = a ⊓ b ⊓ c ⊓ d :=
+-- @[reassoc]lemma abcd_reassoc_inf {a b c d : 𝔹} : (a ⊓ b) ⊓ (c ⊓ d) = a ⊓ b ⊓ c ⊓ d :=
 -- by rw[inf_reassoc]
 
--- lemma abcd_rw_cabd_sup {a b c d : β} : a ⊔ b ⊔ c ⊔ d = c ⊔ b ⊔ a ⊔ d :=
+-- lemma abcd_rw_cabd_sup {a b c d : 𝔹} : a ⊔ b ⊔ c ⊔ d = c ⊔ b ⊔ a ⊔ d :=
 -- by ac_refl
 
--- lemma abcd_rw_cabd_inf {a b c d : β} : a ⊓ b ⊓ c ⊓ d = c ⊓ b ⊓ a ⊓ d :=
+-- lemma abcd_rw_cabd_inf {a b c d : 𝔹} : a ⊓ b ⊓ c ⊓ d = c ⊓ b ⊓ a ⊓ d :=
 -- by ac_refl
 
--- lemma abcd_rw_bcad_inf {a b c d : β} : a ⊓ b ⊓ c ⊓ d = b ⊓ c ⊓ a ⊓ d :=
+-- lemma abcd_rw_bcad_inf {a b c d : 𝔹} : a ⊓ b ⊓ c ⊓ d = b ⊓ c ⊓ a ⊓ d :=
 -- by ac_refl
 
 def witness_antichain_index : ∀ {i j}, i ≠ j → (@witness_antichain _ _ ϕ r _) i ⊓ (@witness_antichain _ _ ϕ r _) j = ⊥ :=
@@ -608,7 +697,7 @@ begin
   rw[sub_eq], rw[sup_inf_right], apply le_inf, apply le_sup_left,
   -- simp[neg_supr, sub_eq],
   apply le_trans (@le_top _ _ this_x.val),
-     let A := _, change ⊤ ≤ (A ⊔ _ : β), apply le_trans (by simp : ⊤ ≤ A ⊔ -A), apply sup_le_sup, refl, dsimp[A],
+     let A := _, change ⊤ ≤ (A ⊔ _ : 𝔹), apply le_trans (by simp : ⊤ ≤ A ⊔ -A), apply sup_le_sup, refl, dsimp[A],
    rw[lattice.neg_neg], 
    apply supr_le, intro j,
    apply le_trans (this_ih j j.property), unfold witness_antichain,
@@ -620,7 +709,7 @@ end
 end smallness
 
 
-lemma maximum_principle (ϕ : bSet β → β) (h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y) : ∃ u, (⨆(x:bSet β), ϕ x) = ϕ u :=
+lemma maximum_principle (ϕ : bSet 𝔹 → 𝔹) (h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y) : ∃ u, (⨆(x:bSet 𝔹), ϕ x) = ϕ u :=
 begin
   have := classical.indefinite_description _ (@well_ordering_thm (type (@B_small_witness _ _ ϕ))),
   cases this with r inst_r,
@@ -643,20 +732,20 @@ begin
     {apply le_supr}
 end
 
-lemma maximum_principle_verbose {ϕ : bSet β → β} {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} {b : β} (h_eq_top L : (⨆(x:bSet β), ϕ x) = b) : ∃ u, ϕ u = b :=
+lemma maximum_principle_verbose {ϕ : bSet 𝔹 → 𝔹} {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} {b : 𝔹} (h_eq_top L : (⨆(x:bSet 𝔹), ϕ x) = b) : ∃ u, ϕ u = b :=
  by cases maximum_principle ϕ h_congr with w h; from ⟨w, by finish⟩
 
-/-- "∃ x ∈ u, ϕ x implies ∃ x : bSet β, ϕ x", but this time, say it in Boolean -/
-lemma weaken_ex_scope {α : Type*} (A : α → bSet β) (ϕ : bSet β → β)  : (⨆(a : α), ϕ (A a)) ≤ (⨆(x : bSet β), ϕ x) :=
+/-- "∃ x ∈ u, ϕ x implies ∃ x : bSet 𝔹, ϕ x", but this time, say it in Boolean -/
+lemma weaken_ex_scope {α : Type*} (A : α → bSet 𝔹) (ϕ : bSet 𝔹 → 𝔹)  : (⨆(a : α), ϕ (A a)) ≤ (⨆(x : bSet 𝔹), ϕ x) :=
 supr_le $ λ a, le_supr_of_le (A a) (by refl)
 
-lemma maximum_principle_bounded_top {ϕ : bSet β → β} {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} {α : Type*} {A : α → bSet β} (h_eq_top : (⨆(a:α), ϕ (A a)) = ⊤) : ∃ u, ϕ u = ⊤ :=
-@maximum_principle_verbose β (by apply_instance) ϕ h_congr ⊤ (by {have := weaken_ex_scope A ϕ, finish}) (by {have := weaken_ex_scope A ϕ, finish})
+lemma maximum_principle_bounded_top {ϕ : bSet 𝔹 → 𝔹} {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} {α : Type*} {A : α → bSet 𝔹} (h_eq_top : (⨆(a:α), ϕ (A a)) = ⊤) : ∃ u, ϕ u = ⊤ :=
+@maximum_principle_verbose 𝔹 (by apply_instance) ϕ h_congr ⊤ (by {have := weaken_ex_scope A ϕ, finish}) (by {have := weaken_ex_scope A ϕ, finish})
 
 /-- Convert a Boolean-valued ∀∃-statement into a Prop-valued ∀∃-statement
-  Given A : α → bSet β, a binary function ϕ : bSet β → bSet β → β, a truth-value assignment
-  B : α → β, ∀ i : α, there exists a y_i : bSet β, such that
-  (B i ⟹ ϕ (A i) y_i) ≥ ⨅(i:α), B i ⟹ ⨆(y : bSet β), ϕ(A i, bSet β)
+  Given A : α → bSet 𝔹, a binary function ϕ : bSet 𝔹 → bSet 𝔹 → 𝔹, a truth-value assignment
+  B : α → 𝔹, ∀ i : α, there exists a y_i : bSet 𝔹, such that
+  (B i ⟹ ϕ (A i) y_i) ≥ ⨅(i:α), B i ⟹ ⨆(y : bSet 𝔹), ϕ(A i, bSet 𝔹)
 
   A more verbose, but maybe clearer way to see this is:
   if there is an equality (⨅i-⨆j body i j) = b,
@@ -664,9 +753,9 @@ lemma maximum_principle_bounded_top {ϕ : bSet β → β} {h_congr : ∀ x y, x 
 
   This is a consequence of the maximum principle.
 -/
-lemma AE_convert {α β : Type*} [nontrivial_complete_boolean_algebra β] (A : α → bSet β)
-  (B : α → β) (ϕ : bSet β → bSet β → β) (h_congr : ∀ x y z, x =ᴮ y ⊓ ϕ z x ≤ ϕ z y) :
-  ∀ i : α, ∃ y : bSet β, (⨅(j:α), (B j ⟹ ⨆(z : bSet β), ϕ (A j) z)) ≤ (B i ⟹ ϕ (A i) y) :=
+lemma AE_convert {α 𝔹 : Type*} [nontrivial_complete_boolean_algebra 𝔹] (A : α → bSet 𝔹)
+  (B : α → 𝔹) (ϕ : bSet 𝔹 → bSet 𝔹 → 𝔹) (h_congr : ∀ x y z, x =ᴮ y ⊓ ϕ z x ≤ ϕ z y) :
+  ∀ i : α, ∃ y : bSet 𝔹, (⨅(j:α), (B j ⟹ ⨆(z : bSet 𝔹), ϕ (A j) z)) ≤ (B i ⟹ ϕ (A i) y) :=
 λ i,
   by {have := maximum_principle (λ y, ϕ (A i) y)
                 (by {intros x y, apply h_congr}),
@@ -677,16 +766,16 @@ section check_names
 /- `check` is the canonical embedding of pSet into bSet.
 note that a check-name is not only definite, but recursively definite
 -/
-@[simp]def check : (pSet : Type (u+1)) → bSet β
+@[simp]def check : (pSet : Type (u+1)) → bSet 𝔹
 | ⟨α,A⟩ := ⟨α, λ a, check (A a), λ a, ⊤⟩
 
 postfix `̌ `:90 := check
 
-example : let x := pSet.empty in (x̌ : bSet β) = bSet.empty :=
+example : let x := pSet.empty in (x̌ : bSet 𝔹) = bSet.empty :=
   by dsimp[check, pSet.empty, bSet.empty]; simp; fsplit; ext1; repeat{cases x}
 
 lemma check_bv_eq_top_of_equiv {x y : pSet} :
-  pSet.equiv x y → x̌ =ᴮ y̌ = (⊤ : β) :=
+  pSet.equiv x y → x̌ =ᴮ y̌ = (⊤ : 𝔹) :=
 begin
   induction x generalizing y, cases y,
   dsimp[check], simp only [pSet.equiv, lattice.top_le_iff, bSet.check,
@@ -697,7 +786,7 @@ begin
 end
 
 lemma check_bv_eq_bot_of_not_equiv {x y : pSet} :
-  (¬ pSet.equiv x y) → (x̌ =ᴮ y̌) = (⊥ : β) :=
+  (¬ pSet.equiv x y) → (x̌ =ᴮ y̌) = (⊥ : 𝔹) :=
 begin
   induction x generalizing y, cases y, dsimp[check], intro H, apply bot_unique,
   cases pSet.not_equiv H with H H; cases H with w H_w;
@@ -706,7 +795,7 @@ begin
 end
 
 lemma check_bv_eq_dichotomy (x y : pSet) :
-  (x̌ =ᴮ y̌ = (⊤ : β)) ∨ (x̌ =ᴮ y̌ = (⊥ : β)) :=
+  (x̌ =ᴮ y̌ = (⊤ : 𝔹)) ∨ (x̌ =ᴮ y̌ = (⊥ : 𝔹)) :=
 begin
   haveI : decidable (pSet.equiv x y) := by apply classical.prop_decidable,
   by_cases pSet.equiv x y; [left, right];
@@ -714,7 +803,7 @@ begin
 end
 
 lemma check_bv_eq_iff {x y : pSet} 
-: pSet.equiv x y ↔ x̌ =ᴮ y̌ = (⊤ : β) :=
+: pSet.equiv x y ↔ x̌ =ᴮ y̌ = (⊤ : 𝔹) :=
 begin
   induction x generalizing y, cases y,
   dsimp[check], simp only [pSet.equiv, lattice.top_le_iff, bSet.check,
@@ -738,9 +827,9 @@ end check_names
     for every set u, ∀ x ∈ u, ∃ y ϕ (x,y) implies there exists a set v
     which contains the image of u under ϕ. With the other axioms,
     this should be equivalent to the usual axiom of replacement. -/
-theorem bSet_axiom_of_weak_replacement (ϕ : bSet β → bSet β → β) (h_congr : ∀ x y z, x =ᴮ y ⊓ ϕ z x ≤ ϕ z y) (u : bSet β) :
-  (⨅(i:u.type), (u.bval i ⟹ (⨆(y : bSet β), ϕ (u.func i) y))) ⟹
-  (⨆(v : bSet β), (⨅(i : u.type), u.bval i ⟹ (⨆(j:v.type), ϕ (u.func i) (v.func j)))) = ⊤ :=
+theorem bSet_axiom_of_weak_replacement (ϕ : bSet 𝔹 → bSet 𝔹 → 𝔹) (h_congr : ∀ x y z, x =ᴮ y ⊓ ϕ z x ≤ ϕ z y) (u : bSet 𝔹) :
+  (⨅(i:u.type), (u.bval i ⟹ (⨆(y : bSet 𝔹), ϕ (u.func i) y))) ⟹
+  (⨆(v : bSet 𝔹), (⨅(i : u.type), u.bval i ⟹ (⨆(j:v.type), ϕ (u.func i) (v.func j)))) = ⊤ :=
 begin
   simp only [bSet.bval, lattice.imp_top_iff_le, bSet.func, bSet.type],
   rcases (classical.axiom_of_choice (AE_convert u.func u.bval ϕ h_congr)) with ⟨wit, wit_property⟩, dsimp at wit wit_property,
@@ -750,18 +839,18 @@ begin
 end
 
 /-- The boolean-valued unionset operator -/
-def bv_union (u : bSet β) : bSet β :=
+def bv_union (u : bSet 𝔹) : bSet 𝔹 :=
   ⟨Σ(i : u.type), (u.func i).type, λ x, (u.func x.1).func x.2,
        λ x, ⨆(y : u.type), (u.func x.1).func x.2 ∈ᴮ (u.func y)⟩
 
-lemma func_cast {u x : bSet β} {i_y : u.type} {α : Type u} {A : α → bSet β} {B : α → β} {h : func u i_y = mk α A B} {i_x' : α} : func (func u i_y) (eq.mpr (by rw[h]; refl) i_x') = A i_x' :=
+lemma func_cast {u x : bSet 𝔹} {i_y : u.type} {α : Type u} {A : α → bSet 𝔹} {B : α → 𝔹} {h : func u i_y = mk α A B} {i_x' : α} : func (func u i_y) (eq.mpr (by rw[h]; refl) i_x') = A i_x' :=
 begin
   change _ = (mk α A B).func i_x',
   have : func (mk α A B) (eq.mpr rfl i_x') = func (mk α A B) i_x', by refl,
   convert this
 end
 
-theorem bSet_axiom_of_union : (⨅ (u : bSet β), (⨆(v : _), ⨅(x : _),
+theorem bSet_axiom_of_union : (⨅ (u : bSet 𝔹), (⨆(v : _), ⨅(x : _),
   (x ∈ᴮ v ⇔ (⨆(y : u.type), x ∈ᴮ u.func y)))) = ⊤ :=
 begin
   simp only [bSet.mem, lattice.biimp, bSet.func, lattice.infi_eq_top, bSet.type], intro u,
@@ -778,24 +867,24 @@ begin
    fapply le_supr_of_le, use i_y, rw[h], exact i_x', dsimp,
    rw[supr_inf_eq], apply le_supr_of_le i_y, apply inf_le_inf,
    swap, apply bv_eq_le_congr_right, apply func_cast.symm, repeat{assumption},
-   have := @mem.mk β _ α A B i_x', convert this, apply func_cast, repeat{assumption}}
+   have := @mem.mk 𝔹 _ α A B i_x', convert this, apply func_cast, repeat{assumption}}
 end
 
-@[reducible, simp]def set_of_indicator {u : bSet β} (f : u.type → β) : bSet β :=
+@[reducible, simp]def set_of_indicator {u : bSet 𝔹} (f : u.type → 𝔹) : bSet 𝔹 :=
   ⟨u.type, u.func, f⟩
 
-@[reducible, simp]def set_of_indicator' {u : bSet β} (f : u.type → β) : bSet β :=
+@[reducible, simp]def set_of_indicator' {u : bSet 𝔹} (f : u.type → 𝔹) : bSet 𝔹 :=
   ⟨u.type, u.func, λ i, f i ⊓ u.bval i⟩
 
-def bv_powerset (u : bSet β) : bSet β :=
-⟨u.type → β, λ f, set_of_indicator f, λ f, set_of_indicator f ⊆ᴮ u⟩
+def bv_powerset (u : bSet 𝔹) : bSet 𝔹 :=
+⟨u.type → 𝔹, λ f, set_of_indicator f, λ f, set_of_indicator f ⊆ᴮ u⟩
 
-def bv_powerset' (u : bSet β) : bSet β :=
-⟨u.type → β, λ f, set_of_indicator' f, λ f, ⊤⟩
+def bv_powerset' (u : bSet 𝔹) : bSet 𝔹 :=
+⟨u.type → 𝔹, λ f, set_of_indicator' f, λ f, ⊤⟩
 
 --TODO (jesse) try proving bv_powerset and bv_powerset' are equivalent
 
-example {u : bSet β} : bv_powerset u =ᴮ bv_powerset' u = ⊤ :=
+example {u : bSet 𝔹} : bv_powerset u =ᴮ bv_powerset' u = ⊤ :=
 begin
   apply top_unique, apply le_trans, swap, apply bSet_axiom_of_extensionality,
   bv_intro z, apply le_inf; apply bv_imp_intro; simp[top_inf_eq],
@@ -817,14 +906,14 @@ begin
   {sorry}
 end
 
-theorem bSet_axiom_of_powerset : (⨅(u : bSet β), ⨆(v : _), ⨅(x : bSet β), x∈ᴮ v ⇔ ⨅(y : x.type), x.bval y ⟹ (x.func y ∈ᴮ u)) = ⊤:=
+theorem bSet_axiom_of_powerset : (⨅(u : bSet 𝔹), ⨆(v : _), ⨅(x : bSet 𝔹), x∈ᴮ v ⇔ ⨅(y : x.type), x.bval y ⟹ (x.func y ∈ᴮ u)) = ⊤:=
 begin
   simp only [bSet.bval, bSet.mem, lattice.biimp, bSet.func, lattice.infi_eq_top, bSet.type],
   intro u, apply top_unique, apply le_supr_of_le (bv_powerset u),
   bv_intro x, apply le_inf,
   {rw[<-deduction, top_inf_eq], 
    unfold bv_powerset, apply supr_le, intro χ,
-   suffices : ((set_of_indicator χ) ⊆ᴮ u ⊓ (x =ᴮ (set_of_indicator χ)) : β) ≤ x ⊆ᴮ u,
+   suffices : ((set_of_indicator χ) ⊆ᴮ u ⊓ (x =ᴮ (set_of_indicator χ)) : 𝔹) ≤ x ⊆ᴮ u,
      by {convert this, simp},
    apply subst_congr_subset_left},
 
@@ -861,16 +950,16 @@ begin
    rw[inf_comm, bv_eq_symm], simp[subst_congr_mem_left]}},
 end
 
-@[simp, reducible]def axiom_of_infinity_spec (u : bSet β) : β :=
+@[simp, reducible]def axiom_of_infinity_spec (u : bSet 𝔹) : 𝔹 :=
   (∅∈ᴮ u) ⊓ (⨅(i_x : u.type), ⨆(i_y : u.type), (u.func i_x ∈ᴮ u.func i_y))
 
-theorem bSet_axiom_of_infinity : (⨆(u : bSet β), axiom_of_infinity_spec u) = ⊤ :=
+theorem bSet_axiom_of_infinity : (⨆(u : bSet 𝔹), axiom_of_infinity_spec u) = ⊤ :=
 begin
   simp, apply top_unique, apply le_supr_of_le, repeat{sorry}
 end -- maybe we can just define boolean-valued ω in this case directly
 
-theorem bSet_axiom_of_regularity (ϕ : bSet β → β) (h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y) :
-  (⨅(x : bSet β), ((⨅(y : bSet β), y ∈ᴮ x ⟹ ϕ y) ⟹ ϕ x)) ⟹ (⨅(x : bSet β), ϕ x) = ⊤ :=
+theorem bSet_axiom_of_regularity (ϕ : bSet 𝔹 → 𝔹) (h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y) :
+  (⨅(x : bSet 𝔹), ((⨅(y : bSet 𝔹), y ∈ᴮ x ⟹ ϕ y) ⟹ ϕ x)) ⟹ (⨅(x : bSet 𝔹), ϕ x) = ⊤ :=
 begin
   apply top_unique, apply bv_imp_intro, rw[top_inf_eq],
   bv_intro x, let b := _, change b ≤ _,
@@ -882,21 +971,21 @@ begin
   simp only with cleanup at h, rw[h] at this,
   -- simp only with cleanup at this, rw[this],
   apply bv_have this,
-  have : b ≤ (⨅ (y : bSet β), (y) ∈ᴮ (mk α A B) ⟹ ϕ (y)) ⟹ ϕ (mk α A B),
+  have : b ≤ (⨅ (y : bSet 𝔹), (y) ∈ᴮ (mk α A B) ⟹ ϕ (y)) ⟹ ϕ (mk α A B),
     by {apply bv_specialize (mk α A B), refl},
   rw[deduction], apply le_trans this, rw[<-deduction], apply bv_imp_elim
 end
 
 /-- ∃! x, ϕ x ↔ ∃ x ∀ y, ϕ(x) ⊓ ϕ (y) → y = x -/
-@[reducible]def bv_exists_unique (ϕ : bSet β → β) : β :=
-  ⨆(x:bSet β), (⨅(y : bSet β), ϕ y ⟹ (y =ᴮ x))
+@[reducible]def bv_exists_unique (ϕ : bSet 𝔹 → 𝔹) : 𝔹 :=
+  ⨆(x:bSet 𝔹), (⨅(y : bSet 𝔹), ϕ y ⟹ (y =ᴮ x))
 
 local notation `⨆!` binders `, ` r:(scoped f, bv_exists_unique f) := r
 
-def core {α : Type u} (u : bSet β) (S : α → bSet β) : Prop :=
-(∀ x : α, S x ∈ᴮ u = ⊤) ∧ (∀ y : bSet β, y ∈ᴮ u = ⊤ → ∃! x_y : α, y =ᴮ S x_y = ⊤)
+def core {α : Type u} (u : bSet 𝔹) (S : α → bSet 𝔹) : Prop :=
+(∀ x : α, S x ∈ᴮ u = ⊤) ∧ (∀ y : bSet 𝔹, y ∈ᴮ u = ⊤ → ∃! x_y : α, y =ᴮ S x_y = ⊤)
 
-lemma core.mk (u : bSet β) : ∃ α : Type u, ∃ S : α → bSet β, core u S :=
+lemma core.mk (u : bSet 𝔹) : ∃ α : Type u, ∃ S : α → bSet 𝔹, core u S :=
 sorry -- TODO(jesse) make the appropriate smallness argument.
 
 theorem bSet_zorns_lemma : sorry := sorry
@@ -904,13 +993,13 @@ theorem bSet_zorns_lemma : sorry := sorry
 -- /-- This is the abbreviated version of AC found at http://us.metamath.org/mpeuni/ac3.html
 --     It is provably equivalent over ZF to the usual formulation of AC
 --     After we have the Boolean soundness theorem, we can transport the proof via completeness
---     from the 2-valued setting to the β-valued setting -/
+--     from the 2-valued setting to the 𝔹-valued setting -/
 -- -- ∀x ∃𝑦 ∀𝑧 ∈ 𝑥 (𝑧 ≠ ∅ → ∃!𝑤 ∈ 𝑧 ∃𝑣 ∈ 𝑦 (𝑧 ∈ 𝑣 ∧ 𝑤 ∈ 𝑣))
 -- theorem bSet_axiom_of_choice :
--- (⨅(x : bSet β), ⨆(y : bSet β), ⨅(z : bSet β),
+-- (⨅(x : bSet 𝔹), ⨆(y : bSet 𝔹), ⨅(z : bSet 𝔹),
 --   z ∈ᴮ x ⟹ ((- (z =ᴮ ∅)) ⟹
---   (⨆!(w : bSet β), w ∈ᴮ z ⟹
---     ⨆(v : bSet β), v ∈ᴮ y ⟹ (z ∈ᴮ v ⊓ w ∈ᴮ v)))) = ⊤ :=
+--   (⨆!(w : bSet 𝔹), w ∈ᴮ z ⟹
+--     ⨆(v : bSet 𝔹), v ∈ᴮ y ⟹ (z ∈ᴮ v ⊓ w ∈ᴮ v)))) = ⊤ :=
 -- begin
 --   apply top_unique, bv_intro x, unfold bv_exists_unique, sorry
 -- end
