@@ -1,6 +1,6 @@
 /- theorems which we should (maybe) backport to mathlib -/
 
-import data.finset algebra.ordered_group tactic.squeeze tactic.tidy
+import data.finset algebra.ordered_group tactic.squeeze tactic.tidy order.bounded_lattice
 
 universe variables u v w
 
@@ -8,7 +8,7 @@ universe variables u v w
 namespace tactic
 namespace interactive
 /- maybe we should use congr' 1 instead? -/
-meta def congr1 : tactic unit := 
+meta def congr1 : tactic unit :=
 do focus1 (congr_core >> all_goals (try reflexivity >> try assumption))
 
 open interactive interactive.types
@@ -28,17 +28,17 @@ namespace classical
 noncomputable def psigma_of_exists {α : Type u} {p : α → Prop} (h : ∃x, p x) : Σ' x, p x :=
 begin
   haveI : nonempty α := nonempty_of_exists h,
-  exact ⟨epsilon p, epsilon_spec h⟩ 
+  exact ⟨epsilon p, epsilon_spec h⟩
 end
 
-lemma some_eq {α : Type u} {p : α → Prop} {h : ∃ (a : α), p a} (x : α) 
+lemma some_eq {α : Type u} {p : α → Prop} {h : ∃ (a : α), p a} (x : α)
   (hx : ∀y, p y → y = x) : classical.some h = x :=
 classical.some_spec2 _ hx
 
 noncomputable def instantiate_existential {α : Type*} {P : α → Prop} (h : ∃ x, P x) : {x // P x} :=
 begin
   haveI : nonempty α := nonempty_of_exists h,
-  exact ⟨classical.epsilon P, classical.epsilon_spec h⟩ 
+  exact ⟨classical.epsilon P, classical.epsilon_spec h⟩
 end
 
 lemma or_not_iff_true (p : Prop) : (p ∨ ¬ p) ↔ true :=
@@ -48,29 +48,29 @@ end classical
 
 
 namespace eq
-protected lemma congr {α : Type u} {x₁ x₂ y₁ y₂ : α} (h₁ : x₁ = y₁) (h₂ : x₂ = y₂) : 
+protected lemma congr {α : Type u} {x₁ x₂ y₁ y₂ : α} (h₁ : x₁ = y₁) (h₂ : x₂ = y₂) :
   (x₁ = x₂) ↔ (y₁ = y₂) :=
 by subst h₁; subst h₂
 end eq
 
-lemma congr_arg2 {α : Type u} {β : Type v} {γ : Type w} (f : α → β → γ) 
+lemma congr_arg2 {α : Type u} {β : Type v} {γ : Type w} (f : α → β → γ)
   {x x' : α} {y y' : β} (hx : x = x') (hy : y = y') : f x y = f x' y' :=
 by subst hx; subst hy
 
 namespace list
 @[simp] protected def to_set {α : Type u} (l : list α) : set α := { x | x ∈ l }
 
-lemma to_set_map {α : Type u} {β : Type v} (f : α → β) (l : list α) : 
+lemma to_set_map {α : Type u} {β : Type v} (f : α → β) (l : list α) :
   (l.map f).to_set = f '' l.to_set :=
 by apply set.ext; intro b; simp [list.to_set]
 
-lemma exists_of_to_set_subset_image {α : Type u} {β : Type v} {f : α → β} {l : list β} 
+lemma exists_of_to_set_subset_image {α : Type u} {β : Type v} {f : α → β} {l : list β}
   {t : set α} (h : l.to_set ⊆ f '' t) : ∃(l' : list α), l'.to_set ⊆ t ∧ map f l' = l :=
 begin
   induction l,
   { exact ⟨[], set.empty_subset t, rfl⟩ },
   { rcases h (mem_cons_self _ _) with ⟨x, hx, rfl⟩,
-    rcases l_ih (λx hx, h $ mem_cons_of_mem _ hx) with ⟨xs, hxs, hxs'⟩, 
+    rcases l_ih (λx hx, h $ mem_cons_of_mem _ hx) with ⟨xs, hxs, hxs'⟩,
     exact ⟨x::xs, set.union_subset (λy hy, by induction hy; exact hx) hxs, by simp*⟩ }
 end
 
@@ -133,34 +133,38 @@ protected def mem_of_pmem : ∀{n : ℕ} {x : α} {xs : dvector α n} (hx : xs.p
 | _ []      := []
 | _ (x::xs) := f x :: map xs
 
+@[simp] protected def map2 (f : α → β → γ) : ∀{n : ℕ}, dvector α n → dvector β n → dvector γ n
+| _ []      []      := []
+| _ (x::xs) (y::ys) := f x y :: map2 xs ys
+
 @[simp] protected lemma map_id : ∀{n : ℕ} (xs : dvector α n), xs.map (λx, x) = xs
 | _ []      := rfl
 | _ (x::xs) := by dsimp; simp*
 
-@[simp] protected lemma map_congr_pmem {f g : α → β} : 
+@[simp] protected lemma map_congr_pmem {f g : α → β} :
   ∀{n : ℕ} {xs : dvector α n} (h : ∀x, xs.pmem x → f x = g x), xs.map f = xs.map g
 | _ []      h := rfl
 | _ (x::xs) h :=
   begin
-    dsimp, congr1, exact h x (psum.inl rfl), apply map_congr_pmem, 
+    dsimp, congr1, exact h x (psum.inl rfl), apply map_congr_pmem,
     intros x hx, apply h, right, exact hx
   end
 
-@[simp] protected lemma map_congr_mem {f g : α → β} {n : ℕ} {xs : dvector α n} 
+@[simp] protected lemma map_congr_mem {f g : α → β} {n : ℕ} {xs : dvector α n}
   (h : ∀x, x ∈ xs → f x = g x) : xs.map f = xs.map g :=
-dvector.map_congr_pmem $ λx hx, h x $ dvector.mem_of_pmem hx 
+dvector.map_congr_pmem $ λx hx, h x $ dvector.mem_of_pmem hx
 
-@[simp] protected lemma map_congr {f g : α → β} (h : ∀x, f x = g x) : 
+@[simp] protected lemma map_congr {f g : α → β} (h : ∀x, f x = g x) :
   ∀{n : ℕ} (xs : dvector α n), xs.map f = xs.map g
 | _ []      := rfl
 | _ (x::xs) := by dsimp; simp*
 
-@[simp] protected lemma map_map (g : β → γ) (f : α → β): ∀{n : ℕ} (xs : dvector α n), 
+@[simp] protected lemma map_map (g : β → γ) (f : α → β): ∀{n : ℕ} (xs : dvector α n),
   (xs.map f).map g = xs.map (λx, g (f x))
   | _ []      := rfl
   | _ (x::xs) := by dsimp; simp*
 
-protected lemma map_inj {f : α → β} (hf : ∀{{x x'}}, f x = f x' → x = x') {n : ℕ} 
+protected lemma map_inj {f : α → β} (hf : ∀{{x x'}}, f x = f x' → x = x') {n : ℕ}
   {xs xs' : dvector α n} (h : xs.map f = xs'.map f) : xs = xs' :=
 begin
   induction xs; cases xs', refl, simp at h, congr;[apply hf, apply xs_ih]; simp [h]
@@ -177,18 +181,18 @@ end
 | _ (x::xs) 0     h := by refl
 | _ (x::xs) (m+1) h := by exact map_nth xs m _
 
-protected lemma concat_nth : ∀{n : ℕ} (xs : dvector α n) (x : α) (m : ℕ) (h' : m < n+1) 
+protected lemma concat_nth : ∀{n : ℕ} (xs : dvector α n) (x : α) (m : ℕ) (h' : m < n+1)
   (h : m < n), (xs.concat x).nth m h' = xs.nth m h
 | _ []      x' m     h' h := by exfalso; exact nat.not_lt_zero m h
 | _ (x::xs) x' 0     h' h := by refl
 | _ (x::xs) x' (m+1) h' h := by dsimp; exact concat_nth xs x' m _ _
 
-@[simp] protected lemma concat_nth_last : ∀{n : ℕ} (xs : dvector α n) (x : α) (h : n < n+1), 
+@[simp] protected lemma concat_nth_last : ∀{n : ℕ} (xs : dvector α n) (x : α) (h : n < n+1),
   (xs.concat x).nth n h = x
 | _ []      x' h := by refl
 | _ (x::xs) x' h := by dsimp; exact concat_nth_last xs x' _
 
-@[simp] protected lemma concat_nth_last' : ∀{n : ℕ} (xs : dvector α n) (x : α) (h : n < n+1), 
+@[simp] protected lemma concat_nth_last' : ∀{n : ℕ} (xs : dvector α n) (x : α) (h : n < n+1),
   (xs.concat x).last = x
 := by apply dvector.concat_nth_last
 
@@ -252,6 +256,31 @@ protected lemma cast_hrfl {n m} {p : n = m} {v : dvector α n} : v.cast p == v :
   | n 0 (dvector.cons y ys) := ys
   | (n+1) (k+1) (dvector.cons y ys) := dvector.cons y (remove_mth k ys)
 
+@[simp] def foldr (f : α → β → β) (b : β) : ∀{n}, dvector α n → β
+| _ []       := b
+| _ (a :: l) := f a (foldr l)
+
+@[simp] def zip : ∀{n}, dvector α n → dvector β n → dvector (α × β) n
+| _ [] []               := []
+| _ (x :: xs) (y :: ys) := ⟨x, y⟩ :: zip xs ys
+
+open lattice
+/-- The finitary infimum -/
+def fInf [semilattice_inf_top α] (xs : dvector α n) : α :=
+xs.foldr (λ(x b : α), x ⊓ b) ⊤
+
+@[simp] lemma fInf_nil [semilattice_inf_top α] : fInf [] = (⊤ : α) := by refl
+@[simp] lemma fInf_cons [semilattice_inf_top α] (x : α) (xs : dvector α n) :
+  fInf (x::xs) = x ⊓ fInf xs := by refl
+
+/-- The finitary supremum -/
+def fSup [semilattice_sup_bot α] (xs : dvector α n) : α :=
+xs.foldr (λ(x b : α), x ⊔ b) ⊥
+
+@[simp] lemma fSup_nil [semilattice_sup_bot α] : fSup [] = (⊥ : α) := by refl
+@[simp] lemma fSup_cons [semilattice_sup_bot α] (x : α) (xs : dvector α n) :
+  fSup (x::xs) = x ⊔ fSup xs := by refl
+
 /- how to make this protected? -/
 inductive rel [setoid α] : ∀{n}, dvector α n → dvector α n → Prop
 | rnil : rel [] []
@@ -270,7 +299,7 @@ begin induction h; constructor, exact setoid.symm h_hx, exact h_ih end
 protected def rel_trans [setoid α] {n} {{xs₁ xs₂ xs₃ : dvector α n}}
   (h₁ : xs₁.rel xs₂) (h₂ : xs₂.rel xs₃) : xs₁.rel xs₃ :=
 begin
-  induction h₁ generalizing h₂, exact h₂, 
+  induction h₁ generalizing h₂, exact h₂,
   cases h₂, constructor, exact setoid.trans h₁_hx h₂_hx, exact h₁_ih h₂_hxs
 end
 
@@ -286,7 +315,7 @@ end
 -- | _ []      []        h := trivial
 -- | _ (x::xs) (x'::xs') h := ⟨setoid.symm h.1, rel_symm h.2⟩
 
--- protected def rel_trans [setoid α] : ∀{n} {{xs₁ xs₂ xs₃ : dvector α n}}, 
+-- protected def rel_trans [setoid α] : ∀{n} {{xs₁ xs₂ xs₃ : dvector α n}},
 --   xs₁.rel xs₂ → xs₂.rel xs₃ → xs₁.rel xs₃
 -- | _ []        []        []        h₁ h₂ := trivial
 -- | _ (x₁::xs₁) (x₂::xs₂) (x₃::xs₃) h₁ h₂ := ⟨setoid.trans h₁.1 h₂.1, rel_trans h₁.2 h₂.2⟩
@@ -294,17 +323,17 @@ end
 instance setoid [setoid α] : setoid (dvector α n) :=
 ⟨dvector.rel, dvector.rel_refl, dvector.rel_symm, dvector.rel_trans⟩
 
-def quotient_lift {α : Type u} {β : Sort v} {R : setoid α} : ∀{n} (f : dvector α n → β) 
+def quotient_lift {α : Type u} {β : Sort v} {R : setoid α} : ∀{n} (f : dvector α n → β)
   (h : ∀{{xs xs'}}, xs ≈ xs' → f xs = f xs') (xs : dvector (quotient R) n), β
 | _     f h []      := f ([])
-| (n+1) f h (x::xs) := 
+| (n+1) f h (x::xs) :=
   begin
-    refine quotient.lift 
+    refine quotient.lift
       (λx, quotient_lift (λ xs, f $ x::xs) (λxs xs' hxs, h (rcons (setoid.refl x) hxs)) xs) _ x,
     intros x x' hx, dsimp, congr, apply funext, intro xs, apply h, exact rcons hx xs.rel_refl
   end
 
-def quotient_beta {α : Type u} {β : Sort v} {R : setoid α} {n} (f : dvector α n → β) 
+def quotient_beta {α : Type u} {β : Sort v} {R : setoid α} {n} (f : dvector α n → β)
   (h : ∀{{xs xs'}}, xs ≈ xs' → f xs = f xs') (xs : dvector α n) :
   (xs.map quotient.mk).quotient_lift f h = f xs :=
 begin
@@ -339,7 +368,7 @@ end
 lemma imp_eq_congr {a b c d : Prop} (h₁ : a = b) (h₂ : c = d) : (a → c) = (b → d) :=
 by subst h₁; subst h₂; refl
 
-lemma forall_eq_congr {α : Sort u} {p q : α → Prop} (h : ∀ a, p a = q a) : 
+lemma forall_eq_congr {α : Sort u} {p q : α → Prop} (h : ∀ a, p a = q a) :
   (∀ a, p a) = ∀ a, q a :=
 have h' : p = q, from funext h, by subst h'; refl
 
@@ -352,19 +381,19 @@ begin
   intros x hxs, by_cases hxt : x ∈ t, { right, exact hxt }, {left, exact ⟨hxs, hxt⟩ }
 end
 
-def subset_insert_diff_singleton [h : decidable_eq α] (x : α) (s : set α) : 
+def subset_insert_diff_singleton [h : decidable_eq α] (x : α) (s : set α) :
   s ⊆ insert x (s \ {x}) :=
-begin 
+begin
 haveI : decidable_pred (∈ ({x} : set α)) := λy, by simp; apply_instance,
- rw [←union_singleton], apply subset_insert_diff 
+ rw [←union_singleton], apply subset_insert_diff
 end
 
-@[simp] def diff_singleton_subset_iff {x : α} {s t : set α} : 
+@[simp] def diff_singleton_subset_iff {x : α} {s t : set α} :
   s \ {x} ⊆ t ↔ s ⊆ insert x t :=
 by rw [←union_singleton, union_comm]; apply diff_subset_iff
 
 -- generalizes set.image_preimage_eq
-lemma image_preimage_eq_of_subset_image {f : α → β} {s : set β} 
+lemma image_preimage_eq_of_subset_image {f : α → β} {s : set β}
   {t : set α} (h : s ⊆ f '' t) : f '' (f ⁻¹' s) = s :=
 subset.antisymm
   (image_preimage_subset f s)
@@ -379,7 +408,7 @@ subset.trans h (subset_union_right t u)
 lemma subset_sUnion {s : set α} {t : set (set α)} (h : s ∈ t) : s ⊆ ⋃₀ t :=
 λx hx, ⟨s, ⟨h, hx⟩⟩
 
-lemma subset_sUnion_of_subset {s : set α} (t : set (set α)) (u : set α) (h₁ : s ⊆ u) 
+lemma subset_sUnion_of_subset {s : set α} (t : set (set α)) (u : set α) (h₁ : s ⊆ u)
   (h₂ : u ∈ t) : s ⊆ ⋃₀ t :=
 subset.trans h₁ (subset_sUnion h₂)
 
@@ -393,7 +422,7 @@ lemma image_image (g : β → γ) (f : α → β) (s : set α) : g '' (f '' s) =
 
 lemma image_preimage_eq_of_subset {f : α → β} {s : set β} (h : s ⊆ range f) :
   f '' (f ⁻¹' s) = s :=
-begin 
+begin
   ext, refine ⟨λhx, image_preimage_subset f s hx, _⟩,
   intro hx, rcases h hx with ⟨x, rfl⟩, apply mem_image_of_mem, exact hx
 end
@@ -410,7 +439,7 @@ open nat
 namespace finset
 variables {α : Type u} {β : Type v} [decidable_eq α] [decidable_eq β]
 
-def to_set_sdiff (s t : finset α) : (s \ t).to_set = s.to_set \ t.to_set := 
+def to_set_sdiff (s t : finset α) : (s \ t).to_set = s.to_set \ t.to_set :=
 by apply finset.coe_sdiff
 
 lemma exists_of_subset_image {f : α → β} {s : finset β} {t : set α} (h : ↑s ⊆ f '' t) :
@@ -456,7 +485,7 @@ namespace fin
 
   def fin_zero_elim {α : fin 0 → Sort u} : ∀(x : fin 0), α x
   | ⟨n, hn⟩ := false.elim (nat.not_lt_zero n hn)
-  
+
 end fin
 
 /-- The type α → (α → ... (α → β)...) with n α's. We require that α and β live in the same universe, otherwise we have to use ulift. -/
@@ -478,7 +507,7 @@ def arity'_constant {α β : Type u} : ∀{n : ℕ}, β → arity' α β n
 | _ b []      := b
 | _ f (x::xs) := arity'_app (f x) xs
 
-@[simp] lemma arity'_app_zero {α β : Type u} (f : arity' α β 0) (xs : dvector α 0) : 
+@[simp] lemma arity'_app_zero {α β : Type u} (f : arity' α β 0) (xs : dvector α 0) :
   arity'_app f xs = f :=
 by cases xs; refl
 
@@ -486,7 +515,7 @@ def arity'_postcompose {α β γ : Type u} (g : β → γ) : ∀{n} (f : arity' 
 | 0     b := g b
 | (n+1) f := λx, arity'_postcompose (f x)
 
-def arity'_postcompose2 {α β γ δ : Type u} (h : β → γ → δ) : 
+def arity'_postcompose2 {α β γ δ : Type u} (h : β → γ → δ) :
   ∀{n} (f : arity' α β n) (g : arity' α γ n), arity' α δ n
 | 0     b c := h b c
 | (n+1) f g := λx, arity'_postcompose2 (f x) (g x)
@@ -508,13 +537,13 @@ begin
   apply funext, intro x, apply h_ih
 end
 
--- def arity'_quotient_lift {α β : Type u} {R : setoid α} : 
+-- def arity'_quotient_lift {α β : Type u} {R : setoid α} :
 --   ∀{n}, (Σ(f : arity' α β n), arity'_respect_setoid f) → arity' (quotient R) β n
 -- | _ ⟨_, r_zero b⟩         := b
--- | _ ⟨_, r_succ n f h₁ h₂⟩ := 
+-- | _ ⟨_, r_succ n f h₁ h₂⟩ :=
 --   begin
 --     apply quotient.lift (λx, arity'_quotient_lift ⟨f x, h₂ x⟩),
---     intros x x' r, dsimp, 
+--     intros x x' r, dsimp,
 --     apply congr_arg, exact sigma.eq (h₁ r) (subsingleton.elim _ _)
 --   end
 
@@ -523,32 +552,32 @@ end
 --   arity'_app (arity'_quotient_lift ⟨f, hf⟩) (xs.map quotient.mk) = arity'_app f xs :=
 -- begin
 --   induction hf,
---   { simp [arity'_quotient_lift] }, 
+--   { simp [arity'_quotient_lift] },
 --   dsimp [arity'_app], sorry
 -- end
 
 def for_all {α : Type u} (P : α → Prop) : Prop := ∀x, P x
 
-@[simp] def arity'_map2 {α β : Type u} (q : (α → β) → β) (f : β → β → β) : 
+@[simp] def arity'_map2 {α β : Type u} (q : (α → β) → β) (f : β → β → β) :
   ∀{n}, arity' α β n → arity' α β n → β
 | 0     x y := f x y
 | (n+1) x y := q (λz, arity'_map2 (x z) (y z))
 
-@[simp] lemma arity'_map2_refl {α : Type} {f : Prop → Prop → Prop} (r : ∀A, f A A) : 
+@[simp] lemma arity'_map2_refl {α : Type} {f : Prop → Prop → Prop} (r : ∀A, f A A) :
   ∀{n} (x : arity' α Prop n), arity'_map2 for_all f x x
 | 0     x := r x
 | (n+1) x := λy, arity'_map2_refl (x y)
 
-def arity'_imp {α : Type} {n : ℕ} (f₁ f₂ : arity' α Prop n) : Prop := 
+def arity'_imp {α : Type} {n : ℕ} (f₁ f₂ : arity' α Prop n) : Prop :=
 arity'_map2 for_all (λP Q, P → Q) f₁ f₂
 
-def arity'_iff {α : Type} {n : ℕ} (f₁ f₂ : arity' α Prop n) : Prop := 
+def arity'_iff {α : Type} {n : ℕ} (f₁ f₂ : arity' α Prop n) : Prop :=
 arity'_map2 for_all iff f₁ f₂
 
-lemma arity'_iff_refl {α : Type} {n : ℕ} (f : arity' α Prop n) : arity'_iff f f := 
+lemma arity'_iff_refl {α : Type} {n : ℕ} (f : arity' α Prop n) : arity'_iff f f :=
 arity'_map2_refl iff.refl f
 
-lemma arity'_iff_rfl {α : Type} {n : ℕ} {f : arity' α Prop n} : arity'_iff f f := 
+lemma arity'_iff_rfl {α : Type} {n : ℕ} {f : arity' α Prop n} : arity'_iff f f :=
 arity'_iff_refl f
 
 end arity'
@@ -676,6 +705,24 @@ lemma imp_neg_sub {α : Type*} [boolean_algebra α] {a₁ a₂ : α} :  -(a₁ �
 lemma inf_eq_of_le {α : Type*} [distrib_lattice α] {a b : α} (h : a ≤ b) : a ⊓ b = a :=
   by apply le_antisymm; simp[*,le_inf]
 
+lemma imp_inf_le {α : Type*} [boolean_algebra α] (a b : α) : (a ⟹ b) ⊓ a ≤ b :=
+by { unfold imp, rw [inf_sup_right], simp }
+
+lemma le_of_sub_eq_bot {α : Type*} [boolean_algebra α] {a b : α} (h : - b ⊓ a = ⊥) : a ≤ b :=
+begin
+  apply le_of_inf_eq, rw [←@neg_neg _ b _, ←sub_eq], apply sub_eq_left, rwa [inf_comm]
+end
+
+lemma le_neg_of_inf_eq_bot {α : Type*} [boolean_algebra α] {a b : α} (h : b ⊓ a = ⊥) : a ≤ - b :=
+by { apply le_of_sub_eq_bot, rwa [neg_neg] }
+
+lemma sub_eq_bot_of_le {α : Type*} [boolean_algebra α] {a b : α} (h : a ≤ b) : - b ⊓ a = ⊥ :=
+by rw [←inf_eq_of_le h, inf_comm, inf_assoc, inf_neg_eq_bot, inf_bot_eq]
+
+lemma inf_eq_bot_of_le_neg {α : Type*} [boolean_algebra α] {a b : α} (h : a ≤ - b) : b ⊓ a = ⊥ :=
+by { rw [←@neg_neg _ b], exact sub_eq_bot_of_le h }
+
+
 /-- the deduction theorem in β -/
 @[simp]lemma imp_top_iff_le {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⟹ a₂ = ⊤) ↔ a₁ ≤ a₂ :=
 begin
@@ -686,8 +733,7 @@ begin
              ... = a₁ ⊓ (- a₁ ⊔ a₂) : by {rw[inf_sup_left]}
              ... = a₁ ⊓ ⊤ : by {rw[<-H], refl}
              ... = a₁ : by {simp},
-             
-    finish},
+   finish},
  {have : a₁ ⊓ a₂ = a₁, from inf_eq_of_le H, apply top_unique,
   have this' : ⊤ = - a₁ ⊔ a₁, by rw[lattice.neg_sup_eq_top],
   rw[this', <-this, imp], simp only [lattice.neg_inf, lattice.sup_le_iff],
@@ -793,7 +839,7 @@ by {apply le_supr_of_le', convert H using 1, simp[eoc_supr]}
 lemma infi_congr {ι β : Type*} {s₁ s₂ : ι → β} [complete_lattice β] {h : ∀ i : ι, s₁ i = s₂ i} :
   (⨅(i:ι), s₁ i) = ⨅(i:ι), s₂ i :=
 by simp*
-  
+
 lemma imp_iff {β : Type*} {a b : β} [complete_boolean_algebra β] : a ⟹ b = -a ⊔ b := by refl
 
 end lattice
