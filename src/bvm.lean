@@ -426,7 +426,9 @@ def is_definite (u : bSet β) : Prop := ∀ i : u.type, u.bval i = ⊤
 -- theorem check_transfer : sorry := sorry
 
 def mixture {ι : Type u} (a : ι → β) (u : ι → bSet β) : bSet β :=
-  ⟨Σ(i : ι), (u i).type, λx, (u x.fst).func x.snd, λx, ⨆(j:ι), a j ⊓ ((u x.fst).func x.snd) ∈ᴮ u j⟩
+  ⟨Σ(i : ι), (u i).type,
+    λx, (u x.fst).func x.snd,
+      λx, ⨆(j:ι), a j ⊓ ((u x.fst).func x.snd) ∈ᴮ u j⟩
 
 @[simp]lemma bval_mixture {ι : Type u} {a : ι → β} {u : ι → bSet β} :
   (mixture a u).bval = λx, ⨆(j:ι), a j ⊓ ((u x.fst).func x.snd) ∈ᴮ u j :=

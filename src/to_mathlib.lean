@@ -628,10 +628,10 @@ theorem infi_sup_eq {α ι : Type*} [complete_distrib_lattice α] {a : α} {s : 
 by {rw[sup_comm], conv{to_rhs, simp[sup_comm]}, apply sup_infi_eq}
 
 @[simp]lemma inf_self {α : Type*} [lattice α] {a : α} : a ⊓ a = a :=
-  by finish
+  by simp
 
 @[simp]lemma sup_self {α : Type*} [lattice α] {a : α} : a ⊔ a = a :=
-  by finish
+  by simp
 
 def imp {α : Type*} [boolean_algebra α] : α → α → α :=
   λ a₁ a₂, (- a₁) ⊔ a₂
@@ -671,10 +671,10 @@ by unfold imp; simp[inf_sup_left]
 @[simp]lemma imp_self {α : Type*} [boolean_algebra α] {a : α} : a ⟹ a = ⊤ := by simp[imp]
 
 lemma imp_neg_sub {α : Type*} [boolean_algebra α] {a₁ a₂ : α} :  -(a₁ ⟹ a₂) = a₁ - a₂ :=
-  by rw[sub_eq, imp]; finish
+  by rw[sub_eq, imp]; simp*
 
 lemma inf_eq_of_le {α : Type*} [distrib_lattice α] {a b : α} (h : a ≤ b) : a ⊓ b = a :=
-  by apply le_antisymm; finish[le_inf]
+  by apply le_antisymm; simp[*,le_inf]
 
 /-- the deduction theorem in β -/
 @[simp]lemma imp_top_iff_le {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⟹ a₂ = ⊤) ↔ a₁ ≤ a₂ :=
@@ -687,7 +687,7 @@ begin
              ... = a₁ ⊓ ⊤ : by {rw[<-H], refl}
              ... = a₁ : by {simp},
              
-   finish},
+    finish},
  {have : a₁ ⊓ a₂ = a₁, from inf_eq_of_le H, apply top_unique,
   have this' : ⊤ = - a₁ ⊔ a₁, by rw[lattice.neg_sup_eq_top],
   rw[this', <-this, imp], simp only [lattice.neg_inf, lattice.sup_le_iff],
@@ -792,7 +792,7 @@ by {apply le_supr_of_le', convert H using 1, simp[eoc_supr]}
 
 lemma infi_congr {ι β : Type*} {s₁ s₂ : ι → β} [complete_lattice β] {h : ∀ i : ι, s₁ i = s₂ i} :
   (⨅(i:ι), s₁ i) = ⨅(i:ι), s₂ i :=
-by finish
+by simp*
   
 lemma imp_iff {β : Type*} {a b : β} [complete_boolean_algebra β] : a ⟹ b = -a ⊔ b := by refl
 
