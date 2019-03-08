@@ -820,20 +820,6 @@ variables {α : Type u} (ϕ : bSet 𝔹 → α)
 classical.indefinite_description (λ a : bSet 𝔹, ϕ a = b.val) $
   by {cases b.property, use w, exact h.right}
 
-
--- include ϕ
--- def B_small_witness' : set $ bSet 𝔹 :=
---   (λ x, (fiber_lift' ϕ x).val) '' set.univ
-
--- @[simp]lemma B_small_witness_spec' : ∀ x : bSet 𝔹, ∃ y ∈ (B_small_witness' ϕ), ϕ x = ϕ y :=
--- begin
---   intro x, refine ⟨(fiber_lift' ϕ _).val,_⟩,
---   use ϕ x, use x, finish,
---   split,
---     {unfold B_small_witness', use ϕ x, use x, tidy},
---     {rw[(fiber_lift' ϕ ⟨ϕ x, _⟩).property]}
--- end
-
 end smallness'
 
 section cores
@@ -941,6 +927,13 @@ begin
      rw[show ⊤ = (core.mk_aux u i =ᴮ y ⊓ y =ᴮ y'), by {dsimp at H_y''', rw [H₃, H_y'''], simp}],
    apply bv_eq_trans}
 end
+/-- Given a subset C of α, and an α-indexed core S, return the bSet whose underlying type is C,
+    such that A is the canonical inclusion and B is always ⊤. -/
+def bSet_of_core_set {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} (h : core u S) (C : set α) : bSet 𝔹 :=
+⟨C, λ x, S x, λ x, ⊤⟩
+
+def bSet_of_core {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} (h : core u S) : bSet 𝔹 :=
+  bSet_of_core_set h set.univ
 
 lemma exists_mem_of_nonempty (u : bSet 𝔹) {Γ : 𝔹} {H : Γ ≤ -(u =ᴮ ∅)} : Γ ≤ ⨆x, x∈ᴮ u :=
 by {apply le_trans H, simp[eq_empty], intro x, apply bv_use (u.func x), apply mem.mk'}
@@ -1004,7 +997,7 @@ begin
   induction x generalizing y, cases y,
   dsimp[check], simp only [pSet.equiv, lattice.top_le_iff, bSet.check,
     lattice.top_inf_eq, lattice.imp_top_iff_le, lattice.inf_eq_top_iff, lattice.infi_eq_top],
-  fsplit, 
+  fsplit,
   work_on_goal 0 { intros a, cases a, fsplit, work_on_goal 0 { intros i },
   work_on_goal 1 { intros i } }, work_on_goal 2 { intros a, cases a, fsplit,
   work_on_goal 0 { intros a}}, work_on_goal 3 {intros b},
@@ -1170,7 +1163,6 @@ begin
     rw[<-deduction], apply inf_le_left},
   have h := @bounded_quantification _ _ (mk α A B) ϕ h_congr,
   simp only with cleanup at h, rw[h] at this,
-  -- simp only with cleanup at this, rw[this],
   apply bv_have this,
   have : b ≤ (⨅ (y : bSet 𝔹), (y) ∈ᴮ (mk α A B) ⟹ ϕ (y)) ⟹ ϕ (mk α A B),
     by {apply bv_specialize (mk α A B), refl},
@@ -1188,6 +1180,9 @@ local notation `⨆!` binders `, ` r:(scoped f, bv_exists_unique f) := r
 theorem bSet_zorns_lemma (X : bSet 𝔹) : ⊤ ≤ (⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
   w₁ ∈ᴮ y ⊓ w₁ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X))
     ⟹ (⨆c, c ∈ᴮ X ⊓ (⨅z, z ∈ᴮ X ⟹ (c ⊆ᴮ X ⟹ c =ᴮ z))) := sorry
+
+
+
 
 -- /-- This is the abbreviated version of AC found at http://us.metamath.org/mpeuni/ac3.html
 --     It is provably equivalent over ZF to the usual formulation of AC
