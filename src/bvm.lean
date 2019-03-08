@@ -285,7 +285,7 @@ end
 --   apply bv_prf_and_intro, sorry
 -- end
 
-theorem bSet_bv_eq_rw (x y : bSet 𝔹) :
+theorem bv_eq_unfold (x y : bSet 𝔹) :
   x =ᴮ y = (⨅(a : x.type), x.bval a ⟹ (x.func a ∈ᴮ y))
           ⊓ (⨅(a' : y.type), (y.bval a' ⟹ (y.func a' ∈ᴮ x))) :=
  by induction x; induction y; simp[mem,bv_eq,bv_eq_symm]
@@ -293,7 +293,7 @@ theorem bSet_bv_eq_rw (x y : bSet 𝔹) :
 theorem bSet_axiom_of_extensionality (x y : bSet 𝔹) :
 (⨅(z : bSet 𝔹), (z ∈ᴮ x ⟹ z ∈ᴮ y) ⊓ (z ∈ᴮ y ⟹ z ∈ᴮ x)) ≤ x =ᴮ y :=
 begin
-  rw[bSet_bv_eq_rw],
+  rw[bv_eq_unfold],
   apply le_inf; apply le_infi; intro i,
   {fapply infi_le_of_le (x.func i), apply inf_le_left_of_le,
    induction x, unfold mem, simp, by apply imp_le_of_left_le; apply le_supr_of_le i;
@@ -480,7 +480,7 @@ def floris_mixture {ι : Type u} (a : ι → 𝔹) (u : ι → bSet 𝔹) : bSet
 /-- Mixing lemma, c.f. Bell's book or Lemma 1 of Hamkins-Seabold -/
 lemma mixing_lemma' {ι : Type u} (a : ι → 𝔹) (τ : ι → bSet 𝔹) (h_star : ∀ i j : ι, a i ⊓ a j ≤ τ i =ᴮ τ j) : ∀ i : ι, a i ≤ (mixture a τ) =ᴮ τ i := λ i,
 begin
-rw[bSet_bv_eq_rw],
+rw[bv_eq_unfold],
   apply le_inf,
     {bv_intro i_z, apply bv_imp_intro,
     simp only [bSet.bval, bSet.mem, bSet.func, bSet.type, bSet.bval_mixture],
@@ -529,8 +529,8 @@ section smallness
 variable {ϕ : bSet 𝔹 → 𝔹}
 
 @[reducible, simp]noncomputable def fiber_lift (b : ϕ '' set.univ) :=
-classical.indefinite_description (λ a : bSet 𝔹, ϕ a = b.val)
-  begin cases b.property, use w, exact h.right end
+classical.indefinite_description (λ a : bSet 𝔹, ϕ a = b.val) $
+  by {cases b.property, use w, exact h.right}
 
 noncomputable def B_small_witness : bSet 𝔹 :=
 ⟨ϕ '' set.univ, λ b, (fiber_lift b).val, λ _, ⊤⟩
@@ -791,13 +791,122 @@ begin
   rw[<-this, h₂], apply h_congrψ
 end
 
+section smallness'
+variables {α : Type u} (ϕ : bSet 𝔹 → α)
+-- in this section we prove the smallness-type arguments required for showing that cores always exist.
+@[reducible, simp]noncomputable def fiber_lift' (b : ϕ '' set.univ) : {x : bSet 𝔹 // ϕ x = b.val} :=
+classical.indefinite_description (λ a : bSet 𝔹, ϕ a = b.val) $
+  by {cases b.property, use w, exact h.right}
+
+
+-- include ϕ
+-- def B_small_witness' : set $ bSet 𝔹 :=
+--   (λ x, (fiber_lift' ϕ x).val) '' set.univ
+
+-- @[simp]lemma B_small_witness_spec' : ∀ x : bSet 𝔹, ∃ y ∈ (B_small_witness' ϕ), ϕ x = ϕ y :=
+-- begin
+--   intro x, refine ⟨(fiber_lift' ϕ _).val,_⟩,
+--   use ϕ x, use x, finish,
+--   split,
+--     {unfold B_small_witness', use ϕ x, use x, tidy},
+--     {rw[(fiber_lift' ϕ ⟨ϕ x, _⟩).property]}
+-- end
+
+end smallness'
+
 section cores
+@[reducible]def pullback_eq_rel {α β : Type*} (f : α → β) (E : β → β → Prop) : α → α → Prop :=
+λ a₁ a₂, E (f a₁) (f a₂)
+
 def core {α : Type u} (u : bSet 𝔹) (S : α → bSet 𝔹) : Prop :=
 (∀ x : α, S x ∈ᴮ u = ⊤) ∧ (∀ y : bSet 𝔹, y ∈ᴮ u = ⊤ → ∃! x_y : α, y =ᴮ S x_y = ⊤)
 
+/-- This is the "f_x" in the notes. We are free to use function types since universes are inaccessible. -/
+def core.mk_ϕ (u : bSet 𝔹) : bSet 𝔹 → (u.type → 𝔹) :=
+λ x, (λ a, (u.bval a) ⊓ x =ᴮ u.func a )
+
+lemma core.mk_ϕ_inj (u : bSet 𝔹) (x y : bSet 𝔹) : (x ∈ᴮ u = ⊤) → (y ∈ᴮ u = ⊤) → core.mk_ϕ u x = core.mk_ϕ u y → x =ᴮ y = ⊤ :=
+begin
+  intros h₁ h₂ H, unfold core.mk_ϕ at H, replace H := congr_fun H,
+  apply top_unique,
+  have : ∀ i_z : u.type, u.bval i_z ⊓ x =ᴮ u.func i_z ⊓ u.bval i_z ⊓ u.func i_z =ᴮ y  ≤ x =ᴮ y :=
+    λ i_z, by {apply le_trans, show _ ≤ x =ᴮ u.func i_z ⊓ u.func i_z =ᴮ y, apply le_inf,
+    iterate 2 {apply inf_le_left_of_le}, apply inf_le_right_of_le, refl, swap, apply bv_eq_trans,
+    repeat{apply inf_le_right_of_le}, refl}, dsimp at H,
+    simp[show ∀ a, y =ᴮ func u a = func u a =ᴮ y, by {intro, apply bv_eq_symm}] at H,
+  have this' :  (∀ (i_z : type u), bval u i_z ⊓ x =ᴮ func u i_z ⊓ bval u i_z ⊓ func u i_z =ᴮ y ≤ x =ᴮ y) ↔ 
+          ∀ (i_z : type u), ((bval u i_z ⊓ x =ᴮ func u i_z) ⊓ (bval u i_z ⊓ func u i_z =ᴮ y) ≤ x =ᴮ y),
+    by {apply forall_congr, intro a, apply iff_of_eq, ac_refl},
+  rw[this'] at this, simp[H] at this, rw[<-supr_le_iff] at this, apply le_trans _ this, rw[eq_top_iff] at h₂,
+  convert h₂, simp[mem_unfold], congr' 1, ext, congr' 1, apply bv_eq_symm
+end
+
+noncomputable def core.S' (u : bSet 𝔹) : (core.mk_ϕ u '' set.univ) → bSet 𝔹 :=
+  λ x, (fiber_lift' (core.mk_ϕ u) x).val
+
+def core.α_S'' (u : bSet 𝔹) : Type u := {i : core.mk_ϕ u '' set.univ // core.S' u i ∈ᴮ u = ⊤}
+
+noncomputable def core.S'' (u : bSet 𝔹) : core.α_S'' u → bSet 𝔹 := λ x, core.S' u x.val
+
+lemma core.S'_spec (u : bSet 𝔹) (x : core.mk_ϕ u '' set.univ) : core.mk_ϕ u (core.S' u x) = x.val :=
+ by unfold core.S'; simp[(fiber_lift' (core.mk_ϕ u) x).property]
+
+def core.bv_eq_top : bSet 𝔹 → bSet 𝔹 → Prop :=
+  λ x₁ x₂, x₁ =ᴮ x₂ = ⊤
+
+def core.bv_eq_top_setoid : setoid $ bSet 𝔹 :=
+{ r := core.bv_eq_top,
+  iseqv :=
+begin
+  repeat{split},
+  {apply bv_eq_refl},
+  {dsimp[core.bv_eq_top], tidy, rwa[bv_eq_symm]},
+  {dsimp[core.bv_eq_top], tidy, apply top_unique, rw[show ⊤ = x =ᴮ y ⊓ y =ᴮ z, by finish],
+   apply bv_eq_trans}
+end}
+
+instance core.S''_setoid (u : bSet 𝔹) : setoid $ core.α_S'' u :=
+{ r := pullback_eq_rel (core.S'' u) core.bv_eq_top,
+  iseqv :=
+begin
+  repeat{split}, intro x, apply bv_eq_refl,
+  intros x y, intro H, unfold pullback_eq_rel core.bv_eq_top, rwa[bv_eq_symm],
+  intros x y z, unfold pullback_eq_rel core.bv_eq_top, intros H₁ H₂, apply top_unique,
+  rw[show ⊤ = (core.S'' u x) =ᴮ (core.S'' u y) ⊓ (core.S'' u y) =ᴮ (core.S'' u z), by finish],
+  apply bv_eq_trans
+end}
+
+noncomputable def core.mk_aux (u : bSet 𝔹) : (quotient (@core.S''_setoid 𝔹 _ u)) → bSet 𝔹 :=
+  λ x, (core.S'' u) (@quotient.out _ (core.S''_setoid u ) x)
+
+@[reducible]private def image.mk {α β : Type*} {f : α → β} (a : α) : f '' set.univ :=
+  ⟨f a, by tidy⟩
+
 lemma core.mk (u : bSet 𝔹) : ∃ α : Type u, ∃ S : α → bSet 𝔹, core u S :=
 begin
-  sorry
+  repeat{split}, show _ → bSet 𝔹, exact core.mk_aux u,
+  {dsimp, intro x,unfold core.mk_aux, let y := _, change core.S'' u y ∈ᴮ u = _, apply y.property},
+  {intros y H_y, let y' := (core.S' u (image.mk y)),
+   have H_y' : core.mk_ϕ u y = core.mk_ϕ u y',
+     by rw[core.S'_spec],
+   have H_y'2 : y' ∈ᴮ u = ⊤,
+     by {unfold core.mk_ϕ at H_y', have := congr_fun H_y',
+         simp only [mem_unfold], apply top_unique,
+         conv {to_rhs, congr, rw[<-H_y']},
+         simpa[mem_unfold] using H_y},
+
+   let y'' := (core.mk_aux u ⟦by split; exact H_y'2⟧),
+   have H_y'' : y'' =ᴮ y' = ⊤,
+     by {dsimp[y''], unfold core.mk_aux, have := quotient.mk_out,
+      show setoid _, exact core.S''_setoid u, apply this},
+
+   have H₁ : y =ᴮ y'' = ⊤,
+     by {apply top_unique, apply le_trans, show 𝔹, from y =ᴮ y' ⊓ y' =ᴮ y'',
+           apply le_inf,
+             {rw[<-eq_top_iff], apply core.mk_ϕ_inj, repeat{assumption}},
+             {rw[<-eq_top_iff], convert H_y'' using 1, apply bv_eq_symm},
+         apply bv_eq_trans},
+   sorry}
 end
 
 end cores
@@ -970,7 +1079,7 @@ begin
   bv_intro i_y, apply imp_le_of_left_right_le, swap, refl,
   rw[inf_comm, bv_eq_symm], apply subst_congr_mem_left,
   
-  rw[bSet_bv_eq_rw], apply le_inf,
+  rw[bv_eq_unfold], apply le_inf,
   {conv {to_rhs, dsimp}, have := @bounded_quantification _ _ x (λ y, ⨆ (a' :    type u), func u a' ∈ᴮ x ⊓ y =ᴮ func u a'), rw[this], swap,
   intros a₁ a₂, dsimp, rw[inf_supr_eq], apply supr_le, intro i,
 
@@ -992,7 +1101,7 @@ begin
    bv_intro a₁, apply infi_le_of_le a₁,
    unfold set_of_indicator, dsimp, rw[supr_imp_eq],
    bv_intro i, apply from_empty_context,
-   rw[inf_comm, bv_eq_symm], simp[subst_congr_mem_left]}},
+   rw[inf_comm, bv_eq_symm], simp[-bv_eq_symm,subst_congr_mem_left]}},
 end
 
 @[simp, reducible]def axiom_of_infinity_spec (u : bSet 𝔹) : 𝔹 :=
