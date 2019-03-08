@@ -780,6 +780,16 @@ begin
       by {rw[H_max] at this, finish}, by apply h_congr}
 end
 
+lemma core_aux_lemma2 (ϕ ψ : bSet 𝔹 → 𝔹) (h_congrϕ : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y)
+  (h_congrψ : ∀ x y, x =ᴮ y ⊓ ψ x ≤ ψ y) (h_sub : ∀ u, ϕ u = ⊤ → ψ u = ⊤)
+  (h_definite : (⨆(w : bSet 𝔹), ϕ w) = ⊤) :
+  (⨅(x : bSet 𝔹), ϕ x ⟹ ψ x) = ⊤ :=
+begin
+  simp, intro x, have := core_aux_lemma ϕ h_congrϕ h_definite x,
+  rcases this with ⟨u, ⟨h₁, h₂⟩⟩,
+  have := h_sub u ‹_›, rw[show ϕ x = ϕ x ⊓ ⊤, by simp],
+  rw[<-this, h₂], apply h_congrψ
+end
 
 
 section check_names
