@@ -326,6 +326,13 @@ end
 theorem eq_iff_subset_subset {x y : bSet 𝔹} : x =ᴮ y = x ⊆ᴮ y ⊓ y ⊆ᴮ x :=
 by apply le_antisymm; [apply subset_subset_of_eq, apply eq_of_subset_subset]
 
+theorem subset_ext {x y : bSet 𝔹} {c : 𝔹} {h₁ : c ≤ x ⊆ᴮ y} {h₂ : c ≤ y ⊆ᴮ x} : c ≤ x =ᴮ y :=
+begin
+  apply bv_have h₂, rw[deduction], apply bv_have h₁, rw[<-deduction],
+  ac_change c ⊓ (x ⊆ᴮ y ⊓ y ⊆ᴮ x) ≤ x =ᴮ y, apply inf_le_right_of_le,
+  apply eq_of_subset_subset
+end
+
 theorem bv_eq_trans {x y z : bSet 𝔹} : (x =ᴮ y ⊓ y =ᴮ z) ≤ x =ᴮ z :=
 begin
     induction x with α A B generalizing y z,
@@ -876,6 +883,16 @@ begin
   have Q₂ := H₂ y, have Q₃ := H₂ x (by apply bv_eq_refl), dsimp at *, rw[Q₂], swap, simpa[H]
 end
 
+/-- `core_inj` says that if a b : α satisfy S a =ᴮ S b = ⊤, then a = b -/
+lemma core_inj' {α : Type u} {u : bSet 𝔹} {S : α → bSet 𝔹} (h_core : core u S) : ∀ a b : α, S a =ᴮ S b = ⊤ → a = b :=
+begin
+  intros x y H, cases h_core, have h_left₁ := h_core_left x, have h_left₂ := h_core_left y,
+  have this_right₁ := h_core_right (S x) h_left₁,
+  have this_right₂:= h_core_right (S y) h_left₂,
+  rcases this_right₁ with ⟨w₁, ⟨H₁, H₂⟩⟩, rcases this_right₂ with ⟨w₂, ⟨H₁', H₂'⟩⟩,
+  have Q₂ := H₂ y H, have Q₂ := H₂ x (by apply bv_eq_refl), cc
+end  
+
 /-- This is the "f_x" in the notes. We are free to use function types since universes are inaccessible. -/
 def core.mk_ϕ (u : bSet 𝔹) : bSet 𝔹 → (u.type → 𝔹) :=
 λ x, (λ a, (u.bval a) ⊓ x =ᴮ u.func a )
@@ -994,8 +1011,19 @@ instance subset'_partial_order {u : bSet 𝔹} {α : Type u} {S : α → bSet �
   le_refl := by simp[subset'],
   le_trans := by {intros a b c, simp only [subset'], intros, rw[eq_top_iff] at a_1 a_2 ⊢,
                    apply subset_trans_context, repeat{assumption}},
-  lt_iff_le_not_le := by {tidy, dsimp[subset'] at *,  } ,
-  le_antisymm := sorry }
+  lt_iff_le_not_le :=
+    begin
+      tidy, dsimp[subset'] at *,
+      suffices : S a = S b,
+        by {have := core_inj u _ ⟨h_left, h_right⟩ this, contradiction},
+      suffices : a = b, by rw[this]; refl, apply core_inj' ⟨h_left, h_right⟩, dsimp,
+      rw[eq_top_iff] at a_1_left a_1 ⊢, apply subset_ext, repeat{assumption}
+      end,
+  le_antisymm :=
+    begin
+      intros a b H₁ H₂, apply core_inj' h, unfold subset' at H₁ H₂, rw[eq_top_iff] at H₁ H₂ ⊢, apply subset_ext,
+      repeat{assumption}
+    end}
 
 lemma exists_mem_of_nonempty (u : bSet 𝔹) {Γ : 𝔹} {H : Γ ≤ -(u =ᴮ ∅)} : Γ ≤ ⨆x, x∈ᴮ u :=
 by {apply le_trans H, simp[eq_empty], intro x, apply bv_use (u.func x), apply mem.mk'}
