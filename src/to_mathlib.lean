@@ -1,6 +1,7 @@
 /- theorems which we should (maybe) backport to mathlib -/
 
 import data.finset algebra.ordered_group tactic.squeeze tactic.tidy order.bounded_lattice
+       topology.basic data.set.disjointed data.set.countable set_theory.cofinality
 
 universe variables u v w
 
@@ -375,12 +376,15 @@ namespace set
 
 variables {α : Type u} {β : Type v} {γ : Type w}
 
-def subset_insert_diff (s t : set α) [decidable_pred (∈ t)] : s ⊆ (s \ t) ∪ t :=
+lemma ne_empty_of_exists_mem {s : set α} : ∀(h : ∃x, x ∈ s), s ≠ ∅
+| ⟨x, hx⟩ := ne_empty_of_mem hx
+
+lemma subset_insert_diff (s t : set α) [decidable_pred (∈ t)] : s ⊆ (s \ t) ∪ t :=
 begin
   intros x hxs, by_cases hxt : x ∈ t, { right, exact hxt }, {left, exact ⟨hxs, hxt⟩ }
 end
 
-def subset_insert_diff_singleton [h : decidable_eq α] (x : α) (s : set α) :
+lemma subset_insert_diff_singleton [h : decidable_eq α] (x : α) (s : set α) :
   s ⊆ insert x (s \ {x}) :=
 begin
 haveI : decidable_pred (∈ ({x} : set α)) := λy, by simp; apply_instance,
@@ -1258,3 +1262,126 @@ begin
 end
 
 end lattice
+
+
+noncomputable theory
+namespace Well_order
+
+attribute [instance] Well_order.wo
+instance (W : Well_order) : decidable_linear_order W.α :=
+{ decidable_le := λ _ _, classical.prop_decidable _,
+  decidable_eq := λ _ _, classical.prop_decidable _,
+  decidable_lt := λ _ _, classical.prop_decidable _, ..linear_order_of_STO' W.r }
+
+end Well_order
+
+namespace ordinal
+
+variables {α : Type u} {β : Type v}
+
+def rel.lift (f : α → β) (r : β → β → Prop) : α → α → Prop := λ x y, r (f x) (f y)
+
+instance lift.is_well_order  (r : α → α → Prop) [is_well_order α r] (f : β → α) :
+  is_well_order β (rel.lift f r) :=
+sorry
+
+def typesub (r : α → α → Prop) [is_well_order α r] (s : set α) : ordinal :=
+type (rel.lift (@subtype.val α s) r)
+
+/-- The function α^{<β}, defined to be sup_{γ < β} α^γ -/
+def powerlt (α β : ordinal.{u}) : ordinal.{u} :=
+bsup.{u u} β (λ γ _, power α γ)
+
+def strict_upper_bounds [has_lt α] (s : set α) : set α := { x | ∀a ∈ s, a < x }
+def unbounded {α : Type u} [preorder α] (s : set α) : Prop := strict_upper_bounds s = ∅
+
+
+open cardinal
+theorem bsup_lt_of_is_regular (o : ordinal.{u}) (f : Π a < o, ordinal.{u})
+  {c} (hc : is_regular c) (H1 : o < c.ord)
+  (H2 : ∀a < o, f a H < c.ord) : bsup.{u u} o f < c.ord :=
+sorry
+
+end ordinal
+
+namespace well_founded
+protected def strict_sup {α} {r : α → α → Prop} (H : well_founded r) (s : set α)
+ (h : { x | ∀a ∈ s, r a x } ≠ ∅) : α :=
+H.min { x | ∀a ∈ s, r a x } h
+end well_founded
+
+def is_delta_system {α : Type u} (A : set (set α)) :=
+∃(root : set α), ∀(x y ∈ A), x ≠ y → x ∩ y = root
+
+namespace delta_system
+
+open cardinal ordinal set
+
+lemma delta_system_lemma_2 (κ : cardinal) (hκ : cardinal.omega ≤ κ) {θ : cardinal.{u}} (hκθ : κ < θ)
+  (hθ : is_regular θ) (hθ_le : ∀(α < θ.ord), card (powerlt α κ.ord) < θ)
+  (A : set (set (θ.ord.out.α))) {ρ} (hρ : ρ < κ.ord)
+  (hA : mk (subtype A) = θ) (hA2 : ∀{x : set θ.ord.out.α} (h : x ∈ A), typesub θ.ord.out.r x = ρ) :
+  ∃(B ⊆ A), mk B = θ ∧ is_delta_system B :=
+begin
+  let ι : θ.ord.out.α → ordinal := typein θ.ord.out.r,
+  let nr : A → ρ.out.α → θ.ord.out.α :=
+    sorry,
+  let good : ρ.out.α → Prop := λ ξ, unbounded (range $ λ x, nr x ξ),
+  have : ∃ξ : ρ.out.α, good ξ,
+  { sorry },
+  let ξ₀ : ρ.out.α := ρ.out.wo.wf.min { ξ | good ξ } (ne_empty_of_exists_mem this),
+  have : ¬unbounded ((λ x : A × ρ.out.α, nr x.1 x.2) '' set.prod set.univ (< ξ₀)), sorry,
+  let α₀ : ordinal := ι (θ.ord.out.wo.wf.strict_sup _ this),
+  have : unbounded (⋃₀ A),
+  { sorry },
+  have : ∀(x < θ.ord), ∃y : A, x < ι (nr y ξ₀), sorry,
+  let pick : θ.ord.out.α → A := θ.ord.out.wo.wf.fix
+    (λ μ ih, classical.some $ this (ordinal.sup.{u u} (λ x : ρ.out.α × subtype (< μ), max α₀ $
+    ι $ nr (ih x.2.val x.2.2) x.1)) (_)),
+  let A2 := range (subtype.val ∘ pick),
+  have h1A2 : mk A2 = θ, sorry,
+  let sub_α₀ : set θ.ord.out.α := ι ⁻¹' {c | c ≤ α₀ },
+  have h2A2 : ∀(x ∈ A2) (y ∈ A2), x ≠ y → x ∩ y ⊆ sub_α₀, sorry,
+  have : ∃r B, r ⊆ sub_α₀ ∧ B ⊆ A2 ∧ mk B = θ ∧ ∀(x ∈ B), x ∩ sub_α₀ = r, sorry,
+  { rcases this with ⟨r, B, hr, h1B, h2B, h3B⟩,
+    refine ⟨B, subset.trans h1B _, h2B, r, _⟩, rw [range_subset_iff], intro x, exact (pick x).2,
+    intros x y hx hy hxy, rw [←h3B x hx], apply set.ext, intro z, split,
+    intro hz, refine ⟨hz.1, h2A2 x (h1B hx) y (h1B hy) hxy hz⟩,
+    intro hz, refine ⟨hz.1, _⟩, rw [h3B x hx, ←h3B y hy] at hz, exact hz.1 },
+  sorry
+end
+#print sup_lt_of_is_regular
+#print sup_ord
+
+lemma delta_system_lemma_1 (κ : cardinal) (hκ : cardinal.omega ≤ κ) {θ} (hκθ : κ < θ)
+  (hθ : is_regular θ) (hθ_le : ∀(α < θ.ord), card (powerlt α κ.ord) < θ)
+  (A : set (set (θ.ord.out.α)))
+  (hA : mk (subtype A) = θ) (hA2 : ∀(x ∈ A), mk (subtype x) < κ) :
+  ∃(B ⊆ A), mk B = θ ∧ is_delta_system B :=
+begin
+  sorry
+end
+/-- The delta-system lemma. [Kunen 1980, Theorem 1.6, p49] -/
+theorem delta_system_lemma {α : Type u} (κ : cardinal) (hκ : cardinal.omega ≤ κ) {θ} (hκθ : κ < θ)
+  (hθ : is_regular θ) (hθ_le : ∀(α < θ.ord), card (powerlt α κ.ord) < θ) (A : set (set α))
+  (hA : θ ≤ mk A) (hA2 : ∀(x ∈ A), mk (subtype x) < κ) :
+  ∃(B ⊆ A), mk B = θ ∧ is_delta_system B :=
+begin
+  sorry
+end
+
+
+end delta_system
+
+namespace topological_space
+
+variables {α : Type u} [topological_space α]
+
+def open_set (α : Type u) [topological_space α] : Type u := subtype (@_root_.is_open α _)
+
+def countable_chain_condition : Prop :=
+∀(s : set $ open_set α), pairwise (disjoint on s) → s.countable
+
+
+
+end topological_space

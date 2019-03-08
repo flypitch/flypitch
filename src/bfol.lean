@@ -280,7 +280,7 @@ by simp [not]
 def boolean_realize_formula_glb (S : bStructure L β) (f : formula L) : β :=
 ⨅(v : ℕ → S), boolean_realize_formula v f ([])
 
--- notation `⟦`:max f `⟧[` S `]`:0 := boolean_realize_formula_glb S f
+notation `⟦`:max f `⟧[` S `]ᵤ`:0 := boolean_realize_formula_glb S f
 
 -- def all_bsatisfied_in (S : bStructure L β) (T : set (formula L)) := ∀{{f}}, f ∈ T → S ⊨ᵇ f
 -- infix ` ⊨ᵇ `:51 := fol.all_satisfied_in -- input using \|= or \vDash, but not using \bModels
@@ -291,7 +291,7 @@ def bstatisfied (T : set (formula L)) (f : formula L) : Prop :=
   (⨅(f' ∈ T), boolean_realize_formula v (f' : formula L) ([])) ≤ boolean_realize_formula v f ([])
 variable {β}
 
-notation T ` ⊨ᵇ[`:51 β`] `:0 f := fol.bstatisfied β T f -- input using \|= or \vDash, but not using \bModels
+notation T ` ⊨ᵤ[`:51 β`] `:0 f := fol.bstatisfied β T f -- input using \|= or \vDash, but not using \bModels
 
 -- def all_bstatisfied (T T' : set (formula L)) := ∀{{f}}, f ∈ T' → T ⊨ᵇ f
 -- infix ` ⊨ᵇ `:51 := fol.all_bstatisfied -- input using \|= or \vDash, but not using \bModels
@@ -304,7 +304,7 @@ notation T ` ⊨ᵇ[`:51 β`] `:0 f := fol.bstatisfied β T f -- input using \|=
 --   S ⊨ᵇ T' :=
 -- λf hf, bstatisfied_in_trans H' $ H hf
 
-def bstatisfied_of_mem {T : set (formula L)} {f : formula L} (hf : f ∈ T) : T ⊨ᵇ[β] f :=
+def bstatisfied_of_mem {T : set (formula L)} {f : formula L} (hf : f ∈ T) : T ⊨ᵤ[β] f :=
 λS v, le_trans (infi_le _ f) (infi_le _ hf)
 
 -- def all_bstatisfied_of_subset {T T' : set (formula L)} (h : T' ⊆ T) : T ⊨ᵇ T' :=
@@ -316,8 +316,8 @@ def bstatisfied_of_mem {T : set (formula L)} {f : formula L} (hf : f ∈ T) : T 
 -- def all_bstatisfied_trans {T₁ T₂ T₃ : set (formula L)} (H' : T₁ ⊨ᵇ T₂) (H : T₂ ⊨ᵇ T₃) : T₁ ⊨ᵇ T₃ :=
 -- λf hf, bstatisfied_trans H' $ H hf
 
-def bstatisfied_weakening {T T' : set (formula L)} (H : T ⊆ T') {f : formula L} (HT : T ⊨ᵇ[β] f) :
-  T' ⊨ᵇ[β] f :=
+def bstatisfied_weakening {T T' : set (formula L)} (H : T ⊆ T') {f : formula L} (HT : T ⊨ᵤ[β] f) :
+  T' ⊨ᵤ[β] f :=
 begin
   intros S v, refine le_trans _ (HT S v),
   apply infi_le_infi, intro f,
@@ -326,7 +326,7 @@ begin
 end
 
 /- soundness for a set of formulae with boolean models -/
-lemma boolean_formula_soundness {Γ : set (formula L)} {A : formula L} (H : Γ ⊢ A) : Γ ⊨ᵇ[β] A :=
+lemma boolean_formula_soundness {Γ : set (formula L)} {A : formula L} (H : Γ ⊢ A) : Γ ⊨ᵤ[β] A :=
 begin
   induction H; intros S v,
   { exact bstatisfied_of_mem H_h S v },
@@ -354,12 +354,12 @@ end
 @[reducible] def boolean_realize_closed_term (S : bStructure L β) (t : closed_term L) : S :=
 boolean_realize_bounded_term ([]) t ([])
 
--- lemma boolean_realize_bounded_term_eq {n} {v₁ : dvector S n} {v₂ : ℕ → S}
---   (hv : ∀k (hk : k < n), v₁.nth k hk = v₂ k) : ∀{l} (t : bounded_preterm L n l)
---   (xs : dvector S l), boolean_realize_bounded_term v₁ t xs = boolean_realize_term v₂ t.fst xs
--- | _ &k             xs := hv k.1 k.2
--- | _ (bd_func f)    xs := by refl
--- | _ (bd_app t₁ t₂) xs := by dsimp; simp [boolean_realize_bounded_term_eq]
+lemma boolean_realize_bounded_term_eq {n} {v₁ : dvector S n} {v₂ : ℕ → S}
+  (hv : ∀k (hk : k < n), v₂ k = v₁.nth k hk) : ∀{l} (t : bounded_preterm L n l)
+  (xs : dvector S l), boolean_realize_term v₂ t.fst xs = boolean_realize_bounded_term v₁ t xs
+| _ &k             xs := hv k.1 k.2
+| _ (bd_func f)    xs := by refl
+| _ (bd_app t₁ t₂) xs := by dsimp; simp [boolean_realize_bounded_term_eq]
 
 lemma boolean_realize_bounded_term_irrel' {n n'} {v₁ : dvector S n} {v₂ : dvector S n'}
   (h : ∀m (hn : m < n) (hn' : m < n'), v₁.nth m hn = v₂.nth m hn')
@@ -449,29 +449,29 @@ boolean_realize_bounded_formula ([] : dvector S 0) f ([])
 
 notation `⟦`:max f `⟧[` S `]`:0 := boolean_realize_sentence S f
 
--- lemma boolean_realize_bounded_formula_iff : ∀{n} {v₁ : dvector S n} {v₂ : ℕ → S}
---   (hv : ∀k (hk : k < n), v₁.nth k hk = v₂ k) {l} (t : bounded_preformula L n l)
---   (xs : dvector S l), boolean_realize_bounded_formula v₁ t xs = boolean_realize_formula v₂ t.fst xs
--- | _ _ _ hv _ bd_falsum       xs := by refl
--- | _ _ _ hv _ (t₁ ≃ t₂)       xs := by dsimp; congr' 1; apply boolean_realize_bounded_term_eq hv
--- | _ _ _ hv _ (bd_rel R)      xs := by refl
--- | _ _ _ hv _ (bd_apprel f t) xs :=
---   by dsimp; simp [boolean_realize_bounded_term_eq hv, boolean_realize_bounded_formula_iff hv]
--- | _ _ _ hv _ (f₁ ⟹ f₂)      xs :=
---   by dsimp; simp [boolean_realize_bounded_formula_iff hv]
--- | _ _ _ hv _ (∀' f)          xs :=
---   begin
---     apply congr_arg infi; apply funext, intro x, apply boolean_realize_bounded_formula_iff,
---     intros k hk, cases k, refl, apply hv
---   end
+lemma boolean_realize_bounded_formula_eq : ∀{n} {v₁ : dvector S n} {v₂ : ℕ → S}
+  (hv : ∀k (hk : k < n), v₂ k = v₁.nth k hk) {l} (t : bounded_preformula L n l)
+  (xs : dvector S l), boolean_realize_formula v₂ t.fst xs = boolean_realize_bounded_formula v₁ t xs
+| _ _ _ hv _ bd_falsum       xs := by refl
+| _ _ _ hv _ (t₁ ≃ t₂)       xs := by dsimp; congr' 1; apply boolean_realize_bounded_term_eq hv
+| _ _ _ hv _ (bd_rel R)      xs := by refl
+| _ _ _ hv _ (bd_apprel f t) xs :=
+  by dsimp; simp [boolean_realize_bounded_term_eq hv, boolean_realize_bounded_formula_eq hv]
+| _ _ _ hv _ (f₁ ⟹ f₂)      xs :=
+  by dsimp; simp [boolean_realize_bounded_formula_eq hv]
+| _ _ _ hv _ (∀' f)          xs :=
+  begin
+    apply congr_arg infi; apply funext, intro x, apply boolean_realize_bounded_formula_eq,
+    intros k hk, cases k, refl, apply hv
+  end
 
--- lemma boolean_realize_bounded_formula_iff_of_fst : ∀{n} {v₁ w₁ : dvector S n}
+-- lemma boolean_realize_bounded_formula_eq_of_fst : ∀{n} {v₁ w₁ : dvector S n}
 --   {v₂ w₂ : ℕ → S} (hv₁ : ∀ k (hk : k < n), v₁.nth k hk = v₂ k)
 --   (hw₁ : ∀ k (hk : k < n), w₁.nth k hk = w₂ k) {l₁ l₂}
 --   (t₁ : bounded_preformula L n l₁) (t₂ : bounded_preformula L n l₂) (xs₁ : dvector S l₁)
 --   (xs₂ : dvector S l₂) (H : boolean_realize_formula v₂ t₁.fst xs₁ = boolean_realize_formula w₂ t₂.fst xs₂),
 --   (boolean_realize_bounded_formula v₁ t₁ xs₁ = boolean_realize_bounded_formula w₁ t₂ xs₂) :=
---  by intros; simpa[boolean_realize_bounded_formula_iff hv₁ t₁, boolean_realize_bounded_formula_iff hw₁ t₂]
+--  by intros; simpa[(boolean_realize_bounded_formula_eq hv₁ t₁).symm, (boolean_realize_bounded_formula_eq hw₁ t₂).symm]
 
 lemma boolean_realize_bounded_formula_irrel' {n n'} {v₁ : dvector S n} {v₂ : dvector S n'}
   (h : ∀m (hn : m < n) (hn' : m < n'), v₁.nth m hn = v₂.nth m hn')
@@ -547,10 +547,10 @@ by refl
 --     by apply boolean_realize_bounded_formula_and
 
 -- @[simp] lemma boolean_realize_bounded_formula_biimp {L} : ∀{n} {v : dvector S n} {f g : bounded_formula L n}, boolean_realize_bounded_formula v (f ⇔ g) dvector.nil = (boolean_realize_bounded_formula v f dvector.nil ⟷ boolean_realize_bounded_formula v g dvector.nil) := by {unfold bd_biimp, tidy}
-#exit
-@[simp] lemma boolean_realize_sentence_biimp {f₁ f₂ : sentence L} :
-  ⟦f₁ ⇔ f₂⟧[S] = (⟦f₁⟧[S] ⟷ ⟦f₂⟧[S]) :=
-by apply boolean_realize_bounded_formula_biimp
+
+-- @[simp] lemma boolean_realize_sentence_biimp {f₁ f₂ : sentence L} :
+--   ⟦f₁ ⇔ f₂⟧[S] = (⟦f₁⟧[S] ⟷ ⟦f₂⟧[S]) :=
+-- by apply boolean_realize_bounded_formula_biimp
 
 lemma boolean_realize_bounded_formula_bd_apps_rel
   {n l} (xs : dvector S n) (f : bounded_preformula L n l) (ts : dvector (bounded_term L n) l) :
@@ -586,20 +586,16 @@ lemma boolean_realize_sentence_equal (t₁ t₂ : closed_term L) :
   ⟦t₁ ≃ t₂⟧[S] = S.eq (boolean_realize_closed_term S t₁) (boolean_realize_closed_term S t₂) :=
 by refl
 
--- lemma boolean_realize_sentence_iff (v : ℕ → S) (f : sentence L) :
---   boolean_realize_sentence S f = boolean_realize_formula v f.fst ([]) :=
--- boolean_realize_bounded_formula_iff (λk hk, by exfalso; exact not_lt_zero k hk) f _
+lemma boolean_realize_sentence_eq (v : ℕ → S) (f : sentence L) :
+  boolean_realize_formula v f.fst ([]) = boolean_realize_sentence S f :=
+boolean_realize_bounded_formula_eq (λk hk, by exfalso; exact not_lt_zero k hk) f _
 
--- lemma boolean_realize_sentence_of_bstatisfied_in [HS : nonempty S] {f : sentence L}
---   (H : S ⊨ᵇ f.fst) : S ⊨ᵇ f :=
--- begin unfreezeI, induction HS with x, exact (boolean_realize_sentence_iff (λn, x) f).mpr (H _) end
-
--- lemma bstatisfied_in_of_boolean_realize_sentence {f : sentence L} (H : S ⊨ᵇ f) : S ⊨ᵇ f.fst :=
--- λv, (boolean_realize_sentence_iff v f).mp H
-
--- lemma boolean_realize_sentence_iff_bstatisfied_in [HS : nonempty S] {f : sentence L} :
---   S ⊨ᵇ f = S ⊨ᵇ f.fst  :=
--- ⟨bstatisfied_in_of_boolean_realize_sentence, boolean_realize_sentence_of_bstatisfied_in⟩
+lemma bstatisfied_in_eq_boolean_realize_sentence [HS : nonempty S] (f : sentence L) :
+  ⟦f.fst⟧[S]ᵤ = ⟦f⟧[S] :=
+begin
+  haveI : nonempty (ℕ → S) := HS.map (λ x n, x),
+  simp [boolean_realize_formula_glb, boolean_realize_sentence_eq]
+end
 
 def forced_in (x : β) (S : bStructure L β) (f : sentence L) : Prop :=
 x ≤ boolean_realize_sentence S f
@@ -629,7 +625,27 @@ variable (β)
 def forced (T : Theory L) (f : sentence L) :=
 ∀{{S : bStructure L β}}, nonempty S → (⨅(f ∈ T), boolean_realize_sentence S f) ⊩[S] f
 variable {β}
-notation T ` ⊨ᵇ[`:51 β`] `:0 f := fol.forced β T f -- input using \|= or \vDash, but not using \bModels
+notation T ` ⊨[`:51 β`] `:0 f := fol.forced β T f -- input using \|= or \vDash, but not using \bModels
+
+def bsatisfied_of_forced {T : Theory L} {f : sentence L} (H : T ⊨[β] f) : T.fst ⊨ᵤ[β] f.fst :=
+begin
+  intros S v, rw [boolean_realize_sentence_eq],
+  refine le_trans _ (H ⟨v 0⟩),
+  rw [le_infi_iff], intro f, rw [le_infi_iff], intro hf,
+  refine le_trans (infi_le _ f.fst) _,
+  refine le_trans (infi_le _ (mem_image_of_mem _ hf)) _,
+  apply le_of_eq, rw [boolean_realize_sentence_eq]
+end
+
+def forced_of_bsatisfied {T : Theory L} {f : sentence L} (H : T.fst ⊨ᵤ[β] f.fst) : T ⊨[β] f :=
+begin
+  intros S hS, induction hS with s, dsimp [forced_in],
+  rw [←boolean_realize_sentence_eq (λ _, s)],
+  refine le_trans _ (H S (λ _, s)),
+  rw [le_infi_iff], intro f', rw [le_infi_iff], intro hf',
+  rcases hf' with ⟨f', ⟨hf', rfl⟩⟩, rw [boolean_realize_sentence_eq],
+  refine le_trans (infi_le _ f') (infi_le _ hf')
+end
 
 --infix ` ⊨ᵇ `:51 := fol.forced -- input using \|= or \vDash, but not using \bModels
 
@@ -651,26 +667,9 @@ variable {β}
 -- @[simp] lemma false_of_bModel_absurd {T : Theory L} (M : bModel β T) {ψ : sentence L} (h : M ⊨ᵇ ψ) (h' : M ⊨ᵇ ∼ψ) : false :=
 -- by {unfold bModel_ssatisfied at *, simp[*,-h'] at h', exact h'}
 
-#print sprf
-lemma boolean_soundness {T : Theory L} {A : sentence L} (H : T ⊢ A) : forced β T A :=
-begin
-  intros S hS, induction H,
-  { apply h, apply H_h },
-  { intro ha, apply H_ih, intros f hf, induction hf, { subst hf, assumption }, apply h f hf },
-  { exact H_ih_h₁ v h (H_ih_h₂ v h) },
-  { apply classical.by_contradiction, intro ha,
-    apply H_ih v, intros f hf, induction hf, { cases hf, exact ha }, apply h f hf },
-  { intro x, apply H_ih, intros f hf, cases (mem_image _ _ _).mp hf with f' hf', induction hf',
-    induction hf'_right, rw [boolean_realize_formula_subst_lift v x 0 f'], exact h f' hf'_left },
-  { rw [←boolean_realize_formula_subst0], apply H_ih v h (boolean_realize_term v H_t ([])) },
-  { dsimp, refl },
-  { have h' := H_ih_h₁ v h, dsimp at h', rw [←boolean_realize_formula_subst0, ←h', boolean_realize_formula_subst0],
-    apply H_ih_h₂ v h },
+lemma boolean_soundness {T : Theory L} {A : sentence L} (H : T ⊢ A) : T ⊨[β] A :=
+forced_of_bsatisfied $ boolean_formula_soundness H
 
-end
-
-#print boolean_soundness
-#print ⊨ᵇ
 #exit
 /-- Given a bModel M ⊨ᵇ T with M ⊨ᵇ ¬ ψ, ¬ T ⊨ᵇ ψ--/
 @[simp] lemma not_satisfied_of_bModel_not {T : Theory L} {ψ : sentence L} (M : bModel β T) (hM : M ⊨ᵇ ∼ψ) (h_nonempty : nonempty M.fst): ¬ T ⊨ᵇ ψ :=
