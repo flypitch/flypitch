@@ -1,4 +1,4 @@
-import fol set_theory.zfc set_theory.ordinal order.boolean_algebra order.complete_boolean_algebra tactic.rewrite tactic.monotonicity .to_mathlib tactic.monotonicity bv_prf
+import fol set_theory.zfc set_theory.ordinal order.boolean_algebra order.complete_boolean_algebra tactic.rewrite tactic.monotonicity .to_mathlib tactic.monotonicity bv_prf order.zorn
 
 local infix ` ⟹ `:65 := lattice.imp
 
@@ -203,6 +203,9 @@ begin
   {apply top_unique, simp, apply le_supr_of_le i, have := x_ih i, finish}
 end
 
+@[simp]lemma bv_eq_top_of_eq {x y : bSet 𝔹} (h_eq : x = y) : x =ᴮ y = ⊤ :=
+by simp*
+
 /- empty' is the singleton bSet {⟨∅, ⊥⟩}, i.e. a set whose only member is ∅ which has
    a zero probability of actually being an element. It should be equivalent to ∅. -/
 @[reducible]def empty' : bSet 𝔹 := mk punit (λ _, ∅) (λ _, ⊥)
@@ -307,6 +310,21 @@ begin
    induction y, unfold mem, simp, by apply imp_le_of_left_le; apply le_supr_of_le i;
    exact le_inf (by refl) (by rw[bv_eq_refl]; apply le_top)},
 end
+
+lemma eq_of_subset_subset (x y : bSet 𝔹) : x ⊆ᴮ y ⊓ y ⊆ᴮ x ≤ x =ᴮ y :=
+begin
+  simp[subset_unfold, bv_eq_unfold], tidy;
+  [apply inf_le_left_of_le, apply inf_le_right_of_le]; apply bv_specialize i; refl
+end
+
+lemma subset_subset_of_eq (x y : bSet 𝔹) : x =ᴮ y ≤ x ⊆ᴮ y ⊓ y ⊆ᴮ x :=
+begin
+  simp[subset_unfold, bv_eq_unfold], tidy;
+  [apply inf_le_left_of_le, apply inf_le_right_of_le]; apply bv_specialize i; refl
+end
+
+theorem eq_iff_subset_subset {x y : bSet 𝔹} : x =ᴮ y = x ⊆ᴮ y ⊓ y ⊆ᴮ x :=
+by apply le_antisymm; [apply subset_subset_of_eq, apply eq_of_subset_subset]
 
 theorem bv_eq_trans {x y z : bSet 𝔹} : (x =ᴮ y ⊓ y =ᴮ z) ≤ x =ᴮ z :=
 begin
@@ -419,6 +437,26 @@ lemma subset_unfold' {x u : bSet 𝔹} : x ⊆ᴮ u = ⨅(w : bSet 𝔹), w ∈�
 begin
   simp only [subset_unfold], have := @bounded_quantification 𝔹 _ x (λ y, y∈ᴮ u),
   dsimp at this, rw[this], intros, apply subst_congr_mem_left
+end
+
+@[simp]lemma subset_self {x : bSet 𝔹} : x ⊆ᴮ x = ⊤ :=
+by {rw[subset_unfold'], apply top_unique, bv_intro w, finish[lattice.imp_self]}
+
+lemma subset_trans {x y z : bSet 𝔹} : x ⊆ᴮ y ⊓ y ⊆ᴮ z ≤ x ⊆ᴮ z :=
+begin
+  simp[subset_unfold'], intro i_z, apply bv_specialize_left i_z,
+  apply bv_specialize_right i_z, rw[<-deduction],
+  ac_change (i_z ∈ᴮ x ⟹ i_z ∈ᴮ y)  ⊓ i_z ∈ᴮ x ⊓ (i_z ∈ᴮ y ⟹ i_z ∈ᴮ z) ≤ i_z ∈ᴮ z,
+  rw[deduction], let H := _, change ((H ⟹ _) ⊓ H : 𝔹) ≤ _,
+  apply le_trans, apply bv_imp_elim, rw[<-deduction], rw[inf_comm],
+  apply le_trans, apply bv_imp_elim, refl
+end
+
+lemma subset_trans_context {x y z : bSet 𝔹} {c : 𝔹} {h₁ : c ≤ x ⊆ᴮ y} {h₂ : c ≤ y ⊆ᴮ z} : c ≤ x ⊆ᴮ z :=
+begin
+  apply bv_have h₂, rw[deduction], apply bv_have h₁, rw[<-deduction],
+  ac_change c ⊓ (x ⊆ᴮ y ⊓ y ⊆ᴮ z) ≤ x ⊆ᴮ z, apply inf_le_right_of_le,
+  apply subset_trans
 end
 
 -- lemma bounded_quantification' {ϕ : bSet 𝔹 → 𝔹 } {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} {v : bSet 𝔹} :
@@ -829,6 +867,15 @@ section cores
 def core {α : Type u} (u : bSet 𝔹) (S : α → bSet 𝔹) : Prop :=
 (∀ x : α, S x ∈ᴮ u = ⊤) ∧ (∀ y : bSet 𝔹, y ∈ᴮ u = ⊤ → ∃! x_y : α, y =ᴮ S x_y = ⊤)
 
+lemma core_inj {α : Type u} (u : bSet 𝔹) (S : α → bSet 𝔹) (h_core : core u S) : function.injective S :=
+begin
+  intros x y H, cases h_core, have h_left₁ := h_core_left x, have h_left₂ := h_core_left y,
+  have this_right₁ := h_core_right (S x) h_left₁,
+  have this_right₂:= h_core_right (S y) h_left₂,
+  rcases this_right₁ with ⟨w₁, ⟨H₁, H₂⟩⟩, rcases this_right₂ with ⟨w₂, ⟨H₁', H₂'⟩⟩,
+  have Q₂ := H₂ y, have Q₃ := H₂ x (by apply bv_eq_refl), dsimp at *, rw[Q₂], swap, simpa[H]
+end
+
 /-- This is the "f_x" in the notes. We are free to use function types since universes are inaccessible. -/
 def core.mk_ϕ (u : bSet 𝔹) : bSet 𝔹 → (u.type → 𝔹) :=
 λ x, (λ a, (u.bval a) ⊓ x =ᴮ u.func a )
@@ -934,6 +981,21 @@ def bSet_of_core_set {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} (h : c
 
 def bSet_of_core {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} (h : core u S) : bSet 𝔹 :=
   bSet_of_core_set h set.univ
+
+/-- Given a core S for u, pull back the ordering -/
+def subset' {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} (h : core u S) : α → α → Prop :=
+  λ a₁ a₂, S a₁ ⊆ᴮ S a₂ = ⊤
+
+open classical zorn
+
+instance subset'_partial_order {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} (h : core u S) : partial_order α :=
+{ le := subset' h,
+  lt := λ a₁ a₂, (subset' h a₁ a₂) ∧ a₁ ≠ a₂,
+  le_refl := by simp[subset'],
+  le_trans := by {intros a b c, simp only [subset'], intros, rw[eq_top_iff] at a_1 a_2 ⊢,
+                   apply subset_trans_context, repeat{assumption}},
+  lt_iff_le_not_le := by {tidy, dsimp[subset'] at *,  } ,
+  le_antisymm := sorry }
 
 lemma exists_mem_of_nonempty (u : bSet 𝔹) {Γ : 𝔹} {H : Γ ≤ -(u =ᴮ ∅)} : Γ ≤ ⨆x, x∈ᴮ u :=
 by {apply le_trans H, simp[eq_empty], intro x, apply bv_use (u.func x), apply mem.mk'}
