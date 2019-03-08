@@ -522,44 +522,6 @@ lemma h_star_of_antichain_index {ι : Type u} {a : ι → 𝔹} {τ : ι → bSe
   by apply classical.prop_decidable _,
     by_cases i = j, simp[h], finish[h_index i j]}
 
-section mixing_corollaries
--- The lemmas in this section are corollaries of the mixing lemma
-variables (X u₁ u₂ : bSet 𝔹) (a₁ a₂ : 𝔹) (h_anti : a₁ ⊓ a₂ = ⊥) (h_partition : a₁ ⊔ a₂ = ⊤)
-
-include h_partition
-lemma two_term_mixture_mem_top (h₁ : u₁ ∈ᴮ X = ⊤) (h₂ : u₂ ∈ᴮ X = ⊤) :
-  two_term_mixture a₁ a₂ h_anti u₁ u₂ ∈ᴮ X = ⊤:=
-begin
-  let U := _, change U ∈ᴮ X= _, apply top_unique,
-  have : ⊤ ≤ U =ᴮ u₁ ⊔ U =ᴮ u₂,
-    by {rw[h_partition.symm],
-       have := mixing_lemma_two_term a₁ a₂ h_anti u₁ u₂,apply sup_le_sup, tidy},
-  have : ⊤ ≤ (U =ᴮ u₁ ⊔ U =ᴮ u₂) ⊓ (u₁ ∈ᴮ X ⊓ u₂ ∈ᴮ X),
-    by finish,
-  apply le_trans this, apply bv_or_elim_left;
-    [rw[<-inf_assoc], ac_change (U =ᴮ u₂ ⊓ u₂ ∈ᴮ X) ⊓ u₁ ∈ᴮ X ≤ U ∈ᴮ X];
-    apply inf_le_left_of_le; rw[bv_eq_symm]; apply subst_congr_mem_left
-end
-
-lemma two_term_mixture_subset_top (H : a₁ = u₂ ⊆ᴮ u₁) :
-  ⊤ ≤ u₂ ⊆ᴮ (two_term_mixture a₁ a₂ h_anti u₁ u₂) :=
-begin
-  let U := _, change _ ≤ u₂ ⊆ᴮ U,
-  rw[subset_unfold'], bv_intro w, apply bv_imp_intro,
-  rw[top_inf_eq], simp only [mem_unfold], apply bv_Or_elim,
-  intro i, fapply bv_use, exact ⟨ulift.up tt,i⟩, refine inf_le_inf _ (by refl),
-  simp, rw[sup_inf_left_right_eq], repeat{apply bv_and_intro},
-  {rw[h_partition], apply le_top},
-  {apply le_sup_right_of_le, cases u₂, apply mem.mk},
-  {have : a₂ = - a₁, by apply eq_neg_of_partition; assumption,
-   conv {to_rhs, congr, skip, rw[this, H]}, rw[sup_comm], change _ ≤ _ ⟹ _,
-   apply bv_imp_intro, rw[inf_comm], simp only [subset_unfold],
-   apply bv_specialize_left i, apply bv_imp_elim},
-  {apply le_sup_right_of_le, cases u₂, apply mem.mk}
-end
-
-end mixing_corollaries
-
 /- The next two lemmas use the fact that 𝔹 : Type u to extract a small set witnessing quantification over all of bSet 𝔹 -/
 
 /- i.e., in bSet 𝔹, any existential quantification is equivalent to a bounded existential quantification. this is one place where it's crucial that 𝔹 lives in the type universe out of which bSet 𝔹 is being built -/
@@ -761,6 +723,64 @@ lemma AE_convert {α 𝔹 : Type*} [nontrivial_complete_boolean_algebra 𝔹] (A
                 (by {intros x y, apply h_congr}),
       rcases this with ⟨u', H'⟩, use u', apply infi_le_of_le i,
       apply imp_le_of_right_le, from le_of_eq H'}  
+
+section mixing_corollaries
+-- The lemmas in this section are corollaries of the mixing lemma
+variables (X u₁ u₂ : bSet 𝔹) (a₁ a₂ : 𝔹) (h_anti : a₁ ⊓ a₂ = ⊥) (h_partition : a₁ ⊔ a₂ = ⊤)
+
+include h_partition
+lemma two_term_mixture_mem_top (h₁ : u₁ ∈ᴮ X = ⊤) (h₂ : u₂ ∈ᴮ X = ⊤) :
+  two_term_mixture a₁ a₂ h_anti u₁ u₂ ∈ᴮ X = ⊤:=
+begin
+  let U := _, change U ∈ᴮ X= _, apply top_unique,
+  have : ⊤ ≤ U =ᴮ u₁ ⊔ U =ᴮ u₂,
+    by {rw[h_partition.symm],
+       have := mixing_lemma_two_term a₁ a₂ h_anti u₁ u₂,apply sup_le_sup, tidy},
+  have : ⊤ ≤ (U =ᴮ u₁ ⊔ U =ᴮ u₂) ⊓ (u₁ ∈ᴮ X ⊓ u₂ ∈ᴮ X),
+    by finish,
+  apply le_trans this, apply bv_or_elim_left;
+    [rw[<-inf_assoc], ac_change (U =ᴮ u₂ ⊓ u₂ ∈ᴮ X) ⊓ u₁ ∈ᴮ X ≤ U ∈ᴮ X];
+    apply inf_le_left_of_le; rw[bv_eq_symm]; apply subst_congr_mem_left
+end
+
+lemma two_term_mixture_subset_top (H : a₁ = u₂ ⊆ᴮ u₁) :
+  ⊤ ≤ u₂ ⊆ᴮ (two_term_mixture a₁ a₂ h_anti u₁ u₂) :=
+begin
+  let U := _, change _ ≤ u₂ ⊆ᴮ U,
+  rw[subset_unfold'], bv_intro w, apply bv_imp_intro,
+  rw[top_inf_eq], simp only [mem_unfold], apply bv_Or_elim,
+  intro i, fapply bv_use, exact ⟨ulift.up tt,i⟩, refine inf_le_inf _ (by refl),
+  simp, rw[sup_inf_left_right_eq], repeat{apply bv_and_intro},
+  {rw[h_partition], apply le_top},
+  {apply le_sup_right_of_le, cases u₂, apply mem.mk},
+  {have : a₂ = - a₁, by apply eq_neg_of_partition; assumption,
+   conv {to_rhs, congr, skip, rw[this, H]}, rw[sup_comm], change _ ≤ _ ⟹ _,
+   apply bv_imp_intro, rw[inf_comm], simp only [subset_unfold],
+   apply bv_specialize_left i, apply bv_imp_elim},
+  {apply le_sup_right_of_le, cases u₂, apply mem.mk}
+end
+end mixing_corollaries
+
+lemma core_aux_lemma (ϕ : bSet 𝔹 → 𝔹) (h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y) (h_definite : (⨆(w : bSet 𝔹), ϕ w) = ⊤) (v : bSet 𝔹) :
+  ∃ u : bSet 𝔹, ϕ u = ⊤ ∧ ϕ v = u =ᴮ v :=
+begin
+  have := maximum_principle ϕ h_congr, cases this with w H_w,
+  let b := ϕ v, let u := two_term_mixture b (- b) (by simp) v w, use u,
+  have h_partition : b ⊔ (- b) = ⊤, by simp,
+  have H_max : ϕ u = ⊤,
+    by {apply top_unique, rw[<-h_partition], apply le_trans,
+    apply sup_le_sup, apply le_inf, apply (mixing_lemma_two_term _ _ _ _ _).left, exact -b, simp,
+    exact v, exact w, refl, apply le_inf, apply (mixing_lemma_two_term _ _ _ _ _).right, exact b,
+    simp, exact v, exact w, swap, exact ϕ w, rw[<-H_w, h_definite], apply le_top,
+    apply bv_or_elim; rw[bv_eq_symm]; apply h_congr},
+  refine ⟨H_max, _⟩,
+  apply le_antisymm,
+    {apply (mixing_lemma_two_term _ _ _ _ _).left},
+    {suffices : u =ᴮ v ⊓ ϕ u ≤ ϕ v,
+      by {rw[H_max] at this, finish}, by apply h_congr}
+end
+
+
 
 section check_names
 /- `check` is the canonical embedding of pSet into bSet.
