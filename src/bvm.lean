@@ -174,6 +174,12 @@ instance nonempty_bSet : nonempty $ @bSet 𝔹 _ :=
 
 instance has_empty_bSet : has_emptyc (bSet 𝔹) := ⟨empty⟩
 
+@[simp]lemma forall_over_empty (ϕ : (type (∅ : bSet 𝔹)) → 𝔹) : (⨅a, ϕ a) = ⊤ :=
+  by {apply top_unique, bv_intro a, repeat{cases a}}
+
+@[simp]lemma exists_over_empty (ϕ : (type (∅ : bSet 𝔹)) → 𝔹) : (⨆a, ϕ a) = ⊥ :=
+ by {apply bot_unique, apply bv_Or_elim, intro i, repeat{cases i}}
+
 /-- Two Boolean-valued pre-sets are extensionally equivalent if every
 element of the first family is extensionally equivalent to
   some element of the second family and vice-versa. -/
@@ -228,7 +234,6 @@ theorem mem.mk {α : Type*} (A : α → bSet 𝔹) (B : α → 𝔹) (a : α) : 
 
 theorem mem.mk' (x : bSet 𝔹) (a : x.type) : x.bval a ≤ x.func a ∈ᴮ x :=
 by {cases x, apply le_supr_of_le a, simp}
-
 
 @[simp, reducible]protected def subset : bSet 𝔹 → bSet 𝔹 → 𝔹
 | (mk α A B) b := ⨅a:α, B a ⟹ (A a ∈ᴮ b)
@@ -366,6 +371,12 @@ lemma bv_context_trans {Γ : 𝔹} {a₁ a₂ a₃ : bSet 𝔹} (H₁ : Γ ≤ a
   Γ ≤ a₁ =ᴮ a₃ :=
 by {have := inf_le_inf H₁ H₂, rw[inf_self] at this, apply le_trans this, apply bv_eq_trans}
 
+lemma bv_rw {x y : bSet 𝔹} (H : x =ᴮ y = ⊤) (ϕ : bSet 𝔹 → 𝔹) {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} : ϕ y = ϕ x :=
+begin
+  apply le_antisymm, swap, rw[show ϕ x = ϕ x ⊓ ⊤, by simp], rw[<-H, inf_comm], apply h_congr,
+  rw[show ϕ y = ϕ y ⊓ ⊤, by simp], rw[<-H, inf_comm, bv_eq_symm], apply h_congr
+end
+
 lemma bv_eq_le_congr_right {u v w} {h : v = w} : u =ᴮ v ≤ (u =ᴮ w : 𝔹) := by rw[h]
 
 lemma bv_eq_le_congr_left {u v w} {h : v = w} : v =ᴮ u ≤ (w =ᴮ u : 𝔹) := by rw[h]
@@ -438,6 +449,13 @@ begin
 end
 
 def is_definite (u : bSet 𝔹) : Prop := ∀ i : u.type, u.bval i = ⊤
+
+lemma eq_empty {u : bSet 𝔹} : u =ᴮ ∅ = -⨆i, u.bval i :=
+begin
+  simp only [bv_eq_unfold], simp only [mem_unfold],
+  simp only [inf_top_eq, bSet.forall_over_empty, bSet.exists_over_empty,imp_bot, neg_supr]
+end
+
 
 /-- ϕ (x) is true if and only if the Boolean truth-value of ϕ(x̌) is ⊤-/
 /- To even state this theorem, we need to set up more general machinery for
@@ -922,6 +940,20 @@ begin
    apply top_unique, rw[bv_eq_symm] at H_y''',
      rw[show ⊤ = (core.mk_aux u i =ᴮ y ⊓ y =ᴮ y'), by {dsimp at H_y''', rw [H₃, H_y'''], simp}],
    apply bv_eq_trans}
+end
+
+lemma exists_mem_of_nonempty (u : bSet 𝔹) {Γ : 𝔹} {H : Γ ≤ -(u =ᴮ ∅)} : Γ ≤ ⨆x, x∈ᴮ u :=
+by {apply le_trans H, simp[eq_empty], intro x, apply bv_use (u.func x), apply mem.mk'}
+
+lemma core_aux_lemma3 (u : bSet 𝔹) (h_nonempty : -(u =ᴮ ∅) = ⊤) {α : Type u} (S : α → bSet 𝔹) (h_core : core u S) : ∀ x, ∃ y ∈ S '' set.univ, x =ᴮ y = x ∈ᴮ u :=
+begin
+  intro x, have := core_aux_lemma (λ z, z∈ᴮu) (by intros; apply subst_congr_mem_left)
+    (by {apply top_unique, apply exists_mem_of_nonempty, simpa}) x,
+    rcases this with ⟨y, ⟨H₁, H₂⟩⟩, cases h_core with H_left H_right,
+    specialize H_right y H₁, cases H_right with y' H_y',
+    use S y', specialize H_left y', split, use y', finish,
+    dsimp at H₁ H₂, rw[H₂], cases H_y', have := bv_rw H_y'_left (λ z, x =ᴮ z),
+    simpa[bv_eq_symm] using this, intros x₁ y₁, dsimp, rw[inf_comm], apply bv_eq_trans
 end
 
 end cores

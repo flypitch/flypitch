@@ -759,6 +759,9 @@ lemma curry_uncurry {α : Type*} [boolean_algebra α] {a b c : α} : ((a ⊓ b) 
 
 lemma deduction_simp {α : Type*} [boolean_algebra α] {a b c : α} : a ≤ (b ⟹ c) ↔ a ⊓ b ≤ c := deduction.symm
 
+lemma imp_top {α : Type*} [complete_boolean_algebra α] (a : α) : a ≤ a ⟹ ⊤ :=
+by {rw[<-deduction]; simp}
+
 /-- Given an η : option α → β, where β is a complete lattice, we have that the supremum of η
     is equal to (η none) ⊔ ⨆(a:α) η (some a)-/
 @[simp]lemma supr_option {α β : Type*} [complete_lattice β] {η : option α → β} : (⨆(x : option α), η x) = (η none) ⊔ ⨆(a : α), η (some a) :=
