@@ -791,6 +791,16 @@ begin
   rw[<-this, h₂], apply h_congrψ
 end
 
+section cores
+def core {α : Type u} (u : bSet 𝔹) (S : α → bSet 𝔹) : Prop :=
+(∀ x : α, S x ∈ᴮ u = ⊤) ∧ (∀ y : bSet 𝔹, y ∈ᴮ u = ⊤ → ∃! x_y : α, y =ᴮ S x_y = ⊤)
+
+lemma core.mk (u : bSet 𝔹) : ∃ α : Type u, ∃ S : α → bSet 𝔹, core u S :=
+begin
+  sorry
+end
+
+end cores
 
 section check_names
 /- `check` is the canonical embedding of pSet into bSet.
@@ -880,11 +890,9 @@ begin
   convert this
 end
 
-theorem bSet_axiom_of_union : (⨅ (u : bSet 𝔹), (⨆(v : _), ⨅(x : _),
-  (x ∈ᴮ v ⇔ (⨆(y : u.type), x ∈ᴮ u.func y)))) = ⊤ :=
+lemma bv_union_spec (u : bSet 𝔹) : ⊤ ≤ ⨅ (x : bSet 𝔹), (x ∈ᴮ bv_union u ⟹ ⨆ (y : type u), x ∈ᴮ func u y) ⊓
+        ((⨆ (y : type u), x ∈ᴮ func u y) ⟹ x ∈ᴮ bv_union u) :=
 begin
-  simp only [bSet.mem, lattice.biimp, bSet.func, lattice.infi_eq_top, bSet.type], intro u,
-  apply top_unique, apply le_supr_of_le (bv_union u),
   simp only [lattice.top_le_iff, bSet.mem, lattice.imp_top_iff_le,
   lattice.inf_eq_top_iff, bSet.func, lattice.le_infi_iff, bSet.type, lattice.supr_le_iff],
   intros x, fsplit, work_on_goal 1 { intros i_y },
@@ -898,6 +906,13 @@ begin
    rw[supr_inf_eq], apply le_supr_of_le i_y, apply inf_le_inf,
    swap, apply bv_eq_le_congr_right, apply func_cast.symm, repeat{assumption},
    have := @mem.mk 𝔹 _ α A B i_x', convert this, apply func_cast, repeat{assumption}}
+end
+
+theorem bSet_axiom_of_union : (⨅ (u : bSet 𝔹), (⨆(v : _), ⨅(x : _),
+  (x ∈ᴮ v ⇔ (⨆(y : u.type), x ∈ᴮ u.func y)))) = ⊤ :=
+begin
+  simp only [bSet.mem, lattice.biimp, bSet.func, lattice.infi_eq_top, bSet.type], intro u,
+  apply top_unique, apply le_supr_of_le (bv_union u), apply bv_union_spec
 end
 
 @[reducible, simp]def set_of_indicator {u : bSet 𝔹} (f : u.type → 𝔹) : bSet 𝔹 :=
@@ -1011,12 +1026,6 @@ end
   ⨆(x:bSet 𝔹), (⨅(y : bSet 𝔹), ϕ y ⟹ (y =ᴮ x))
 
 local notation `⨆!` binders `, ` r:(scoped f, bv_exists_unique f) := r
-
-def core {α : Type u} (u : bSet 𝔹) (S : α → bSet 𝔹) : Prop :=
-(∀ x : α, S x ∈ᴮ u = ⊤) ∧ (∀ y : bSet 𝔹, y ∈ᴮ u = ⊤ → ∃! x_y : α, y =ᴮ S x_y = ⊤)
-
-lemma core.mk (u : bSet 𝔹) : ∃ α : Type u, ∃ S : α → bSet 𝔹, core u S :=
-sorry -- TODO(jesse) make the appropriate smallness argument.
 
 /-- ∀ x, ((∀ y, y ⊆ x ∧ ∀ w₁ w₂ ∈ y, w₁ ⊆ w₂ ∨ w₂ ⊆ w₁) → (⋃y) ∈ x)
       → ∃ c ∈ x, ∀ z ∈ x, c ⊆ x → c = x -/
