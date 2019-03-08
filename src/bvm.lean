@@ -362,6 +362,10 @@ begin
         ac_refl}
 end
 
+lemma bv_context_trans {Γ : 𝔹} {a₁ a₂ a₃ : bSet 𝔹} (H₁ : Γ ≤ a₁ =ᴮ a₂) (H₂ : Γ ≤ a₂ =ᴮ a₃) :
+  Γ ≤ a₁ =ᴮ a₃ :=
+by {have := inf_le_inf H₁ H₂, rw[inf_self] at this, apply le_trans this, apply bv_eq_trans}
+
 lemma bv_eq_le_congr_right {u v w} {h : v = w} : u =ᴮ v ≤ (u =ᴮ w : 𝔹) := by rw[h]
 
 lemma bv_eq_le_congr_left {u v w} {h : v = w} : v =ᴮ u ≤ (w =ᴮ u : 𝔹) := by rw[h]
@@ -899,14 +903,25 @@ begin
    have H_y'' : y'' =ᴮ y' = ⊤,
      by {dsimp[y''], unfold core.mk_aux, have := quotient.mk_out,
       show setoid _, exact core.S''_setoid u, apply this},
-
+   have H₃ : y =ᴮ y' = ⊤,
+     by {apply core.mk_ϕ_inj, repeat{assumption}},
    have H₁ : y =ᴮ y'' = ⊤,
      by {apply top_unique, apply le_trans, show 𝔹, from y =ᴮ y' ⊓ y' =ᴮ y'',
            apply le_inf,
-             {rw[<-eq_top_iff], apply core.mk_ϕ_inj, repeat{assumption}},
+             {rw[<-eq_top_iff], exact H₃},
              {rw[<-eq_top_iff], convert H_y'' using 1, apply bv_eq_symm},
          apply bv_eq_trans},
-   sorry}
+   split, refine ⟨H₁, _⟩, intros i H_y''',
+   suffices : core.mk_aux u i =ᴮ y' = ⊤,
+     by {have : core.mk_aux u i =ᴮ y'' = ⊤, by {apply top_unique, rw[eq_top_iff] at *,
+         apply bv_context_trans this, convert H_y'' using 1, apply bv_eq_symm},
+         dsimp[y''] at this, unfold core.mk_aux at this_1,
+         have : ⟦quotient.out i⟧ = ⟦quotient.out ⟦⟨image.mk y, H_y'2⟩⟧⟧,
+           by {apply quotient.sound, exact this_1},
+         convert this using 1; rw[quotient.out_eq]},
+   apply top_unique, rw[bv_eq_symm] at H_y''',
+     rw[show ⊤ = (core.mk_aux u i =ᴮ y ⊓ y =ᴮ y'), by {dsimp at H_y''', rw [H₃, H_y'''], simp}],
+   apply bv_eq_trans}
 end
 
 end cores
