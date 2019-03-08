@@ -1018,7 +1018,11 @@ def core {α : Type u} (u : bSet 𝔹) (S : α → bSet 𝔹) : Prop :=
 lemma core.mk (u : bSet 𝔹) : ∃ α : Type u, ∃ S : α → bSet 𝔹, core u S :=
 sorry -- TODO(jesse) make the appropriate smallness argument.
 
-theorem bSet_zorns_lemma : sorry := sorry
+/-- ∀ x, ((∀ y, y ⊆ x ∧ ∀ w₁ w₂ ∈ y, w₁ ⊆ w₂ ∨ w₂ ⊆ w₁) → (⋃y) ∈ x)
+      → ∃ c ∈ x, ∀ z ∈ x, c ⊆ x → c = x -/
+theorem bSet_zorns_lemma (X : bSet 𝔹) : ⊤ ≤ (⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
+  w₁ ∈ᴮ y ⊓ w₁ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X))
+    ⟹ (⨆c, c ∈ᴮ X ⊓ (⨅z, z ∈ᴮ X ⟹ (c ⊆ᴮ X ⟹ c =ᴮ z))) := sorry
 
 -- /-- This is the abbreviated version of AC found at http://us.metamath.org/mpeuni/ac3.html
 --     It is provably equivalent over ZF to the usual formulation of AC
@@ -1029,9 +1033,6 @@ theorem bSet_zorns_lemma : sorry := sorry
 -- (⨅(x : bSet 𝔹), ⨆(y : bSet 𝔹), ⨅(z : bSet 𝔹),
 --   z ∈ᴮ x ⟹ ((- (z =ᴮ ∅)) ⟹
 --   (⨆!(w : bSet 𝔹), w ∈ᴮ z ⟹
---     ⨆(v : bSet 𝔹), v ∈ᴮ y ⟹ (z ∈ᴮ v ⊓ w ∈ᴮ v)))) = ⊤ :=
--- begin
---   apply top_unique, bv_intro x, unfold bv_exists_unique, sorry
--- end
+--     ⨆(v : bSet 𝔹), v ∈ᴮ y ⟹ (z ∈ᴮ v ⊓ w ∈ᴮ v)))) = ⊤ := sorry
 
 end bSet
