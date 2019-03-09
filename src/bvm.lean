@@ -1005,7 +1005,7 @@ def subset' {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} (h : core u S) 
 
 open classical zorn
 
-instance subset'_partial_order {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} (h : core u S) : partial_order α :=
+@[instance]def subset'_partial_order {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} (h : core u S) : partial_order α :=
 { le := subset' h,
   lt := λ a₁ a₂, (subset' h a₁ a₂) ∧ a₁ ≠ a₂,
   le_refl := by simp[subset'],
@@ -1265,12 +1265,36 @@ end
 
 local notation `⨆!` binders `, ` r:(scoped f, bv_exists_unique f) := r
 
-/-- ∀ x, ((∀ y, y ⊆ x ∧ ∀ w₁ w₂ ∈ y, w₁ ⊆ w₂ ∨ w₂ ⊆ w₁) → (⋃y) ∈ x)
+section zorns_lemma
+open classical zorn
+
+lemma subset'_inductive (X : bSet 𝔹) (H : ⊤ ≤ (⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
+  w₁ ∈ᴮ y ⊓ w₁ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X))) {α : Type*} {S : α → bSet 𝔹} {h_core : core X S} :
+   by {haveI := subset'_partial_order h_core, from ∀c:set α, @chain α (≤) c → ∃ub, ∀a∈c, a ≤ ub} :=
+begin
+  intro C, intro C_chain, let C' := bSet_of_core_set h_core C,
+  /- First, we show that C' is internally a chain -/
+  have : ⊤ ≤ ⨅ i₁ : C'.type, C'.bval i₁ ⟹ ⨅ i₂ : C'.type, C'.bval i₂ ⟹ (C'.func i₁ ⊆ᴮ C'.func i₂ ⊔ C'.func i₂ ⊆ᴮ C'.func i₁),
+  simp, intros i₁ i₂, apply bv_imp_intro,
+  simp[chain, set.pairwise_on] at C_chain, -- TODO Write lemmas simplifying the type of C-hat, etc
+  repeat{sorry}
+end
+
+theorem bSet_zorns_lemma' (X : bSet 𝔹) (H : ⊤ ≤ (⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
+  w₁ ∈ᴮ y ⊓ w₁ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X))) :
+  ⊤ ≤ (⨆c, c ∈ᴮ X ⊓ (⨅z, z ∈ᴮ X ⟹ (c ⊆ᴮ X ⟹ c =ᴮ z))) :=
+begin
+  simp at H,
+end
+    
+
+/-- ∀ x, x ≠ ∅ ∧ ((∀ y, y ⊆ x ∧ ∀ w₁ w₂ ∈ y, w₁ ⊆ w₂ ∨ w₂ ⊆ w₁) → (⋃y) ∈ x)
       → ∃ c ∈ x, ∀ z ∈ x, c ⊆ x → c = x -/
 theorem bSet_zorns_lemma (X : bSet 𝔹) : ⊤ ≤ (⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
   w₁ ∈ᴮ y ⊓ w₁ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X))
-    ⟹ (⨆c, c ∈ᴮ X ⊓ (⨅z, z ∈ᴮ X ⟹ (c ⊆ᴮ X ⟹ c =ᴮ z))) := sorry
-
+    ⟹ (⨆c, c ∈ᴮ X ⊓ (⨅z, z ∈ᴮ X ⟹ (c ⊆ᴮ X ⟹ c =ᴮ z))) :=
+sorry
+end zorns_lemma
 
 
 
