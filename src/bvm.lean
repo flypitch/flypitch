@@ -423,11 +423,9 @@ lemma bv_eq_le_congr_left {u v w} {h : v = w} : v =ᴮ u ≤ (w =ᴮ u : 𝔹) :
 /-- If u = v and u ∈ w, then this implies that v ∈ w -/
 lemma subst_congr_mem_left {u v w : bSet 𝔹} : u =ᴮ v ⊓ u ∈ᴮ w ≤ v ∈ᴮ w :=
 begin
-  cases w,
-  have : ∀ a : w_α, u =ᴮ v ⊓ w_B a ⊓ u =ᴮ w_A a ≤ w_B a ⊓ v =ᴮ w_A a,
-    by {intro a, have := inf_le_inf (by refl : w_B a ≤ w_B a) (@bv_eq_trans _ _ v u (w_A a)),
-      convert this using 1, simp[bv_eq_symm, inf_comm, inf_assoc]},
-  convert supr_le_supr this, simp[inf_supr_eq], congr, ext, ac_refl
+  simp only [mem_unfold], apply bv_cases_right, intro i,
+  apply bv_use i, ac_change bval w i ⊓ (u =ᴮ v ⊓ (u =ᴮ func w i)) ≤ bval w i ⊓ v =ᴮ func w i,
+  apply inf_le_inf, refl, rw[bv_eq_symm], apply bv_eq_trans
 end
 
 /-- If v = w and u ∈ v, then this implies that u ∈ w -/
@@ -526,6 +524,26 @@ begin
   rw[deduction], apply le_trans, apply bv_imp_elim, rw[<-deduction, inf_comm],
   apply subst_congr_mem_right
 end
+
+@[reducible]def B_ext (ϕ : bSet 𝔹 → 𝔹) : Prop :=
+  ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y
+
+@[simp]lemma B_ext_mem_left {y : bSet 𝔹} : B_ext (λ x, x ∈ᴮ y) :=
+by unfold B_ext; intros; apply subst_congr_mem_left
+
+@[simp]lemma B_ext_mem_right {x : bSet 𝔹} : B_ext (λ y, x ∈ᴮ y) :=
+by unfold B_ext; intros; apply subst_congr_mem_right
+
+@[simp]lemma subst_congr_sup {ϕ₁ ϕ₂ : bSet 𝔹 → 𝔹} {h₁ : B_ext ϕ₁} {h₂ : B_ext ϕ₂} :
+  B_ext (λ x, ϕ₁ x ⊔ ϕ₂ x) :=
+begin
+  intros x y, dsimp, rw[inf_comm, deduction], apply bv_or_elim;
+  apply bv_imp_intro; [apply le_sup_left_of_le, apply le_sup_right_of_le];
+  rw[inf_comm]; [apply h₁, apply h₂]
+end
+
+example {y : bSet 𝔹} : B_ext (λ x : bSet 𝔹, x ∈ᴮ y ⊔ y ∈ᴮ x) :=
+by simp
 
 def is_definite (u : bSet 𝔹) : Prop := ∀ i : u.type, u.bval i = ⊤
 
