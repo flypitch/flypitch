@@ -542,6 +542,39 @@ begin
   rw[inf_comm]; [apply h₁, apply h₂]
 end
 
+@[simp]lemma subst_congr_inf {ϕ₁ ϕ₂ : bSet 𝔹 → 𝔹} {h₁ : B_ext ϕ₁} {h₂ : B_ext ϕ₂} :
+  B_ext (λ x, ϕ₁ x ⊓ ϕ₂ x) :=
+begin
+  intros x y, dsimp, apply le_inf,
+  fapply le_trans, exact x =ᴮ y ⊓ ϕ₁ x,
+    by {apply inf_le_inf, refl, apply inf_le_left},
+    apply h₁,
+  fapply le_trans, exact x =ᴮ y ⊓ ϕ₂ x,
+    by {apply inf_le_inf, refl, apply inf_le_right},
+    apply h₂
+end
+
+@[simp]lemma subst_congr_imp {ϕ₁ ϕ₂ : bSet 𝔹 → 𝔹} {h₁ : B_ext ϕ₁} {h₂ : B_ext ϕ₂} :
+  B_ext (λ x, ϕ₁ x ⟹ ϕ₂ x) :=
+begin
+  unfold B_ext, intros x y, rw[<-deduction],
+  ac_change x =ᴮ y ⊓  ϕ₁ y ⊓ (ϕ₁ x ⟹ ϕ₂ x) ≤ ϕ₂ y,
+  rw[deduction], rw[bv_eq_symm], apply le_trans', apply h₁, rw[<-deduction, inf_comm],
+  ac_change (ϕ₁ x ⟹ ϕ₂ x)  ⊓ ϕ₁ x ⊓ (y =ᴮ x ⊓ ϕ₁ y) ≤ ϕ₂ y, rw[deduction],
+  apply le_trans, apply bv_imp_elim, rw[<-deduction], rw[<-inf_assoc],
+  apply inf_le_left_of_le, rw[inf_comm, bv_eq_symm], apply h₂
+end
+
+@[simp]lemma subst_congr_const {b : 𝔹} : B_ext (λ x, b) :=
+by tidy
+
+@[simp]lemma subst_congr_neg {ϕ₁ : bSet 𝔹 → 𝔹} {h : B_ext ϕ₁} : B_ext (λ x, - ϕ₁ x) :=
+begin
+  simp only [imp_bot.symm],
+  ac_change (B_ext (λ x, ϕ₁ x ⟹ ((λ y, (⊥ : 𝔹)) x))), by simp,
+  apply subst_congr_imp; simp, exact h
+end
+
 example {y : bSet 𝔹} : B_ext (λ x : bSet 𝔹, x ∈ᴮ y ⊔ y ∈ᴮ x) :=
 by simp
 
