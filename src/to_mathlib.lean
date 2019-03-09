@@ -862,4 +862,11 @@ begin
   from (sub_eq_left h_anti).symm
 end
 
+lemma le_trans' {β} [lattice β] {a₁ a₂ a₃ : β} (h₁ : a₁ ≤ a₂) {h₂ : a₁ ⊓ a₂ ≤ a₃} : a₁ ≤ a₃ :=
+begin
+  suffices : a₁ ≤ a₁ ⊓ a₂, from le_trans this ‹_›,
+  rw[show a₁ = a₁ ⊓ a₁, by simp], conv {to_rhs, rw[inf_assoc]},
+  apply inf_le_inf, refl, apply le_inf, refl, assumption
+end
+
 end lattice

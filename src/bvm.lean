@@ -1,4 +1,7 @@
-import fol set_theory.zfc set_theory.ordinal order.boolean_algebra order.complete_boolean_algebra tactic.rewrite tactic.monotonicity .to_mathlib tactic.monotonicity bv_prf order.zorn
+import fol set_theory.zfc set_theory.ordinal
+       order.boolean_algebra order.complete_boolean_algebra
+       tactic.rewrite tactic.monotonicity
+       .to_mathlib bv_prf order.zorn
 
 local infix ` ⟹ `:65 := lattice.imp
 
@@ -49,6 +52,10 @@ variables {𝔹 : Type*} [complete_boolean_algebra 𝔹]
 lemma supr_imp_eq {ι : Type*} {s : ι → 𝔹} {b : 𝔹} :
   (⨆(i:ι), s i) ⟹ b = (⨅(i:ι), s i ⟹ b) :=
 by {unfold imp, rw[neg_supr, infi_sup_eq]}
+
+lemma imp_infi_eq {ι : Type*} {s : ι → 𝔹} {b : 𝔹} :
+  (b ⟹ (⨅i, s i)) = (⨅i, b ⟹ s i) :=
+by {unfold imp, rw[sup_infi_eq]}
 
 lemma bv_Or_elim  {ι : Type*} {s : ι → 𝔹} {c : 𝔹} :
 (∀ i : ι, (s i ≤ c)) → ((⨆(i:ι), s i) ≤ c) :=
@@ -108,6 +115,13 @@ by {rw[show a = a ⊓ a, by simp], apply le_trans, apply inf_le_inf, refl, exact
 
 lemma bv_use {ι : Type*} (i : ι) {s : ι → 𝔹} {b : 𝔹}  {h : b ≤ s i} : b ≤ ⨆(j:ι), s j :=
   le_supr_of_le i h
+
+lemma bv_context_apply {β : Type*} [complete_boolean_algebra β] {Γ a₁ a₂ : β} (h₁ : Γ ≤ a₁ ⟹ a₂) (h₂ : Γ ≤ a₁) : Γ ≤ a₂ :=
+begin
+  apply le_trans' h₁, apply bv_have, apply le_trans, show _ ≤ Γ,
+  by apply inf_le_left_of_le; refl, exact h₂, ac_change Γ ⊓ ((a₁ ⟹ a₂) ⊓ a₁) ≤ a₂,
+  apply inf_le_right_of_le, apply bv_imp_elim
+end
 
 end natded
 end lattice
@@ -427,7 +441,7 @@ begin
   rw[deduction], cases w, apply inf_le_left_of_le, apply infi_le
 end
 
-lemma bounded_quantification {v : bSet 𝔹} {ϕ : bSet 𝔹 → 𝔹 } {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} :
+lemma bounded_forall {v : bSet 𝔹} {ϕ : bSet 𝔹 → 𝔹 } {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} :
   (⨅(i_x : v.type), (v.bval i_x ⟹ ϕ (v.func i_x))) = (⨅(x : bSet 𝔹), x ∈ᴮ v ⟹ ϕ x)  :=
 begin
   apply le_antisymm,
@@ -440,9 +454,21 @@ begin
        apply le_inf, refl, rw[bv_eq_refl], apply le_top}
 end
 
+lemma bounded_exists {v : bSet 𝔹} {ϕ : bSet 𝔹 → 𝔹} {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} :
+  (⨆(i_x : v.type), (v.bval i_x ⊓ ϕ(v.func i_x))) = (⨆(x : bSet 𝔹), x ∈ᴮ v ⊓ ϕ x) :=
+begin
+  apply le_antisymm,
+    {apply bv_Or_elim, intro i_x, apply bv_use (v.func i_x),
+      apply inf_le_inf, apply mem.mk', refl},
+    {apply bv_Or_elim, intro x, simp only [mem_unfold],
+      apply bv_cases_left, intro i_x, apply bv_use i_x,
+      ac_change bval v i_x ⊓ (x =ᴮ func v i_x ⊓ ϕ x) ≤ bval v i_x ⊓ ϕ (func v i_x),
+      apply inf_le_inf, refl, apply h_congr}
+end
+
 lemma subset_unfold' {x u : bSet 𝔹} : x ⊆ᴮ u = ⨅(w : bSet 𝔹), w ∈ᴮ x ⟹ w ∈ᴮ u :=
 begin
-  simp only [subset_unfold], have := @bounded_quantification 𝔹 _ x (λ y, y∈ᴮ u),
+  simp only [subset_unfold], have := @bounded_forall 𝔹 _ x (λ y, y∈ᴮ u),
   dsimp at this, rw[this], intros, apply subst_congr_mem_left
 end
 
@@ -466,7 +492,7 @@ begin
   apply subset_trans
 end
 
--- lemma bounded_quantification' {ϕ : bSet 𝔹 → 𝔹 } {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} {v : bSet 𝔹} :
+-- lemma bounded_forall' {ϕ : bSet 𝔹 → 𝔹 } {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} {v : bSet 𝔹} :
 --   (⨅(i_x : v.type), (v.bval i_x ⟹ ϕ (v.func i_x))) = (⨅(x : bSet 𝔹), x ∈ᴮ v ⟹ ϕ x)  :=
 -- begin
 --   apply le_antisymm,
@@ -483,14 +509,22 @@ end
 lemma subst_congr_subset_left {x v u} : ((v ⊆ᴮ u) ⊓ (x =ᴮ v) : 𝔹) ≤ (x ⊆ᴮ u) :=
 begin
   simp only [subset_unfold],
-  have H₁ := @bounded_quantification _ _ v (λ x, x ∈ᴮ u)
+  have H₁ := @bounded_forall _ _ v (λ x, x ∈ᴮ u)
     (by {intros, apply subst_congr_mem_left}),
-  have H₂ := @bounded_quantification _ _ x (λ x, x ∈ᴮ u)
+  have H₂ := @bounded_forall _ _ x (λ x, x ∈ᴮ u)
     (by {intros, apply subst_congr_mem_left}),
   rw[H₁, H₂], dsimp, bv_intro z, rw[deduction],
   apply infi_le_of_le z, rw[<-deduction, <-deduction], rw[inf_assoc],
   apply le_trans, apply inf_le_inf, refl, apply subst_congr_mem_right,
   apply bv_imp_elim -- todo write tactics to make these calculations easier
+end
+
+lemma subst_congr_subset_right {x v u} : ((v ⊆ᴮ u) ⊓ (u =ᴮ x) : 𝔹) ≤ (v ⊆ᴮ x) :=
+begin
+  simp only [subset_unfold], bv_intro j, apply bv_specialize_left j,
+  rw[<-deduction], ac_change ((bval v j ⟹ func v j ∈ᴮ u) ⊓ bval v j) ⊓  u =ᴮ x ≤ func v j ∈ᴮ x,
+  rw[deduction], apply le_trans, apply bv_imp_elim, rw[<-deduction, inf_comm],
+  apply subst_congr_mem_right
 end
 
 def is_definite (u : bSet 𝔹) : Prop := ∀ i : u.type, u.bval i = ⊤
@@ -874,6 +908,12 @@ section cores
 def core {α : Type u} (u : bSet 𝔹) (S : α → bSet 𝔹) : Prop :=
 (∀ x : α, S x ∈ᴮ u = ⊤) ∧ (∀ y : bSet 𝔹, y ∈ᴮ u = ⊤ → ∃! x_y : α, y =ᴮ S x_y = ⊤)
 
+noncomputable def core_witness {α : Type u} {u : bSet 𝔹} {S : α → bSet 𝔹} (h_core : core u S) (x : bSet 𝔹) (h_X : x ∈ᴮ u = ⊤) :
+  Σ' (x_y : α), x =ᴮ S x_y = ⊤ :=
+begin
+  cases h_core, specialize h_core_right x h_X, have := classical.indefinite_description _ h_core_right, use this.val, tidy
+end
+
 lemma core_inj {α : Type u} (u : bSet 𝔹) (S : α → bSet 𝔹) (h_core : core u S) : function.injective S :=
 begin
   intros x y H, cases h_core, have h_left₁ := h_core_left x, have h_left₂ := h_core_left y,
@@ -999,6 +1039,14 @@ def bSet_of_core_set {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} (h : c
 def bSet_of_core {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} (h : core u S) : bSet 𝔹 :=
   bSet_of_core_set h set.univ
 
+@[simp]lemma of_core_type {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} {h : core u S} {C : set α} :
+  (bSet_of_core_set h C).type = C := by refl
+@[simp]lemma of_core_bval {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} {h : core u S} {C : set α} {i} :
+  (bSet_of_core_set h C).bval i = ⊤ := by refl
+
+lemma of_core_mem {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} {h : core u S} {C : set α} {i} :
+  ⊤ ≤ (bSet_of_core_set h C).func i ∈ᴮ u := by simp; apply h.left
+
 /-- Given a core S for u, pull back the ordering -/
 def subset' {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} (h : core u S) : α → α → Prop :=
   λ a₁ a₂, S a₁ ⊆ᴮ S a₂ = ⊤
@@ -1024,6 +1072,9 @@ open classical zorn
       intros a b H₁ H₂, apply core_inj' h, unfold subset' at H₁ H₂, rw[eq_top_iff] at H₁ H₂ ⊢, apply subset_ext,
       repeat{assumption}
     end}
+
+lemma subset'_unfold {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} {h : core u S} {a₁ a₂ : α} :
+  by {haveI := subset'_partial_order h, from a₁ ≤ a₂ → (S a₁ ⊆ᴮ S a₂ = ⊤)} := by tidy
 
 lemma exists_mem_of_nonempty (u : bSet 𝔹) {Γ : 𝔹} {H : Γ ≤ -(u =ᴮ ∅)} : Γ ≤ ⨆x, x∈ᴮ u :=
 by {apply le_trans H, simp[eq_empty], intro x, apply bv_use (u.func x), apply mem.mk'}
@@ -1130,7 +1181,7 @@ begin
 end
 
 lemma bv_union_spec (u : bSet 𝔹) : ⊤ ≤ ⨅ (x : bSet 𝔹), (x ∈ᴮ bv_union u ⟹ ⨆ (y : type u), x ∈ᴮ func u y) ⊓
-        ((⨆ (y : type u), x ∈ᴮ func u y) ⟹ x ∈ᴮ bv_union u) :=
+        ((⨆ (y : type u), u.bval y ⊓ x ∈ᴮ func u y) ⟹ x ∈ᴮ bv_union u) :=
 begin
   simp only [lattice.top_le_iff, bSet.mem, lattice.imp_top_iff_le,
   lattice.inf_eq_top_iff, bSet.func, lattice.le_infi_iff, bSet.type, lattice.supr_le_iff],
@@ -1140,15 +1191,35 @@ begin
    apply le_supr_of_le i_y'', cases (func u i_y''),
    unfold mem, rw[supr_inf_eq], apply supr_le_supr, intro j,
    rw[inf_assoc], apply inf_le_inf, refl, rw[inf_comm], apply bv_eq_trans},
-  {unfold bv_union, dsimp, destruct (func u i_y), intros α A B h, rw[h], apply supr_le, intro i_x',
+  {unfold bv_union, dsimp, destruct (func u i_y), intros α A B h, rw[h], apply inf_le_right_of_le, apply supr_le, intro i_x',
    fapply le_supr_of_le, use i_y, rw[h], exact i_x', dsimp,
    rw[supr_inf_eq], apply le_supr_of_le i_y, apply inf_le_inf,
    swap, apply bv_eq_le_congr_right, apply func_cast.symm, repeat{assumption},
    have := @mem.mk 𝔹 _ α A B i_x', convert this, apply func_cast, repeat{assumption}}
 end
 
+/-- For every x ∈ u, x ⊆ᴮ ⋃ u.-/
+lemma bv_union_spec' (u : bSet 𝔹) : ⊤ ≤ ⨅(x : bSet 𝔹), (x ∈ᴮ u) ⟹ (x ⊆ᴮ bv_union u) :=
+begin
+  bv_intro x, rw[<-deduction], simp, intro i_v, rw[<-deduction, inf_comm],
+  apply le_trans, apply inf_le_inf, apply mem.mk', refl,
+  have := bv_union_spec u,
+  apply bv_have, apply le_trans, apply le_top, exact this,
+  apply bv_specialize_right (x.func i_v), rw[inf_comm],
+  ac_change (func x i_v ∈ᴮ bv_union u ⟹ ⨆ (y : type u), func x i_v ∈ᴮ func u y) ⊓
+        (((⨆ (y : type u), u.bval y ⊓ func x i_v ∈ᴮ func u y) ⟹ func x i_v ∈ᴮ bv_union u) ⊓
+      (func x i_v ∈ᴮ x ⊓ x ∈ᴮ u)) ≤
+    func x i_v ∈ᴮ bv_union u, apply inf_le_right_of_le,
+    suffices : (func x i_v ∈ᴮ x ⊓ x ∈ᴮ u) ≤ (⨆ (y : type u), bval u y ⊓ func x i_v ∈ᴮ func u y),
+      by {apply le_trans, apply inf_le_inf, refl, exact this, apply bv_imp_elim},
+    conv in (x ∈ᴮ u) {simp only [mem_unfold]}, apply bv_cases_right, intro y,
+    apply bv_use y,
+    ac_change bval u y ⊓ (func x i_v ∈ᴮ x ⊓ x =ᴮ func u y) ≤ u.bval y ⊓ (func x i_v ∈ᴮ func u y),
+    apply inf_le_inf, refl, rw[inf_comm], apply subst_congr_mem_right
+end
+
 theorem bSet_axiom_of_union : (⨅ (u : bSet 𝔹), (⨆(v : _), ⨅(x : _),
-  (x ∈ᴮ v ⇔ (⨆(y : u.type), x ∈ᴮ u.func y)))) = ⊤ :=
+  (x ∈ᴮ v ⇔ (⨆(y : u.type), u.bval y ⊓ x ∈ᴮ u.func y)))) = ⊤ :=
 begin
   simp only [bSet.mem, lattice.biimp, bSet.func, lattice.infi_eq_top, bSet.type], intro u,
   apply top_unique, apply le_supr_of_le (bv_union u), apply bv_union_spec
@@ -1176,7 +1247,7 @@ begin
   unfold bv_powerset', simp, apply le_supr_of_le f,
    refine le_trans _ (by apply bSet_axiom_of_extensionality),
    bv_intro z',
-   have := @bounded_quantification _ _ (set_of_indicator f) (λ x, x ∈ᴮ u), dsimp[set_of_indicator] at this, rw[this],
+   have := @bounded_forall _ _ (set_of_indicator f) (λ x, x ∈ᴮ u), dsimp[set_of_indicator] at this, rw[this],
    rw[deduction], apply infi_le_of_le z', rw[supr_imp_eq],
    apply bv_imp_intro, apply le_inf, apply bv_imp_intro,
    ac_change  (⨅ (i : type u), f i ⊓ z' =ᴮ func u i ⟹ z' ∈ᴮ u) ⊓ (z =ᴮ mk (type u) (func u) f ⊓ z' ∈ᴮ z) ≤ z' ∈ᴮ mk (type u) (func u) (λ (i : type u), f i ⊓ bval u i),
@@ -1201,16 +1272,16 @@ begin
      by {convert this, simp},
    apply subst_congr_subset_left},
 
-  {simp, have := @bounded_quantification _ _ x (λ y, (y ∈ᴮ u)) (by {intros x y, apply subst_congr_mem_left}), rw[this],
+  {simp, have := @bounded_forall _ _ x (λ y, (y ∈ᴮ u)) (by {intros x y, apply subst_congr_mem_left}), rw[this],
   dsimp,
   unfold bv_powerset, simp, fapply le_supr_of_le,
-  from λ i, u.func i ∈ᴮ x,  have this' := @bounded_quantification _ _ (set_of_indicator (λ y, (u.func y ∈ᴮ x))) (λ y, (y ∈ᴮ u)) (by {intros x y, apply subst_congr_mem_left}), dsimp at this', rw[this'],
+  from λ i, u.func i ∈ᴮ x,  have this' := @bounded_forall _ _ (set_of_indicator (λ y, (u.func y ∈ᴮ x))) (λ y, (y ∈ᴮ u)) (by {intros x y, apply subst_congr_mem_left}), dsimp at this', rw[this'],
   apply le_inf, bv_intro a', apply infi_le_of_le a', rw[supr_imp_eq],
   bv_intro i_y, apply imp_le_of_left_right_le, swap, refl,
   rw[inf_comm, bv_eq_symm], apply subst_congr_mem_left,
   
   rw[bv_eq_unfold], apply le_inf,
-  {conv {to_rhs, dsimp}, have := @bounded_quantification _ _ x (λ y, ⨆ (a' :    type u), func u a' ∈ᴮ x ⊓ y =ᴮ func u a'), rw[this], swap,
+  {conv {to_rhs, dsimp}, have := @bounded_forall _ _ x (λ y, ⨆ (a' :    type u), func u a' ∈ᴮ x ⊓ y =ᴮ func u a'), rw[this], swap,
   intros a₁ a₂, dsimp, rw[inf_supr_eq], apply supr_le, intro i,
 
   apply le_supr_of_le i,
@@ -1227,7 +1298,7 @@ begin
    ac_change a₁ =ᴮ func u i ⊓ (bval u i ⊓ a₁ ∈ᴮ x) ≤ a₁ =ᴮ func u i,
    apply inf_le_left_of_le, refl}},
 
-   {have := @bounded_quantification _ _ (set_of_indicator (λ y, func _ y ∈ᴮ x)) (λ y, y ∈ᴮ x), rw[this], swap, simp[subst_congr_mem_left],
+   {have := @bounded_forall _ _ (set_of_indicator (λ y, func _ y ∈ᴮ x)) (λ y, y ∈ᴮ x), rw[this], swap, simp[subst_congr_mem_left],
    bv_intro a₁, apply infi_le_of_le a₁,
    unfold set_of_indicator, dsimp, rw[supr_imp_eq],
    bv_intro i, apply from_empty_context,
@@ -1251,7 +1322,7 @@ begin
   have : b ≤ ⨅(i_y:α), B i_y ⟹ ϕ (A i_y),
     by {bv_intro i_y, specialize ih i_y, apply le_trans ih,
     rw[<-deduction], apply inf_le_left},
-  have h := @bounded_quantification _ _ (mk α A B) ϕ h_congr,
+  have h := @bounded_forall _ _ (mk α A B) ϕ h_congr,
   simp only with cleanup at h, rw[h] at this,
   apply bv_have this,
   have : b ≤ (⨅ (y : bSet 𝔹), (y) ∈ᴮ (mk α A B) ⟹ ϕ (y)) ⟹ ϕ (mk α A B),
@@ -1272,19 +1343,69 @@ lemma subset'_inductive (X : bSet 𝔹) (H : ⊤ ≤ (⨅y, (y ⊆ᴮ X ⊓ (⨅
   w₁ ∈ᴮ y ⊓ w₁ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X))) {α : Type*} {S : α → bSet 𝔹} {h_core : core X S} :
    by {haveI := subset'_partial_order h_core, from ∀c:set α, @chain α (≤) c → ∃ub, ∀a∈c, a ≤ ub} :=
 begin
-  intro C, intro C_chain, let C' := bSet_of_core_set h_core C,
+  intros C C_chain, let C' := bSet_of_core_set h_core C,
   /- First, we show that C' is internally a chain -/
-  have : ⊤ ≤ ⨅ i₁ : C'.type, C'.bval i₁ ⟹ ⨅ i₂ : C'.type, C'.bval i₂ ⟹ (C'.func i₁ ⊆ᴮ C'.func i₂ ⊔ C'.func i₂ ⊆ᴮ C'.func i₁),
-  simp, intros i₁ i₂, apply bv_imp_intro,
-  simp[chain, set.pairwise_on] at C_chain, -- TODO Write lemmas simplifying the type of C-hat, etc
-  repeat{sorry}
+  have H_internal_chain : ⊤ ≤ ⨅ i₁ : C'.type, C'.bval i₁ ⟹ ⨅ i₂ : C'.type, C'.bval i₂ ⟹ (C'.func i₁ ⊆ᴮ C'.func i₂ ⊔ C'.func i₂ ⊆ᴮ C'.func i₁),
+  by {simp, intros i₁ i₂, 
+  simp[chain, set.pairwise_on] at C_chain,
+  cases i₁ with i₁ H₁, cases i₂ with i₂ H₂,
+  specialize C_chain i₁ H₁ i₂ H₂,
+  haveI : decidable_eq α := λ _ _, prop_decidable _,
+  by_cases i₁ = i₂,
+    subst h, apply top_unique, apply le_sup_left_of_le,
+      bv_intro j, apply bv_imp_intro, simp, apply mem.mk',
+    specialize C_chain h, cases C_chain; apply top_unique;
+    [apply le_sup_left_of_le, apply le_sup_right_of_le];
+    have := subset'_unfold C_chain; rw[eq_top_iff] at this;
+    convert this using 1; simp only [subset_unfold]; refl},
+
+  have H_in_X : ⊤ ≤ ⨅(u : C'.type), C'.bval u ⟹ C'.func u ∈ᴮ X,
+    by {bv_intro i_u, rw[of_core_bval, top_imp], apply of_core_mem},
+  
+  have H_internal_ub_mem : ⊤ ≤ (bv_union C') ∈ᴮ X,
+    by {-- rw[le_infi_iff] at H, specialize H C', apply bv_context_apply H, apply le_inf,
+    --      {apply le_trans H_in_X, simp only [subset_unfold]},
+    --      {apply le_trans H_internal_chain, bv_intro w₁, bv_intro w₂, rw[<-deduction],
+    --      ac_change ((⨅ (i₁ : type C'),
+    --      bval C' i₁ ⟹
+    --        ⨅ (i₂ : type C'),
+    --          bval C' i₂ ⟹ (func C' i₁ ⊆ᴮ func C' i₂ ⊔ func C' i₂ ⊆ᴮ func C' i₁)) ⊓
+    --   (w₁ ∈ᴮ C')) ⊓ w₁ ∈ᴮ C' ≤ w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁,
+    --      conv in (w₁ ∈ᴮ C') {simp only [mem_unfold]}, apply bv_cases_right, intro i₁,
+    --      ac_change ((⨅ (i₁ : type C'),
+    --         bval C' i₁ ⟹
+    --           ⨅ (i₂ : type C'),
+    --             bval C' i₂ ⟹ (func C' i₁ ⊆ᴮ func C' i₂ ⊔ func C' i₂ ⊆ᴮ func C' i₁))) ⊓
+    --      ((⨆ (i : type C'), bval C' i ⊓ w₁ =ᴮ func C' i) ⊓
+    --   ((λ (x : C), ⊤) i₁ ⊓ w₁ =ᴮ (λ (x : C), S x) i₁)) ≤
+    -- w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁,
+    --      rw[deduction], apply bv_specialize i₁, rw[imp_infi_eq], rw[<-deduction],
+    --      ac_change ((⨅ (i : type C'),
+    --      bval C' i₁ ⟹ (bval C' i ⟹ (func C' i₁ ⊆ᴮ func C' i ⊔ func C' i ⊆ᴮ func C' i₁))) ⊓
+    --   (λ (x : C), ⊤) i₁ ⊓ w₁ =ᴮ (λ (x : C), S x) i₁) ⊓ (⨆ (i : type C'), bval C' i ⊓ w₁ =ᴮ func C' i) ≤
+    -- w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁, apply bv_cases_right, intro i₂,
+    -- simp only [inf_assoc], apply bv_specialize_left i₂, simp,
+    sorry -- TODO(jesse) write the necessary lemmas
+      },
+ 
+  have H_internal_ub_spec : ⊤ ≤ ⨅(i_w : C'.type), C'.bval i_w ⟹ C'.func i_w ⊆ᴮ (bv_union C'),
+    by {have := bv_union_spec' C', apply le_trans this,
+        have := @bounded_forall 𝔹 _ C' (λ w, w ⊆ᴮ bv_union C'), dsimp at this, rw[this_1],
+        intros x y, rw[inf_comm, bv_eq_symm], apply subst_congr_subset_left},
+
+  have := core_witness h_core (bv_union C') (by {rw[eq_top_iff], exact H_internal_ub_mem}),
+  cases this with w w_property, use w, intros x_w' H_x_w', change S (x_w') ⊆ᴮ S w = ⊤,
+  apply top_unique, apply le_trans H_internal_ub_spec, apply bv_specialize, swap,
+  use x_w', from H_x_w', rw[of_core_bval, top_imp],
+  fapply bv_have, exact bv_union C' =ᴮ S w, rw[w_property], apply le_top,
+  apply subst_congr_subset_right
 end
 
 theorem bSet_zorns_lemma' (X : bSet 𝔹) (H : ⊤ ≤ (⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
   w₁ ∈ᴮ y ⊓ w₁ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X))) :
   ⊤ ≤ (⨆c, c ∈ᴮ X ⊓ (⨅z, z ∈ᴮ X ⟹ (c ⊆ᴮ X ⟹ c =ᴮ z))) :=
 begin
-  simp at H,
+  simp at H, sorry
 end
     
 
