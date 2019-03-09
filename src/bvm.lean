@@ -525,6 +525,7 @@ begin
   apply subst_congr_mem_right
 end
 
+-- TODO(jesse) maybe replace this with typeclasses instead?
 @[reducible]def B_ext (ϕ : bSet 𝔹 → 𝔹) : Prop :=
   ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y
 
@@ -575,8 +576,13 @@ begin
   apply subst_congr_imp; simp, exact h
 end
 
-example {y : bSet 𝔹} : B_ext (λ x : bSet 𝔹, x ∈ᴮ y ⊔ y ∈ᴮ x) :=
-by simp
+@[simp]lemma subst_congr_infi {ι : Type*} {Ψ : ι → (bSet 𝔹 → 𝔹)} {h : ∀ i, B_ext $ Ψ i} : B_ext (λ x, ⨅i, Ψ i x) :=
+by {intros x y, dsimp, bv_intro i, apply bv_specialize_right i, apply h}
+
+@[simp]lemma subst_congr_supr {ι : Type*} {ψ : ι → (bSet 𝔹 → 𝔹)} {h : ∀i, B_ext $ ψ i} : B_ext (λ x, ⨆i, ψ i x) :=
+by {intros x y, dsimp, apply bv_cases_right, intro i, apply bv_use i, apply h}
+
+example {y : bSet 𝔹} : B_ext (λ x : bSet 𝔹, x ∈ᴮ y ⊔ y ∈ᴮ x) := by simp
 
 def is_definite (u : bSet 𝔹) : Prop := ∀ i : u.type, u.bval i = ⊤
 
