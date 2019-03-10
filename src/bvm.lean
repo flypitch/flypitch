@@ -252,13 +252,13 @@ theorem mem.mk {α : Type*} (A : α → bSet 𝔹) (B : α → 𝔹) (a : α) : 
 theorem mem.mk' (x : bSet 𝔹) (a : x.type) : x.bval a ≤ x.func a ∈ᴮ x :=
 by {cases x, apply le_supr_of_le a, simp}
 
-@[simp, reducible]protected def subset : bSet 𝔹 → bSet 𝔹 → 𝔹
+@[reducible]protected def subset : bSet 𝔹 → bSet 𝔹 → 𝔹
 | (mk α A B) b := ⨅a:α, B a ⟹ (A a ∈ᴮ b)
 
 infix ` ⊆ᴮ `:80 := bSet.subset
 
-@[simp]lemma subset_unfold {x u : bSet 𝔹} : x ⊆ᴮ u = (⨅(j : x.type), x.bval j ⟹ x.func j ∈ᴮ u) :=
-by induction x; dsimp; congr
+lemma subset_unfold {x u : bSet 𝔹} : x ⊆ᴮ u = (⨅(j : x.type), x.bval j ⟹ x.func j ∈ᴮ u) :=
+by induction x; dsimp[bSet.subset]; congr
 
 @[simp]protected def insert : bSet 𝔹 → 𝔹 → bSet 𝔹 → bSet 𝔹
 | u b ⟨α, A, B⟩ := ⟨option α, λo, option.rec u A o, λo, option.rec b B o⟩
@@ -534,6 +534,12 @@ by unfold B_ext; intros; apply subst_congr_mem_left
 
 @[simp]lemma B_ext_mem_right {x : bSet 𝔹} : B_ext (λ y, x ∈ᴮ y) :=
 by unfold B_ext; intros; apply subst_congr_mem_right
+
+@[simp]lemma B_ext_subset_left {y : bSet 𝔹} : B_ext (λ x, x ⊆ᴮ y) :=
+by {unfold B_ext, intros, rw[inf_comm, bv_eq_symm], apply subst_congr_subset_left}
+
+@[simp]lemma B_ext_subset_right {x : bSet 𝔹} : B_ext (λ y, x ⊆ᴮ y) :=
+by {unfold B_ext, intros, rw[inf_comm], apply subst_congr_subset_right}
 
 @[simp]lemma subst_congr_sup {ϕ₁ ϕ₂ : bSet 𝔹 → 𝔹} {h₁ : B_ext ϕ₁} {h₂ : B_ext ϕ₂} :
   B_ext (λ x, ϕ₁ x ⊔ ϕ₂ x) :=
@@ -1228,7 +1234,7 @@ end
 /-- The boolean-valued unionset operator -/
 def bv_union (u : bSet 𝔹) : bSet 𝔹 :=
   ⟨Σ(i : u.type), (u.func i).type, λ x, (u.func x.1).func x.2,
-       λ x, ⨆(y : u.type), (u.func x.1).func x.2 ∈ᴮ (u.func y)⟩
+       λ x, ⨆(y : u.type), u.bval y ⊓ (u.func x.1).func x.2 ∈ᴮ (u.func y)⟩
 
 lemma func_cast {u x : bSet 𝔹} {i_y : u.type} {α : Type u} {A : α → bSet 𝔹} {B : α → 𝔹} {h : func u i_y = mk α A B} {i_x' : α} : func (func u i_y) (eq.mpr (by rw[h]; refl) i_x') = A i_x' :=
 begin
@@ -1237,33 +1243,32 @@ begin
   convert this
 end
 
-lemma bv_union_spec (u : bSet 𝔹) : ⊤ ≤ ⨅ (x : bSet 𝔹), (x ∈ᴮ bv_union u ⟹ ⨆ (y : type u), x ∈ᴮ func u y) ⊓
+lemma bv_union_spec (u : bSet 𝔹) : ⊤ ≤ ⨅ (x : bSet 𝔹), (x ∈ᴮ bv_union u ⟹ ⨆ (y : type u), u.bval y ⊓ x ∈ᴮ func u y) ⊓
         ((⨆ (y : type u), u.bval y ⊓ x ∈ᴮ func u y) ⟹ x ∈ᴮ bv_union u) :=
 begin
-  simp only [lattice.top_le_iff, bSet.mem, lattice.imp_top_iff_le,
-  lattice.inf_eq_top_iff, bSet.func, lattice.le_infi_iff, bSet.type, lattice.supr_le_iff],
-  intros x, fsplit, work_on_goal 1 { intros i_y },
-  {dsimp[bv_union], apply supr_le, rintro ⟨i_y', i_x'⟩,
-   rw[supr_inf_eq], apply supr_le, intro i_y'', dsimp,
-   apply le_supr_of_le i_y'', cases (func u i_y''),
-   unfold mem, rw[supr_inf_eq], apply supr_le_supr, intro j,
-   rw[inf_assoc], apply inf_le_inf, refl, rw[inf_comm], apply bv_eq_trans},
-  {unfold bv_union, dsimp, destruct (func u i_y), intros α A B h, rw[h], apply inf_le_right_of_le, apply supr_le, intro i_x',
-   fapply le_supr_of_le, use i_y, rw[h], exact i_x', dsimp,
-   rw[supr_inf_eq], apply le_supr_of_le i_y, apply inf_le_inf,
-   swap, apply bv_eq_le_congr_right, apply func_cast.symm, repeat{assumption},
-   have := @mem.mk 𝔹 _ α A B i_x', convert this, apply func_cast, repeat{assumption}}
+  bv_intro x, apply le_inf,
+    {simp only [bv_union, lattice.top_le_iff, lattice.imp_top_iff_le,
+     sigma.forall, lattice.supr_le_iff], intros a i, apply bv_cases_left,
+     intro a', apply bv_use a', simp only [inf_assoc],
+    apply inf_le_inf, refl, rw[inf_comm,bv_eq_symm], apply B_ext_mem_left},
+    {simp only [lattice.top_le_iff, bSet.bval, bSet.mem, mem_unfold,
+               lattice.imp_top_iff_le, bSet.func, bSet.type, lattice.supr_le_iff, bv_union],
+     intro i, dsimp, apply bv_cases_right, intro i_1, fapply bv_use, use i, from i_1,
+     apply le_inf,
+       {apply bv_use i, apply inf_le_inf, refl, apply bv_use i_1,
+       apply inf_le_inf, apply refl, simp[bv_eq_refl]},
+       {rw[<-inf_assoc], apply inf_le_right_of_le, refl}},
 end
 
 /-- For every x ∈ u, x ⊆ᴮ ⋃ u.-/
 lemma bv_union_spec' (u : bSet 𝔹) : ⊤ ≤ ⨅(x : bSet 𝔹), (x ∈ᴮ u) ⟹ (x ⊆ᴮ bv_union u) :=
 begin
-  bv_intro x, rw[<-deduction], simp, intro i_v, rw[<-deduction, inf_comm],
+  bv_intro x, rw[<-deduction], simp[subset_unfold], intro i_v, rw[<-deduction, inf_comm],
   apply le_trans, apply inf_le_inf, apply mem.mk', refl,
   have := bv_union_spec u,
   apply bv_have, apply le_trans, apply le_top, exact this,
   apply bv_specialize_right (x.func i_v), rw[inf_comm],
-  ac_change (func x i_v ∈ᴮ bv_union u ⟹ ⨆ (y : type u), func x i_v ∈ᴮ func u y) ⊓
+  ac_change (func x i_v ∈ᴮ bv_union u ⟹ ⨆ (y : type u), u.bval y ⊓ func x i_v ∈ᴮ func u y) ⊓
         (((⨆ (y : type u), u.bval y ⊓ func x i_v ∈ᴮ func u y) ⟹ func x i_v ∈ᴮ bv_union u) ⊓
       (func x i_v ∈ᴮ x ⊓ x ∈ᴮ u)) ≤
     func x i_v ∈ᴮ bv_union u, apply inf_le_right_of_le,
@@ -1275,11 +1280,11 @@ begin
     apply inf_le_inf, refl, rw[inf_comm], apply subst_congr_mem_right
 end
 
-theorem bSet_axiom_of_union : (⨅ (u : bSet 𝔹), (⨆(v : _), ⨅(x : _),
+theorem bSet_axiom_of_union : (⨅ (u : bSet 𝔹), (⨆v, ⨅x,
   (x ∈ᴮ v ⇔ (⨆(y : u.type), u.bval y ⊓ x ∈ᴮ u.func y)))) = ⊤ :=
 begin
-  simp only [bSet.mem, lattice.biimp, bSet.func, lattice.infi_eq_top, bSet.type], intro u,
-  apply top_unique, apply le_supr_of_le (bv_union u), apply bv_union_spec
+  simp only [bSet.mem, lattice.biimp, bSet.func, lattice.infi_eq_top, bSet.type],intro u,
+  apply top_unique, apply bv_use (bv_union u), exact @bv_union_spec 𝔹 _ u
 end
 
 @[reducible, simp]def set_of_indicator {u : bSet 𝔹} (f : u.type → 𝔹) : bSet 𝔹 :=
@@ -1296,27 +1301,27 @@ def bv_powerset' (u : bSet 𝔹) : bSet 𝔹 :=
 
 --TODO (jesse) try proving bv_powerset and bv_powerset' are equivalent
 
-example {u : bSet 𝔹} : bv_powerset u =ᴮ bv_powerset' u = ⊤ :=
-begin
-  apply top_unique, apply le_trans, swap, apply bSet_axiom_of_extensionality,
-  bv_intro z, apply le_inf; apply bv_imp_intro; simp[top_inf_eq],
-  {unfold bv_powerset, dsimp, apply supr_le, intro f,
-  unfold bv_powerset', simp, apply le_supr_of_le f,
-   refine le_trans _ (by apply bSet_axiom_of_extensionality),
-   bv_intro z',
-   have := @bounded_forall _ _ (set_of_indicator f) (λ x, x ∈ᴮ u), dsimp[set_of_indicator] at this, rw[this],
-   rw[deduction], apply infi_le_of_le z', rw[supr_imp_eq],
-   apply bv_imp_intro, apply le_inf, apply bv_imp_intro,
-   ac_change  (⨅ (i : type u), f i ⊓ z' =ᴮ func u i ⟹ z' ∈ᴮ u) ⊓ (z =ᴮ mk (type u) (func u) f ⊓ z' ∈ᴮ z) ≤ z' ∈ᴮ mk (type u) (func u) (λ (i : type u), f i ⊓ bval u i),
-   apply le_trans, apply inf_le_inf, refl, apply subst_congr_mem_right,
-   rw[inf_comm], rw[deduction], apply supr_le, intro i',
-   rw[<-deduction], apply le_supr_of_le i', dsimp,
-   repeat{apply le_inf}, apply inf_le_left_of_le, apply inf_le_left_of_le, refl,
-   repeat{sorry}
+-- example {u : bSet 𝔹} : bv_powerset u =ᴮ bv_powerset' u = ⊤ :=
+-- begin
+--   apply top_unique, apply le_trans, swap, apply bSet_axiom_of_extensionality,
+--   bv_intro z, apply le_inf; apply bv_imp_intro; simp[top_inf_eq],
+--   {unfold bv_powerset, dsimp, apply supr_le, intro f,
+--   unfold bv_powerset', simp, apply le_supr_of_le f,
+--    refine le_trans _ (by apply bSet_axiom_of_extensionality),
+--    bv_intro z',
+--    have := @bounded_forall _ _ (set_of_indicator f) (λ x, x ∈ᴮ u), dsimp[set_of_indicator] at this, simp[subset_unfold], rw[this],
+--    rw[deduction], apply infi_le_of_le z', rw[supr_imp_eq],
+--    apply bv_imp_intro, apply le_inf, apply bv_imp_intro,
+--    ac_change  (⨅ (i : type u), f i ⊓ z' =ᴮ func u i ⟹ z' ∈ᴮ u) ⊓ (z =ᴮ mk (type u) (func u) f ⊓ z' ∈ᴮ z) ≤ z' ∈ᴮ mk (type u) (func u) (λ (i : type u), f i ⊓ bval u i),
+--    apply le_trans, apply inf_le_inf, refl, apply subst_congr_mem_right,
+--    rw[inf_comm], rw[deduction], apply supr_le, intro i',
+--    rw[<-deduction], apply le_supr_of_le i', dsimp,
+--    repeat{apply le_inf}, apply inf_le_left_of_le, apply inf_le_left_of_le, refl,
+--    repeat{sorry}
 
-},
-  {sorry}
-end
+-- },
+--   {sorry}
+-- end
 
 theorem bSet_axiom_of_powerset : (⨅(u : bSet 𝔹), ⨆(v : _), ⨅(x : bSet 𝔹), x∈ᴮ v ⇔ ⨅(y : x.type), x.bval y ⟹ (x.func y ∈ᴮ u)) = ⊤:=
 begin
@@ -1326,12 +1331,12 @@ begin
   {rw[<-deduction, top_inf_eq], 
    unfold bv_powerset, apply supr_le, intro χ,
    suffices : ((set_of_indicator χ) ⊆ᴮ u ⊓ (x =ᴮ (set_of_indicator χ)) : 𝔹) ≤ x ⊆ᴮ u,
-     by {convert this, simp},
+     by {convert this, simp[subset_unfold]},
    apply subst_congr_subset_left},
 
   {simp, have := @bounded_forall _ _ x (λ y, (y ∈ᴮ u)) (by {intros x y, apply subst_congr_mem_left}), rw[this],
   dsimp,
-  unfold bv_powerset, simp, fapply le_supr_of_le,
+  unfold bv_powerset, simp[subset_unfold], fapply le_supr_of_le,
   from λ i, u.func i ∈ᴮ x,  have this' := @bounded_forall _ _ (set_of_indicator (λ y, (u.func y ∈ᴮ x))) (λ y, (y ∈ᴮ u)) (by {intros x y, apply subst_congr_mem_left}), dsimp at this', rw[this'],
   apply le_inf, bv_intro a', apply infi_le_of_le a', rw[supr_imp_eq],
   bv_intro i_y, apply imp_le_of_left_right_le, swap, refl,
@@ -1396,14 +1401,37 @@ local notation `⨆!` binders `, ` r:(scoped f, bv_exists_unique f) := r
 section zorns_lemma
 open classical zorn
 
+lemma B_ext_subset_or_subset_left (y : bSet 𝔹) : B_ext (λ x, x ⊆ᴮ y ⊔ y ⊆ᴮ x) := by simp
+
+lemma B_ext_subset_or_subset_right (x : bSet 𝔹) : B_ext (λ y, x ⊆ᴮ y ⊔ y ⊆ᴮ x) := by simp
+
+lemma forall_forall_reindex (ϕ : bSet 𝔹 → bSet 𝔹 → 𝔹) {h₁ : ∀ x, B_ext (λ y, ϕ x y)}
+  {h₂ : ∀ y, B_ext (λ x, ϕ x y)} {C : bSet 𝔹} :
+  (⨅(i₁:C.type), (C.bval i₁ ⟹ ⨅(i₂ : C.type), C.bval i₂ ⟹ ϕ (C.func i₁) (C.func i₂))) =
+  ⨅(w₁ w₂ : bSet 𝔹), w₁∈ᴮ C ⊓ w₂ ∈ᴮ C ⟹ ϕ w₁ w₂ :=
+begin
+  have := @bounded_forall _ _ C (λ x, ⨅(i₂ : C.type), bval C i₂ ⟹ ϕ x (func C i₂)),
+  rw[this], dsimp at *, apply le_antisymm,
+  bv_intro w₁, bv_intro w₂, apply bv_specialize w₁, rw[<-deduction],
+  simp only [inf_assoc.symm], rw[deduction], apply le_trans, apply bv_imp_elim,
+  have := @bounded_forall _ _ C (λ z, ϕ w₁ z), rw[this], apply bv_specialize w₂,
+  apply bv_imp_intro, apply le_trans, apply bv_imp_elim, refl,
+  intros w₁ w₂, apply h₁, bv_intro w₁, apply infi_le_of_le w₁, apply bv_imp_intro,
+  have := @bounded_forall _ _ C (λ z, ϕ w₁ z), rw[this],
+  bv_intro w₂, apply bv_specialize_left w₂, apply bv_imp_intro, simp only [inf_assoc],
+  apply le_trans, apply bv_imp_elim, refl, intros w₁ w₂, apply h₁,
+  intros w₁ w₂, apply subst_congr_infi, intro j,
+  apply subst_congr_imp, finish, apply h₂
+end
+
 lemma subset'_inductive (X : bSet 𝔹) (H : ⊤ ≤ (⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
-  w₁ ∈ᴮ y ⊓ w₁ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X))) {α : Type*} {S : α → bSet 𝔹} {h_core : core X S} :
+  w₁ ∈ᴮ y ⊓ w₂ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X))) {α : Type*} {S : α → bSet 𝔹} {h_core : core X S} :
    by {haveI := subset'_partial_order h_core, from ∀c:set α, @chain α (≤) c → ∃ub, ∀a∈c, a ≤ ub} :=
 begin
   intros C C_chain, let C' := bSet_of_core_set h_core C,
   /- First, we show that C' is internally a chain -/
   have H_internal_chain : ⊤ ≤ ⨅ i₁ : C'.type, C'.bval i₁ ⟹ ⨅ i₂ : C'.type, C'.bval i₂ ⟹ (C'.func i₁ ⊆ᴮ C'.func i₂ ⊔ C'.func i₂ ⊆ᴮ C'.func i₁),
-  by {simp, intros i₁ i₂, 
+  by {simp[subset_unfold], intros i₁ i₂, 
   simp[chain, set.pairwise_on] at C_chain,
   cases i₁ with i₁ H₁, cases i₂ with i₂ H₂,
   specialize C_chain i₁ H₁ i₂ H₂,
@@ -1420,30 +1448,12 @@ begin
     by {bv_intro i_u, rw[of_core_bval, top_imp], apply of_core_mem},
   
   have H_internal_ub_mem : ⊤ ≤ (bv_union C') ∈ᴮ X,
-    by {-- rw[le_infi_iff] at H, specialize H C', apply bv_context_apply H, apply le_inf,
-    --      {apply le_trans H_in_X, simp only [subset_unfold]},
-    --      {apply le_trans H_internal_chain, bv_intro w₁, bv_intro w₂, rw[<-deduction],
-    --      ac_change ((⨅ (i₁ : type C'),
-    --      bval C' i₁ ⟹
-    --        ⨅ (i₂ : type C'),
-    --          bval C' i₂ ⟹ (func C' i₁ ⊆ᴮ func C' i₂ ⊔ func C' i₂ ⊆ᴮ func C' i₁)) ⊓
-    --   (w₁ ∈ᴮ C')) ⊓ w₁ ∈ᴮ C' ≤ w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁,
-    --      conv in (w₁ ∈ᴮ C') {simp only [mem_unfold]}, apply bv_cases_right, intro i₁,
-    --      ac_change ((⨅ (i₁ : type C'),
-    --         bval C' i₁ ⟹
-    --           ⨅ (i₂ : type C'),
-    --             bval C' i₂ ⟹ (func C' i₁ ⊆ᴮ func C' i₂ ⊔ func C' i₂ ⊆ᴮ func C' i₁))) ⊓
-    --      ((⨆ (i : type C'), bval C' i ⊓ w₁ =ᴮ func C' i) ⊓
-    --   ((λ (x : C), ⊤) i₁ ⊓ w₁ =ᴮ (λ (x : C), S x) i₁)) ≤
-    -- w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁,
-    --      rw[deduction], apply bv_specialize i₁, rw[imp_infi_eq], rw[<-deduction],
-    --      ac_change ((⨅ (i : type C'),
-    --      bval C' i₁ ⟹ (bval C' i ⟹ (func C' i₁ ⊆ᴮ func C' i ⊔ func C' i ⊆ᴮ func C' i₁))) ⊓
-    --   (λ (x : C), ⊤) i₁ ⊓ w₁ =ᴮ (λ (x : C), S x) i₁) ⊓ (⨆ (i : type C'), bval C' i ⊓ w₁ =ᴮ func C' i) ≤
-    -- w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁, apply bv_cases_right, intro i₂,
-    -- simp only [inf_assoc], apply bv_specialize_left i₂, simp,
-    sorry -- TODO(jesse) write the necessary lemmas
-      },
+    by {rw[le_infi_iff] at H, specialize H C', apply bv_context_apply H, apply le_inf,
+
+         {apply le_trans H_in_X, simp only [subset_unfold]},
+
+         {apply le_trans H_internal_chain,
+          rw[forall_forall_reindex (λ z₁ z₂, ((z₁ ⊆ᴮ z₂) ⊔ (z₂ ⊆ᴮ z₁) : 𝔹))]; simp}},
  
   have H_internal_ub_spec : ⊤ ≤ ⨅(i_w : C'.type), C'.bval i_w ⟹ C'.func i_w ⊆ᴮ (bv_union C'),
     by {have := bv_union_spec' C', apply le_trans this,
