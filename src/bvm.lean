@@ -1175,6 +1175,10 @@ postfix `̌ `:90 := check
 @[simp]lemma check_empty_eq_empty : (∅ : pSet)̌ = (∅ : bSet 𝔹) :=
 by {dsimp[check, has_emptyc.emptyc, empty, pSet.empty], tidy}
 
+ -- this is essentially a restatement of mem.mk/mem.mk', but will be useful later
+@[simp]lemma mem_top_of_bval_top {u : bSet 𝔹} {i : u.type} {H_top : u.bval i = ⊤} : u.func i ∈ᴮ u = ⊤ :=
+by {apply top_unique, rw[<-H_top], apply mem.mk'}
+
 lemma check_bv_eq_top_of_equiv {x y : pSet} :
   pSet.equiv x y → x̌ =ᴮ y̌ = (⊤ : 𝔹) :=
 begin
