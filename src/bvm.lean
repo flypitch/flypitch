@@ -1136,6 +1136,9 @@ open classical zorn
       repeat{assumption}
     end}
 
+lemma subset'_trans {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} {h : core u S} : by haveI := subset'_partial_order h; from ∀ a b c : α, a ≤ b → b ≤ c → a ≤ c :=
+  by apply partial_order.le_trans
+
 lemma subset'_unfold {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} {h : core u S} {a₁ a₂ : α} :
   by {haveI := subset'_partial_order h, from a₁ ≤ a₂ → (S a₁ ⊆ᴮ S a₂ = ⊤)} := by tidy
 
@@ -1152,6 +1155,9 @@ begin
     dsimp at H₁ H₂, rw[H₂], cases H_y', have := bv_rw H_y'_left (λ z, x =ᴮ z),
     simpa[bv_eq_symm] using this, intros x₁ y₁, dsimp, rw[inf_comm], apply bv_eq_trans
 end
+
+lemma core_mem_of_mem_image {u y} {α : Type u} {S : α → bSet 𝔹} (h_core : core u S) :
+  y ∈ S '' set.univ → y ∈ᴮ u = ⊤ := by tidy
 
 end cores
 
@@ -1425,7 +1431,7 @@ begin
 end
 
 lemma subset'_inductive (X : bSet 𝔹) (H : ⊤ ≤ (⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
-  w₁ ∈ᴮ y ⊓ w₂ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X))) {α : Type*} {S : α → bSet 𝔹} {h_core : core X S} :
+  w₁ ∈ᴮ y ⊓ w₂ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X))) {α : Type*} {S : α → bSet 𝔹} (h_core : core X S) :
    by {haveI := subset'_partial_order h_core, from ∀c:set α, @chain α (≤) c → ∃ub, ∀a∈c, a ≤ ub} :=
 begin
   intros C C_chain, let C' := bSet_of_core_set h_core C,
@@ -1468,22 +1474,48 @@ begin
   apply subst_congr_subset_right
 end
 
-theorem bSet_zorns_lemma' (X : bSet 𝔹) (H : ⊤ ≤ (⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
-  w₁ ∈ᴮ y ⊓ w₂ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X))) :
-  ⊤ ≤ (⨆c, c ∈ᴮ X ⊓ (⨅z, z ∈ᴮ X ⟹ (c ⊆ᴮ X ⟹ c =ᴮ z))) :=
-begin
-  have := zorn (subset'_inductive X H),
-  repeat{sorry}
-  -- simp at H, sorry
-end
-    
 
-/-- ∀ x, x ≠ ∅ ∧ ((∀ y, y ⊆ x ∧ ∀ w₁ w₂ ∈ y, w₁ ⊆ w₂ ∨ w₂ ⊆ w₁) → (⋃y) ∈ x)
+/- ∀ x, x ≠ ∅ ∧ ((∀ y, y ⊆ x ∧ ∀ w₁ w₂ ∈ y, w₁ ⊆ w₂ ∨ w₂ ⊆ w₁) → (⋃y) ∈ x)
       → ∃ c ∈ x, ∀ z ∈ x, c ⊆ x → c = x -/
-theorem bSet_zorns_lemma (X : bSet 𝔹) : ⊤ ≤ (⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
-  w₁ ∈ᴮ y ⊓ w₁ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X))
-    ⟹ (⨆c, c ∈ᴮ X ⊓ (⨅z, z ∈ᴮ X ⟹ (c ⊆ᴮ X ⟹ c =ᴮ z))) :=
-sorry
+theorem bSet_zorns_lemma (X : bSet 𝔹) (H_nonempty : -(X =ᴮ ∅) = ⊤) (H : ⊤ ≤ (⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
+  w₁ ∈ᴮ y ⊓ w₂ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X))) :
+  ⊤ ≤ (⨆c, c ∈ᴮ X ⊓ (⨅z, z ∈ᴮ X ⟹ (c ⊆ᴮ z ⟹ c =ᴮ z))) :=
+begin
+  have := core.mk X, rcases this with ⟨α, ⟨S, h_core⟩⟩,
+  have H_zorn := zorn (subset'_inductive X H h_core) (by apply subset'_trans),
+  rcases H_zorn with ⟨c, H_c⟩, rcases h_core with ⟨h_core_l, h_core_r⟩,
+  have H_c_in_X := h_core_l c, apply bv_use (S c), rw[H_c_in_X],
+  rw[top_inf_eq], bv_intro x, apply bv_imp_intro, rw[top_inf_eq],
+  have := core_aux_lemma3 X H_nonempty S ⟨h_core_l, h_core_r⟩ x,
+  rcases this with ⟨y, ⟨H₁_y, H₂_y⟩⟩, rw[<-H₂_y], apply bv_imp_intro,
+  conv in (S c =ᴮ _) {rw[bv_eq_symm]},
+  suffices : x =ᴮ y ⊓ (S c ⊆ᴮ y) ≤ x =ᴮ S c,
+    by {apply le_trans, show 𝔹, from x =ᴮ y ⊓ S c ⊆ᴮ y,
+        apply le_inf, apply inf_le_left, apply B_ext_subset_right, from this},
+  suffices : S c ⊆ᴮ y ≤ y =ᴮ S c,
+    by {apply le_trans, apply inf_le_inf, refl, from this, apply bv_eq_trans},
+  let a := S c ⊆ᴮ y, have h_a_bot : a ⊓ (-a) = ⊥, by apply inf_neg_eq_bot,
+  have h_a_top : a ⊔ (-a) = ⊤, by apply sup_neg_eq_top,
+  let v := two_term_mixture a (-a) h_a_bot y (S c),
+  have claim_1 : v ∈ᴮ X = ⊤,
+    by {apply two_term_mixture_mem_top, from h_a_top, apply core_mem_of_mem_image ⟨‹_›,‹_›⟩ ‹_›,
+    from ‹_›},
+  have claim_2 : Σ' z : α, v =ᴮ S z = ⊤ := core_witness ⟨‹_›,‹_›⟩ v claim_1,
+  rcases claim_2 with ⟨z, H_z⟩,
+  have claim_3 : ⊤ ≤ S c ⊆ᴮ v,
+    by {apply two_term_mixture_subset_top, from ‹_›, refl},
+  have claim_4 : by haveI := subset'_partial_order ⟨h_core_l,h_core_r⟩; from c ≤ z,
+    by {apply top_unique, apply le_trans' claim_3, rw[<-H_z], apply B_ext_subset_right},
+  have claim_5 : S c =ᴮ S z = ⊤,
+    by {have : S z ⊆ᴮ S c = ⊤, apply H_c z claim_4,
+        apply top_unique, rw[eq_iff_subset_subset], apply le_inf,
+        rw[top_le_iff], from ‹_›, rw[<-this]},
+  change a ≤ _, apply le_trans, apply (mixing_lemma_two_term a (-a) ‹_› y (S c)).left,
+  change v =ᴮ _ ≤ _, rw[bv_eq_symm], apply le_trans', show 𝔹, from v =ᴮ S z, rw[H_z],
+  apply le_top, apply le_trans, apply bv_eq_trans, apply bv_have (le_top : y =ᴮ S z ≤ ⊤),
+  rw[bv_eq_symm] at claim_5, rw[<-claim_5], apply bv_eq_trans
+end      
+    
 end zorns_lemma
 
 
