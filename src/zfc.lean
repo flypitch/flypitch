@@ -129,8 +129,6 @@ def connected_relation : bounded_formula L_ZFC 2 := relation ↑' 1 # 1 ⊓ ∀'
 
 def total_order : bounded_formula L_ZFC 2 := irreflexive_relation ⊓ transitive_relation ⊓ connected_relation
 
-
-
 def well_order : bounded_formula L_ZFC 2 := irreflexive_relation ⊓ ∀'(subset ↑' 1 # 1 ⊓ ∃'(&0 ∈' &1) ⟹ ∃'(&0 ∈' &1 ⊓ ∀'(((&0 ∈' &2) ⊓  ∼(&0 ≃ &1 : bounded_formula L_ZFC 5)) ⟹ ∃'(ordered_pair.cast(lift_cast) ⊓ (&0 ∈' &4 : bounded_formula L_ZFC 6)) ⊓ ∼∃'(∀'(&0 ∈' &1 ⇔ (( &0 ≃ &2 : bounded_formula L_ZFC 7) ⊔ (pair ↑' 1 # 1).cast(lift_cast) )) ⊓ &0 ∈' &4))))
 -- &0 well-orders &1
 

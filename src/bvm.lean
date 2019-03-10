@@ -1230,12 +1230,7 @@ begin
 end
 
 @[simp]lemma check_insert (a b : pSet) : (pSet.insert a b)̌  = (bSet.insert1 (ǎ) (b̌) : bSet 𝔹) :=
-begin
-  induction a, induction b, simp[pSet.insert],
-  split,
-    {ext, cases x; simp},
-    {ext, cases x; simp}
-end
+by {induction a, induction b, simp[pSet.insert], split; ext; cases x; simp}
 
 end check_names 
 
@@ -1410,23 +1405,38 @@ lemma infinity_of_empty_succ {u : bSet 𝔹} {c} (h₁ : c ≤ contains_empty u)
   (h₂ : c ≤ contains_succ u) : c ≤ axiom_of_infinity_spec u :=
 le_inf ‹_› ‹_›
 
-lemma contains_empty_omega_check : (⊤ : 𝔹) ≤ contains_empty (ω̌) :=
+lemma contains_empty_check_omega : (⊤ : 𝔹) ≤ contains_empty (ω̌) :=
 by {dsimp[pSet.omega,check, contains_empty], apply bv_use (ulift.up nat.zero), simp[pSet.of_nat]}
 
-lemma contains_succ_omega_check : (⊤ : 𝔹) ≤ contains_succ (ω̌) :=
+lemma contains_succ_check_omega : (⊤ : 𝔹) ≤ contains_succ (ω̌) :=
 begin
   bv_intro n, induction n, apply bv_use (ulift.up (n + 1)),
   simp only [lattice.top_le_iff, bSet.check_omega_func, bSet.check,
-  bSet.mem, bSet.func, bSet.type], induction n,
-    {simp[pSet.of_nat]},
-    {simp[pSet.of_nat, *]}
+  bSet.mem, bSet.func, bSet.type], induction n; simp[pSet.of_nat, *]
 end
 
 theorem bSet_axiom_of_infinity : (⨆(u : bSet 𝔹), axiom_of_infinity_spec u) = ⊤ :=
 begin
   apply top_unique, apply bv_use (ω̌), apply infinity_of_empty_succ,
-  exacts [contains_empty_omega_check, contains_succ_omega_check]
+  exacts [contains_empty_check_omega, contains_succ_check_omega]
 end
+
+@[reducible]def omega := (ω̌ : bSet 𝔹)
+
+/-- The n-th von Neumann ordinal in bSet 𝔹 is just the check-name of the n-th von Neumann ordinal in pSet -/
+@[reducible]def of_nat : ℕ → bSet 𝔹 := λ n, (pSet.of_nat n)̌
+
+lemma omega_definite {n : ℕ} : of_nat n ∈ᴮ omega = (⊤ : 𝔹) :=
+begin
+  induction n, {apply top_unique, apply bv_use (ulift.up 0), simp},
+  {apply top_unique, apply bv_use (ulift.up (n_n + 1)), simp}
+end
+
+instance has_zero_bSet : has_zero (bSet 𝔹) := ⟨of_nat 0⟩
+
+instance has_one_bSet : has_one (bSet 𝔹) := ⟨of_nat 1⟩
+
+example : 0 ∈ᴮ 1 = (⊤ : 𝔹) := by {apply top_unique, unfold has_zero.zero, apply bv_use none, simp}
 
 end infinity
 
