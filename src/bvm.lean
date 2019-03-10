@@ -1170,8 +1170,10 @@ note that a check-name is not only definite, but recursively definite
 
 postfix `̌ `:90 := check
 
-example : let x := pSet.empty in (x̌ : bSet 𝔹) = bSet.empty :=
-  by dsimp[check, pSet.empty, bSet.empty]; simp; fsplit; ext1; repeat{cases x}
+@[simp]lemma check_bval_top (x : pSet) {i} : (x̌ : bSet 𝔹).bval i = ⊤ := by induction x; refl
+
+@[simp]lemma check_empty_eq_empty : (∅ : pSet)̌ = (∅ : bSet 𝔹) :=
+by {dsimp[check, has_emptyc.emptyc, empty, pSet.empty], tidy}
 
 lemma check_bv_eq_top_of_equiv {x y : pSet} :
   pSet.equiv x y → x̌ =ᴮ y̌ = (⊤ : 𝔹) :=
@@ -1220,7 +1222,15 @@ begin
    all_goals{intros a' H, have := check_bv_eq_dichotomy (x_A ‹x_α›) (y_A ‹y_α›), tidy}
 end
 
-end check_names
+@[simp]lemma check_insert (a b : pSet) : (pSet.insert a b)̌  = (bSet.insert1 (ǎ) (b̌) : bSet 𝔹) :=
+begin
+  induction a, induction b, simp[pSet.insert],
+  split,
+    {ext, cases x; simp},
+    {ext, cases x; simp}
+end
+
+end check_names 
 
 /-- The axiom of weak replacement says that for every ϕ(x,y),
     for every set u, ∀ x ∈ u, ∃ y ϕ (x,y) implies there exists a set v
@@ -1373,13 +1383,45 @@ begin
    rw[inf_comm, bv_eq_symm], simp[-bv_eq_symm,subst_congr_mem_left]}},
 end
 
+
+section infinity
+local notation `ω` := pSet.omega
+
+@[simp]lemma check_omega_type : (ω̌ : bSet 𝔹).type = ulift ℕ := by refl
+@[simp]lemma check_omega_func : (ω̌: bSet 𝔹).func = λ x, check (pSet.of_nat x.down) := by refl
+
+local postfix `̃ `:70 := pSet.of_nat -- i'm a bit skeptical of this notation
+
 @[simp, reducible]def axiom_of_infinity_spec (u : bSet 𝔹) : 𝔹 :=
   (∅∈ᴮ u) ⊓ (⨅(i_x : u.type), ⨆(i_y : u.type), (u.func i_x ∈ᴮ u.func i_y))
 
+@[reducible]def contains_empty (u : bSet 𝔹) : 𝔹 := ∅ ∈ᴮ u
+
+@[reducible]def contains_succ (u : bSet 𝔹) : 𝔹 := (⨅(i_x : u.type), ⨆(i_y : u.type), (u.func i_x ∈ᴮ u.func i_y))
+
+lemma infinity_of_empty_succ {u : bSet 𝔹} {c} (h₁ : c ≤ contains_empty u)
+  (h₂ : c ≤ contains_succ u) : c ≤ axiom_of_infinity_spec u :=
+le_inf ‹_› ‹_›
+
+lemma contains_empty_omega_check : (⊤ : 𝔹) ≤ contains_empty (ω̌) :=
+by {dsimp[pSet.omega,check, contains_empty], apply bv_use (ulift.up nat.zero), simp[pSet.of_nat]}
+
+lemma contains_succ_omega_check : (⊤ : 𝔹) ≤ contains_succ (ω̌) :=
+begin
+  bv_intro n, induction n, apply bv_use (ulift.up (n + 1)),
+  simp only [lattice.top_le_iff, bSet.check_omega_func, bSet.check,
+  bSet.mem, bSet.func, bSet.type], induction n,
+    {simp[pSet.of_nat]},
+    {simp[pSet.of_nat, *]}
+end
+
 theorem bSet_axiom_of_infinity : (⨆(u : bSet 𝔹), axiom_of_infinity_spec u) = ⊤ :=
 begin
-  simp, apply top_unique, apply le_supr_of_le, repeat{sorry}
-end -- maybe we can just define boolean-valued ω in this case directly
+  apply top_unique, apply bv_use (ω̌), apply infinity_of_empty_succ,
+  exacts [contains_empty_omega_check, contains_succ_omega_check]
+end
+
+end infinity
 
 theorem bSet_axiom_of_regularity (ϕ : bSet 𝔹 → 𝔹) (h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y) :
   (⨅(x : bSet 𝔹), ((⨅(y : bSet 𝔹), y ∈ᴮ x ⟹ ϕ y) ⟹ ϕ x)) ⟹ (⨅(x : bSet 𝔹), ϕ x) = ⊤ :=
@@ -1517,8 +1559,6 @@ begin
 end      
     
 end zorns_lemma
-
-
 
 -- /-- This is the abbreviated version of AC found at http://us.metamath.org/mpeuni/ac3.html
 --     It is provably equivalent over ZF to the usual formulation of AC
