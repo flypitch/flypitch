@@ -869,4 +869,7 @@ begin
   apply inf_le_inf, refl, apply le_inf, refl, assumption
 end
 
+@[simp]lemma top_le_imp_top {β : Type*} {b : β} [boolean_algebra β] : ⊤ ≤ b ⟹ ⊤ :=
+by rw[<-deduction]; apply le_top
+
 end lattice
