@@ -1512,8 +1512,8 @@ begin
         rw[top_le_iff], from ‹_›, rw[<-this]},
   change a ≤ _, apply le_trans, apply (mixing_lemma_two_term a (-a) ‹_› y (S c)).left,
   change v =ᴮ _ ≤ _, rw[bv_eq_symm], apply le_trans', show 𝔹, from v =ᴮ S z, rw[H_z],
-  apply le_top, apply le_trans, apply bv_eq_trans, apply bv_have (le_top : y =ᴮ S z ≤ ⊤),
-  rw[bv_eq_symm] at claim_5, rw[<-claim_5], apply bv_eq_trans
+  apply le_top, apply le_trans, apply bv_eq_trans, apply bv_have (le_top : y =ᴮ _ ≤ _),
+  rw[bv_eq_symm] at claim_5, simp[claim_5.symm, bv_eq_trans]
 end      
     
 end zorns_lemma
