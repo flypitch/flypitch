@@ -1446,7 +1446,7 @@ begin
 
   have H_in_X : ⊤ ≤ ⨅(u : C'.type), C'.bval u ⟹ C'.func u ∈ᴮ X,
     by {bv_intro i_u, rw[of_core_bval, top_imp], apply of_core_mem},
-  
+    /- Show that ⋃C' is in X -/
   have H_internal_ub_mem : ⊤ ≤ (bv_union C') ∈ᴮ X,
     by {rw[le_infi_iff] at H, specialize H C', apply bv_context_apply H, apply le_inf,
 
@@ -1454,7 +1454,7 @@ begin
 
          {apply le_trans H_internal_chain,
           rw[forall_forall_reindex (λ z₁ z₂, ((z₁ ⊆ᴮ z₂) ⊔ (z₂ ⊆ᴮ z₁) : 𝔹))]; simp}},
- 
+ /- Show that ⋃C' is an upper bound on C' in X -/
   have H_internal_ub_spec : ⊤ ≤ ⨅(i_w : C'.type), C'.bval i_w ⟹ C'.func i_w ⊆ᴮ (bv_union C'),
     by {have := bv_union_spec' C', apply le_trans this,
         have := @bounded_forall 𝔹 _ C' (λ w, w ⊆ᴮ bv_union C'), dsimp at this, rw[this_1],
@@ -1469,10 +1469,12 @@ begin
 end
 
 theorem bSet_zorns_lemma' (X : bSet 𝔹) (H : ⊤ ≤ (⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
-  w₁ ∈ᴮ y ⊓ w₁ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X))) :
+  w₁ ∈ᴮ y ⊓ w₂ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X))) :
   ⊤ ≤ (⨆c, c ∈ᴮ X ⊓ (⨅z, z ∈ᴮ X ⟹ (c ⊆ᴮ X ⟹ c =ᴮ z))) :=
 begin
-  simp at H, sorry
+  have := zorn (subset'_inductive X H),
+  repeat{sorry}
+  -- simp at H, sorry
 end
     
 
