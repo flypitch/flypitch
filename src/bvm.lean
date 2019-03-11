@@ -1588,4 +1588,32 @@ end zorns_lemma
 --   (⨆!(w : bSet 𝔹), w ∈ᴮ z ⟹
 --     ⨆(v : bSet 𝔹), v ∈ᴮ y ⟹ (z ∈ᴮ v ⊓ w ∈ᴮ v)))) = ⊤ := sorry
 
+section extras
+
+def pair (x y : bSet 𝔹) : bSet 𝔹 := {{x}, {x,y}}
+
+-- def is_first (x y : bSet 𝔹) : 𝔹 := ⨅(w : bSet 𝔹), w ∈ᴮ pair x y ⟹ x ∈ᴮ w
+
+-- def is_second (x y : bSet 𝔹) : 𝔹 :=  sorry
+
+def prod (v w : bSet 𝔹) : bSet 𝔹 := ⟨v.type × w.type, λ a, pair (v.func a.1) (w.func a.2), λ a, (v.bval a.1) ⊓ (w.bval a.2)⟩
+
+def is_func (x y f : bSet 𝔹) : 𝔹 :=
+  f ⊆ᴮ prod x y ⊓ ⨅z, (z∈ᴮ x ⟹ (⨆w, pair z w ∈ᴮ f ⊓ (⨅w', pair z w' ∈ᴮ f ⟹ w =ᴮ w')))
+
+def function.mk {u : bSet 𝔹} (F : u.type → bSet 𝔹) : bSet 𝔹 :=
+⟨u.type, λ a, pair (u.func a) (F a), u.bval⟩
+
+lemma mk_is_func {u : bSet 𝔹} {F : u.type → bSet 𝔹} : is_func u sorry (function.mk F) = ⊤
+
+def function.inj (f : bSet 𝔹) {x y} (h_is_func : is_func x y f = ⊤) : 𝔹 :=
+  is_func x y f ⊓ (⨅p₁ p₂, p₁∈ᴮ f ⊓ p₂ ∈ᴮ f ⟹
+    (⨅a₁ a₂, ⨅b, p₁ =ᴮ pair a₁ b ⊓ p₂ =ᴮ pair a₂ b ⟹ a₁ =ᴮ a₂))
+
+lemma mk_inj_of_inj {u : bSet 𝔹} {F : u.type → bSet 𝔹} (h_inj : function.injective F) :
+  ⊤ ≤ function.inj (function.mk F) (mk_is_func) :=
+sorry
+
+end extras
+
 end bSet
