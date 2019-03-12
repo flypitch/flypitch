@@ -1,7 +1,7 @@
 import fol set_theory.zfc set_theory.ordinal
        order.boolean_algebra order.complete_boolean_algebra
        tactic.rewrite tactic.monotonicity
-       .to_mathlib bv_prf order.zorn
+       .to_mathlib bv_prf order.zorn tactic.elide
 
 local infix ` ⟹ `:65 := lattice.imp
 
@@ -127,6 +127,10 @@ by {rw[<-deduction], apply le_trans, apply bv_imp_elim, from ‹_›}
 
 lemma bv_and_intro {a b₁ b₂ : 𝔹} (h₁ : a ≤ b₁) (h₂ : a ≤ b₂) : a ≤ b₁ ⊓ b₂ := le_inf h₁ h₂
 
+lemma bv_or_left {a b₁ b₂ : 𝔹} (h₁ : a ≤ b₁) : a ≤ b₁ ⊔ b₂ := le_sup_left_of_le h₁
+
+lemma bv_or_right {a b₁ b₂ : 𝔹} (h₂ : a ≤ b₂) : a ≤ b₁ ⊔ b₂ := le_sup_right_of_le h₂
+
 @[ematch] lemma from_empty_context {a b : 𝔹} (h : ⊤ ≤ b) : a ≤ b :=
   by refine le_trans _ h; apply le_top
 
@@ -135,6 +139,9 @@ lemma bv_imp_intro {a b c : 𝔹} {h : a ⊓ b ≤ c} :
 
 lemma bv_have {a b c : 𝔹} (h : a ≤ b) {h' : a ⊓ b ≤ c} : a ≤ c :=
 by {rw[show a = a ⊓ a, by simp], apply le_trans, apply inf_le_inf, refl, exact h, exact h'}
+
+lemma bv_have_true {a b c : 𝔹} (h₁ : ⊤ ≤ b) (h₂ : a ⊓ b ≤ c) : a ≤ c :=
+by {apply bv_have, apply le_top, apply le_trans, apply inf_le_inf, refl, from ‹_›, from ‹_›}
 
 lemma bv_use {ι : Type*} (i : ι) {s : ι → 𝔹} {b : 𝔹}  {h : b ≤ s i} : b ≤ ⨆(j:ι), s j :=
   le_supr_of_le i h
@@ -1701,6 +1708,9 @@ by refl
 @[simp, cleanup]lemma insert1_func_some {u v : bSet 𝔹} {i} : (bSet.insert1 u ({v})).func (some i) = (func {v}) i :=
 by refl
 
+@[simp]lemma mem_singleton {x : bSet 𝔹} : ⊤ ≤ x ∈ᴮ {x} :=
+by {rw[mem_unfold], apply bv_use none, unfold singleton, simp}
+
 lemma eq_of_mem_singleton' {x y : bSet 𝔹} : y ∈ᴮ {x} ≤ x =ᴮ y :=
 by {rw[mem_unfold], apply bv_Or_elim, intro i, cases i, simp[bv_eq_symm], repeat{cases i}}
 
@@ -1713,6 +1723,20 @@ begin
   unfold singleton, simp, rw[inf_sup_right], apply bv_or_elim,
   apply inf_le_left, apply inf_le_right_of_le, simp[eq_of_mem_singleton']
 end
+
+lemma insert1_symm (y z : bSet 𝔹) : ⊤ ≤ bSet.insert1 y {z} =ᴮ bSet.insert1 z {y} :=
+begin
+  rw[bv_eq_unfold], apply le_inf; bv_intro i; simp; cases i; simp[-top_le_iff],
+  {simp[bv_or_right]},
+  {cases i; [simp, repeat{cases i}]},
+  {simp[bv_or_right]},
+  {cases i; [simp, repeat{cases i}]}
+end
+
+lemma eq_inserted_of_eq_singleton' {x y z : bSet 𝔹} : {x} =ᴮ bSet.insert1 y {z} ≤ x =ᴮ z :=
+by {apply bv_have_true (insert1_symm y z), apply le_trans, apply bv_eq_trans, apply eq_inserted_of_eq_singleton}
+
+example {y z : bSet 𝔹} : ⊤ ≤ ({y,z} : bSet 𝔹) =ᴮ ({z,y}) := insert1_symm _ _
 
 lemma eq_of_eq_pair'_left {x z y : bSet 𝔹} : pair x y =ᴮ pair z y ≤ x =ᴮ z :=
 begin
@@ -1747,19 +1771,29 @@ begin
      apply le_trans, apply inf_le_inf; apply eq_inserted_of_eq_singleton, rw[bv_eq_symm], apply bv_eq_trans} 
 end
 
+section distribution
+run_cmd mk_simp_attr `dnf
+
+@[dnf]lemma distrib_inf_over_sup_from_left {β : Type*} [distrib_lattice β] {a b c : β} :
+  c ⊓ (a ⊔ b) = (c ⊓ a) ⊔ (c ⊓ b) := by apply inf_sup_left
+
+@[dnf]lemma distrib_inf_over_sup_from_right {β : Type*} [distrib_lattice β] {a b c : β} :
+  (a ⊔ b) ⊓ c = (a ⊓ c) ⊔ (b ⊓ c) := by apply inf_sup_right
+
+end distribution
+/- Taken together, eq_of_eq_pair_left and eq_of_eq_pair_right say that x = v and y = w if and only if pair x y = pair v w -/
 theorem eq_of_eq_pair_left {x y v w: bSet 𝔹} : pair x y =ᴮ pair v w ≤ x =ᴮ v :=
 begin
-  unfold pair has_insert.insert, rw[bv_eq_unfold], apply bv_specialize_left_twice none (some none),
-  apply bv_specialize_right_twice none (some none), unfold singleton, simp,
-  
-  iterate 2 {rw[inf_sup_right_left_eq]}, rw[sup_inf_left_right_eq], rw[inf_sup_right_left_eq],
-  repeat{apply bv_or_elim}, rw[inf_sup_right_left_eq], repeat{apply bv_or_elim}, repeat{sorry}
-  -- unfold pair has_insert.insert, rw[bv_eq_unfold], apply bv_specialize_left none, apply bv_specialize_right (none),
-  -- unfold singleton, simp, rw[inf_sup_right_left_eq], repeat{apply bv_or_elim},
-  -- {sorry},
-  -- {sorry},
-  -- {sorry},
-  -- {sorry}
+  unfold pair has_insert.insert, rw[bv_eq_unfold], apply bv_specialize_left none, apply bv_specialize_right (some none),
+  unfold singleton, simp, simp only with dnf, repeat{apply bv_or_elim},
+  {apply inf_le_right_of_le, apply le_trans, apply eq_inserted_of_eq_singleton', rw[bv_eq_symm]},
+  {apply inf_le_left_of_le, rw[mem_unfold], apply bv_Or_elim, intro i, cases i,
+   apply inf_le_right_of_le, simp, rw[bv_eq_symm], apply le_trans, apply eq_inserted_of_eq_singleton', rw[bv_eq_symm],
+   repeat{cases i}},
+  {apply inf_le_right_of_le, apply le_trans, fapply eq_of_mem_singleton, from {x}, from {v},
+   refl, apply eq_of_eq_singleton, refl},
+  {apply inf_le_right_of_le, apply le_trans, fapply eq_of_mem_singleton, from {x}, from {v},
+   refl, apply eq_of_eq_singleton, refl}
 end
 
 theorem eq_of_eq_pair_right {x y v w: bSet 𝔹} : pair x y =ᴮ pair v w ≤ y =ᴮ w :=
@@ -1867,7 +1901,7 @@ def function.inj (f : bSet 𝔹) (x y) : 𝔹 :=
   is_func x y f ⊓ (⨅p₁ p₂, p₁∈ᴮ f ⊓ p₂ ∈ᴮ f ⟹
     (⨅a₁ a₂, ⨅b, p₁ =ᴮ pair a₁ b ⊓ p₂ =ᴮ pair a₂ b ⟹ a₁ =ᴮ a₂))
 
-lemma mk_inj_of_inj {u : bSet 𝔹} {x y} {F : u.type → bSet 𝔹} (h_inj : function.injective F) :
+lemma mk_inj_of_inj {u : bSet 𝔹} {x y} {F : u.type → bSet 𝔹} (h_inj : function.injective F) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) :
   ⊤ ≤ function.inj x y (function.mk F h_congr) :=
 begin
  sorry   -- apply le_inf, apply mk_is_f (function.mk F h_congr),
