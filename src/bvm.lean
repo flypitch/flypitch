@@ -1,7 +1,6 @@
 import fol set_theory.zfc set_theory.ordinal
        order.boolean_algebra order.complete_boolean_algebra
-       tactic.rewrite tactic.monotonicity
-       .to_mathlib bv_prf order.zorn tactic.elide
+       .to_mathlib bv_prf order.zorn
 
 local infix ` ⟹ `:65 := lattice.imp
 
@@ -1901,7 +1900,7 @@ def function.inj (f : bSet 𝔹) (x y) : 𝔹 :=
   is_func x y f ⊓ (⨅p₁ p₂, p₁∈ᴮ f ⊓ p₂ ∈ᴮ f ⟹
     (⨅a₁ a₂, ⨅b, p₁ =ᴮ pair a₁ b ⊓ p₂ =ᴮ pair a₂ b ⟹ a₁ =ᴮ a₂))
 
-lemma mk_inj_of_inj {u : bSet 𝔹} {x y} {F : u.type → bSet 𝔹} (h_inj : function.injective F) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) :
+lemma mk_inj_of_inj {u : bSet 𝔹} {x y} {F : u.type → bSet 𝔹} (h_inj : ∀ i j, i ≠ j → F i =ᴮ F j ≤ ⊥) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) :
   ⊤ ≤ function.inj x y (function.mk F h_congr) :=
 begin
  sorry   -- apply le_inf, apply mk_is_f (function.mk F h_congr),
