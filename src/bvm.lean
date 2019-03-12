@@ -88,13 +88,33 @@ by {rw[inf_comm], apply bv_cases_left, finish}
 lemma bv_specialize {ι : Type*} {s : ι → 𝔹} (i : ι) {b : 𝔹} {h : s i ≤ b} :
 (⨅(i:ι), s i) ≤ b := infi_le_of_le i h
 
+--TODO(jesse) write the version of this for an arbitrary list of instantiations
+lemma bv_specialize_twice {ι : Type*} {s : ι → 𝔹} (i j : ι) {b : 𝔹} {h : s i ⊓ s j ≤ b} :
+(⨅(i:ι), s i) ≤ b :=
+begin
+  apply le_trans', apply infi_le, from i, apply le_trans', apply inf_le_left_of_le,
+  apply infi_le, from j, apply le_trans _ h, apply inf_le_inf, apply inf_le_right, refl
+end
+
 lemma bv_specialize_left {ι : Type*} {s : ι → 𝔹} {c b : 𝔹} (i : ι)
   {h : s i ⊓ c ≤ b} : (⨅(i:ι), s i) ⊓ c ≤ b :=
 by {rw[deduction], apply bv_specialize i, rwa[<-deduction]}
 
+lemma bv_specialize_left_twice {ι : Type*} {s : ι → 𝔹} {c b : 𝔹} (i j : ι)
+  {h : s i ⊓ s j ⊓ c ≤ b} : (⨅(i:ι), s i) ⊓ c ≤ b :=
+begin
+  rw[deduction], apply bv_specialize_twice i j, rwa[<-deduction]
+end
+
 lemma bv_specialize_right {ι : Type*} {s :ι → 𝔹} {c b : 𝔹} (i : ι)
   {h : c ⊓ s i ≤ b} : c ⊓ (⨅(i:ι), s i) ≤ b :=
 by {rw[inf_comm], apply bv_specialize_left i, finish}
+
+lemma bv_specialize_right_twice {ι : Type*} {s : ι → 𝔹} {c b : 𝔹} (i j : ι)
+  {h : c ⊓ (s i ⊓ s j) ≤ b} : c ⊓ (⨅(i:ι), s i) ≤ b :=
+begin
+  rw[inf_comm], apply bv_specialize_left_twice i j, rwa[<-inf_comm]
+end
   
 lemma bv_imp_elim {a b : 𝔹} : (a ⟹ b) ⊓ a ≤ b :=
 by simp[imp, inf_sup_right]
@@ -1729,22 +1749,26 @@ end
 
 theorem eq_of_eq_pair_left {x y v w: bSet 𝔹} : pair x y =ᴮ pair v w ≤ x =ᴮ v :=
 begin
-  unfold pair has_insert.insert, rw[bv_eq_unfold], apply bv_specialize_left none, apply bv_specialize_right (none),
-  unfold singleton, simp, rw[inf_sup_right_left_eq], repeat{apply bv_or_elim},
-  {sorry},
-  {sorry},
-  {sorry},
-  {sorry}
+  unfold pair has_insert.insert, rw[bv_eq_unfold], apply bv_specialize_left_twice none (some none),
+  apply bv_specialize_right_twice none (some none), unfold singleton, simp,
+  
+  iterate 2 {rw[inf_sup_right_left_eq]}, rw[sup_inf_left_right_eq], rw[inf_sup_right_left_eq],
+  repeat{apply bv_or_elim}, rw[inf_sup_right_left_eq], repeat{apply bv_or_elim}, repeat{sorry}
+  -- unfold pair has_insert.insert, rw[bv_eq_unfold], apply bv_specialize_left none, apply bv_specialize_right (none),
+  -- unfold singleton, simp, rw[inf_sup_right_left_eq], repeat{apply bv_or_elim},
+  -- {sorry},
+  -- {sorry},
+  -- {sorry},
+  -- {sorry}
 end
 
 theorem eq_of_eq_pair_right {x y v w: bSet 𝔹} : pair x y =ᴮ pair v w ≤ y =ᴮ w :=
 begin
-  unfold pair has_insert.insert, rw[bv_eq_unfold], apply bv_specialize_left none, apply bv_specialize_right (none),
-  unfold singleton, simp, rw[inf_sup_right_left_eq], repeat{apply bv_or_elim},
-  {sorry},
-  {sorry},
-  {sorry},
-  {sorry}
+  apply bv_have, apply eq_of_eq_pair_left,
+  apply le_trans, show 𝔹, from pair v y =ᴮ pair v w,
+  rw[inf_comm], apply le_trans, apply inf_le_inf, swap, refl,
+  apply subst_congr_pair_left, exact y, rw[bv_eq_symm],
+  apply bv_eq_trans, apply eq_of_eq_pair'_right
 end
 
 @[reducible]def prod (v w : bSet 𝔹) : bSet 𝔹 := ⟨v.type × w.type, λ a, pair (v.func a.1) (w.func a.2), λ a, (v.bval a.1) ⊓ (w.bval a.2)⟩
@@ -1775,25 +1799,34 @@ begin
      apply bv_context_trans; from ‹_›}
 end
 
+
+/-- f is =ᴮ-extensional on x if for every w₁ and w₂ ∈ x, if w₁ =ᴮ w₂, then for every v₁ and v₂, if (w₁,v₁) ∈ f and (w₂,v₂) ∈ f, then v₁ =ᴮ v₂ -/
+@[reducible]def is_extensional (x f : bSet 𝔹) : 𝔹 :=
+⨅w₁, w₁ ∈ᴮ x ⟹ (⨅w₂, w₂ ∈ᴮ x ⟹ (w₁ =ᴮ w₂ ⟹ ⨅v₁ v₂, (pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f) ⟹ v₁ =ᴮ v₂))
+
+/-- f is a functional relation if for every z ∈ x, if there exists a w ∈ y such that (z,w) ∈ f, then for every w' ∈ y such that (z,w') ∈ f, w' =ᴮ w -/
+@[reducible] def is_functional (x y f : bSet 𝔹) : 𝔹 :=
+⨅z, (z∈ᴮ x ⟹ (⨆w, w ∈ᴮ y ⊓ pair z w ∈ᴮ f ⊓ (⨅w', w' ∈ᴮ y ⟹ (pair z w' ∈ᴮ f ⟹ w =ᴮ w'))))
+  
+/-- f is a function if it is a subset of prod x y and it satisfies the following two conditions:
+1. it is =ᴮ-extensional
+2. it is a functional relation -/
 def is_func (x y f : bSet 𝔹) : 𝔹 :=
-  f ⊆ᴮ prod x y ⊓ ⨅z, (z∈ᴮ x ⟹ (⨆w, w ∈ᴮ y ⊓ pair z w ∈ᴮ f ⊓ (⨅w', w' ∈ᴮ y ⟹ (pair z w' ∈ᴮ f ⟹ w =ᴮ w'))))
+  f ⊆ᴮ prod x y ⊓ is_extensional x f ⊓ is_functional x y f
 
-def function.mk {u : bSet 𝔹} (F : u.type → bSet 𝔹) : bSet 𝔹 :=
+def function.mk {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : bSet 𝔹 :=
 ⟨u.type, λ a, pair (u.func a) (F a), u.bval⟩
 
-def function.mk' {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : bSet 𝔹 :=
-⟨u.type, λ a, pair (u.func a) (F a), u.bval⟩
+@[simp, cleanup]lemma function.mk_type {u : bSet 𝔹} {F : u.type → bSet 𝔹} {h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j} : (function.mk F h_congr).type = u.type := by refl
 
-@[simp, cleanup]lemma function.mk_type {u : bSet 𝔹} {F : u.type → bSet 𝔹} : (function.mk F).type = u.type := by refl
+@[simp, cleanup]lemma function.mk_func {u : bSet 𝔹} {F : u.type → bSet 𝔹} {h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j} {i} : (function.mk F h_congr).func i = pair(u.func i) (F i) := by refl
 
-@[simp, cleanup]lemma function.mk_func {u : bSet 𝔹} {F : u.type → bSet 𝔹} {i} : (function.mk F).func i = pair(u.func i) (F i) := by refl
+@[simp, cleanup]lemma function.mk_bval {u : bSet 𝔹} {F : u.type → bSet 𝔹} {h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j} {i} : (function.mk F h_congr).bval i = u.bval i := by refl
 
-@[simp, cleanup]lemma function.mk_bval {u : bSet 𝔹} {F : u.type → bSet 𝔹} {i} : (function.mk F).bval i = u.bval i := by refl
-
-@[simp]lemma function.mk_self {u : bSet 𝔹} {F : u.type → bSet 𝔹} {i : u.type} : u.bval i ≤ pair (u.func i) (F i) ∈ᴮ function.mk F :=
+@[simp]lemma function.mk_self {u : bSet 𝔹} {F : u.type → bSet 𝔹} {h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j} {i : u.type} : u.bval i ≤ pair (u.func i) (F i) ∈ᴮ function.mk F h_congr :=
 by {rw[mem_unfold], apply bv_use i, simp}
 
-@[simp]lemma function.mk_self' {u : bSet 𝔹} {F : u.type → bSet 𝔹} {i : u.type} : ⊤ ≤ u.bval i ⟹ pair (u.func i) (F i) ∈ᴮ function.mk F :=
+@[simp]lemma function.mk_self' {u : bSet 𝔹} {F : u.type → bSet 𝔹} {h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j}  {i : u.type} : ⊤ ≤ u.bval i ⟹ pair (u.func i) (F i) ∈ᴮ function.mk F h_congr :=
 by simp
 
 /-- This is analogous to the check operation: we collect a type-indexed collection of bSets into a definite bSet -/
@@ -1803,30 +1836,31 @@ def check' {α : Type u} (A : α → bSet 𝔹) : bSet 𝔹 := ⟨α, A, λ x, �
 @[simp, cleanup]def check'_bval {α : Type u} {A : α → bSet 𝔹} {i} : (check' A).bval i = ⊤ := by refl
 @[simp, cleanup]def check'_func {α : Type u} {A : α → bSet 𝔹} {i} : (check' A).func i = A i := by refl
 
-lemma mk_is_func {u : bSet 𝔹} {F : u.type → bSet 𝔹} : ⊤ ≤ is_func u (check' F) (function.mk F) :=
+lemma mk_is_func {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : ⊤ ≤ is_func u (check' F) (function.mk F h_congr) :=
 begin
-  apply le_inf, bv_intro i, simp, refine bv_use (i, i), apply le_inf, refl, simp[bv_eq_refl],
-  bv_intro z, simp only [lattice.top_le_iff, bSet.mem, lattice.imp_top_iff_le],
-  rw[mem_unfold], apply bv_Or_elim, intro i, apply bv_use (F i), apply le_inf, 
-  rw[mem_unfold], apply le_inf, apply bv_use i,
-  apply le_inf, {simp}, {apply inf_le_right_of_le, simp},
-  {apply le_trans, apply inf_le_inf, refl, refl, rw[inf_comm],
-  apply le_trans, apply inf_le_inf, refl, apply function.mk_self, from F,
-  rw[bv_eq_symm], apply le_trans, apply inf_le_inf, swap, refl, apply subst_congr_pair_left,
-  exact (F i), apply subst_congr_mem_left},
+sorry
+  -- apply le_inf, bv_intro i, simp, refine bv_use (i, i), apply le_inf, refl, simp[bv_eq_refl],
+  -- bv_intro z, simp only [lattice.top_le_iff, bSet.mem, lattice.imp_top_iff_le],
+  -- rw[mem_unfold], apply bv_Or_elim, intro i, apply bv_use (F i), apply le_inf, 
+  -- rw[mem_unfold], apply le_inf, apply bv_use i,
+  -- apply le_inf, {simp}, {apply inf_le_right_of_le, simp},
+  -- {apply le_trans, apply inf_le_inf, refl, refl, rw[inf_comm],
+  -- apply le_trans, apply inf_le_inf, refl, apply function.mk_self, from ‹_›,
+  -- rw[bv_eq_symm], apply le_trans, apply inf_le_inf, swap, refl, apply subst_congr_pair_left,
+  -- exact (F i), apply subst_congr_mem_left},
 
-  {bv_intro w', apply bv_imp_intro, apply bv_imp_intro,
-  conv in (pair z w' ∈ᴮ _) {simp only [mem_unfold]}, apply bv_cases_right, intro i',
-  simp,   }
+  -- {bv_intro w', apply bv_imp_intro, apply bv_imp_intro,
+  -- conv in (pair z w' ∈ᴮ _) {simp only [mem_unfold]}, apply bv_cases_right, intro i',
+  -- simp, repeat{sorry}}
     
-    -- rw[mem_unfold], apply bv_use i, apply le_inf,
-    -- {simp},
-    -- {apply inf_le_right_of_le, simp},
+  --   -- rw[mem_unfold], apply bv_use i, apply le_inf,
+  --   -- {simp},
+  --   -- {apply inf_le_right_of_le, simp},
 
   
-  -- bv_intro w', apply bv_imp_intro, conv {to_rhs, simp only [bv_eq_unfold]},
-  -- apply le_inf; [bv_intro a, bv_intro a']; simp only [mem_unfold];
-  -- apply bv_cases_right; intro j, repeat{sorry}
+  -- -- bv_intro w', apply bv_imp_intro, conv {to_rhs, simp only [bv_eq_unfold]},
+  -- -- apply le_inf; [bv_intro a, bv_intro a']; simp only [mem_unfold];
+  -- -- apply bv_cases_right; intro j, repeat{sorry}
 end
 
 def function.inj (f : bSet 𝔹) (x y) : 𝔹 :=
@@ -1834,9 +1868,9 @@ def function.inj (f : bSet 𝔹) (x y) : 𝔹 :=
     (⨅a₁ a₂, ⨅b, p₁ =ᴮ pair a₁ b ⊓ p₂ =ᴮ pair a₂ b ⟹ a₁ =ᴮ a₂))
 
 lemma mk_inj_of_inj {u : bSet 𝔹} {x y} {F : u.type → bSet 𝔹} (h_inj : function.injective F) :
-  ⊤ ≤ function.inj x y (function.mk F) :=
+  ⊤ ≤ function.inj x y (function.mk F h_congr) :=
 begin
- sorry   -- apply le_inf, apply mk_is_f (function.mk F),
+ sorry   -- apply le_inf, apply mk_is_f (function.mk F h_congr),
 end
 
 end extras
