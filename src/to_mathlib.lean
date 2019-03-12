@@ -87,11 +87,10 @@ inductive dfin : ℕ → Type
 instance has_zero_dfin {n} : has_zero $ dfin (n+1) := ⟨dfin.fz⟩
 
 -- note from Mario --- use dfin to synergize with dvector
-
+namespace dvector
+section dvectors
 local notation h :: t  := dvector.cons h t
 local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`) := l
-
-namespace dvector
 variables {α : Type u} {β : Type v} {γ : Type w} {n : ℕ}
 
 @[simp] protected def zero_eq : ∀(xs : dvector α 0), xs = []
@@ -339,8 +338,9 @@ def quotient_beta {α : Type u} {β : Sort v} {R : setoid α} {n} (f : dvector �
 begin
   induction xs, refl, apply xs_ih
 end
-
+end dvectors
 end dvector
+
 
 namespace nat
 lemma add_sub_swap {n k : ℕ} (h : k ≤ n) (m : ℕ) : n + m - k = n - k + m :=
@@ -494,7 +494,9 @@ def arity' (α β : Type u) : ℕ → Type u
 | (n+1) := α → arity' n
 
 namespace arity'
-
+section arity'
+local notation h :: t  := dvector.cons h t
+local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`) := l
 def arity'_constant {α β : Type u} : ∀{n : ℕ}, β → arity' α β n
 | 0     b := b
 | (n+1) b := λ_, arity'_constant b
@@ -581,7 +583,7 @@ lemma arity'_iff_rfl {α : Type} {n : ℕ} {f : arity' α Prop n} : arity'_iff f
 arity'_iff_refl f
 
 end arity'
-
+end arity'
 
 namespace lattice
 instance complete_degenerate_boolean_algebra : complete_boolean_algebra unit :=
@@ -876,5 +878,55 @@ end
 
 @[simp]lemma top_le_imp_top {β : Type*} {b : β} [boolean_algebra β] : ⊤ ≤ b ⟹ ⊤ :=
 by rw[<-deduction]; apply le_top
+
+lemma poset_yoneda {β : Type*} [partial_order β] {a b : β} {H : ∀ Γ : β, Γ ≤ a → Γ ≤ b} : a ≤ b :=
+by specialize H a; finish
+
+lemma split_context {β : Type*} [lattice β] {a₁ a₂ b : β} {H : ∀ Γ : β, Γ ≤ a₁ ∧ Γ ≤ a₂ → Γ ≤ b} : a₁ ⊓ a₂ ≤ b :=
+by {apply poset_yoneda, intros Γ H', apply H, finish}
+
+example {β : Type*} [bounded_lattice β] : ⊤ ⊓ (⊤ : β) ⊓ ⊤ ≤ ⊤ :=
+begin
+  apply split_context, intros, simp only [le_inf_iff] at a, auto.split_hyps, from ‹_›
+end
+
+end lattice
+
+namespace tactic
+namespace interactive
+open tactic interactive tactic.tidy
+
+meta def tidy_context_tactics : list (tactic string) :=
+[ reflexivity                                 >> pure "refl", 
+  propositional_goal >> assumption            >> pure "assumption",
+  intros1                                     >>= λ ns, pure ("intros " ++ (" ".intercalate (ns.map (λ e, e.to_string)))),
+  auto_cases,
+  `[simp only [le_inf_iff] at *]                                >> pure "simp only [le_inf_iff] at *",
+  propositional_goal >> (`[solve_by_elim])    >> pure "solve_by_elim"
+]
+
+meta structure context_cfg :=
+(trace_result : bool := ff)
+(trace_result_prefix : string := "/- `tidy_context` says -/ apply poset_yoneda, ")
+(tactics : list(tactic string) := tidy_context_tactics)
+
+meta def cfg_of_context_cfg : context_cfg → cfg :=
+λ X, { trace_result := X.trace_result,
+  trace_result_prefix := X.trace_result_prefix,
+  tactics := X.tactics}
+
+meta def tidy_context (cfg : context_cfg := {}) : tactic unit := 
+`[apply poset_yoneda] >> tidy (cfg_of_context_cfg cfg)
+
+end interactive
+end tactic
+
+namespace lattice
+example {β : Type*} [bounded_lattice β] : ⊤ ⊓ (⊤ : β) ⊓ ⊤ ≤ ⊤ :=
+begin
+  tidy_context -- {trace_result := tt},
+--/- `tidy_context` says -/ intros Γ a, simp only [le_inf_iff] at *, cases a, assumption
+-- not bad!
+end
 
 end lattice

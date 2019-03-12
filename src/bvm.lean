@@ -1871,7 +1871,25 @@ def check' {α : Type u} (A : α → bSet 𝔹) : bSet 𝔹 := ⟨α, A, λ x, �
 
 lemma mk_is_func {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : ⊤ ≤ is_func u (check' F) (function.mk F h_congr) :=
 begin
-sorry
+repeat{apply le_inf},
+  {bv_intro i, apply bv_imp_intro, have := @prod_mem 𝔹 _ u (check' F) (func u i) (F i),
+  apply le_trans _ this, apply le_inf, simp[mem.mk'], apply bv_use i, simp},
+
+  {bv_intro x, apply bv_imp_intro, bv_intro y, apply bv_imp_intro, simp only [top_inf_eq],
+   rw[mem_unfold, mem_unfold], apply bv_cases_left, intro i, apply bv_cases_right, intro j,
+   apply bv_imp_intro, let X := _, change _ ≤ X,
+   ac_change (bval u i ⊓ bval u j) ⊓ ( x =ᴮ y ⊓ x =ᴮ func u i ⊓ (y =ᴮ func u j)) ≤ X,
+   apply le_trans, apply inf_le_inf, refl, show 𝔹, from func u i =ᴮ func u j,
+   apply le_trans _ bv_eq_trans, from x, apply le_inf, apply inf_le_left_of_le,
+   apply inf_le_right_of_le, rw[bv_eq_symm],
+   ac_change (x =ᴮ y  ⊓ y =ᴮ func u j) ⊓ x =ᴮ func u i ≤ x =ᴮ func u j, simp[inf_assoc],
+   congr' 2, ac_refl, apply inf_le_left_of_le, apply bv_eq_trans,
+   dsimp[X], apply le_trans', apply le_trans, swap, exact h_congr i j, apply inf_le_right,
+   bv_intro v₁, bv_intro v, apply bv_imp_intro, sorry},
+
+  {sorry}
+
+
   -- apply le_inf, bv_intro i, simp, refine bv_use (i, i), apply le_inf, refl, simp[bv_eq_refl],
   -- bv_intro z, simp only [lattice.top_le_iff, bSet.mem, lattice.imp_top_iff_le],
   -- rw[mem_unfold], apply bv_Or_elim, intro i, apply bv_use (F i), apply le_inf, 
