@@ -890,11 +890,106 @@ begin
   apply split_context, intros, simp only [le_inf_iff] at a, auto.split_hyps, from ‹_›
 end
 
+lemma context_Or_elim {β : Type*} [complete_boolean_algebra β] {ι : Type*} {s : ι → β} {Γ b : β}
+  (h : Γ ≤ ⨆(i:ι), s i) {h' : ∀ i, s i ⊓ Γ ≤ s i → s i ⊓ Γ ≤ b} : Γ ≤ b :=
+begin
+  apply le_trans' h, rw[inf_comm], rw[deduction], apply supr_le, intro i, rw[<-deduction],
+  specialize h' i, apply h', apply inf_le_left
+end
+
+lemma context_or_elim {β : Type*} [complete_boolean_algebra β] {Γ a₁ a₂ b : β}
+  (H : Γ ≤ a₁ ⊔ a₂) {H₁ : a₁ ⊓ Γ ≤ a₁ → a₁ ⊓ Γ ≤ b} {H₂ : a₂ ⊓ Γ ≤ a₂ → a₂ ⊓ Γ ≤ b} : Γ ≤ b :=
+begin
+  apply le_trans' H, rw[inf_comm], rw[deduction], apply sup_le; rw[<-deduction];
+  [apply H₁, apply H₂]; from inf_le_left
+end
+
+lemma specialize_context {β : Type*} [partial_order β] {Γ Γ' b : β} {H_le : Γ' ≤ Γ} (H : Γ ≤ b)
+  : Γ' ≤ b :=
+le_trans H_le H
+
+lemma context_specialize_aux {β : Type*} [complete_boolean_algebra β] {ι : Type*} {s : ι → β}
+  (j : ι) {Γ : β} {H : Γ ≤ (⨅ i, s i)} : Γ ≤ (⨅i, s i) ⟹ s j :=
+by {apply le_trans H, rw[<-deduction], apply inf_le_right_of_le, apply infi_le}
+
+lemma context_specialize {β : Type*} [complete_lattice β] {ι : Type*} {s : ι → β}
+  (j : ι) {Γ : β} {H : Γ ≤ (⨅ i, s i)} : Γ ≤ s j :=
+le_trans H (infi_le _ _)
+
+lemma context_imp_elim {β : Type*} [complete_boolean_algebra β] {a b Γ: β} {H₁ : Γ ≤ a ⟹ b} {H₂ : Γ ≤ a} : Γ ≤ b :=
+begin
+  apply le_trans' H₁, apply le_trans, apply inf_le_inf H₂, refl,
+  rw[inf_comm], simp[imp, inf_sup_right]
+end
+
 end lattice
 
 namespace tactic
 namespace interactive
+section natded_tactics
 open tactic interactive tactic.tidy
+open lean.parser lean interactive.types
+
+local postfix `?`:9001 := optional
+meta def bv_intro : parse ident_? → tactic unit
+| none := propagate_tags (`[apply lattice.le_infi] >> intro1 >> tactic.skip)
+| (some n) := propagate_tags (`[apply lattice.le_infi] >> tactic.intro n >> tactic.skip)
+
+#check tactic.replace
+
+#check tactic.resolve_name
+
+/-- If the goal is an inequality `a ≤ b`, extracts `a` and attempts to specialize all
+  facts in context of the form `Γ ≤ d` to `a ≤ d` -/
+meta def specialize_context (Γ : parse texpr) : tactic unit :=
+do
+  Γ_old <- i_to_expr Γ,
+  tp <- infer_type Γ_old,
+  trace Γ_old,
+  Γ_name <- get_unused_name "Γ",
+  v <- mk_mvar, v' <- mk_mvar, v'' <- mk_mvar,
+  e <- pose Γ_name none v,
+  new_goal <- to_expr ``((%%e : %%tp) ≤ %%v'),
+  tactic.change new_goal,
+  ctx <- local_context,
+  ctx' <- ctx.mfilter
+    (λ e, do e_tp <- infer_type e, e' <- to_expr ``(%%Γ_old ≤ %%v''),succeeds (unify e_tp e')),
+  trace ctx',
+  -- ctx.mmap' (λ e, tactic.replace e)
+  sorry -- TODO(jesse) finish this
+  
+
+example {β : Type u} [lattice.bounded_lattice β] {b : β} {H : (⊤ : β) ≤ b} : ⊤ ≤ (⊤ : β) :=
+begin
+ specialize_context (⊤), 
+end
+
+/-- `ac_change g' changes the current goal `tgt` to `g` by creating a new goal of the form
+  `tgt = g`, and will attempt close it with `ac_refl`. -/
+meta def ac_change (r : parse texpr) : tactic unit :=
+do 
+   v₁ <- mk_mvar,
+   v₂ <- mk_mvar,
+   refine ``(eq.mpr %%v₁ (%%v₂ : %%r)),
+   gs <- get_goals,
+   set_goals (list.cons v₁ list.nil),
+   ac_refl <|> tactic.try `[simp only [bv_eq_symm]],
+   -- TODO generalize the right branch to an is_symmetric typeclass
+   gs' <- get_goals,
+   set_goals $ gs' ++ gs
+
+-- example {α : Type*} [lattice.boolean_algebra α] {a₁ a₂ a₃ a₄ : α} :
+--   (a₁ ⊔ a₂) ⊔ (a₃ ⊔ a₄) = ⊤
+-- :=
+-- begin
+--   ac_change a₁ ⊔ (a₂ ⊔ a₃ ⊔ a₄) = ⊤,
+-- -- α : Type ?,
+-- -- _inst_1 : lattice.boolean_algebra α,
+-- -- a₁ a₂ a₃ a₄ : α
+-- -- ⊢ a₁ ⊔ (a₂ ⊔ a₃ ⊔ a₄) = ⊤
+-- end
+   
+
 
 meta def tidy_context_tactics : list (tactic string) :=
 [ reflexivity                                 >> pure "refl", 
@@ -918,6 +1013,7 @@ meta def cfg_of_context_cfg : context_cfg → cfg :=
 meta def tidy_context (cfg : context_cfg := {}) : tactic unit := 
 `[apply poset_yoneda] >> tidy (cfg_of_context_cfg cfg)
 
+end natded_tactics
 end interactive
 end tactic
 
@@ -925,7 +1021,7 @@ namespace lattice
 example {β : Type*} [bounded_lattice β] : ⊤ ⊓ (⊤ : β) ⊓ ⊤ ≤ ⊤ :=
 begin
   tidy_context -- {trace_result := tt},
---/- `tidy_context` says -/ intros Γ a, simp only [le_inf_iff] at *, cases a, assumption
+--/- `tidy_context` says -/ apply poset_yoneda, intros Γ a, simp only [le_inf_iff] at *, cases a, assumption
 -- not bad!
 end
 

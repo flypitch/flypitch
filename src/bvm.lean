@@ -9,40 +9,6 @@ local infix ` ⇔ `:50 := lattice.biimp
 -- uncomment in case of emergency
 -- @[tidy] meta def big_bertha : tactic unit := `[finish]
 
-namespace tactic.interactive
-section natded_tactics
-open lean.parser lean tactic tactic.interactive interactive.types interactive
-local postfix `?`:9001 := optional
-meta def bv_intro : parse ident_? → tactic unit
-| none := propagate_tags (`[apply le_infi] >> intro1 >> tactic.skip)
-| (some n) := propagate_tags (`[apply lattice.le_infi] >> tactic.intro n >> tactic.skip)
-
-meta def ac_change (r : parse texpr) : tactic unit :=
-do 
-   v₁ <- mk_mvar,
-   v₂ <- mk_mvar,
-   refine ``(eq.mpr %%v₁ (%%v₂ : %%r)),
-   gs <- get_goals,
-   set_goals (list.cons v₁ list.nil),
-   -- `[try{simp only [bv_eq_symm]}],
-   try ac_refl,
-   gs' <- get_goals,
-   set_goals $ gs' ++ gs
-
--- example {α : Type*} [lattice.boolean_algebra α] {a₁ a₂ a₃ a₄ : α} :
---   (a₁ ⊔ a₂) ⊔ (a₃ ⊔ a₄) = ⊤
--- :=
--- begin
---   ac_change a₁ ⊔ (a₂ ⊔ a₃ ⊔ a₄) = ⊤,
--- -- α : Type ?,
--- -- _inst_1 : lattice.boolean_algebra α,
--- -- a₁ a₂ a₃ a₄ : α
--- -- ⊢ a₁ ⊔ (a₂ ⊔ a₃ ⊔ a₄) = ⊤
--- end
-   
-end natded_tactics
-end tactic.interactive
-
 namespace lattice
 
 section natded
@@ -445,7 +411,7 @@ lemma bv_context_trans {Γ : 𝔹} {a₁ a₂ a₃ : bSet 𝔹} (H₁ : Γ ≤ a
   Γ ≤ a₁ =ᴮ a₃ :=
 by {have := inf_le_inf H₁ H₂, rw[inf_self] at this, apply le_trans this, apply bv_eq_trans}
 
-lemma bv_context_symm {Γ : 𝔹} {a₁ a₂ : bSet 𝔹} (H : Γ ≤ a₁ =ᴮ a₂) : Γ ≤ a₂ =ᴮ a₁ := by rwa[bv_eq_symm]
+@[symm]lemma bv_context_symm {Γ : 𝔹} {a₁ a₂ : bSet 𝔹} (H : Γ ≤ a₁ =ᴮ a₂) : Γ ≤ a₂ =ᴮ a₁ := by rwa[bv_eq_symm]
 
 lemma bv_rw {x y : bSet 𝔹} (H : x =ᴮ y = ⊤) (ϕ : bSet 𝔹 → 𝔹) {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} : ϕ y = ϕ x :=
 begin
@@ -615,7 +581,7 @@ by tidy
 @[simp]lemma subst_congr_neg {ϕ₁ : bSet 𝔹 → 𝔹} {h : B_ext ϕ₁} : B_ext (λ x, - ϕ₁ x) :=
 begin
   simp only [imp_bot.symm],
-  ac_change (B_ext (λ x, ϕ₁ x ⟹ ((λ y, (⊥ : 𝔹)) x))), by simp,
+  ac_change (B_ext (λ x, ϕ₁ x ⟹ ((λ y, (⊥ : 𝔹)) x))),
   apply subst_congr_imp; simp, exact h
 end
 
@@ -1875,17 +1841,30 @@ repeat{apply le_inf},
   {bv_intro i, apply bv_imp_intro, have := @prod_mem 𝔹 _ u (check' F) (func u i) (F i),
   apply le_trans _ this, apply le_inf, simp[mem.mk'], apply bv_use i, simp},
 
-  {bv_intro x, apply bv_imp_intro, bv_intro y, apply bv_imp_intro, simp only [top_inf_eq],
-   rw[mem_unfold, mem_unfold], apply bv_cases_left, intro i, apply bv_cases_right, intro j,
-   apply bv_imp_intro, let X := _, change _ ≤ X,
-   ac_change (bval u i ⊓ bval u j) ⊓ ( x =ᴮ y ⊓ x =ᴮ func u i ⊓ (y =ᴮ func u j)) ≤ X,
-   apply le_trans, apply inf_le_inf, refl, show 𝔹, from func u i =ᴮ func u j,
-   apply le_trans _ bv_eq_trans, from x, apply le_inf, apply inf_le_left_of_le,
-   apply inf_le_right_of_le, rw[bv_eq_symm],
-   ac_change (x =ᴮ y  ⊓ y =ᴮ func u j) ⊓ x =ᴮ func u i ≤ x =ᴮ func u j, simp[inf_assoc],
-   congr' 2, ac_refl, apply inf_le_left_of_le, apply bv_eq_trans,
-   dsimp[X], apply le_trans', apply le_trans, swap, exact h_congr i j, apply inf_le_right,
-   bv_intro v₁, bv_intro v, apply bv_imp_intro, sorry},
+  {bv_intro x, apply bv_imp_intro, bv_intro y, repeat{apply bv_imp_intro},
+   bv_intro v₁, bv_intro v₂, apply bv_imp_intro,
+   conv in (pair _ _ ∈ᴮ _ ⊓ pair _ _ ∈ᴮ _ : 𝔹) {simp only [mem_unfold]},
+
+    },
+
+  -- {bv_intro x, apply bv_imp_intro, bv_intro y, apply bv_imp_intro, simp only [top_inf_eq],
+  --  rw[mem_unfold, mem_unfold], apply bv_cases_left, intro i, apply bv_cases_right, intro j,
+  --  apply bv_imp_intro, let X := _, change _ ≤ X,
+  --  ac_change (bval u i ⊓ bval u j) ⊓ ( x =ᴮ y ⊓ x =ᴮ func u i ⊓ (y =ᴮ func u j)) ≤ X,
+  --  apply le_trans, apply inf_le_inf, refl, show 𝔹, from func u i =ᴮ func u j,
+  --  apply le_trans _ bv_eq_trans, from x, apply le_inf, apply inf_le_left_of_le,
+  --  apply inf_le_right_of_le, rw[bv_eq_symm],
+  --  ac_change (x =ᴮ y  ⊓ y =ᴮ func u j) ⊓ x =ᴮ func u i ≤ x =ᴮ func u j, simp[inf_assoc],
+  --  congr' 2, ac_refl, apply inf_le_left_of_le, apply bv_eq_trans,
+  --  dsimp[X], apply le_trans', apply le_trans, swap, exact h_congr i j, apply inf_le_right,
+  --  bv_intro v₁, bv_intro v, apply bv_imp_intro,
+
+  --  tidy_context,
+     
+  
+     
+
+  --  },
 
   {sorry}
 
