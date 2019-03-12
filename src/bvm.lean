@@ -96,11 +96,14 @@ lemma bv_specialize_right {ι : Type*} {s :ι → 𝔹} {c b : 𝔹} (i : ι)
   {h : c ⊓ s i ≤ b} : c ⊓ (⨅(i:ι), s i) ≤ b :=
 by {rw[inf_comm], apply bv_specialize_left i, finish}
   
-@[ematch] lemma bv_imp_elim {a b : 𝔹} : (a ⟹ b) ⊓ a ≤ b :=
+lemma bv_imp_elim {a b : 𝔹} : (a ⟹ b) ⊓ a ≤ b :=
 by simp[imp, inf_sup_right]
 
-@[ematch] lemma bv_imp_elim' {a b : 𝔹} : (a ⟹ b) ⊓ a ≤ a ⊓ b :=
+lemma bv_imp_elim' {a b : 𝔹} : (a ⟹ b) ⊓ a ≤ a ⊓ b :=
 by {simp[imp, inf_sup_right]}
+
+lemma bv_cancel_antecedent {a b c : 𝔹} (h : b ≤ c) : a ⟹ b ≤ a ⟹ c :=
+by {rw[<-deduction], apply le_trans, apply bv_imp_elim, from ‹_›}
 
 lemma bv_and_intro {a b₁ b₂ : 𝔹} (h₁ : a ≤ b₁) (h₂ : a ≤ b₂) : a ≤ b₁ ⊓ b₂ := le_inf h₁ h₂
 
@@ -266,8 +269,14 @@ by induction x; dsimp[bSet.subset]; congr
 protected def insert' : bSet 𝔹 → 𝔹 → bSet 𝔹 → bSet 𝔹
 | u b ⟨α, A, B⟩ := ⟨unit ⊕ α, λ o, sum.rec (λ_, u) A o, λ o, sum.rec (λ_, b) B o⟩
 
-@[reducible, simp]protected def insert1 : bSet 𝔹 → bSet 𝔹 → bSet 𝔹
+@[reducible]protected def insert1 : bSet 𝔹 → bSet 𝔹 → bSet 𝔹
 | u v := bSet.insert u ⊤ v
+
+lemma insert1_unfold {u v : bSet 𝔹} :
+  bSet.insert1 u v = ⟨option v.type, λo, option.rec u v.func o, λ o, option.rec ⊤ v.bval o⟩ :=
+by {induction v, simp[bSet.insert1]}
+
+-- @[simp]lemma insert1_type {u v : bSet 𝔹} : (bSet.insert1 u v).type = option v.type := by simp[insert1_unfold]
 
 instance insert_bSet : has_insert (bSet 𝔹) (bSet 𝔹) :=
   ⟨λ u v, bSet.insert1 u v⟩
@@ -279,12 +288,12 @@ instance insert_bSet : has_insert (bSet 𝔹) (bSet 𝔹) :=
   x ∈ᴮ bSet.insert y b z = (b ⊓ x =ᴮ y) ⊔ x ∈ᴮ z :=
   by induction y; induction z; simp
 
-theorem mem_insert1 {x y z : bSet 𝔹} : x ∈ᴮ insert y z = x =ᴮ y ⊔ x ∈ᴮ z :=
+@[simp]theorem mem_insert1 {x y z : bSet 𝔹} : x ∈ᴮ insert y z = x =ᴮ y ⊔ x ∈ᴮ z :=
   by simp
 
 example : {∅} =ᴮ empty'' = (⊤ : 𝔹) :=
 begin
-  simp[empty'', singleton, insert, has_insert.insert], simp[has_emptyc.emptyc, empty],
+  simp[empty'', singleton, insert, has_insert.insert], simp[has_emptyc.emptyc, empty,bSet.insert1],
   refine ⟨_, by intro i; repeat{cases i}⟩, apply top_unique,
  have : ⊤ = (ulift.rec (bool.rec ⊥ ⊤) : ulift bool → 𝔹) (ulift.up tt),
    by refl,
@@ -409,6 +418,8 @@ end
 lemma bv_context_trans {Γ : 𝔹} {a₁ a₂ a₃ : bSet 𝔹} (H₁ : Γ ≤ a₁ =ᴮ a₂) (H₂ : Γ ≤ a₂ =ᴮ a₃) :
   Γ ≤ a₁ =ᴮ a₃ :=
 by {have := inf_le_inf H₁ H₂, rw[inf_self] at this, apply le_trans this, apply bv_eq_trans}
+
+lemma bv_context_symm {Γ : 𝔹} {a₁ a₂ : bSet 𝔹} (H : Γ ≤ a₁ =ᴮ a₂) : Γ ≤ a₂ =ᴮ a₁ := by rwa[bv_eq_symm]
 
 lemma bv_rw {x y : bSet 𝔹} (H : x =ᴮ y = ⊤) (ϕ : bSet 𝔹 → 𝔹) {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} : ϕ y = ϕ x :=
 begin
@@ -598,6 +609,62 @@ begin
   simp only [inf_top_eq, bSet.forall_over_empty, bSet.exists_over_empty,imp_bot, neg_supr]
 end
 
+@[simp]lemma subst_congr_insert1_left {u w v : bSet 𝔹} : u =ᴮ w ≤ bSet.insert1 u v =ᴮ bSet.insert1 w v :=
+begin
+  rcases v with ⟨α,A,B⟩, simp[bSet.insert1], split; intro i; apply bv_imp_intro;
+  apply le_sup_right_of_le; apply bv_use i; rw[inf_comm]; simp
+end
+
+@[simp]lemma subst_congr_insert1_left' {u w v : bSet 𝔹} {c : 𝔹} {h : c ≤ u =ᴮ w} : c ≤ bSet.insert1 u v =ᴮ bSet.insert1 w v :=
+by apply le_trans h; simp
+
+@[simp]lemma subst_congr_insert1_left'' {u w v : bSet 𝔹} {c : 𝔹} {h : c ≤ u =ᴮ w} : c ≤ {v, u} =ᴮ {v, w} :=
+  by {unfold has_insert.insert, apply subst_congr_insert1_left', from ‹_›}
+
+@[simp]lemma subst_congr_insert1_right {u w v : bSet 𝔹} : u=ᴮw ≤ bSet.insert1 v u =ᴮ bSet.insert1 v w :=
+by {rcases u with ⟨α,A,B⟩, rcases w with ⟨α',A',B'⟩, simp[bSet.insert1]; split; intro i; apply bv_imp_intro,
+    apply le_sup_right_of_le, apply le_trans, apply inf_le_inf, refl, apply mem.mk, from A, change _ ≤ A i ∈ᴮ ⟨α',A',B'⟩,
+    apply subst_congr_mem_right,
+    apply le_sup_right_of_le, apply le_trans, apply inf_le_inf, refl, apply mem.mk, from A', conv {to_rhs, congr, funext,rw[bv_eq_symm]},
+    change _ ≤ A' i ∈ᴮ ⟨α,A,B⟩, rw[bv_eq_symm], apply subst_congr_mem_right}
+
+@[simp]lemma subst_congr_insert1_right' {u w v : bSet 𝔹} {c : 𝔹} {h : c ≤ u =ᴮ w} : c ≤ bSet.insert1 v u =ᴮ bSet.insert1 v w :=
+by {apply le_trans h, apply subst_congr_insert1_right}
+
+@[simp]lemma subst_congr_insert1_right'' {u w v : bSet 𝔹} {c : 𝔹} {h : c ≤ u =ᴮ w} : c ≤ {u,v} =ᴮ {w,v} :=
+  by {unfold has_insert.insert, apply subst_congr_insert1_right', apply subst_congr_insert1_left', from ‹_›}
+
+/- some singleton lemmas -/
+
+@[simp]lemma eq_singleton_of_eq {x y : bSet 𝔹} {c : 𝔹} {h : c ≤ x =ᴮ y} : c ≤ {x} =ᴮ {y} :=
+by {apply subst_congr_insert1_left', from ‹_›}
+
+lemma eq_of_eq_singleton {x y : bSet 𝔹} {c : 𝔹} {h : c ≤ {x} =ᴮ {y}} : c ≤ x =ᴮ y :=
+begin
+  apply le_trans h, simp[singleton, has_insert.insert], simp only [insert1_unfold],
+  simp only [bv_eq_unfold], simp, split; intro i; [apply inf_le_left_of_le, apply inf_le_right_of_le];
+  rw[bv_eq_unfold]; apply inf_le_left_of_le; apply bv_specialize i; refl
+end
+
+lemma eq_singleton_iff_eq {x y : bSet 𝔹} {c : 𝔹} : c ≤ {x} =ᴮ {y} ↔ c ≤ x =ᴮ y :=
+by {split; intros; [apply eq_of_eq_singleton, apply eq_singleton_of_eq]; from ‹_›}
+
+lemma singleton_unfold {x : bSet 𝔹} : {x} = bSet.insert1 x ∅ := by refl
+
+@[simp]lemma singleton_type {x : bSet 𝔹} : type ({x} : bSet 𝔹) = option (ulift _root_.empty) := by refl
+
+@[simp]lemma singleton_func {x : bSet 𝔹} {o} : func ({x} : bSet 𝔹) o = option.rec_on o x (empty.elim ∘ ulift.down) := by refl
+
+@[simp]lemma singleton_bval {x : bSet 𝔹} {o} : bval ({x} : bSet 𝔹) o = option.rec_on o ⊤ (empty.elim ∘ ulift.down) := by refl
+
+@[simp]lemma singleton_bval_none {x : bSet 𝔹} : bval ({x} : bSet 𝔹) none = ⊤ := by refl
+
+-- @[simp]lemma eq_of_eq_insert_right {u w v : bSet 𝔹} {c : 𝔹} {h : c ≤ bSet.insert1 v u =ᴮ bSet.insert1 v w} : c ≤ u =ᴮ w :=
+-- begin
+--   apply le_trans h, simp only [insert1_unfold, bv_eq_unfold], simp, split; intro i; [apply inf_le_left_of_le, apply inf_le_right_of_le],
+--   {apply bv_specialize i, apply bv_cancel_antecedent, apply bv_or_elim, },
+--   {sorry}
+-- end
 
 /-- ϕ (x) is true if and only if the Boolean truth-value of ϕ(x̌) is ⊤-/
 /- To even state this theorem, we need to set up more general machinery for
@@ -1230,7 +1297,7 @@ begin
 end
 
 @[simp]lemma check_insert (a b : pSet) : (pSet.insert a b)̌  = (bSet.insert1 (ǎ) (b̌) : bSet 𝔹) :=
-by {induction a, induction b, simp[pSet.insert], split; ext; cases x; simp}
+by {induction a, induction b, simp[pSet.insert, bSet.insert1], split; ext; cases x; simp}
 
 end check_names 
 
@@ -1590,29 +1657,187 @@ end zorns_lemma
 
 section extras
 
-def pair (x y : bSet 𝔹) : bSet 𝔹 := {{x}, {x,y}}
+@[reducible]def pair (x y : bSet 𝔹) : bSet 𝔹 := {{x}, {x,y}}
 
--- def is_first (x y : bSet 𝔹) : 𝔹 := ⨅(w : bSet 𝔹), w ∈ᴮ pair x y ⟹ x ∈ᴮ w
+-- lemma pair_type (x y : bSet 𝔹) : (pair x y).type = begin end := sorry
 
--- def is_second (x y : bSet 𝔹) : 𝔹 :=  sorry
+--TODO(jesse) write a tactic to automate this type of argument
+@[simp]lemma subst_congr_pair_left {x z y : bSet 𝔹} : x =ᴮ z ≤ pair x y =ᴮ pair z y :=
+begin
+  unfold pair, have this₁ : x =ᴮ z ≤ {{x},{x,y}} =ᴮ {{z},{x,y}} := by simp*,
+  have this₂ : x =ᴮ z ≤ {{z},{x,y}} =ᴮ {{z},{z,y}} := by simp*,
+  apply bv_context_trans; from ‹_›
+end
 
-def prod (v w : bSet 𝔹) : bSet 𝔹 := ⟨v.type × w.type, λ a, pair (v.func a.1) (w.func a.2), λ a, (v.bval a.1) ⊓ (w.bval a.2)⟩
+@[simp, cleanup]lemma insert1_bval_none {u v : bSet 𝔹} : (bSet.insert1 u ({v})).bval none  = ⊤ :=
+by refl
+
+@[simp, cleanup]lemma insert1_bval_some {u v : bSet 𝔹} {i} : (bSet.insert1 u {v}).bval (some i) = (bval {v}) i :=
+by refl
+
+@[simp, cleanup]lemma insert1_func_none {u v : bSet 𝔹} : (bSet.insert1 u ({v})).func none  = u :=
+by refl
+
+@[simp, cleanup]lemma insert1_func_some {u v : bSet 𝔹} {i} : (bSet.insert1 u ({v})).func (some i) = (func {v}) i :=
+by refl
+
+lemma eq_of_mem_singleton' {x y : bSet 𝔹} : y ∈ᴮ {x} ≤ x =ᴮ y :=
+by {rw[mem_unfold], apply bv_Or_elim, intro i, cases i, simp[bv_eq_symm], repeat{cases i}}
+
+lemma eq_of_mem_singleton {x y : bSet 𝔹} {c : 𝔹} {h : c ≤ y ∈ᴮ {x}} : c ≤ x =ᴮ y :=
+le_trans h (by apply eq_of_mem_singleton')
+
+lemma eq_inserted_of_eq_singleton {x y z : bSet 𝔹} : {x} =ᴮ bSet.insert1 y {z} ≤ x =ᴮ y :=
+begin
+  rw[bv_eq_unfold], apply bv_specialize_left none, apply bv_specialize_right none,
+  unfold singleton, simp, rw[inf_sup_right], apply bv_or_elim,
+  apply inf_le_left, apply inf_le_right_of_le, simp[eq_of_mem_singleton']
+end
+
+lemma eq_of_eq_pair'_left {x z y : bSet 𝔹} : pair x y =ᴮ pair z y ≤ x =ᴮ z :=
+begin
+  unfold pair, unfold has_insert.insert, rw[bv_eq_unfold], fapply bv_specialize_left,
+  exact some none, fapply bv_specialize_right, exact some none, simp,
+  rw[inf_sup_right_left_eq], repeat{apply bv_or_elim},
+  {apply le_trans, apply inf_le_inf; apply eq_inserted_of_eq_singleton, {[smt] eblast_using[bv_eq_symm, bv_eq_trans]}},
+  {apply inf_le_right_of_le, apply le_trans, apply eq_of_mem_singleton', apply eq_of_eq_singleton, refl},
+  {apply inf_le_left_of_le, apply le_trans, apply eq_of_mem_singleton', apply eq_of_eq_singleton, rw[bv_eq_symm]},
+  {apply inf_le_left_of_le, apply le_trans, apply eq_of_mem_singleton', apply eq_of_eq_singleton, rw[bv_eq_symm]}
+end
+
+lemma inserted_eq_of_insert_eq {y v w : bSet 𝔹} : {v,y} =ᴮ {v,w} ≤ y =ᴮ w :=
+begin
+  unfold has_insert.insert, rw[bv_eq_unfold], apply bv_specialize_left none,
+  apply bv_specialize_right none, change (⊤ ⟹ _) ⊓ (⊤ ⟹ _ : 𝔹) ≤ _, simp,
+  rw[inf_sup_right_left_eq], repeat{apply bv_or_elim},
+  apply inf_le_left, apply inf_le_left, apply inf_le_right_of_le, rw[bv_eq_symm],
+  apply le_trans, apply inf_le_inf; apply eq_of_mem_singleton',
+  {[smt] eblast_using[bv_eq_symm, bv_eq_trans]}
+end
+
+lemma eq_of_eq_pair'_right {x z y : bSet 𝔹} : pair y x =ᴮ pair y z ≤ x =ᴮ z :=
+begin
+  unfold pair has_insert.insert, rw[bv_eq_unfold], apply bv_specialize_left none,
+  apply bv_specialize_right none, unfold singleton, simp, rw[inf_sup_right_left_eq],
+  repeat{apply bv_or_elim},
+    {apply inf_le_left_of_le, apply inserted_eq_of_insert_eq},
+    {apply inf_le_left_of_le, apply inserted_eq_of_insert_eq},
+    {apply inf_le_right_of_le, rw[bv_eq_symm], apply inserted_eq_of_insert_eq},
+    {apply le_trans, apply inf_le_inf; apply eq_of_mem_singleton',
+     apply le_trans, apply inf_le_inf; apply eq_inserted_of_eq_singleton, rw[bv_eq_symm], apply bv_eq_trans} 
+end
+
+theorem eq_of_eq_pair_left {x y v w: bSet 𝔹} : pair x y =ᴮ pair v w ≤ x =ᴮ v :=
+begin
+  unfold pair has_insert.insert, rw[bv_eq_unfold], apply bv_specialize_left none, apply bv_specialize_right (none),
+  unfold singleton, simp, rw[inf_sup_right_left_eq], repeat{apply bv_or_elim},
+  {sorry},
+  {sorry},
+  {sorry},
+  {sorry}
+end
+
+theorem eq_of_eq_pair_right {x y v w: bSet 𝔹} : pair x y =ᴮ pair v w ≤ y =ᴮ w :=
+begin
+  unfold pair has_insert.insert, rw[bv_eq_unfold], apply bv_specialize_left none, apply bv_specialize_right (none),
+  unfold singleton, simp, rw[inf_sup_right_left_eq], repeat{apply bv_or_elim},
+  {sorry},
+  {sorry},
+  {sorry},
+  {sorry}
+end
+
+@[reducible]def prod (v w : bSet 𝔹) : bSet 𝔹 := ⟨v.type × w.type, λ a, pair (v.func a.1) (w.func a.2), λ a, (v.bval a.1) ⊓ (w.bval a.2)⟩
+
+@[simp, cleanup]lemma prod_type {v w : bSet 𝔹} : (prod v w).type = (v.type × w.type) := by refl
+
+@[simp, cleanup]lemma prod_bval {v w : bSet 𝔹} {a b} : (prod v w).bval (a,b) = v.bval a ⊓ w.bval b := by refl
+
+@[simp, cleanup]lemma prod_type_forall {v w : bSet 𝔹} {ϕ : (prod v w).type → 𝔹} :
+  (⨅(z:(prod v w).type), ϕ z) = ⨅(z : v.type × w.type), ϕ z :=
+by refl
+
+@[simp]lemma prod_mem {v w x y : bSet 𝔹} : x ∈ᴮ v ⊓ y ∈ᴮ w ≤ pair x y ∈ᴮ prod v w :=
+begin
+  simp[pair, prod], simp only[mem_unfold], apply bv_cases_left, intro i,
+  apply bv_cases_right, intro j, apply bv_use (i,j), tidy,
+    {rw[inf_assoc], apply inf_le_left},
+    {rw[inf_comm], simp [inf_assoc]},
+    {let a := _, let b := _, change (bval v i ⊓ a) ⊓ (bval w j ⊓ b) ≤ _,
+     have : a ⊓ b ≤ {{x}, {x, y}} =ᴮ {{func v i}, {x,y}}, by simp*,
+     have : a ⊓ b ≤ {{func v i}, {x,y}} =ᴮ {{func v i}, {func v i, func w j}},
+       by {apply subst_congr_insert1_left'', have this₁ : a ⊓ b ≤ {x,y} =ᴮ {func v i, y}, by simp*,
+       have this₂ : a ⊓ b ≤ {func v i, y} =ᴮ {func v i, func w j}, by simp*,
+       apply bv_context_trans; from ‹_›},
+    
+     apply le_trans, show 𝔹, from a ⊓ b,
+       by {ac_change (bval v i ⊓ bval w j) ⊓ (a ⊓ b) ≤ a ⊓ b, apply inf_le_right},
+     apply bv_context_trans; from ‹_›}
+end
 
 def is_func (x y f : bSet 𝔹) : 𝔹 :=
-  f ⊆ᴮ prod x y ⊓ ⨅z, (z∈ᴮ x ⟹ (⨆w, pair z w ∈ᴮ f ⊓ (⨅w', pair z w' ∈ᴮ f ⟹ w =ᴮ w')))
+  f ⊆ᴮ prod x y ⊓ ⨅z, (z∈ᴮ x ⟹ (⨆w, w ∈ᴮ y ⊓ pair z w ∈ᴮ f ⊓ (⨅w', w' ∈ᴮ y ⟹ (pair z w' ∈ᴮ f ⟹ w =ᴮ w'))))
 
 def function.mk {u : bSet 𝔹} (F : u.type → bSet 𝔹) : bSet 𝔹 :=
 ⟨u.type, λ a, pair (u.func a) (F a), u.bval⟩
 
-lemma mk_is_func {u : bSet 𝔹} {F : u.type → bSet 𝔹} : is_func u sorry (function.mk F) = ⊤
+def function.mk' {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : bSet 𝔹 :=
+⟨u.type, λ a, pair (u.func a) (F a), u.bval⟩
 
-def function.inj (f : bSet 𝔹) {x y} (h_is_func : is_func x y f = ⊤) : 𝔹 :=
+@[simp, cleanup]lemma function.mk_type {u : bSet 𝔹} {F : u.type → bSet 𝔹} : (function.mk F).type = u.type := by refl
+
+@[simp, cleanup]lemma function.mk_func {u : bSet 𝔹} {F : u.type → bSet 𝔹} {i} : (function.mk F).func i = pair(u.func i) (F i) := by refl
+
+@[simp, cleanup]lemma function.mk_bval {u : bSet 𝔹} {F : u.type → bSet 𝔹} {i} : (function.mk F).bval i = u.bval i := by refl
+
+@[simp]lemma function.mk_self {u : bSet 𝔹} {F : u.type → bSet 𝔹} {i : u.type} : u.bval i ≤ pair (u.func i) (F i) ∈ᴮ function.mk F :=
+by {rw[mem_unfold], apply bv_use i, simp}
+
+@[simp]lemma function.mk_self' {u : bSet 𝔹} {F : u.type → bSet 𝔹} {i : u.type} : ⊤ ≤ u.bval i ⟹ pair (u.func i) (F i) ∈ᴮ function.mk F :=
+by simp
+
+/-- This is analogous to the check operation: we collect a type-indexed collection of bSets into a definite bSet -/
+def check' {α : Type u} (A : α → bSet 𝔹) : bSet 𝔹 := ⟨α, A, λ x, ⊤⟩
+
+@[simp, cleanup]def check'_type {α : Type u} {A : α → bSet 𝔹} : (check' A).type = α := by refl
+@[simp, cleanup]def check'_bval {α : Type u} {A : α → bSet 𝔹} {i} : (check' A).bval i = ⊤ := by refl
+@[simp, cleanup]def check'_func {α : Type u} {A : α → bSet 𝔹} {i} : (check' A).func i = A i := by refl
+
+lemma mk_is_func {u : bSet 𝔹} {F : u.type → bSet 𝔹} : ⊤ ≤ is_func u (check' F) (function.mk F) :=
+begin
+  apply le_inf, bv_intro i, simp, refine bv_use (i, i), apply le_inf, refl, simp[bv_eq_refl],
+  bv_intro z, simp only [lattice.top_le_iff, bSet.mem, lattice.imp_top_iff_le],
+  rw[mem_unfold], apply bv_Or_elim, intro i, apply bv_use (F i), apply le_inf, 
+  rw[mem_unfold], apply le_inf, apply bv_use i,
+  apply le_inf, {simp}, {apply inf_le_right_of_le, simp},
+  {apply le_trans, apply inf_le_inf, refl, refl, rw[inf_comm],
+  apply le_trans, apply inf_le_inf, refl, apply function.mk_self, from F,
+  rw[bv_eq_symm], apply le_trans, apply inf_le_inf, swap, refl, apply subst_congr_pair_left,
+  exact (F i), apply subst_congr_mem_left},
+
+  {bv_intro w', apply bv_imp_intro, apply bv_imp_intro,
+  conv in (pair z w' ∈ᴮ _) {simp only [mem_unfold]}, apply bv_cases_right, intro i',
+  simp,   }
+    
+    -- rw[mem_unfold], apply bv_use i, apply le_inf,
+    -- {simp},
+    -- {apply inf_le_right_of_le, simp},
+
+  
+  -- bv_intro w', apply bv_imp_intro, conv {to_rhs, simp only [bv_eq_unfold]},
+  -- apply le_inf; [bv_intro a, bv_intro a']; simp only [mem_unfold];
+  -- apply bv_cases_right; intro j, repeat{sorry}
+end
+
+def function.inj (f : bSet 𝔹) (x y) : 𝔹 :=
   is_func x y f ⊓ (⨅p₁ p₂, p₁∈ᴮ f ⊓ p₂ ∈ᴮ f ⟹
     (⨅a₁ a₂, ⨅b, p₁ =ᴮ pair a₁ b ⊓ p₂ =ᴮ pair a₂ b ⟹ a₁ =ᴮ a₂))
 
-lemma mk_inj_of_inj {u : bSet 𝔹} {F : u.type → bSet 𝔹} (h_inj : function.injective F) :
-  ⊤ ≤ function.inj (function.mk F) (mk_is_func) :=
-sorry
+lemma mk_inj_of_inj {u : bSet 𝔹} {x y} {F : u.type → bSet 𝔹} (h_inj : function.injective F) :
+  ⊤ ≤ function.inj x y (function.mk F) :=
+begin
+ sorry   -- apply le_inf, apply mk_is_f (function.mk F),
+end
 
 end extras
 

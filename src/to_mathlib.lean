@@ -848,6 +848,11 @@ lemma imp_iff {β : Type*} {a b : β} [complete_boolean_algebra β] : a ⟹ b = 
 lemma sup_inf_left_right_eq {β} [distrib_lattice β] {a b c d : β} :
   (a ⊓ b) ⊔ (c ⊓ d) = (a ⊔ c) ⊓ (a ⊔ d) ⊓ (b ⊔ c) ⊓ (b ⊔ d) :=
 by {rw[sup_inf_right, sup_inf_left, sup_inf_left]; ac_refl}
+
+lemma inf_sup_right_left_eq {β} [distrib_lattice β] {a b c d : β} :
+  (a ⊔ b) ⊓ (c ⊔ d) = (a ⊓ c) ⊔ (a ⊓ d) ⊔ (b ⊓ c) ⊔ (b ⊓ d) :=
+by {rw[inf_sup_right, inf_sup_left, inf_sup_left], ac_refl}
+
 -- by {[smt] eblast_using[sup_inf_right, sup_inf_left]}
 -- interesting, this takes like 5 seconds
 -- probably because both of those rules can be applied pretty much everywhere in the goal
