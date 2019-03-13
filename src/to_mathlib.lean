@@ -940,29 +940,41 @@ meta def get_name : ∀(e : expr), name
 | (expr.local_const _ c _ _) := c
 | _                          := name.anonymous
 
+meta def lhs_of_le (e : expr) : tactic expr :=
+do v_a <- mk_mvar,
+   e' <- to_expr ``(%%v_a ≤ _),
+   unify e e',
+   return v_a
+
 /-- If the goal is an inequality `a ≤ b`, extracts `a` and attempts to specialize all
   facts in context of the form `Γ ≤ d` to `a ≤ d` (this requires a ≤ Γ) -/
 meta def specialize_context (Γ : parse texpr) : tactic unit :=
 do
+  v_a <- target >>= lhs_of_le,
   Γ_old <- i_to_expr Γ,
   tp <- infer_type Γ_old,
   Γ_name <- get_unused_name "Γ",
-  v <- mk_mvar, v' <- mk_mvar, v'' <- mk_mvar,
+  v <- mk_mvar, v' <- mk_mvar,
   Γ_new <- pose Γ_name none v,
   new_goal <- to_expr ``((%%Γ_new : %%tp) ≤ %%v'),
   tactic.change new_goal,
   ctx <- local_context,
   ctx' <- ctx.mfilter
-    (λ e, do e_tp <- infer_type e, e' <- to_expr ``(%%Γ_old ≤ %%v''),succeeds (unify e_tp e')),
-    -- trace ctx',
+    (λ e, (do infer_type e >>= lhs_of_le >>= λ e', succeeds (unify Γ_old e')) <|> return ff),
   ctx'.mmap' (λ H, tactic.replace (get_name H) ``(le_trans (by simp : %%Γ_new ≤ _) %%H))
 
 example {β : Type u} [lattice.bounded_lattice β] {a b : β} {H : ⊤ ≤ b} : a ≤ b :=
-by {specialize_context ⊤, from ‹_›}
+by {specialize_context (⊤ : β), assumption}
 
-meta def bv_cases_at (H : parse ident) (i : parse ident)  : tactic unit :=
-do `[apply lattice.context_Or_elim H],
-   tactic.intro i >> ((get_unused_name H) >>= tactic.intro) >> skip
+meta def bv_cases_at (H : parse ident) (i : parse ident_)  : tactic unit :=
+do
+  e₀ <- resolve_name H,
+  e₀' <- to_expr e₀,
+  `[apply lattice.context_Or_elim] >> tactic.exact e₀' >>
+  tactic.intro i >> ((get_unused_name H) >>= tactic.intro) >> skip
+
+example {β ι : Type u} [lattice.complete_boolean_algebra β] {s : ι → β} {H' : ⊤ ≤ ⨆i, s i} {b : β} : b ≤ ⊤ :=
+by {specialize_context ⊤, bv_cases_at H' i, apply lattice.le_top}
 
 def eta_beta_cfg : dsimp_config :=
 { md := reducible,
@@ -984,9 +996,6 @@ do n <- get_unused_name H,
    e_j <- resolve_name j,
    e <- to_expr ``(lattice.context_specialize %%e_H %%e_j),
    note n none e >>= λ h, dsimp_hyp h none [] eta_beta_cfg
-
-example {β ι : Type u} [lattice.complete_boolean_algebra β] {s : ι → β} {H : ⊤ ≤ ⨆i, s i} {b : β} : b ≤ ⊤ :=
-by {specialize_context ⊤, bv_cases_at H i, specialize_context Γ, apply lattice.le_top}
 
 example {β ι : Type u} [lattice.complete_boolean_algebra β] {j : ι} {s : ι → β} {H : ⊤ ≤ ⨅i, s i} {b : β} : b ≤ ⊤ :=
 by {specialize_context ⊤, bv_specialize_at H j, apply lattice.le_top}
