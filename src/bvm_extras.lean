@@ -212,30 +212,20 @@ repeat{apply le_inf},
    rw[mem_unfold] at a_right_left a_right_right,
    bv_cases_at a_right_right i, specialize_context Γ,
    bv_cases_at a_right_left j, specialize_context Γ_1,
-   
-   
-
-},
-
-  -- {bv_intro x, apply bv_imp_intro, bv_intro y, apply bv_imp_intro, simp only [top_inf_eq],
-  --  rw[mem_unfold, mem_unfold], apply bv_cases_left, intro i, apply bv_cases_right, intro j,
-  --  apply bv_imp_intro, let X := _, change _ ≤ X,
-  --  ac_change (bval u i ⊓ bval u j) ⊓ ( x =ᴮ y ⊓ x =ᴮ func u i ⊓ (y =ᴮ func u j)) ≤ X,
-  --  apply le_trans, apply inf_le_inf, refl, show 𝔹, from func u i =ᴮ func u j,
-  --  apply le_trans _ bv_eq_trans, from x, apply le_inf, apply inf_le_left_of_le,
-  --  apply inf_le_right_of_le, rw[bv_eq_symm],
-  --  ac_change (x =ᴮ y  ⊓ y =ᴮ func u j) ⊓ x =ᴮ func u i ≤ x =ᴮ func u j, simp[inf_assoc],
-  --  congr' 2, ac_refl, apply inf_le_left_of_le, apply bv_eq_trans,
-  --  dsimp[X], apply le_trans', apply le_trans, swap, exact h_congr i j, apply inf_le_right,
-  --  bv_intro v₁, bv_intro v, apply bv_imp_intro,
-
-  --  tidy_context,
-     
-  
-     
-
-  --  },
-
+   clear a_right_right a_right_left,
+   bv_split_at a_right_left_1, bv_split_at a_right_right_1,
+   simp only with cleanup at a_right_left_1_1_1 a_right_right_1_1_1,
+   bv_mp a_right_right_1_1_1 (eq_of_eq_pair_left),
+   bv_mp a_right_right_1_1_1 (eq_of_eq_pair_right), -- TODO(jesse) generate sane variable names
+   bv_mp a_right_left_1_1_1 (eq_of_eq_pair_left),
+   bv_mp a_right_left_1_1_1 (eq_of_eq_pair_right),
+   have : Γ_2 ≤ func u i =ᴮ func u j, apply bv_context_trans, rw[bv_eq_symm],
+   assumption, rw[bv_eq_symm], apply bv_context_trans, rw[bv_eq_symm],
+   assumption, assumption, -- TODO(jesse) write a cc-like tactic to automate this
+   suffices : Γ_2 ≤ F i =ᴮ F j,
+    by {apply bv_context_trans, assumption, rw[bv_eq_symm], apply bv_context_trans,
+       assumption, from this},
+   apply le_trans this, apply h_congr}, -- the tactics are a success!
   {sorry}
 
 
@@ -274,3 +264,5 @@ begin
 end
 
 end extras
+
+end bSet

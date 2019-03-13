@@ -916,6 +916,13 @@ lemma context_specialize {β : Type*} [complete_lattice β] {ι : Type*} {s : ι
   {Γ : β} (H : Γ ≤ (⨅ i, s i)) (j : ι) : Γ ≤ s j :=
 le_trans H (infi_le _ _)
 
+lemma context_split_inf_left {β : Type*} [complete_lattice β] {a₁ a₂ Γ: β} (H : Γ ≤ a₁ ⊓ a₂) : Γ ≤ a₁ :=
+by {rw[le_inf_iff] at H, finish}
+
+lemma context_split_inf_right {β : Type*} [complete_lattice β] {a₁ a₂ Γ: β} (H : Γ ≤ a₁ ⊓ a₂) :
+  Γ ≤ a₂ :=
+by {rw[le_inf_iff] at H, finish}
+
 lemma context_imp_elim {β : Type*} [complete_boolean_algebra β] {a b Γ: β} (H₁ : Γ ≤ a ⟹ b) (H₂ : Γ ≤ a) : Γ ≤ b :=
 begin
   apply le_trans' H₁, apply le_trans, apply inf_le_inf H₂, refl,
@@ -970,12 +977,12 @@ do
   ctx'.mmap' (λ H, tactic.replace (get_name H) ``(le_trans (by apply inf_le_right <|> simp : %%Γ_new ≤ _) %%H)),
   ctx2 <- local_context,
   ctx2' <- ctx.mfilter (λ e, (do infer_type e >>= lhs_of_le >>= λ e', succeeds (unify Γ_new e')) <|> return ff),
-  trace ctx2',
+  -- trace ctx2',
   ctx2'.mmap' (λ H, do H_tp <- infer_type H,
                        v'' <- mk_mvar,
                        to_expr ``(%%Γ_new ≤ %%v'') >>= unify H_tp,
                        instantiate_mvars v'',
-                 tactic.replace (get_name H) ``(%%H : %%Γ_new ≤ %%v''))
+                 tactic.replace (get_name H) ``(_ : %%Γ_new ≤ %%v'') >> swap >> assumption)
 
 example {β : Type u} [lattice.bounded_lattice β] {a b : β} {H : ⊤ ≤ b} : a ≤ b :=
 by {specialize_context (⊤ : β), assumption}
@@ -1011,6 +1018,15 @@ do n <- get_unused_name H,
    e <- to_expr ``(lattice.context_specialize %%e_H %%e_j),
    note n none e >>= λ h, dsimp_hyp h none [] eta_beta_cfg
 
+meta def bv_split_at (H : parse ident) : tactic unit :=
+do n₁ <- get_unused_name H,
+   n₂ <- get_unused_name H,
+   e_H <- resolve_name H,
+   e <- to_expr ``(lattice.context_split_inf_left %%e_H),
+   note n₁ none e >>= λ h, dsimp_hyp h none [] eta_beta_cfg,
+   e <- to_expr ``(lattice.context_split_inf_right %%e_H),
+   note n₂ none e >>= λ h, dsimp_hyp h none [] eta_beta_cfg   
+
 example {β ι : Type u} [lattice.complete_boolean_algebra β] {j : ι} {s : ι → β} {H : ⊤ ≤ ⨅i, s i} {b : β} : b ≤ ⊤ :=
 by {specialize_context ⊤, bv_specialize_at H j, apply lattice.le_top}
 
@@ -1020,6 +1036,13 @@ do n <- get_unused_name H₁,
    e₂ <- resolve_name H₂,
    e <- to_expr ``(lattice.context_imp_elim %%e₁ %%e₂),
    note n none e >>= λ h, dsimp_hyp h none [] eta_beta_cfg
+
+meta def bv_mp (H : parse ident) (H₂ : parse texpr) : tactic unit :=
+do n <- get_unused_name H,
+   e_H <- resolve_name H,
+   e_L <- to_expr H₂,
+   pr <- to_expr ``(le_trans %%e_H %%e_L),
+   note n none pr >>= λ h, dsimp_hyp h none [] eta_beta_cfg
 
 /-- `ac_change g' changes the current goal `tgt` to `g` by creating a new goal of the form
   `tgt = g`, and will attempt close it with `ac_refl`. -/
