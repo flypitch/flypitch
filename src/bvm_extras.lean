@@ -226,31 +226,28 @@ repeat{apply le_inf},
     by {apply bv_context_trans, assumption, rw[bv_eq_symm], apply bv_context_trans,
        assumption, from this},
    apply le_trans this, apply h_congr}, -- the tactics are a success!
-  {sorry}
-
-
-  -- apply le_inf, bv_intro i, simp, refine bv_use (i, i), apply le_inf, refl, simp[bv_eq_refl],
-  -- bv_intro z, simp only [lattice.top_le_iff, bSet.mem, lattice.imp_top_iff_le],
-  -- rw[mem_unfold], apply bv_Or_elim, intro i, apply bv_use (F i), apply le_inf, 
-  -- rw[mem_unfold], apply le_inf, apply bv_use i,
-  -- apply le_inf, {simp}, {apply inf_le_right_of_le, simp},
-  -- {apply le_trans, apply inf_le_inf, refl, refl, rw[inf_comm],
-  -- apply le_trans, apply inf_le_inf, refl, apply function.mk_self, from ‹_›,
-  -- rw[bv_eq_symm], apply le_trans, apply inf_le_inf, swap, refl, apply subst_congr_pair_left,
-  -- exact (F i), apply subst_congr_mem_left},
-
-  -- {bv_intro w', apply bv_imp_intro, apply bv_imp_intro,
-  -- conv in (pair z w' ∈ᴮ _) {simp only [mem_unfold]}, apply bv_cases_right, intro i',
-  -- simp, repeat{sorry}}
-    
-  --   -- rw[mem_unfold], apply bv_use i, apply le_inf,
-  --   -- {simp},
-  --   -- {apply inf_le_right_of_le, simp},
-
-  
-  -- -- bv_intro w', apply bv_imp_intro, conv {to_rhs, simp only [bv_eq_unfold]},
-  -- -- apply le_inf; [bv_intro a, bv_intro a']; simp only [mem_unfold];
-  -- -- apply bv_cases_right; intro j, repeat{sorry}
+  {bv_intro z, rw[<-deduction], rw[top_inf_eq], rw[mem_unfold], apply bv_Or_elim,
+   intro i_z, apply bv_use (F i_z), repeat{apply le_inf},
+     {tidy_context, rw[mem_unfold], apply bv_use i_z, apply le_inf, apply le_top, simp},
+     tidy_context, bv_mp a_right (subst_congr_pair_left), show bSet 𝔹, from (F i_z),
+     change Γ ≤ (λ w, w ∈ᴮ function.mk F h_congr) (pair z (F i_z)),
+     apply bv_rw' a_right_1, apply B_ext_mem_left, apply bv_use i_z, apply le_inf ‹_›,
+     simp[bv_eq_refl],
+     bv_intro w', repeat{apply bv_imp_intro}, tidy_context,
+     rw[mem_unfold] at a_left_right, bv_cases_at a_left_right i_w',
+     specialize_context Γ, bv_split_at a_left_right_1,
+     change _ ≤ (λv, (F i_z) =ᴮ v) w', apply bv_rw' a_left_right_1_1_1,
+     {simp[B_ext], intros x y, rw[inf_comm], apply bv_eq_trans},
+     --TODO(jesse) write a B_ext lemma for =ᴮ and also write a tactic to automate this...
+     change Γ_1 ≤ F i_z =ᴮ F i_w', simp only with cleanup at *,
+     -- suffices : Γ_1 ≤ func u i_z =ᴮ func u i_w', by {apply le_trans this, apply h_congr},
+     bv_cases_at a_right i_pair, specialize_context Γ_1, bv_split_at a_right_1,
+     bv_mp a_right_1_1_1 (eq_of_eq_pair_left), bv_mp a_right_1_1_1 (eq_of_eq_pair_right),
+     bv_split_at a_left_right_1, clear a_right_1_1 a_right_1 a_left_right_1_1 a_left_right_1_2 a_right_1_1_1,
+     clear a_left_right_1 a_left_right a_left_left_left a_right,
+     have : Γ_2 ≤ F i_z =ᴮ F i_pair,
+       by {apply le_trans _ (h_congr _ _), apply bv_context_trans, rw[bv_eq_symm], from ‹_›, from ‹_›},
+     apply bv_context_trans, exact this, apply bv_context_trans, rw[bv_eq_symm], from ‹_›, from ‹_›}
 end
 
 def function.inj (f : bSet 𝔹) (x y) : 𝔹 :=

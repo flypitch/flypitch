@@ -273,7 +273,7 @@ by {induction v, simp[bSet.insert1]}
 instance insert_bSet : has_insert (bSet 𝔹) (bSet 𝔹) :=
   ⟨λ u v, bSet.insert1 u v⟩
 
-@[simp]lemma insert_rw {y z : bSet 𝔹} : insert y z = bSet.insert y ⊤ z :=
+@[simp]lemma insert_unfold {y z : bSet 𝔹} : insert y z = bSet.insert y ⊤ z :=
   by refl
 
 @[simp]theorem mem_insert {x y z : bSet 𝔹} {b : 𝔹} :
@@ -592,6 +592,13 @@ by {intros x y, dsimp, bv_intro i, apply bv_specialize_right i, apply h}
 by {intros x y, dsimp, apply bv_cases_right, intro i, apply bv_use i, apply h}
 
 example {y : bSet 𝔹} : B_ext (λ x : bSet 𝔹, x ∈ᴮ y ⊔ y ∈ᴮ x) := by simp
+
+lemma bv_rw' {x y : bSet 𝔹} {Γ : 𝔹} (H : Γ ≤ x =ᴮ y) {ϕ : bSet 𝔹 → 𝔹} {h_congr : B_ext ϕ} {H_new : Γ ≤ ϕ y} : Γ ≤ ϕ x :=
+begin
+  have : Γ ≤ y =ᴮ x ⊓ ϕ y,
+    by {apply le_inf, rw[bv_eq_symm], from ‹_›, from ‹_›},
+  bv_mp this (h_congr _ _), from ‹_›
+end
 
 def is_definite (u : bSet 𝔹) : Prop := ∀ i : u.type, u.bval i = ⊤
 
