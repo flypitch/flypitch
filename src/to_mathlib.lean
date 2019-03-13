@@ -946,6 +946,12 @@ do v_a <- mk_mvar,
    unify e e',
    return v_a
 
+meta def rhs_of_le (e : expr) : tactic expr :=
+do v_b <- mk_mvar,
+   e' <- to_expr ``(_ ≤ %%v_b),
+   unify e e',
+   return v_b
+
 /-- If the goal is an inequality `a ≤ b`, extracts `a` and attempts to specialize all
   facts in context of the form `Γ ≤ d` to `a ≤ d` (this requires a ≤ Γ) -/
 meta def specialize_context (Γ : parse texpr) : tactic unit :=
@@ -961,7 +967,14 @@ do
   ctx <- local_context,
   ctx' <- ctx.mfilter
     (λ e, (do infer_type e >>= lhs_of_le >>= λ e', succeeds (unify Γ_old e')) <|> return ff),
-  ctx'.mmap' (λ H, tactic.replace (get_name H) ``(le_trans (by simp : %%Γ_new ≤ _) %%H))
+  ctx'.mmap' (λ H, tactic.replace (get_name H) ``(le_trans (by simp : %%Γ_new ≤ _) %%H)),
+  ctx2 <- local_context,
+  ctx2' <- ctx.mfilter (λ e, (do infer_type e >>= lhs_of_le >>= λ e', succeeds (unify Γ_new e')) <|> return ff),
+  ctx2'.mmap' (λ H, do H_tp <- infer_type H,
+                       v'' <- mk_mvar,
+                       to_expr ``(%%Γ_new ≤ %%v'') >>= unify H_tp,
+                       instantiate_mvars v'',
+                 tactic.replace (get_name H) ``(%%H : %%Γ_new ≤ %%v''))
 
 example {β : Type u} [lattice.bounded_lattice β] {a b : β} {H : ⊤ ≤ b} : a ≤ b :=
 by {specialize_context (⊤ : β), assumption}
@@ -974,7 +987,7 @@ do
   tactic.intro i >> ((get_unused_name H) >>= tactic.intro) >> skip
 
 example {β ι : Type u} [lattice.complete_boolean_algebra β] {s : ι → β} {H' : ⊤ ≤ ⨆i, s i} {b : β} : b ≤ ⊤ :=
-by {specialize_context ⊤, bv_cases_at H' i, apply lattice.le_top}
+by {specialize_context ⊤, bv_cases_at H' i, specialize_context Γ, sorry }
 
 def eta_beta_cfg : dsimp_config :=
 { md := reducible,
