@@ -1843,9 +1843,7 @@ repeat{apply le_inf},
 
   {bv_intro x, apply bv_imp_intro, bv_intro y, repeat{apply bv_imp_intro},
    bv_intro v₁, bv_intro v₂, apply bv_imp_intro,
-   conv in (pair _ _ ∈ᴮ _ ⊓ pair _ _ ∈ᴮ _ : 𝔹) {simp only [mem_unfold]},
-
-    },
+   conv in (pair _ _ ∈ᴮ _ ⊓ pair _ _ ∈ᴮ _ : 𝔹) {simp only [mem_unfold]},sorry},
 
   -- {bv_intro x, apply bv_imp_intro, bv_intro y, apply bv_imp_intro, simp only [top_inf_eq],
   --  rw[mem_unfold, mem_unfold], apply bv_cases_left, intro i, apply bv_cases_right, intro j,

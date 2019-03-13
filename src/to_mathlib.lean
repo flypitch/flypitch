@@ -913,10 +913,10 @@ lemma context_specialize_aux {β : Type*} [complete_boolean_algebra β] {ι : Ty
 by {apply le_trans H, rw[<-deduction], apply inf_le_right_of_le, apply infi_le}
 
 lemma context_specialize {β : Type*} [complete_lattice β] {ι : Type*} {s : ι → β}
-  (j : ι) {Γ : β} {H : Γ ≤ (⨅ i, s i)} : Γ ≤ s j :=
+  {Γ : β} (H : Γ ≤ (⨅ i, s i)) (j : ι) : Γ ≤ s j :=
 le_trans H (infi_le _ _)
 
-lemma context_imp_elim {β : Type*} [complete_boolean_algebra β] {a b Γ: β} {H₁ : Γ ≤ a ⟹ b} {H₂ : Γ ≤ a} : Γ ≤ b :=
+lemma context_imp_elim {β : Type*} [complete_boolean_algebra β] {a b Γ: β} (H₁ : Γ ≤ a ⟹ b) (H₂ : Γ ≤ a) : Γ ≤ b :=
 begin
   apply le_trans' H₁, apply le_trans, apply inf_le_inf H₂, refl,
   rw[inf_comm], simp[imp, inf_sup_right]
@@ -935,34 +935,68 @@ meta def bv_intro : parse ident_? → tactic unit
 | none := propagate_tags (`[apply lattice.le_infi] >> intro1 >> tactic.skip)
 | (some n) := propagate_tags (`[apply lattice.le_infi] >> tactic.intro n >> tactic.skip)
 
-#check tactic.replace
-
-#check tactic.resolve_name
+meta def get_name : ∀(e : expr), name
+| (expr.const c [])          := c
+| (expr.local_const _ c _ _) := c
+| _                          := name.anonymous
 
 /-- If the goal is an inequality `a ≤ b`, extracts `a` and attempts to specialize all
-  facts in context of the form `Γ ≤ d` to `a ≤ d` -/
+  facts in context of the form `Γ ≤ d` to `a ≤ d` (this requires a ≤ Γ) -/
 meta def specialize_context (Γ : parse texpr) : tactic unit :=
 do
   Γ_old <- i_to_expr Γ,
   tp <- infer_type Γ_old,
-  trace Γ_old,
   Γ_name <- get_unused_name "Γ",
   v <- mk_mvar, v' <- mk_mvar, v'' <- mk_mvar,
-  e <- pose Γ_name none v,
-  new_goal <- to_expr ``((%%e : %%tp) ≤ %%v'),
+  Γ_new <- pose Γ_name none v,
+  new_goal <- to_expr ``((%%Γ_new : %%tp) ≤ %%v'),
   tactic.change new_goal,
   ctx <- local_context,
   ctx' <- ctx.mfilter
     (λ e, do e_tp <- infer_type e, e' <- to_expr ``(%%Γ_old ≤ %%v''),succeeds (unify e_tp e')),
-  trace ctx',
-  -- ctx.mmap' (λ e, tactic.replace e)
-  sorry -- TODO(jesse) finish this
-  
+    -- trace ctx',
+  ctx'.mmap' (λ H, tactic.replace (get_name H) ``(le_trans (by simp : %%Γ_new ≤ _) %%H))
 
-example {β : Type u} [lattice.bounded_lattice β] {b : β} {H : (⊤ : β) ≤ b} : ⊤ ≤ (⊤ : β) :=
-begin
- specialize_context (⊤), 
-end
+example {β : Type u} [lattice.bounded_lattice β] {a b : β} {H : ⊤ ≤ b} : a ≤ b :=
+by {specialize_context ⊤, from ‹_›}
+
+meta def bv_cases_at (H : parse ident) (i : parse ident)  : tactic unit :=
+do `[apply lattice.context_Or_elim H],
+   tactic.intro i >> ((get_unused_name H) >>= tactic.intro) >> skip
+
+def eta_beta_cfg : dsimp_config :=
+{ md := reducible,
+  max_steps := simp.default_max_steps,
+  canonize_instances := tt,
+  single_pass := ff,
+  fail_if_unchanged := ff,
+  eta := tt,
+  zeta := ff,
+  beta := tt,
+  proj := ff,
+  iota := ff,
+  unfold_reducible := ff,
+  memoize := tt }
+
+meta def bv_specialize_at (H : parse ident) (j : parse ident) : tactic unit :=
+do n <- get_unused_name H,
+   e_H <- resolve_name H,
+   e_j <- resolve_name j,
+   e <- to_expr ``(lattice.context_specialize %%e_H %%e_j),
+   note n none e >>= λ h, dsimp_hyp h none [] eta_beta_cfg
+
+example {β ι : Type u} [lattice.complete_boolean_algebra β] {s : ι → β} {H : ⊤ ≤ ⨆i, s i} {b : β} : b ≤ ⊤ :=
+by {specialize_context ⊤, bv_cases_at H i, specialize_context Γ, apply lattice.le_top}
+
+example {β ι : Type u} [lattice.complete_boolean_algebra β] {j : ι} {s : ι → β} {H : ⊤ ≤ ⨅i, s i} {b : β} : b ≤ ⊤ :=
+by {specialize_context ⊤, bv_specialize_at H j, apply lattice.le_top}
+
+meta def bv_imp_elim_at (H₁ : parse ident) (H₂ : parse ident) : tactic unit :=
+do n <- get_unused_name H₁,
+   e₁ <- resolve_name H₁,
+   e₂ <- resolve_name H₂,
+   e <- to_expr ``(lattice.context_imp_elim %%e₁ %%e₂),
+   note n none e >>= λ h, dsimp_hyp h none [] eta_beta_cfg
 
 /-- `ac_change g' changes the current goal `tgt` to `g` by creating a new goal of the form
   `tgt = g`, and will attempt close it with `ac_refl`. -/
