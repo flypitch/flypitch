@@ -178,6 +178,12 @@ end
 def is_func (x y f : bSet 𝔹) : 𝔹 :=
   f ⊆ᴮ prod x y ⊓ is_extensional x f ⊓ is_functional x y f
 
+/-- f is an injective function on x if it is a function and for every w₁ and w₂ ∈ x, if there exist v₁ and v₂ such that (w₁, v₁) ∈ f and (w₂, v₂) ∈ f,
+  then w₁ = w₂ -/
+def is_inj_func (x y) (f : bSet 𝔹) : 𝔹 :=
+  is_func x y f ⊓ (⨅w₁ w₂, w₁ ∈ᴮ x ⊓ w₂ ∈ᴮ x ⟹
+    (⨆v₁ v₂, (pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⊓ v₁ =ᴮ v₂ ⟹ w₁ =ᴮ w₂)))
+
 def function.mk {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : bSet 𝔹 :=
 ⟨u.type, λ a, pair (u.func a) (F a), u.bval⟩
 
@@ -250,14 +256,22 @@ repeat{apply le_inf},
      apply bv_context_trans, exact this, apply bv_context_trans, rw[bv_eq_symm], from ‹_›, from ‹_›}
 end
 
-def function.inj (f : bSet 𝔹) (x y) : 𝔹 :=
-  is_func x y f ⊓ (⨅p₁ p₂, p₁∈ᴮ f ⊓ p₂ ∈ᴮ f ⟹
-    (⨅a₁ a₂, ⨅b, p₁ =ᴮ pair a₁ b ⊓ p₂ =ᴮ pair a₂ b ⟹ a₁ =ᴮ a₂))
-
-lemma mk_inj_of_inj {u : bSet 𝔹} {x y} {F : u.type → bSet 𝔹} (h_inj : ∀ i j, i ≠ j → F i =ᴮ F j ≤ ⊥) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) :
-  ⊤ ≤ function.inj x y (function.mk F h_congr) :=
+lemma mk_inj_of_inj {u : bSet 𝔹} {F : u.type → bSet 𝔹} (h_inj : ∀ i j, i ≠ j → F i =ᴮ F j ≤ ⊥) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) :
+  ⊤ ≤ is_inj_func u (check' F) (function.mk F h_congr) :=
 begin
- sorry   -- apply le_inf, apply mk_is_f (function.mk F h_congr),
+  apply le_inf, apply mk_is_func,
+  bv_intro w₁, bv_intro w₂, apply bv_imp_intro, rw[top_inf_eq],
+  rw[mem_unfold, mem_unfold], apply bv_cases_left, intro i,
+  apply bv_cases_right, intro j, apply le_supr_of_le (F i),
+  apply le_supr_of_le (F j), apply bv_imp_intro,
+  tidy_context,
+    haveI : decidable (i = j) := by apply classical.prop_decidable,
+    by_cases i = j,
+      { subst h, apply bv_context_trans, tidy},
+    have := h_inj i j h,
+    by_cases Γ = ⊥, rw[h], apply bot_le,
+    suffices : Γ = ⊥, by contradiction,
+    apply bot_unique, apply le_trans _ this, from ‹_›
 end
 
 end extras
