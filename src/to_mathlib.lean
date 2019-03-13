@@ -967,9 +967,10 @@ do
   ctx <- local_context,
   ctx' <- ctx.mfilter
     (λ e, (do infer_type e >>= lhs_of_le >>= λ e', succeeds (unify Γ_old e')) <|> return ff),
-  ctx'.mmap' (λ H, tactic.replace (get_name H) ``(le_trans (by simp : %%Γ_new ≤ _) %%H)),
+  ctx'.mmap' (λ H, tactic.replace (get_name H) ``(le_trans (by apply inf_le_right <|> simp : %%Γ_new ≤ _) %%H)),
   ctx2 <- local_context,
   ctx2' <- ctx.mfilter (λ e, (do infer_type e >>= lhs_of_le >>= λ e', succeeds (unify Γ_new e')) <|> return ff),
+  trace ctx2',
   ctx2'.mmap' (λ H, do H_tp <- infer_type H,
                        v'' <- mk_mvar,
                        to_expr ``(%%Γ_new ≤ %%v'') >>= unify H_tp,
