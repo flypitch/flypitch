@@ -10,10 +10,8 @@ local infix ` ⇔ `:50 := lattice.biimp
 
 
 namespace bSet
-
-section extras
 variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
-
+section extras
 @[reducible]def pair (x y : bSet 𝔹) : bSet 𝔹 := {{x}, {x,y}}
 
 -- lemma pair_type (x y : bSet 𝔹) : (pair x y).type = begin end := sorry
@@ -244,9 +242,7 @@ repeat{apply le_inf},
      specialize_context Γ, bv_split_at a_left_right_1,
      change _ ≤ (λv, (F i_z) =ᴮ v) w', apply bv_rw' a_left_right_1_1_1,
      {simp[B_ext], intros x y, rw[inf_comm], apply bv_eq_trans},
-     --TODO(jesse) write a B_ext lemma for =ᴮ and also write a tactic to automate this...
      change Γ_1 ≤ F i_z =ᴮ F i_w', simp only with cleanup at *,
-     -- suffices : Γ_1 ≤ func u i_z =ᴮ func u i_w', by {apply le_trans this, apply h_congr},
      bv_cases_at a_right i_pair, specialize_context Γ_1, bv_split_at a_right_1,
      bv_mp a_right_1_1_1 (eq_of_eq_pair_left), bv_mp a_right_1_1_1 (eq_of_eq_pair_right),
      bv_split_at a_left_right_1, clear a_right_1_1 a_right_1 a_left_right_1_1 a_left_right_1_2 a_right_1_1_1,
@@ -271,9 +267,28 @@ begin
     have := h_inj i j h,
     by_cases Γ = ⊥, rw[h], apply bot_le,
     suffices : Γ = ⊥, by contradiction,
-    apply bot_unique, apply le_trans _ this, from ‹_›
+    apply bot_unique, from le_trans ‹_› this
 end
 
 end extras
+
+section check
+
+lemma check_mem_of_mem {x y : pSet} (h_mem : x ∈ y) : (⊤ : 𝔹) ≤ x̌ ∈ᴮ y̌ :=
+begin
+  rw[mem_unfold], cases y, unfold has_mem.mem pSet.mem at h_mem,
+  cases h_mem with w_y H_w_y, apply bv_use w_y,
+  apply le_inf, simp, apply check_top_le_bv_eq ‹_›
+end
+
+lemma check_subset_of_subset {x y : pSet} (h_subset : x ⊆ y) : (⊤ : 𝔹) ≤ x̌ ⊆ᴮ y̌ :=
+begin
+  rw[subset_unfold], cases x, cases y, unfold has_subset.subset pSet.subset at h_subset,
+  bv_intro x_j, apply bv_imp_intro, rw[top_inf_eq], apply le_trans, apply mem.mk',
+  simp[-top_le_iff], specialize h_subset x_j, cases h_subset with b H_b,
+  apply bv_use b, apply check_top_le_bv_eq ‹_›
+end
+
+end check
 
 end bSet

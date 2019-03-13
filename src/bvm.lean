@@ -532,6 +532,12 @@ end
 @[reducible]def B_ext (ϕ : bSet 𝔹 → 𝔹) : Prop :=
   ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y
 
+@[simp]lemma B_ext_bv_eq_left {y : bSet 𝔹} : B_ext (λ x, x =ᴮ y) :=
+by {unfold B_ext, intros, rw[bv_eq_symm], apply bv_eq_trans}
+
+@[simp]lemma B_ext_bv_eq_right {x : bSet 𝔹} : B_ext (λ y, x =ᴮ y) :=
+by {unfold B_ext, intros, rw[inf_comm], apply bv_eq_trans}
+
 @[simp]lemma B_ext_mem_left {y : bSet 𝔹} : B_ext (λ x, x ∈ᴮ y) :=
 by unfold B_ext; intros; apply subst_congr_mem_left
 
@@ -1258,6 +1264,10 @@ begin
   apply top_unique; [rcases a_left i with ⟨w, h⟩, rcases a_right i with ⟨w,h⟩];
   apply le_supr_of_le w; simp only [lattice.top_le_iff, bSet.check]; apply (x_ih _); exact h
 end
+
+lemma check_top_le_bv_eq {x y : pSet} :
+  pSet.equiv x y → (⊤ : 𝔹) ≤ x̌ =ᴮ y̌ :=
+by {simp only [top_le_iff], apply check_bv_eq_top_of_equiv}
 
 lemma check_bv_eq_bot_of_not_equiv {x y : pSet} :
   (¬ pSet.equiv x y) → (x̌ =ᴮ y̌) = (⊥ : 𝔹) :=
