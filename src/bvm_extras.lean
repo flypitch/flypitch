@@ -162,25 +162,39 @@ begin
 end
 
 
-/-- f is =ᴮ-extensional on x if for every w₁ and w₂ ∈ x, if w₁ =ᴮ w₂, then for every v₁ and v₂, if (w₁,v₁) ∈ f and (w₂,v₂) ∈ f, then v₁ =ᴮ v₂ -/
-@[reducible]def is_extensional (x f : bSet 𝔹) : 𝔹 :=
-⨅w₁, w₁ ∈ᴮ x ⟹ (⨅w₂, w₂ ∈ᴮ x ⟹ (w₁ =ᴮ w₂ ⟹ ⨅v₁ v₂, (pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f) ⟹ v₁ =ᴮ v₂))
+-- /-- f is =ᴮ-extensional on x if for every w₁ and w₂ ∈ x, if w₁ =ᴮ w₂, then for every v₁ and v₂, if (w₁,v₁) ∈ f and (w₂,v₂) ∈ f, then v₁ =ᴮ v₂ -/
+-- @[reducible]def is_extensional (x f : bSet 𝔹) : 𝔹 :=
+-- ⨅w₁, w₁ ∈ᴮ x ⟹ (⨅w₂, w₂ ∈ᴮ x ⟹ (w₁ =ᴮ w₂ ⟹ ⨅v₁ v₂, (pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f) ⟹ v₁ =ᴮ v₂))
+
+/-- f is =ᴮ-extensional if for every w₁ w₂ v₁ v₂, if pair (w₁ v₁) and pair (w₂ v₂) ∈ f and
+    w₁ =ᴮ w₂, then v₁ =ᴮ v₂ -/
+@[reducible]def is_extensional (f : bSet 𝔹) : 𝔹 :=
+  ⨅ w₁, ⨅w₂, ⨅v₁, ⨅ v₂, pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⟹ (w₁ =ᴮ w₂ ⟹ v₁ =ᴮ v₂)
 
 /-- f is a functional relation if for every z ∈ x, if there exists a w ∈ y such that (z,w) ∈ f, then for every w' ∈ y such that (z,w') ∈ f, w' =ᴮ w -/
-@[reducible] def is_functional (x y f : bSet 𝔹) : 𝔹 :=
-⨅z, (z∈ᴮ x ⟹ (⨆w, w ∈ᴮ y ⊓ pair z w ∈ᴮ f ⊓ (⨅w', w' ∈ᴮ y ⟹ (pair z w' ∈ᴮ f ⟹ w =ᴮ w'))))
+-- @[reducible] def is_functional (x y f : bSet 𝔹) : 𝔹 :=
+-- ⨅z, (z∈ᴮ x ⟹ (⨆w, w ∈ᴮ y ⊓ pair z w ∈ᴮ f ⊓ (⨅w', w' ∈ᴮ y ⟹ (pair z w' ∈ᴮ f ⟹ w =ᴮ w'))))
+
+@[reducible]def is_functional (f : bSet 𝔹) : 𝔹 :=
+⨅z, (⨆w, pair z w ∈ᴮ f) ⟹ (⨆w', ⨅w'', pair z w'' ∈ᴮ f ⟹ w' =ᴮ w'')
   
-/-- f is a function if it is a subset of prod x y and it satisfies the following two conditions:
-1. it is =ᴮ-extensional
-2. it is a functional relation -/
-def is_func (x y f : bSet 𝔹) : 𝔹 :=
-  f ⊆ᴮ prod x y ⊓ is_extensional x f ⊓ is_functional x y f
+-- f is a function if it is a subset of prod x y and it satisfies the following two conditions:
+-- 1. it is =ᴮ-extensional
+-- 2. it is a functional relation
+def is_func (f : bSet 𝔹) : 𝔹 := (is_extensional f) ⊓ (is_functional f)
+
+/-- f is a function from x to y if it is a subset of prod x y such that for every element of x, there exists an element of y such that the pair is in f, and f is a function -/
+def is_func' (x y f : bSet 𝔹) : 𝔹 :=
+  is_func f ⊓ f ⊆ᴮ prod x y ⊓ ⨅w₁, w₁ ∈ᴮ x ⟹ ⨆w₂, pair x w₂ ∈ᴮ f
 
 /-- f is an injective function on x if it is a function and for every w₁ and w₂ ∈ x, if there exist v₁ and v₂ such that (w₁, v₁) ∈ f and (w₂, v₂) ∈ f,
-  then w₁ = w₂ -/
-def is_inj_func (x y) (f : bSet 𝔹) : 𝔹 :=
-  is_func x y f ⊓ (⨅w₁ w₂, w₁ ∈ᴮ x ⊓ w₂ ∈ᴮ x ⟹
-    (⨆v₁ v₂, (pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⊓ v₁ =ᴮ v₂ ⟹ w₁ =ᴮ w₂)))
+  then v₁ = v₂ implies  w₁ = w₂ -/
+-- def is_inj_func (x y) (f : bSet 𝔹) : 𝔹 :=
+--   is_func x y f ⊓ (⨅w₁ w₂, w₁ ∈ᴮ x ⊓ w₂ ∈ᴮ x ⟹
+--     (⨆v₁ v₂, (pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⊓ v₁ =ᴮ v₂ ⟹ w₁ =ᴮ w₂)))
+
+def is_inj (f : bSet 𝔹) : 𝔹 :=
+  ⨅w₁, ⨅ w₂, ⨅v₁, ⨅ v₂, pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⊓ v₁ =ᴮ v₂ ⟹ w₁ =ᴮ w₂
 
 def function.mk {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : bSet 𝔹 :=
 ⟨u.type, λ a, pair (u.func a) (F a), u.bval⟩
@@ -204,71 +218,122 @@ def check' {α : Type u} (A : α → bSet 𝔹) : bSet 𝔹 := ⟨α, A, λ x, �
 @[simp, cleanup]def check'_bval {α : Type u} {A : α → bSet 𝔹} {i} : (check' A).bval i = ⊤ := by refl
 @[simp, cleanup]def check'_func {α : Type u} {A : α → bSet 𝔹} {i} : (check' A).func i = A i := by refl
 
-lemma mk_is_func {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : ⊤ ≤ is_func u (check' F) (function.mk F h_congr) :=
+lemma mk_is_func {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : ⊤ ≤ is_func (function.mk F h_congr) :=
 begin
-repeat{apply le_inf},
-  {bv_intro i, apply bv_imp_intro, have := @prod_mem 𝔹 _ u (check' F) (func u i) (F i),
-  apply le_trans _ this, apply le_inf, simp[mem.mk'], apply bv_use i, simp},
+  apply le_inf, bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂,
+  apply bv_imp_intro, apply bv_imp_intro, tidy_context,
+  bv_cases_at a_left_right_left i, specialize_context Γ,
+  bv_cases_at a_left_right_right j, specialize_context Γ_1,
+  clear a_left_right_left a_left_right_right a_left_left,
+  bv_split_at a_left_right_left_1, bv_split_at a_left_right_right_1,
+  bv_mp a_left_right_left_1_1_1 eq_of_eq_pair_left,
+  bv_mp a_left_right_left_1_1_1 eq_of_eq_pair_right,
+  bv_mp a_left_right_right_1_1_1 eq_of_eq_pair_left,
+  bv_mp a_left_right_right_1_1_1 eq_of_eq_pair_right,
+  change Γ_2 ≤ (λ z, z =ᴮ v₂) _, apply bv_rw' a_left_right_left_1_1_1_2,
+  simp, change _ ≤ (λ z, (F i) =ᴮ z) _, apply bv_rw' a_left_right_right_1_1_1_2,
+  simp, apply le_trans, swap, apply h_congr,
+  apply bv_context_trans, rw[bv_eq_symm], from ‹_›,
+  apply bv_context_trans, from ‹_›, from ‹_›,
 
-  {bv_intro x, apply bv_imp_intro, bv_intro y, repeat{apply bv_imp_intro},
-   bv_intro v₁, bv_intro v₂, apply bv_imp_intro,
-   /- `tidy_context` says -/ apply poset_yoneda, intros Γ a, simp only [le_inf_iff] at a, cases a, cases a_right, cases a_left, cases a_left_left, cases a_left_left_left,
-   rw[mem_unfold] at a_right_left a_right_right,
-   bv_cases_at a_right_right i, specialize_context Γ,
-   bv_cases_at a_right_left j, specialize_context Γ_1,
-   clear a_right_right a_right_left,
-   bv_split_at a_right_left_1, bv_split_at a_right_right_1,
-   simp only with cleanup at a_right_left_1_1_1 a_right_right_1_1_1,
-   bv_mp a_right_right_1_1_1 (eq_of_eq_pair_left),
-   bv_mp a_right_right_1_1_1 (eq_of_eq_pair_right), -- TODO(jesse) generate sane variable names
-   bv_mp a_right_left_1_1_1 (eq_of_eq_pair_left),
-   bv_mp a_right_left_1_1_1 (eq_of_eq_pair_right),
-   have : Γ_2 ≤ func u i =ᴮ func u j, apply bv_context_trans, rw[bv_eq_symm],
-   assumption, rw[bv_eq_symm], apply bv_context_trans, rw[bv_eq_symm],
-   assumption, assumption, -- TODO(jesse) write a cc-like tactic to automate this
-   suffices : Γ_2 ≤ F i =ᴮ F j,
-    by {apply bv_context_trans, assumption, rw[bv_eq_symm], apply bv_context_trans,
-       assumption, from this},
-   apply le_trans this, apply h_congr}, -- the tactics are a success!
-  {bv_intro z, rw[<-deduction], rw[top_inf_eq], rw[mem_unfold], apply bv_Or_elim,
-   intro i_z, apply bv_use (F i_z), repeat{apply le_inf},
-     {tidy_context, rw[mem_unfold], apply bv_use i_z, apply le_inf, apply le_top, simp},
-     tidy_context, bv_mp a_right (subst_congr_pair_left), show bSet 𝔹, from (F i_z),
-     change Γ ≤ (λ w, w ∈ᴮ function.mk F h_congr) (pair z (F i_z)),
-     apply bv_rw' a_right_1, apply B_ext_mem_left, apply bv_use i_z, apply le_inf ‹_›,
-     simp[bv_eq_refl],
-     bv_intro w', repeat{apply bv_imp_intro}, tidy_context,
-     rw[mem_unfold] at a_left_right, bv_cases_at a_left_right i_w',
-     specialize_context Γ, bv_split_at a_left_right_1,
-     change _ ≤ (λv, (F i_z) =ᴮ v) w', apply bv_rw' a_left_right_1_1_1,
-     {simp[B_ext], intros x y, rw[inf_comm], apply bv_eq_trans},
-     change Γ_1 ≤ F i_z =ᴮ F i_w', simp only with cleanup at *,
-     bv_cases_at a_right i_pair, specialize_context Γ_1, bv_split_at a_right_1,
-     bv_mp a_right_1_1_1 (eq_of_eq_pair_left), bv_mp a_right_1_1_1 (eq_of_eq_pair_right),
-     bv_split_at a_left_right_1, clear a_right_1_1 a_right_1 a_left_right_1_1 a_left_right_1_2 a_right_1_1_1,
-     clear a_left_right_1 a_left_right a_left_left_left a_right,
-     have : Γ_2 ≤ F i_z =ᴮ F i_pair,
-       by {apply le_trans _ (h_congr _ _), apply bv_context_trans, rw[bv_eq_symm], from ‹_›, from ‹_›},
-     apply bv_context_trans, exact this, apply bv_context_trans, rw[bv_eq_symm], from ‹_›, from ‹_›}
+  bv_intro z, apply bv_imp_intro, rw[top_inf_eq], apply bv_Or_elim, intro w,
+  apply bv_use w, bv_intro w'', apply bv_imp_intro, tidy_context,
+  bv_cases_at a_left i, specialize_context Γ, bv_cases_at a_right j, specialize_context Γ_1,
+  bv_split_at a_left_1, bv_split_at a_right_1,
+  bv_mp a_left_1_1_1 (eq_of_eq_pair_left),   bv_mp a_left_1_1_1 (eq_of_eq_pair_right),
+  bv_mp a_right_1_1_1 (eq_of_eq_pair_left),  bv_mp a_right_1_1_1 (eq_of_eq_pair_right),
+  have : Γ_2 ≤ F i =ᴮ F j,
+    by {apply le_trans, swap, apply h_congr i j, apply bv_context_trans, rw[bv_eq_symm], from ‹_›, from ‹_›},
+  apply bv_context_trans, from ‹_›, apply bv_context_trans, from ‹_›, rw[bv_eq_symm], from ‹_›
 end
+
+-- lemma mk_is_func {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : ⊤ ≤ is_func u (check' F) (function.mk F h_congr) :=
+-- begin
+-- repeat{apply le_inf},
+--   {bv_intro i, apply bv_imp_intro, have := @prod_mem 𝔹 _ u (check' F) (func u i) (F i),
+--   apply le_trans _ this, apply le_inf, simp[mem.mk'], apply bv_use i, simp},
+
+--   {bv_intro x, apply bv_imp_intro, bv_intro y, repeat{apply bv_imp_intro},
+--    bv_intro v₁, bv_intro v₂, apply bv_imp_intro,
+--    /- `tidy_context` says -/ apply poset_yoneda, intros Γ a, simp only [le_inf_iff] at a, cases a, cases a_right, cases a_left, cases a_left_left, cases a_left_left_left,
+--    rw[mem_unfold] at a_right_left a_right_right,
+--    bv_cases_at a_right_right i, specialize_context Γ,
+--    bv_cases_at a_right_left j, specialize_context Γ_1,
+--    clear a_right_right a_right_left,
+--    bv_split_at a_right_left_1, bv_split_at a_right_right_1,
+--    simp only with cleanup at a_right_left_1_1_1 a_right_right_1_1_1,
+--    bv_mp a_right_right_1_1_1 (eq_of_eq_pair_left),
+--    bv_mp a_right_right_1_1_1 (eq_of_eq_pair_right), -- TODO(jesse) generate sane variable names
+--    bv_mp a_right_left_1_1_1 (eq_of_eq_pair_left),
+--    bv_mp a_right_left_1_1_1 (eq_of_eq_pair_right),
+--    have : Γ_2 ≤ func u i =ᴮ func u j, apply bv_context_trans, rw[bv_eq_symm],
+--    assumption, rw[bv_eq_symm], apply bv_context_trans, rw[bv_eq_symm],
+--    assumption, assumption, -- TODO(jesse) write a cc-like tactic to automate this
+--    suffices : Γ_2 ≤ F i =ᴮ F j,
+--     by {apply bv_context_trans, assumption, rw[bv_eq_symm], apply bv_context_trans,
+--        assumption, from this},
+--    apply le_trans this, apply h_congr}, -- the tactics are a success!
+--   {bv_intro z, rw[<-deduction], rw[top_inf_eq], rw[mem_unfold], apply bv_Or_elim,
+--    intro i_z, apply bv_use (F i_z), repeat{apply le_inf},
+--      {tidy_context, rw[mem_unfold], apply bv_use i_z, apply le_inf, apply le_top, simp},
+--      tidy_context, bv_mp a_right (subst_congr_pair_left), show bSet 𝔹, from (F i_z),
+--      change Γ ≤ (λ w, w ∈ᴮ function.mk F h_congr) (pair z (F i_z)),
+--      apply bv_rw' a_right_1, apply B_ext_mem_left, apply bv_use i_z, apply le_inf ‹_›,
+--      simp[bv_eq_refl],
+--      bv_intro w', repeat{apply bv_imp_intro}, tidy_context,
+--      rw[mem_unfold] at a_left_right, bv_cases_at a_left_right i_w',
+--      specialize_context Γ, bv_split_at a_left_right_1,
+--      change _ ≤ (λv, (F i_z) =ᴮ v) w', apply bv_rw' a_left_right_1_1_1,
+--      {simp[B_ext], intros x y, rw[inf_comm], apply bv_eq_trans},
+--      change Γ_1 ≤ F i_z =ᴮ F i_w', simp only with cleanup at *,
+--      bv_cases_at a_right i_pair, specialize_context Γ_1, bv_split_at a_right_1,
+--      bv_mp a_right_1_1_1 (eq_of_eq_pair_left), bv_mp a_right_1_1_1 (eq_of_eq_pair_right),
+--      bv_split_at a_left_right_1, clear a_right_1_1 a_right_1 a_left_right_1_1 a_left_right_1_2 a_right_1_1_1,
+--      clear a_left_right_1 a_left_right a_left_left_left a_right,
+--      have : Γ_2 ≤ F i_z =ᴮ F i_pair,
+--        by {apply le_trans _ (h_congr _ _), apply bv_context_trans, rw[bv_eq_symm], from ‹_›, from ‹_›},
+--      apply bv_context_trans, exact this, apply bv_context_trans, rw[bv_eq_symm], from ‹_›, from ‹_›}
+-- end
 
 lemma mk_inj_of_inj {u : bSet 𝔹} {F : u.type → bSet 𝔹} (h_inj : ∀ i j, i ≠ j → F i =ᴮ F j ≤ ⊥) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) :
-  ⊤ ≤ is_inj_func u (check' F) (function.mk F h_congr) :=
+  ⊤ ≤ is_inj (function.mk F h_congr) :=
 begin
-  apply le_inf, apply mk_is_func,
-  bv_intro w₁, bv_intro w₂, apply bv_imp_intro, rw[top_inf_eq],
-  rw[mem_unfold, mem_unfold], apply bv_cases_left, intro i,
-  apply bv_cases_right, intro j, apply le_supr_of_le (F i),
-  apply le_supr_of_le (F j), apply bv_imp_intro,
+  bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂, apply bv_imp_intro,
+  rw[top_inf_eq], rw[mem_unfold, mem_unfold], rw[deduction],
+  apply bv_cases_left, intro i, apply bv_cases_right, intro j, apply bv_imp_intro,
+  simp,
   tidy_context,
-    haveI : decidable (i = j) := by apply classical.prop_decidable,
+    haveI : decidable (i = j) := classical.prop_decidable _,
     by_cases i = j,
-      { subst h, apply bv_context_trans, tidy},
-    have := h_inj i j h,
-    by_cases Γ = ⊥, rw[h], apply bot_le,
+      {subst h, have : Γ ≤ pair w₁ v₁ =ᴮ pair w₂ v₂, by apply bv_context_trans; {tidy},
+       bv_mp this eq_of_eq_pair_left, from ‹_›},
+    have := h_inj i j h, by_cases Γ = ⊥, rw[h], apply bot_le,
     suffices : Γ = ⊥, by contradiction,
-    apply bot_unique, from le_trans ‹_› this
+    apply bot_unique,
+    suffices : Γ ≤ F i =ᴮ F j, by {apply le_trans this ‹_›},
+    bv_mp a_left_left_right eq_of_eq_pair_right,
+    bv_mp a_left_right_right eq_of_eq_pair_right,
+    apply bv_context_trans, rw[bv_eq_symm], from ‹_›,
+    apply bv_context_trans, from a_right, from ‹_›
 end
+
+-- lemma mk_inj_of_inj {u : bSet 𝔹} {F : u.type → bSet 𝔹} (h_inj : ∀ i j, i ≠ j → F i =ᴮ F j ≤ ⊥) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) :
+--   ⊤ ≤ is_inj_func u (check' F) (function.mk F h_congr) :=
+-- begin
+--   apply le_inf, apply mk_is_func,
+--   bv_intro w₁, bv_intro w₂, apply bv_imp_intro, rw[top_inf_eq],
+--   rw[mem_unfold, mem_unfold], apply bv_cases_left, intro i,
+--   apply bv_cases_right, intro j, apply le_supr_of_le (F i),
+--   apply le_supr_of_le (F j), apply bv_imp_intro,
+--   tidy_context,
+--     haveI : decidable (i = j) := by apply classical.prop_decidable,
+--     by_cases i = j,
+--       { subst h, apply bv_context_trans, tidy},
+--     have := h_inj i j h,
+--     by_cases Γ = ⊥, rw[h], apply bot_le,
+--     suffices : Γ = ⊥, by contradiction,
+--     apply bot_unique, from le_trans ‹_› this
+-- end
 
 end extras
 
@@ -290,5 +355,17 @@ begin
 end
 
 end check
+
+section ordinals
+def epsilon_well_orders (x : bSet 𝔹) : 𝔹 :=
+⨅y, y∈ᴮ x ⟹
+  ((⨅z, z ∈ᴮ x ⟹ (y =ᴮ z ⊔ y ∈ᴮ z ⊔ z ∈ᴮ y)) ⊓
+  (⨅u, u ⊆ᴮ x ⟹ (- (u =ᴮ ∅) ⟹ ⨆y, y∈ᴮ u ⊓ (⨅z', z' ∈ᴮ u ⟹ (- (z' ∈ᴮ y))))))
+
+def is_transitive (x : bSet 𝔹) : 𝔹 := ⨅y, y∈ᴮ x ⟹ y ⊆ᴮ x
+
+def Ord (x : bSet 𝔹) : 𝔹 := epsilon_well_orders x ⊓ is_transitive x
+
+end ordinals
 
 end bSet
