@@ -341,6 +341,9 @@ end
 theorem eq_iff_subset_subset {x y : bSet 𝔹} : x =ᴮ y = x ⊆ᴮ y ⊓ y ⊆ᴮ x :=
 by apply le_antisymm; [apply subset_subset_of_eq, apply eq_of_subset_subset]
 
+@[simp]lemma subset_self {x : bSet 𝔹} {Γ : 𝔹} : Γ ≤ x ⊆ᴮ x :=
+by {apply le_trans, apply le_top, rw[show ⊤ = x =ᴮ x, by simp[bv_eq_refl]], rw[eq_iff_subset_subset], apply inf_le_left}
+
 theorem subset_ext {x y : bSet 𝔹} {c : 𝔹} {h₁ : c ≤ x ⊆ᴮ y} {h₂ : c ≤ y ⊆ᴮ x} : c ≤ x =ᴮ y :=
 begin
   apply bv_have h₂, rw[deduction], apply bv_have h₁, rw[<-deduction],
@@ -1217,6 +1220,11 @@ lemma subset'_unfold {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} {h : c
 lemma exists_mem_of_nonempty (u : bSet 𝔹) {Γ : 𝔹} {H : Γ ≤ -(u =ᴮ ∅)} : Γ ≤ ⨆x, x∈ᴮ u :=
 by {apply le_trans H, simp[eq_empty], intro x, apply bv_use (u.func x), apply mem.mk'}
 
+lemma nonempty_of_exists_mem (u : bSet 𝔹) {Γ : 𝔹} {H : Γ ≤ (⨆x, x ∈ᴮ u)} : Γ ≤ -(u =ᴮ ∅) :=
+begin
+  {apply le_trans H, simp[eq_empty], intro x, rw[mem_unfold], apply bv_Or_elim, intro i, apply bv_use i, apply inf_le_left}
+end
+
 lemma core_aux_lemma3 (u : bSet 𝔹) (h_nonempty : -(u =ᴮ ∅) = ⊤) {α : Type u} (S : α → bSet 𝔹) (h_core : core u S) : ∀ x, ∃ y ∈ S '' set.univ, x =ᴮ y = x ∈ᴮ u :=
 begin
   intro x, have := core_aux_lemma (λ z, z∈ᴮu) (by intros; apply subst_congr_mem_left)
@@ -1516,8 +1524,8 @@ example : 0 ∈ᴮ 1 = (⊤ : 𝔹) := by {apply top_unique, unfold has_zero.zer
 
 end infinity
 
-theorem bSet_axiom_of_regularity (ϕ : bSet 𝔹 → 𝔹) (h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y) :
-  (⨅(x : bSet 𝔹), ((⨅(y : bSet 𝔹), y ∈ᴮ x ⟹ ϕ y) ⟹ ϕ x)) ⟹ (⨅(x : bSet 𝔹), ϕ x) = ⊤ :=
+theorem bSet_epsilon_induction (ϕ : bSet 𝔹 → 𝔹) (h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y) :
+  (⨅(x : bSet 𝔹), ((⨅(y : bSet 𝔹), y ∈ᴮ x ⟹ ϕ y) ⟹ ϕ x)) ⟹ (⨅(z : bSet 𝔹), ϕ z) = ⊤ :=
 begin
   apply top_unique, apply bv_imp_intro, rw[top_inf_eq],
   bv_intro x, let b := _, change b ≤ _,
@@ -1531,6 +1539,29 @@ begin
   have : b ≤ (⨅ (y : bSet 𝔹), (y) ∈ᴮ (mk α A B) ⟹ ϕ (y)) ⟹ ϕ (mk α A B),
     by {apply bv_specialize (mk α A B), refl},
   rw[deduction], apply le_trans this, rw[<-deduction], apply bv_imp_elim
+end
+
+lemma epsilon_induction {Γ} (ϕ : bSet 𝔹 → 𝔹) (h_congr : B_ext ϕ) (H_ih : ∀ x, Γ ≤ ((⨅(y : bSet 𝔹), y ∈ᴮ x ⟹ ϕ y) ⟹ ϕ x)) :
+∀ z, Γ ≤ ϕ z  :=
+begin
+  have := bSet_epsilon_induction ϕ h_congr, rw[eq_top_iff] at this,
+  intro z, 
+  have H_a : Γ ≤ (⨅ (x : bSet 𝔹), (⨅ (y : bSet 𝔹), y ∈ᴮ x ⟹ ϕ y) ⟹ ϕ x),
+  bv_intro x, specialize H_ih x, from ‹_›,
+  have := le_trans (le_top) this,
+  bv_imp_elim_at this H_a, bv_specialize_at H z, exact H_1
+end
+
+theorem bSet_axiom_of_regularity (x : bSet 𝔹) : ⊤ ≤ ((-(x =ᴮ ∅)) ⟹ ⨆y, y∈ᴮ x ⟹ (⨅z, (z ∈ᴮ x ⊓ z ∈ᴮ y) ⟹ ⊥)) :=
+begin sorry
+  -- change _ ≤ (λ w, ((-(w =ᴮ ∅)) ⟹ ⨆ (y : bSet 𝔹), y ∈ᴮ w ⟹ ⨅ (z : bSet 𝔹), (z ∈ᴮ w ⊓ z ∈ᴮ y) ⟹ ⊥)) x,
+  -- apply epsilon_induction, simp,
+  -- intro x', apply bv_imp_intro, apply bv_imp_intro,
+  -- tidy_context,
+  -- have := @exists_mem_of_nonempty _ _ x' _ a_right,
+  -- bv_cases_at this w, specialize_context Γ,
+  -- bv_specialize_at a_left_right w,
+  -- bv_imp_elim_at a_left_right_1 this_1,
 end
 
 /-- ∃! x, ϕ x ↔ ∃ x ∀ y, ϕ(x) ⊓ ϕ (y) → y = x -/

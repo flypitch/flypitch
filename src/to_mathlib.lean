@@ -969,6 +969,8 @@ do
   Γ_name <- get_unused_name "Γ",
   v <- mk_mvar, v' <- mk_mvar,
   Γ_new <- pose Γ_name none v,
+  -- Γ_new_eq_aux <- to_expr ``((by refl) : %%v_a = %%v),
+  -- Γ_new_eq <- note Γ_name none Γ_new_eq_aux,
   new_goal <- to_expr ``((%%Γ_new : %%tp) ≤ %%v'),
   tactic.change new_goal,
   ctx <- local_context,
@@ -994,8 +996,16 @@ do
   `[apply lattice.context_Or_elim] >> tactic.exact e₀' >>
   tactic.intro i >> ((get_unused_name H) >>= tactic.intro) >> skip
 
-example {β ι : Type u} [lattice.complete_boolean_algebra β] {s : ι → β} {H' : ⊤ ≤ ⨆i, s i} {b : β} : b ≤ ⊤ :=
-by {specialize_context ⊤, bv_cases_at H' i, specialize_context Γ, sorry }
+meta def bv_or_elim_at (H : parse ident) : tactic unit :=
+do n <- get_unused_name "H_left",
+   n' <- get_unused_name "H_right",
+   e <- resolve_name H,
+   e' <- to_expr e,
+   `[apply lattice.context_or_elim] >> tactic.exact e' >>
+   (tactic.intro n) >> swap >> (tactic.intro n') >> swap
+
+-- example {β ι : Type u} [lattice.complete_boolean_algebra β] {s : ι → β} {H' : ⊤ ≤ ⨆i, s i} {b : β} : b ≤ ⊤ :=
+-- by {specialize_context ⊤, bv_cases_at H' i, specialize_context Γ, sorry }
 
 def eta_beta_cfg : dsimp_config :=
 { md := reducible,
@@ -1011,11 +1021,10 @@ def eta_beta_cfg : dsimp_config :=
   unfold_reducible := ff,
   memoize := tt }
 
-meta def bv_specialize_at (H : parse ident) (j : parse ident) : tactic unit :=
+meta def bv_specialize_at (H : parse ident) (j : parse texpr) : tactic unit :=
 do n <- get_unused_name H,
    e_H <- resolve_name H,
-   e_j <- resolve_name j,
-   e <- to_expr ``(lattice.context_specialize %%e_H %%e_j),
+   e <- to_expr ``(lattice.context_specialize %%e_H %%j),
    note n none e >>= λ h, dsimp_hyp h none [] eta_beta_cfg
 
 meta def bv_split_at (H : parse ident) : tactic unit :=
@@ -1030,15 +1039,15 @@ do n₁ <- get_unused_name H,
 example {β ι : Type u} [lattice.complete_boolean_algebra β] {j : ι} {s : ι → β} {H : ⊤ ≤ ⨅i, s i} {b : β} : b ≤ ⊤ :=
 by {specialize_context ⊤, bv_specialize_at H j, apply lattice.le_top}
 
-meta def bv_imp_elim_at (H₁ : parse ident) (H₂ : parse ident) : tactic unit :=
-do n <- get_unused_name H₁,
+meta def bv_imp_elim_at (H₁ : parse ident) (H₂ : parse texpr) : tactic unit :=
+do n <- get_unused_name "H",
    e₁ <- resolve_name H₁,
-   e₂ <- resolve_name H₂,
-   e <- to_expr ``(lattice.context_imp_elim %%e₁ %%e₂),
+   e <- to_expr ``(lattice.context_imp_elim %%e₁ %%H₂),
    note n none e >>= λ h, dsimp_hyp h none [] eta_beta_cfg
 
 meta def bv_mp (H : parse ident) (H₂ : parse texpr) : tactic unit :=
-do n <- get_unused_name H,
+do
+   n <- get_unused_name H,
    e_H <- resolve_name H,
    e_L <- to_expr H₂,
    pr <- to_expr ``(le_trans %%e_H %%e_L),

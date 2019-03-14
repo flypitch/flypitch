@@ -335,6 +335,50 @@ end
 --     apply bot_unique, from le_trans ‹_› this
 -- end
 
+lemma bot_of_mem_self {x : bSet 𝔹} : ⊤ ≤ (x ∈ᴮ x ⟹ ⊥) :=
+begin
+  induction x, simp[-imp_bot], intro i, specialize x_ih i,
+  apply bot_unique, apply bv_have_true x_ih, tidy_context,
+  bv_mp a_left_left (show x_B i ≤ x_A i ∈ᴮ mk x_α x_A x_B, by apply mem.mk),
+  change Γ ≤ (x_A i ∈ᴮ mk x_α x_A x_B) at a_left_left_1,
+  have : Γ ≤ x_A i ∈ᴮ x_A i, rw[show Γ = Γ ⊓ Γ, by simp],
+  apply le_trans, apply inf_le_inf, exact a_left_right, exact a_left_left_1,
+  apply subst_congr_mem_right,
+  have x_ih2 : Γ ≤ _ := le_trans (le_top) x_ih,
+  bv_imp_elim_at x_ih2 ‹_›, from H
+end
+
+-- lemma bot_of_mem_mem_aux {x : bSet 𝔹} {i : x.type} : ⊤ ≤ ( x ∈ᴮ x.func i ⟹ ⊥) :=
+-- begin
+--   induction x, apply bv_imp_intro, rw[top_inf_eq], rw[mem_unfold],
+--   apply bv_Or_elim, intro j,
+--   specialize x_ih i, swap, exact j, tidy_context,
+--   bv_mp a_left (show bval (func (mk x_α x_A x_B) i) j ≤ (func (func (mk _ _ _) i) j) ∈ᴮ func (mk _ _ _) i, by apply mem.mk'),
+-- end
+
+lemma bot_of_mem_mem {x y : bSet 𝔹} : ⊤ ≤ ((x ∈ᴮ y ⊓ y ∈ᴮ x) ⟹ ⊥) :=
+begin
+  induction x generalizing y, induction y,
+  simp[-imp_bot, -top_le_iff], apply bv_imp_intro, rw[top_inf_eq],
+  apply bv_cases_right, intro a', apply bv_cases_left, intro a'',
+  specialize x_ih a', tidy_context,
+  specialize y_ih a'', show bSet 𝔹, from y_A a'',
+  bv_mp a_right_left (show x_B a' ≤ _ ∈ᴮ (mk x_α x_A x_B), by apply mem.mk),
+  change Γ ≤ _ ∈ᴮ (mk x_α x_A x_B) at a_right_left_1,
+  bv_mp a_left_left (show y_B a'' ≤ _ ∈ᴮ (mk y_α y_A y_B), by apply mem.mk),
+  change Γ ≤ _ ∈ᴮ (mk y_α y_A y_B) at a_left_left_1,
+  have this₁ : Γ ≤ x_A a' ∈ᴮ y_A a'', apply le_trans' a_right_left_1,
+  apply le_trans, apply inf_le_inf, from a_left_right, refl,
+  apply subst_congr_mem_right,
+  have this₂ : Γ ≤ y_A a'' ∈ᴮ x_A a', apply le_trans' a_left_left_1,
+  apply le_trans, apply inf_le_inf, from a_right_right, refl,
+  apply subst_congr_mem_right,
+  have x_ih2 := le_trans (le_top) x_ih,
+  suffices : Γ ≤ x_A a' ∈ᴮ y_A a'' ⊓ y_A a'' ∈ᴮ x_A a',
+  by bv_imp_elim_at x_ih2 ‹_›; assumption,
+  apply le_inf; assumption
+end
+
 end extras
 
 section check
@@ -362,9 +406,46 @@ def epsilon_well_orders (x : bSet 𝔹) : 𝔹 :=
   ((⨅z, z ∈ᴮ x ⟹ (y =ᴮ z ⊔ y ∈ᴮ z ⊔ z ∈ᴮ y)) ⊓
   (⨅u, u ⊆ᴮ x ⟹ (- (u =ᴮ ∅) ⟹ ⨆y, y∈ᴮ u ⊓ (⨅z', z' ∈ᴮ u ⟹ (- (z' ∈ᴮ y))))))
 
+lemma epsilon_dichotomy (x y z : bSet 𝔹) : epsilon_well_orders x ≤ y ∈ᴮ x ⟹ (z ∈ᴮ x ⟹ (y =ᴮ z ⊔ y ∈ᴮ z ⊔ z ∈ᴮ y)) :=
+begin
+  unfold epsilon_well_orders, apply bv_specialize y, apply bv_imp_intro,
+  apply le_trans, apply bv_imp_elim, apply inf_le_left_of_le, apply bv_specialize z, apply bv_imp_intro,
+  apply le_trans, apply bv_imp_elim, refl
+end
+
 def is_transitive (x : bSet 𝔹) : 𝔹 := ⨅y, y∈ᴮ x ⟹ y ⊆ᴮ x
 
 def Ord (x : bSet 𝔹) : 𝔹 := epsilon_well_orders x ⊓ is_transitive x
+
+/-- x is not larger than y if there does not exist a surjective function from x to y -/
+def not_larger_than (x y : bSet 𝔹) : 𝔹 := ⨅f, -(is_func' x y f ⊓ ⨅v, v ∈ᴮ y ⟹ ⨆w, w ∈ᴮ x ⊓ pair w v ∈ᴮ f)
+
+def Card (x : bSet 𝔹) : 𝔹 := Ord(x) ⊓ ⨅y, y ∈ᴮ x ⟹ not_larger_than y x
+
+lemma transitive_of_mem_transitive (y x : bSet 𝔹) : is_transitive x ⊓ y ∈ᴮ x ≤ is_transitive y :=
+begin
+  bv_intro w, apply bv_imp_intro, tidy_context,
+  unfold is_transitive at a_left_left, bv_specialize_at a_left_left y,
+  bv_imp_elim_at a_left_left_1 a_left_right,
+  simp only [subset_unfold'] at H,
+  bv_specialize_at H w, bv_imp_elim_at H_1 a_right,
+  bv_specialize_at a_left_left w, bv_imp_elim_at a_left_left_2 ‹_›,  sorry
+end
+
+lemma Ord_of_mem_Ord (y x : bSet 𝔹) : Ord x ⊓ y ∈ᴮ x ≤ (Ord y) :=
+begin
+  apply le_inf, swap,
+  bv_intro w, unfold Ord, apply bv_imp_intro, tidy_context,
+  bv_specialize_at a_left_left_right y, bv_imp_elim_at a_left_left_right_1 ‹_›,
+  rw[subset_unfold'] at H, bv_specialize_at H w,
+  bv_imp_elim_at H_1 ‹_›,
+  bv_mp a_left_left_left (epsilon_dichotomy x y w),
+  bv_imp_elim_at a_left_left_left_1 ‹_›, bv_imp_elim_at H_3 ‹_›,
+  bv_or_elim_at H_4, specialize_context Γ,
+  bv_or_elim_at H_left, specialize_context Γ_1,
+  apply bv_rw', exact H_left_1, apply B_ext_subset_right,
+  apply subset_self, specialize_context Γ_1,
+end
 
 end ordinals
 
