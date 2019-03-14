@@ -4,7 +4,6 @@ import data.finset algebra.ordered_group tactic.squeeze tactic.tidy order.bounde
 
 universe variables u v w
 
-
 namespace tactic
 namespace interactive
 /- maybe we should use congr' 1 instead? -/
@@ -932,6 +931,14 @@ end
 lemma context_imp_intro {β : Type*} [complete_boolean_algebra β] {a b Γ : β} (H : a ⊓ Γ ≤ a → a ⊓ Γ ≤ b) : Γ ≤ a ⟹ b :=
 by {rw[<-deduction, inf_comm], from H (inf_le_left)}
 
+instance imp_to_pi {β : Type*} [complete_boolean_algebra β] {Γ a b : β} : has_coe_to_fun (Γ ≤ a ⟹ b) :=
+{ F := λ x, Γ ≤ a → Γ ≤ b,
+  coe := λ H₁ H₂, by {apply context_imp_elim; from ‹_›}}
+
+instance infi_to_pi {ι β : Type*} [complete_boolean_algebra β] {Γ : β} {ϕ : ι → β} : has_coe_to_fun (Γ ≤ infi ϕ) :=
+{ F := λ x, Π i : ι, Γ ≤ ϕ i,
+  coe := λ H₁ i, by {change Γ ≤ ϕ i, change Γ ≤ _ at H₁, finish}}
+
 end lattice
 
 namespace tactic
@@ -950,53 +957,71 @@ meta def get_name : ∀(e : expr), name
 | (expr.local_const _ c _ _) := c
 | _                          := name.anonymous
 
+meta def lhs_rhs_of_le (e : expr) : tactic (expr × expr) :=
+do `(%%x ≤ %%y) <- pure e,
+   return (x,y)
+
 meta def lhs_of_le (e : expr) : tactic expr :=
-do v_a <- mk_mvar,
-   e' <- to_expr ``(%%v_a ≤ _),
-   unify e e',
-   return v_a
+lhs_rhs_of_le e >>= λ x, return x.1
 
 meta def rhs_of_le (e : expr) : tactic expr :=
-do v_b <- mk_mvar,
-   e' <- to_expr ``(_ ≤ %%v_b),
-   unify e e',
-   return v_b
+lhs_rhs_of_le e >>= λ x, return x.2
+
+-- meta def lhs_of_le (e : expr) : tactic expr :=
+-- do v_a <- mk_mvar,
+--    e' <- to_expr ``(%%v_a ≤ _),
+--    unify e e',
+--    return v_a
 
 meta def hyp_is_ineq (e : expr) : tactic bool :=
-do   e_tp <- infer_type e,
-     succeeds (to_expr ``(_ ≤ _) >>= unify e_tp)
+  (do `(%%x ≤ %%y) <- infer_type e,
+     return tt)<|> return ff
+
+meta def trace_inequalities : tactic unit :=
+  (local_context >>= λ l, l.mfilter (hyp_is_ineq)) >>= trace
+
+meta def hyp_is_ineq_sup (e : expr) : tactic bool :=
+  (do `(%%x ≤ %%y ⊔ %%z) <- infer_type e,
+     return tt)<|> return ff
+
+meta def trace_sup_inequalities : tactic unit := 
+  (local_context >>= λ l, l.mfilter (hyp_is_ineq_sup)) >>= trace
 
 meta def specialize_context_at (H : parse ident) (Γ : parse texpr) : tactic unit :=
 do e <- resolve_name H,
    tactic.replace H ``(lattice.specialize_context %%Γ %%e),
    swap >> try `[apply lattice.le_top] >> skip
 
+#check (=ₐ)
+
+meta def specialize_context_core (Γ_old : expr) : tactic unit :=
+do  v_a <- target >>= lhs_of_le,
+    tp <- infer_type Γ_old,
+    Γ_name <- get_unused_name "Γ",
+    v <- mk_mvar, v' <- mk_mvar,
+    Γ_new <- pose Γ_name none v,
+
+    new_goal <- to_expr ``((%%Γ_new : %%tp) ≤ %%v'),
+    tactic.change new_goal,
+    ctx <- local_context,
+    ctx' <- ctx.mfilter
+      (λ e, (do infer_type e >>= lhs_of_le >>= λ e', succeeds $ is_def_eq Γ_old e') <|> return ff),
+      ctx'.mmap' (λ H, tactic.replace (get_name H) ``(le_trans (by apply inf_le_right <|> simp : %%Γ_new ≤ _) %%H)),
+    ctx2 <- local_context,
+    ctx2' <- ctx.mfilter (λ e, (do infer_type e >>= lhs_of_le >>= instantiate_mvars >>= λ e', succeeds $ is_def_eq Γ_new e') <|> return ff),
+    -- trace ctx2',
+    ctx2'.mmap' (λ H, do H_tp <- infer_type H,
+                         e'' <- lhs_of_le H_tp,
+                         succeeds (unify Γ_new e'') >>
+                   tactic.replace (get_name H) ``(_ : %%Γ_new ≤ _) >> swap >> assumption)
+  
+
 /-- If the goal is an inequality `a ≤ b`, extracts `a` and attempts to specialize all
   facts in context of the form `Γ ≤ d` to `a ≤ d` (this requires a ≤ Γ) -/
 meta def specialize_context (Γ : parse texpr) : tactic unit :=
 do
-  v_a <- target >>= lhs_of_le,
   Γ_old <- i_to_expr Γ,
-  tp <- infer_type Γ_old,
-  Γ_name <- get_unused_name "Γ",
-  v <- mk_mvar, v' <- mk_mvar,
-  Γ_new <- pose Γ_name none v,
-  -- Γ_new_eq_aux <- to_expr ``((by refl) : %%v_a = %%v),
-  -- Γ_new_eq <- note Γ_name none Γ_new_eq_aux,
-  new_goal <- to_expr ``((%%Γ_new : %%tp) ≤ %%v'),
-  tactic.change new_goal,
-  ctx <- local_context,
-  ctx' <- ctx.mfilter
-    (λ e, (do infer_type e >>= lhs_of_le >>= λ e', succeeds (unify Γ_old e')) <|> return ff),
-  ctx'.mmap' (λ H, tactic.replace (get_name H) ``(le_trans (by apply inf_le_right <|> simp : %%Γ_new ≤ _) %%H)),
-  ctx2 <- local_context,
-  ctx2' <- ctx.mfilter (λ e, (do infer_type e >>= lhs_of_le >>= λ e', succeeds (unify Γ_new e')) <|> return ff),
-  -- trace ctx2',
-  ctx2'.mmap' (λ H, do H_tp <- infer_type H,
-                       v'' <- mk_mvar,
-                       to_expr ``(%%Γ_new ≤ %%v'') >>= unify H_tp,
-                       instantiate_mvars v'',
-                 tactic.replace (get_name H) ``(_ : %%Γ_new ≤ %%v'') >> swap >> assumption)
+  specialize_context_core Γ_old
 
 example {β : Type u} [lattice.bounded_lattice β] {a b : β} {H : ⊤ ≤ b} : a ≤ b :=
 by {specialize_context (⊤ : β), assumption}
@@ -1008,16 +1033,33 @@ meta def bv_cases_at (H : parse ident) (i : parse ident_)  : tactic unit :=
 do
   e₀ <- resolve_name H,
   e₀' <- to_expr e₀,
+  Γ_old <- target >>= lhs_of_le,
   `[apply lattice.context_Or_elim] >> tactic.exact e₀' >>
-  tactic.intro i >> ((get_unused_name H) >>= tactic.intro) >> skip
+  tactic.intro i >> ((get_unused_name H) >>= tactic.intro) >> skip,
+  specialize_context_core Γ_old
+
+meta def bv_or_elim_at_core (e : expr) (Γ_old : expr) : tactic unit :=
+do 
+   n <- get_unused_name "H_left",
+   n' <- get_unused_name "H_right",
+   `[apply lattice.context_or_elim],
+    tactic.exact e,
+   (tactic.intro n) >> specialize_context_core Γ_old, swap,
+   (tactic.intro n') >> specialize_context_core Γ_old, swap
+   
 
 meta def bv_or_elim_at (H : parse ident) : tactic unit :=
-do n <- get_unused_name "H_left",
-   n' <- get_unused_name "H_right",
-   e <- resolve_name H,
-   e' <- to_expr e,
-   `[apply lattice.context_or_elim] >> tactic.exact e' >>
-   (tactic.intro n) >> swap >> (tactic.intro n') >> swap
+do Γ_old <- target >>= lhs_of_le,
+   e <- resolve_name H >>= to_expr,
+   bv_or_elim_at_core e Γ_old
+
+meta def auto_or_elim_step : tactic unit := 
+do  ctx <- local_context >>= (λ l, l.mfilter hyp_is_ineq_sup),
+    if ctx.length > 0 then
+    ctx.mmap' (λ e, do Γ_old <- target >>= lhs_of_le, bv_or_elim_at_core e Γ_old)
+    else tactic.failed
+
+meta def auto_or_elim : tactic unit := tactic.repeat auto_or_elim_step --TODO(jesse) debug this
 
 -- example {β ι : Type u} [lattice.complete_boolean_algebra β] {s : ι → β} {H' : ⊤ ≤ ⨆i, s i} {b : β} : b ≤ ⊤ :=
 -- by {specialize_context ⊤, bv_cases_at H' i, specialize_context Γ, sorry }

@@ -8,7 +8,6 @@ local infix ` ⟹ `:65 := lattice.imp
 
 local infix ` ⇔ `:50 := lattice.biimp
 
-
 namespace bSet
 variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 section extras
@@ -222,8 +221,8 @@ lemma mk_is_func {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, 
 begin
   apply le_inf, bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂,
   apply bv_imp_intro, apply bv_imp_intro, tidy_context,
-  bv_cases_at a_left_right_left i, specialize_context Γ,
-  bv_cases_at a_left_right_right j, specialize_context Γ_1,
+  bv_cases_at a_left_right_left i,
+  bv_cases_at a_left_right_right j,
   clear a_left_right_left a_left_right_right a_left_left,
   bv_split_at a_left_right_left_1, bv_split_at a_left_right_right_1,
   bv_mp a_left_right_left_1_1_1 eq_of_eq_pair_left,
@@ -238,7 +237,7 @@ begin
 
   bv_intro z, apply bv_imp_intro, rw[top_inf_eq], apply bv_Or_elim, intro w,
   apply bv_use w, bv_intro w'', apply bv_imp_intro, tidy_context,
-  bv_cases_at a_left i, specialize_context Γ, bv_cases_at a_right j, specialize_context Γ_1,
+  bv_cases_at a_left i, bv_cases_at a_right j,
   bv_split_at a_left_1, bv_split_at a_right_1,
   bv_mp a_left_1_1_1 (eq_of_eq_pair_left),   bv_mp a_left_1_1_1 (eq_of_eq_pair_right),
   bv_mp a_right_1_1_1 (eq_of_eq_pair_left),  bv_mp a_right_1_1_1 (eq_of_eq_pair_right),
@@ -439,24 +438,23 @@ begin
   bv_imp_elim_at a_left_left_left_right_2 ‹_›, rw[subset_unfold'] at H_3,
   bv_specialize_at H_3 z, bv_imp_elim_at H_3_1 ‹_›, bv_mp a_left_left_left_left (epsilon_dichotomy x y z),
   bv_imp_elim_at a_left_left_left_left_1 ‹_›, bv_imp_elim_at H_5 ‹_›, bv_or_elim_at H_6, swap, assumption,
-  specialize_context Γ, bv_or_elim_at H_left, specialize_context Γ_1,
+  bv_or_elim_at H_left,
   bv_exfalso, suffices : Γ_2 ≤ y ∈ᴮ w ⊓ w ∈ᴮ y,
     have : Γ_2 ≤ _ := le_trans (le_top) (bot_of_mem_mem y w),
     bv_imp_elim_at this ‹_›, assumption,
   apply le_inf, swap, assumption, apply bv_rw' H_left_1, simp,
   assumption,
 
-  specialize_context Γ_1, bv_exfalso,
+  bv_exfalso,
   have a_left_right_old := a_left_right,
-  rw[mem_unfold] at a_left_right, bv_cases_at a_left_right i_w,
-  specialize_context Γ_2, bv_split_at a_left_right_1,
+  rw[mem_unfold] at a_left_right, bv_cases_at a_left_right i_w, bv_split_at a_left_right_1,
   specialize y_ih i_w, rw[deduction] at y_ih,
   have := le_trans (le_inf ‹_› ‹_› : Γ_3 ≤ Ord x) ‹_›,
   have this' : Γ_3 ≤ func y i_w ∈ᴮ x,  rw[bv_eq_symm] at a_left_right_1_1_1,
   change Γ_3 ≤ (λ z, z ∈ᴮ x) (func y i_w), apply bv_rw' a_left_right_1_1_1,
   simp, from H_2, bv_imp_elim_at this ‹_›,
   have : Γ_3 ≤ is_transitive w, apply bv_rw' ‹_›, simp, from ‹_›,
-  bv_specialize_at this z, bv_imp_elim_at this_1 ‹_›,
+  unfold is_transitive at this, have H_8 := this z ‹_›,
   rw[subset_unfold'] at H_8, bv_specialize_at H_8 y,
   bv_imp_elim_at H_8_1 ‹_›,
   suffices : Γ_3 ≤ y ∈ᴮ w ⊓ w ∈ᴮ y,
@@ -468,24 +466,25 @@ lemma is_ewo_of_mem_Ord (y x : bSet 𝔹) : Ord x ⊓ y ∈ᴮ x ≤ (epsilon_we
 begin
   bv_split_goal, rename i z, apply bv_imp_intro, bv_split_goal; rename i w, apply bv_imp_intro,
   
-  all_goals{unfold Ord}, unfold epsilon_well_orders, tidy_context,
+  all_goals{unfold Ord},
+  {unfold epsilon_well_orders, tidy_context,
   bv_to_pi', specialize a_left_left_left_left_left w, dsimp at a_left_left_left_left_left,
   specialize a_left_left_left_right y,
     bv_to_pi a_left_left_left_right, specialize a_left_left_left_right ‹_›,
     rw[subset_unfold'] at a_left_left_left_right, bv_to_pi a_left_left_left_right,
-    have := a_left_left_left_right w, bv_to_pi',
-  have : Γ ≤ w ∈ᴮ x, from this ‹_›,
-  have : Γ ≤ z ∈ᴮ x,
+    have H₁ := a_left_left_left_right w, bv_to_pi',
+  have H₂ : Γ ≤ w ∈ᴮ x, from H₁ ‹_›,
+  have H₃ : Γ ≤ z ∈ᴮ x,
     by {specialize a_left_left_left_right z, bv_to_pi', from a_left_left_left_right ‹_›},
-  bv_to_pi', specialize a_left_left_left_left_left ‹_›,
-  bv_to_pi', specialize a_left_left_left_left_left z,
-  bv_to_pi', specialize a_left_left_left_left_left ‹_›,
-
-  apply le_trans a_left_left_left_left_left, repeat{apply sup_le},
-  apply le_sup_left_of_le, apply le_sup_left_of_le, rw[bv_eq_symm],
-  apply le_sup_right, apply le_sup_left_of_le, apply le_sup_right,
+  rename a_left_left_left_left_left H,
+  replace H := H ‹_› z ‹_›,
+  bv_or_elim_at H, bv_or_elim_at H_left,
+  apply le_sup_left_of_le, apply le_sup_left_of_le, bv_split_goal,
+  apply le_sup_right_of_le, assumption,
+  apply le_sup_left_of_le, apply le_sup_right_of_le, assumption},
   
-  repeat{apply bv_imp_intro}, tidy_context,
+  
+  {repeat{apply bv_imp_intro}, tidy_context,
   rename a_left_left_left_left H, rename i w,
   bv_split, 
  have : Γ ≤ w ⊆ᴮ x,
@@ -493,13 +492,11 @@ begin
        have := mem_of_mem_subset a_left_right H,
        apply mem_of_mem_subset, show bSet 𝔹, from y,
        apply subset_of_mem_transitive ‹_› ‹_›, from ‹_›},
- bv_to_pi H_right, specialize H_right w,
- bv_to_pi H_right, specialize H_right ‹_›,
- bv_to_pi H_right, specialize H_right ‹_›, exact H_right
+ from H_right w ‹_› ‹_›}
 end
 
 theorem Ord_of_mem_Ord (y x : bSet 𝔹) : Ord x ⊓ y ∈ᴮ x ≤ Ord y :=
-  by {apply le_inf, apply is_ewo_of_mem_Ord, apply is_transitive_of_mem_Ord}
+  le_inf (is_ewo_of_mem_Ord _ _) (is_transitive_of_mem_Ord _ _)
 
 end ordinals
 
