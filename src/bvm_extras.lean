@@ -345,7 +345,7 @@ begin
   apply le_trans, apply inf_le_inf, exact a_left_right, exact a_left_left_1,
   apply subst_congr_mem_right,
   have x_ih2 : Γ ≤ _ := le_trans (le_top) x_ih,
-  bv_imp_elim_at x_ih2 ‹_›, from H
+  exact context_imp_elim x_ih2 ‹_›
 end
 
 -- lemma bot_of_mem_mem_aux {x : bSet 𝔹} {i : x.type} : ⊤ ≤ ( x ∈ᴮ x.func i ⟹ ⊥) :=
@@ -362,7 +362,7 @@ begin
   simp[-imp_bot, -top_le_iff], apply bv_imp_intro, rw[top_inf_eq],
   apply bv_cases_right, intro a', apply bv_cases_left, intro a'',
   specialize x_ih a', tidy_context,
-  specialize y_ih a'', show bSet 𝔹, from y_A a'',
+  specialize y_ih a'',
   bv_mp a_right_left (show x_B a' ≤ _ ∈ᴮ (mk x_α x_A x_B), by apply mem.mk),
   change Γ ≤ _ ∈ᴮ (mk x_α x_A x_B) at a_right_left_1,
   bv_mp a_left_left (show y_B a'' ≤ _ ∈ᴮ (mk y_α y_A y_B), by apply mem.mk),
@@ -373,10 +373,8 @@ begin
   have this₂ : Γ ≤ y_A a'' ∈ᴮ x_A a', apply le_trans' a_left_left_1,
   apply le_trans, apply inf_le_inf, from a_right_right, refl,
   apply subst_congr_mem_right,
-  have x_ih2 := le_trans (le_top) x_ih,
-  suffices : Γ ≤ x_A a' ∈ᴮ y_A a'' ⊓ y_A a'' ∈ᴮ x_A a',
-  by bv_imp_elim_at x_ih2 ‹_›; assumption,
-  apply le_inf; assumption
+  specialize x_ih (y_A a''), specialize_context_at x_ih Γ,
+  bv_to_pi x_ih, apply x_ih, bv_split_goal
 end
 
 end extras
@@ -402,18 +400,24 @@ end check
 
 section ordinals
 def epsilon_well_orders (x : bSet 𝔹) : 𝔹 :=
-⨅y, y∈ᴮ x ⟹
-  ((⨅z, z ∈ᴮ x ⟹ (y =ᴮ z ⊔ y ∈ᴮ z ⊔ z ∈ᴮ y)) ⊓
-  (⨅u, u ⊆ᴮ x ⟹ (- (u =ᴮ ∅) ⟹ ⨆y, y∈ᴮ u ⊓ (⨅z', z' ∈ᴮ u ⟹ (- (z' ∈ᴮ y))))))
+(⨅y, y∈ᴮ x ⟹
+  (⨅z, z ∈ᴮ x ⟹ (y =ᴮ z ⊔ y ∈ᴮ z ⊔ z ∈ᴮ y))) ⊓
+  (⨅u, u ⊆ᴮ x ⟹ (- (u =ᴮ ∅) ⟹ ⨆y, y∈ᴮ u ⊓ (⨅z', z' ∈ᴮ u ⟹ (- (z' ∈ᴮ y)))))
 
 lemma epsilon_dichotomy (x y z : bSet 𝔹) : epsilon_well_orders x ≤ y ∈ᴮ x ⟹ (z ∈ᴮ x ⟹ (y =ᴮ z ⊔ y ∈ᴮ z ⊔ z ∈ᴮ y)) :=
 begin
-  unfold epsilon_well_orders, apply bv_specialize y, apply bv_imp_intro,
-  apply le_trans, apply bv_imp_elim, apply inf_le_left_of_le, apply bv_specialize z, apply bv_imp_intro,
-  apply le_trans, apply bv_imp_elim, refl
+  unfold epsilon_well_orders, apply bv_imp_intro, tidy_context,
+  bv_to_pi', specialize a_left_left y, dsimp at a_left_left,
+  bv_to_pi', specialize a_left_left ‹_›, bv_to_pi', exact a_left_left z
 end
 
 def is_transitive (x : bSet 𝔹) : 𝔹 := ⨅y, y∈ᴮ x ⟹ y ⊆ᴮ x
+
+lemma subset_of_mem_transitive {x w : bSet 𝔹} {Γ : 𝔹} (H₁ : Γ ≤ is_transitive x) (H₂ : Γ ≤ w ∈ᴮ x) : Γ ≤ w ⊆ᴮ x :=
+by {bv_specialize_at H₁ w, bv_to_pi H₁_1, solve_by_elim}
+
+lemma mem_of_mem_subset {w y x : bSet 𝔹} {Γ} (H₁ : Γ ≤ y ⊆ᴮ x) (H₂ : Γ ≤ w ∈ᴮ y) : Γ ≤ w ∈ᴮ x :=
+by {rw[subset_unfold'] at H₁, bv_specialize_at H₁ w, bv_to_pi', solve_by_elim}
 
 @[simp] lemma B_ext_is_transitive : B_ext (is_transitive : bSet 𝔹 → 𝔹) :=
 by {intros x y, unfold is_transitive, revert x y, change B_ext _, simp}
@@ -457,10 +461,42 @@ begin
   bv_imp_elim_at H_8_1 ‹_›,
   suffices : Γ_3 ≤ y ∈ᴮ w ⊓ w ∈ᴮ y,
     have this3 := le_trans (@le_top _ _ Γ_3) (bot_of_mem_mem y w),
-  bv_imp_elim_at this3 ‹_›, assumption, apply le_inf; from ‹_›
+  bv_to_pi this3, apply this3, bv_split_goal
 end
 
-lemma is_ewo_of_mem_Ord (y x : bSet 𝔹) : Ord x ⊓ y ∈ᴮ x ≤ (epsilon_well_orders y) := sorry
+lemma is_ewo_of_mem_Ord (y x : bSet 𝔹) : Ord x ⊓ y ∈ᴮ x ≤ (epsilon_well_orders y) :=
+begin
+  bv_split_goal, rename i z, apply bv_imp_intro, bv_split_goal; rename i w, apply bv_imp_intro,
+  
+  all_goals{unfold Ord}, unfold epsilon_well_orders, tidy_context,
+  bv_to_pi', specialize a_left_left_left_left_left w, dsimp at a_left_left_left_left_left,
+  specialize a_left_left_left_right y,
+    bv_to_pi a_left_left_left_right, specialize a_left_left_left_right ‹_›,
+    rw[subset_unfold'] at a_left_left_left_right, bv_to_pi a_left_left_left_right,
+    have := a_left_left_left_right w, bv_to_pi',
+  have : Γ ≤ w ∈ᴮ x, from this ‹_›,
+  have : Γ ≤ z ∈ᴮ x,
+    by {specialize a_left_left_left_right z, bv_to_pi', from a_left_left_left_right ‹_›},
+  bv_to_pi', specialize a_left_left_left_left_left ‹_›,
+  bv_to_pi', specialize a_left_left_left_left_left z,
+  bv_to_pi', specialize a_left_left_left_left_left ‹_›,
+
+  apply le_trans a_left_left_left_left_left, repeat{apply sup_le},
+  apply le_sup_left_of_le, apply le_sup_left_of_le, rw[bv_eq_symm],
+  apply le_sup_right, apply le_sup_left_of_le, apply le_sup_right,
+  
+  repeat{apply bv_imp_intro}, tidy_context,
+  rename a_left_left_left_left H, rename i w,
+  bv_split, 
+ have : Γ ≤ w ⊆ᴮ x,
+   by {rw[subset_unfold'], bv_intro w', bv_imp_intro, specialize_context Γ,
+       have := mem_of_mem_subset a_left_right H,
+       apply mem_of_mem_subset, show bSet 𝔹, from y,
+       apply subset_of_mem_transitive ‹_› ‹_›, from ‹_›},
+ bv_to_pi H_right, specialize H_right w,
+ bv_to_pi H_right, specialize H_right ‹_›,
+ bv_to_pi H_right, specialize H_right ‹_›, exact H_right
+end
 
 theorem Ord_of_mem_Ord (y x : bSet 𝔹) : Ord x ⊓ y ∈ᴮ x ≤ Ord y :=
   by {apply le_inf, apply is_ewo_of_mem_Ord, apply is_transitive_of_mem_Ord}

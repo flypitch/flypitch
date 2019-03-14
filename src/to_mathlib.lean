@@ -904,7 +904,7 @@ begin
   [apply H₁, apply H₂]; from inf_le_left
 end
 
-lemma specialize_context {β : Type*} [partial_order β] {Γ Γ' b : β} {H_le : Γ' ≤ Γ} (H : Γ ≤ b)
+lemma specialize_context {β : Type*} [partial_order β] {Γ b : β} (Γ' : β) {H_le : Γ' ≤ Γ} (H : Γ ≤ b)
   : Γ' ≤ b :=
 le_trans H_le H
 
@@ -928,6 +928,9 @@ begin
   apply le_trans' H₁, apply le_trans, apply inf_le_inf H₂, refl,
   rw[inf_comm], simp[imp, inf_sup_right]
 end
+
+lemma context_imp_intro {β : Type*} [complete_boolean_algebra β] {a b Γ : β} (H : a ⊓ Γ ≤ a → a ⊓ Γ ≤ b) : Γ ≤ a ⟹ b :=
+by {rw[<-deduction, inf_comm], from H (inf_le_left)}
 
 end lattice
 
@@ -958,6 +961,15 @@ do v_b <- mk_mvar,
    e' <- to_expr ``(_ ≤ %%v_b),
    unify e e',
    return v_b
+
+meta def hyp_is_ineq (e : expr) : tactic bool :=
+do   e_tp <- infer_type e,
+     succeeds (to_expr ``(_ ≤ _) >>= unify e_tp)
+
+meta def specialize_context_at (H : parse ident) (Γ : parse texpr) : tactic unit :=
+do e <- resolve_name H,
+   tactic.replace H ``(lattice.specialize_context %%Γ %%e),
+   swap >> try `[apply lattice.le_top] >> skip
 
 /-- If the goal is an inequality `a ≤ b`, extracts `a` and attempts to specialize all
   facts in context of the form `Γ ≤ d` to `a ≤ d` (this requires a ≤ Γ) -/
@@ -1030,6 +1042,18 @@ do n <- get_unused_name H,
    e <- to_expr ``(lattice.context_specialize %%e_H %%j),
    note n none e >>= λ h, dsimp_hyp h none [] eta_beta_cfg
 
+meta def bv_to_pi (H : parse ident) : tactic unit :=
+do   e_H <- resolve_name H,
+     e_rhs <- to_expr e_H >>= infer_type >>= rhs_of_le,
+     (tactic.replace H  ``(lattice.context_specialize %%e_H) <|>
+     tactic.replace H ``(lattice.context_imp_elim %%e_H)) <|>
+     tactic.fail "target is not a ⨅ or an ⟹"
+
+meta def bv_to_pi' : tactic unit :=
+do ctx <- (local_context >>= (λ l, l.mfilter hyp_is_ineq)),
+   ctx.mmap' (λ e, try ((tactic.replace (get_name e)  ``(lattice.context_specialize %%e) <|>
+     tactic.replace (get_name e) ``(lattice.context_imp_elim %%e))))
+
 meta def bv_split_at (H : parse ident) : tactic unit :=
 do n₁ <- get_unused_name H,
    n₂ <- get_unused_name H,
@@ -1038,6 +1062,12 @@ do n₁ <- get_unused_name H,
    note n₁ none e >>= λ h, dsimp_hyp h none [] eta_beta_cfg,
    e <- to_expr ``(lattice.context_split_inf_right %%e_H),
    note n₂ none e >>= λ h, dsimp_hyp h none [] eta_beta_cfg   
+
+meta def bv_split : tactic unit :=
+do ctx <- (local_context >>= (λ l, l.mfilter hyp_is_ineq)),
+   ctx.mmap' (λ e, try (tactic.replace (get_name e) ``(lattice.le_inf_iff.mp %%e))),
+   auto_cases >> skip
+
 
 example {β ι : Type u} [lattice.complete_boolean_algebra β] {j : ι} {s : ι → β} {H : ⊤ ≤ ⨅i, s i} {b : β} : b ≤ ⊤ :=
 by {specialize_context ⊤, bv_specialize_at H j, apply lattice.le_top}
@@ -1055,6 +1085,9 @@ do
    e_L <- to_expr H₂,
    pr <- to_expr ``(le_trans %%e_H %%e_L),
    note n none pr >>= λ h, dsimp_hyp h none [] eta_beta_cfg
+
+meta def bv_imp_intro : tactic unit :=
+`[apply lattice.context_imp_intro] >> (get_unused_name "H" >>= tactic.intro) >> skip
 
 /-- `ac_change g' changes the current goal `tgt` to `g` by creating a new goal of the form
   `tgt = g`, and will attempt close it with `ac_refl`. -/
@@ -1091,6 +1124,18 @@ meta def tidy_context_tactics : list (tactic string) :=
   `[simp only [le_inf_iff] at *]                                >> pure "simp only [le_inf_iff] at *",
   propositional_goal >> (`[solve_by_elim])    >> pure "solve_by_elim"
 ]
+
+meta def tidy_split_goals_tactics : list (tactic string) :=
+[ reflexivity >> pure "refl",
+  bv_intro none >> pure "bv_intro",
+  `[apply lattice.le_inf] >> pure "apply lattice.le_inf",
+  propositional_goal >> assumption >> pure "assumption",
+  `[rw[bSet.bv_eq_symm]] >> assumption >> pure "rw[bSet.bv_eq_symm], assumption",
+  propositional_goal >> (`[solve_by_elim])    >> pure "solve_by_elim"
+]
+
+meta def bv_split_goal (trace : parse $ optional (tk "?")) : tactic unit :=
+  tidy {trace_result := trace.is_some, tactics := tidy_split_goals_tactics}
 
 meta structure context_cfg :=
 (trace_result : bool := ff)
