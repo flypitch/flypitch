@@ -1541,6 +1541,7 @@ begin
   rw[deduction], apply le_trans this, rw[<-deduction], apply bv_imp_elim
 end
 
+-- the natural induction principle for bSet 𝔹 will always suffice where regularity/epsilon_induction are required
 lemma epsilon_induction {Γ} (ϕ : bSet 𝔹 → 𝔹) (h_congr : B_ext ϕ) (H_ih : ∀ x, Γ ≤ ((⨅(y : bSet 𝔹), y ∈ᴮ x ⟹ ϕ y) ⟹ ϕ x)) :
 ∀ z, Γ ≤ ϕ z  :=
 begin
@@ -1552,17 +1553,11 @@ begin
   bv_imp_elim_at this H_a, bv_specialize_at H z, exact H_1
 end
 
-theorem bSet_axiom_of_regularity (x : bSet 𝔹) : ⊤ ≤ ((-(x =ᴮ ∅)) ⟹ ⨆y, y∈ᴮ x ⟹ (⨅z, (z ∈ᴮ x ⊓ z ∈ᴮ y) ⟹ ⊥)) :=
-begin sorry
-  -- change _ ≤ (λ w, ((-(w =ᴮ ∅)) ⟹ ⨆ (y : bSet 𝔹), y ∈ᴮ w ⟹ ⨅ (z : bSet 𝔹), (z ∈ᴮ w ⊓ z ∈ᴮ y) ⟹ ⊥)) x,
-  -- apply epsilon_induction, simp,
-  -- intro x', apply bv_imp_intro, apply bv_imp_intro,
-  -- tidy_context,
-  -- have := @exists_mem_of_nonempty _ _ x' _ a_right,
-  -- bv_cases_at this w, specialize_context Γ,
-  -- bv_specialize_at a_left_right w,
-  -- bv_imp_elim_at a_left_right_1 this_1,
-end
+@[elab_as_eliminator]protected lemma rec_on' {C : bSet 𝔹 → Sort*} (y : bSet 𝔹) : (Π(x : bSet 𝔹), (Π(a : x.type), C (x.func a)) → C x) → C y :=
+by {induction y, intro IH, apply IH, intro a, specialize y_ih a, apply y_ih, from ‹_›}
+
+@[elab_as_eliminator]protected lemma rec' {C : bSet 𝔹 → Sort*} : (Π(x : bSet 𝔹), (Π(a : x.type), C (x.func a)) → C x) → Π(y : bSet 𝔹), C y :=
+by {intro H, intro y, induction y with α A B, solve_by_elim}
 
 /-- ∃! x, ϕ x ↔ ∃ x ∀ y, ϕ(x) ⊓ ϕ (y) → y = x -/
 @[reducible]def bv_exists_unique (ϕ : bSet 𝔹 → 𝔹) : 𝔹 :=

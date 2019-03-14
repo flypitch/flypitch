@@ -356,7 +356,7 @@ end
 --   bv_mp a_left (show bval (func (mk x_α x_A x_B) i) j ≤ (func (func (mk _ _ _) i) j) ∈ᴮ func (mk _ _ _) i, by apply mem.mk'),
 -- end
 
-lemma bot_of_mem_mem {x y : bSet 𝔹} : ⊤ ≤ ((x ∈ᴮ y ⊓ y ∈ᴮ x) ⟹ ⊥) :=
+lemma bot_of_mem_mem (x y : bSet 𝔹) : ⊤ ≤ ((x ∈ᴮ y ⊓ y ∈ᴮ x) ⟹ ⊥) :=
 begin
   induction x generalizing y, induction y,
   simp[-imp_bot, -top_le_iff], apply bv_imp_intro, rw[top_inf_eq],
@@ -415,6 +415,9 @@ end
 
 def is_transitive (x : bSet 𝔹) : 𝔹 := ⨅y, y∈ᴮ x ⟹ y ⊆ᴮ x
 
+@[simp] lemma B_ext_is_transitive : B_ext (is_transitive : bSet 𝔹 → 𝔹) :=
+by {intros x y, unfold is_transitive, revert x y, change B_ext _, simp}
+
 def Ord (x : bSet 𝔹) : 𝔹 := epsilon_well_orders x ⊓ is_transitive x
 
 /-- x is not larger than y if there does not exist a surjective function from x to y -/
@@ -422,30 +425,45 @@ def not_larger_than (x y : bSet 𝔹) : 𝔹 := ⨅f, -(is_func' x y f ⊓ ⨅v,
 
 def Card (x : bSet 𝔹) : 𝔹 := Ord(x) ⊓ ⨅y, y ∈ᴮ x ⟹ not_larger_than y x
 
-lemma transitive_of_mem_transitive (y x : bSet 𝔹) : is_transitive x ⊓ y ∈ᴮ x ≤ is_transitive y :=
+lemma is_transitive_of_mem_Ord (y x : bSet 𝔹) : Ord x ⊓ y ∈ᴮ x ≤ (is_transitive y) :=
 begin
-  bv_intro w, apply bv_imp_intro, tidy_context,
-  unfold is_transitive at a_left_left, bv_specialize_at a_left_left y,
-  bv_imp_elim_at a_left_left_1 a_left_right,
-  simp only [subset_unfold'] at H,
-  bv_specialize_at H w, bv_imp_elim_at H_1 a_right,
-  bv_specialize_at a_left_left w, bv_imp_elim_at a_left_left_2 ‹_›,  sorry
+  apply bSet.rec_on' y, clear y, intros y y_ih,
+
+  bv_intro w, apply bv_imp_intro, rw[subset_unfold'], bv_intro z, apply bv_imp_intro, unfold Ord, tidy_context,
+  bv_specialize_at a_left_left_left_right y, bv_imp_elim_at a_left_left_left_right_1 ‹_›,
+  rw[subset_unfold'] at H, bv_specialize_at H w, bv_imp_elim_at H_1 ‹_›, bv_specialize_at a_left_left_left_right w,
+  bv_imp_elim_at a_left_left_left_right_2 ‹_›, rw[subset_unfold'] at H_3,
+  bv_specialize_at H_3 z, bv_imp_elim_at H_3_1 ‹_›, bv_mp a_left_left_left_left (epsilon_dichotomy x y z),
+  bv_imp_elim_at a_left_left_left_left_1 ‹_›, bv_imp_elim_at H_5 ‹_›, bv_or_elim_at H_6, swap, assumption,
+  specialize_context Γ, bv_or_elim_at H_left, specialize_context Γ_1,
+  bv_exfalso, suffices : Γ_2 ≤ y ∈ᴮ w ⊓ w ∈ᴮ y,
+    have : Γ_2 ≤ _ := le_trans (le_top) (bot_of_mem_mem y w),
+    bv_imp_elim_at this ‹_›, assumption,
+  apply le_inf, swap, assumption, apply bv_rw' H_left_1, simp,
+  assumption,
+
+  specialize_context Γ_1, bv_exfalso,
+  have a_left_right_old := a_left_right,
+  rw[mem_unfold] at a_left_right, bv_cases_at a_left_right i_w,
+  specialize_context Γ_2, bv_split_at a_left_right_1,
+  specialize y_ih i_w, rw[deduction] at y_ih,
+  have := le_trans (le_inf ‹_› ‹_› : Γ_3 ≤ Ord x) ‹_›,
+  have this' : Γ_3 ≤ func y i_w ∈ᴮ x,  rw[bv_eq_symm] at a_left_right_1_1_1,
+  change Γ_3 ≤ (λ z, z ∈ᴮ x) (func y i_w), apply bv_rw' a_left_right_1_1_1,
+  simp, from H_2, bv_imp_elim_at this ‹_›,
+  have : Γ_3 ≤ is_transitive w, apply bv_rw' ‹_›, simp, from ‹_›,
+  bv_specialize_at this z, bv_imp_elim_at this_1 ‹_›,
+  rw[subset_unfold'] at H_8, bv_specialize_at H_8 y,
+  bv_imp_elim_at H_8_1 ‹_›,
+  suffices : Γ_3 ≤ y ∈ᴮ w ⊓ w ∈ᴮ y,
+    have this3 := le_trans (@le_top _ _ Γ_3) (bot_of_mem_mem y w),
+  bv_imp_elim_at this3 ‹_›, assumption, apply le_inf; from ‹_›
 end
 
-lemma Ord_of_mem_Ord (y x : bSet 𝔹) : Ord x ⊓ y ∈ᴮ x ≤ (Ord y) :=
-begin
-  apply le_inf, swap,
-  bv_intro w, unfold Ord, apply bv_imp_intro, tidy_context,
-  bv_specialize_at a_left_left_right y, bv_imp_elim_at a_left_left_right_1 ‹_›,
-  rw[subset_unfold'] at H, bv_specialize_at H w,
-  bv_imp_elim_at H_1 ‹_›,
-  bv_mp a_left_left_left (epsilon_dichotomy x y w),
-  bv_imp_elim_at a_left_left_left_1 ‹_›, bv_imp_elim_at H_3 ‹_›,
-  bv_or_elim_at H_4, specialize_context Γ,
-  bv_or_elim_at H_left, specialize_context Γ_1,
-  apply bv_rw', exact H_left_1, apply B_ext_subset_right,
-  apply subset_self, specialize_context Γ_1,
-end
+lemma is_ewo_of_mem_Ord (y x : bSet 𝔹) : Ord x ⊓ y ∈ᴮ x ≤ (epsilon_well_orders y) := sorry
+
+theorem Ord_of_mem_Ord (y x : bSet 𝔹) : Ord x ⊓ y ∈ᴮ x ≤ Ord y :=
+  by {apply le_inf, apply is_ewo_of_mem_Ord, apply is_transitive_of_mem_Ord}
 
 end ordinals
 

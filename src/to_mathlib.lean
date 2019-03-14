@@ -989,6 +989,9 @@ do
 example {β : Type u} [lattice.bounded_lattice β] {a b : β} {H : ⊤ ≤ b} : a ≤ b :=
 by {specialize_context (⊤ : β), assumption}
 
+meta def bv_exfalso : tactic unit :=
+  `[refine le_trans _ (bot_le)]
+
 meta def bv_cases_at (H : parse ident) (i : parse ident_)  : tactic unit :=
 do
   e₀ <- resolve_name H,
