@@ -34,21 +34,21 @@ lemma bv_or_elim {b₁ b₂ c : 𝔹} {h : b₁ ≤ c} {h' : b₂ ≤ c} : b₁ 
   by apply sup_le; assumption
 
 lemma bv_or_elim_left {b₁ b₂ c d : 𝔹} {h₁ : b₁ ⊓ d ≤ c} {h₂ : b₂ ⊓ d ≤ c} : (b₁ ⊔ b₂) ⊓ d ≤ c :=
-  by {rw[deduction], apply bv_or_elim; finish}
+  by {rw[deduction], apply bv_or_elim; rw[<-deduction]; from ‹_›}
 
 lemma bv_or_elim_right {b₁ b₂ c d : 𝔹} {h₁ : d ⊓ b₁ ≤ c} {h₂ : d ⊓ b₂ ≤ c} : d ⊓ (b₁ ⊔ b₂) ≤ c :=
   by {rw[inf_comm] at ⊢ h₁ h₂; apply bv_or_elim_left; assumption}
 
 lemma bv_exfalso {a b : 𝔹} {h : a ≤ ⊥} : a ≤ b :=
-by finish
+le_trans h bot_le
 
 lemma bv_cases_left {ι : Type*} {s : ι → 𝔹} {c b : 𝔹} {h : ∀ i : ι, (s i ⊓ c ≤ b)} :
   ((⨆(i:ι), s i) ⊓ c) ≤ b :=
-by finish[deduction]
+by {rw[deduction], apply supr_le, intro i, rw[<-deduction], revert i, from ‹_›}
 
 lemma bv_cases_right {ι : Type*} {s : ι → 𝔹} {c b : 𝔹} {h : ∀ i : ι, (c ⊓ s i ≤ b)} :
   (c ⊓ (⨆(i:ι), s i)) ≤ b :=
-by {rw[inf_comm], apply bv_cases_left, finish}
+by {rw[inf_comm], apply bv_cases_left, simpa only [inf_comm]}
 
 lemma bv_specialize {ι : Type*} {s : ι → 𝔹} (i : ι) {b : 𝔹} {h : s i ≤ b} :
 (⨅(i:ι), s i) ≤ b := infi_le_of_le i h
@@ -73,7 +73,7 @@ end
 
 lemma bv_specialize_right {ι : Type*} {s :ι → 𝔹} {c b : 𝔹} (i : ι)
   {h : c ⊓ s i ≤ b} : c ⊓ (⨅(i:ι), s i) ≤ b :=
-by {rw[inf_comm], apply bv_specialize_left i, finish}
+by {rw[inf_comm], apply bv_specialize_left i, rwa[inf_comm]}
 
 lemma bv_specialize_right_twice {ι : Type*} {s : ι → 𝔹} {c b : 𝔹} (i j : ι)
   {h : c ⊓ (s i ⊓ s j) ≤ b} : c ⊓ (⨅(i:ι), s i) ≤ b :=
@@ -209,7 +209,7 @@ open lattice
 @[simp]theorem bv_eq_refl : ∀ x, @bv_eq 𝔹 _ x x = ⊤ :=
 begin
   intro x, induction x, simp[bv_eq, -imp_top_iff_le], split; intros;
-  {apply top_unique, simp, apply le_supr_of_le i, have := x_ih i, finish}
+  {apply top_unique, simp, apply le_supr_of_le i, have := x_ih i, simp[this]}
 end
 
 @[simp]lemma bv_eq_top_of_eq {x y : bSet 𝔹} (h_eq : x = y) : x =ᴮ y = ⊤ :=
@@ -476,8 +476,8 @@ begin
   dsimp at this, rw[this], intros, apply subst_congr_mem_left
 end
 
-@[simp]lemma subset_self {x : bSet 𝔹} : x ⊆ᴮ x = ⊤ :=
-by {rw[subset_unfold'], apply top_unique, bv_intro w, finish[lattice.imp_self]}
+@[simp]lemma subset_self_eq_top {x : bSet 𝔹} : x ⊆ᴮ x = ⊤ :=
+top_unique subset_self
 
 lemma subset_trans {x y z : bSet 𝔹} : x ⊆ᴮ y ⊓ y ⊆ᴮ z ≤ x ⊆ᴮ z :=
 begin
@@ -1194,7 +1194,7 @@ open classical zorn
 @[instance]def subset'_partial_order {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} (h : core u S) : partial_order α :=
 { le := subset' h,
   lt := λ a₁ a₂, (subset' h a₁ a₂) ∧ a₁ ≠ a₂,
-  le_refl := by simp[subset'],
+  le_refl := by {simp[subset']},
   le_trans := by {intros a b c, simp only [subset'], intros, rw[eq_top_iff] at a_1 a_2 ⊢,
                    apply subset_trans_context, repeat{assumption}},
   lt_iff_le_not_le :=

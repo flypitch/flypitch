@@ -498,6 +498,24 @@ end
 theorem Ord_of_mem_Ord (y x : bSet 𝔹) : Ord x ⊓ y ∈ᴮ x ≤ Ord y :=
   le_inf (is_ewo_of_mem_Ord _ _) (is_transitive_of_mem_Ord _ _)
 
+open ordinal
+open cardinal
+
+/-- The successor operation on sets (in particular von Neumman ordinals) -/
+@[reducible]def succ (x : bSet 𝔹) := bSet.insert1 x x
+
+noncomputable def ordinal.mk : ordinal.{u} → bSet 𝔹 := λ η,
+limit_rec_on η ∅ (λ ξ mk_ξ, succ mk_ξ)
+begin
+intros ξ is_limit_ξ ih,
+    let this := ξ.out,
+    have H := quotient.out_eq ξ,
+    have this' : ξ = @ordinal.type this.α this.r this.wo,
+    by { rw[<-H], convert type_def _, dsimp[this], cases ξ.out, refl},
+    refine bv_union ⟨this.α, _, λ _, ⊤⟩,
+    intro x, apply ih, rw this', apply typein_lt_type, exact x,
+end
+
 end ordinals
 
 end bSet

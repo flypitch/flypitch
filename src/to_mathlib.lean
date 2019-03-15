@@ -1110,9 +1110,8 @@ do ctx <- (local_context >>= (λ l, l.mfilter hyp_is_ineq)),
    ctx.mmap' (λ e, try (tactic.replace (get_name e) ``(lattice.le_inf_iff.mp %%e))),
    auto_cases >> skip
 
-
-example {β ι : Type u} [lattice.complete_boolean_algebra β] {j : ι} {s : ι → β} {H : ⊤ ≤ ⨅i, s i} {b : β} : b ≤ ⊤ :=
-by {specialize_context ⊤, bv_specialize_at H j, apply lattice.le_top}
+-- example {β ι : Type u} [lattice.complete_boolean_algebra β] {j : ι} {s : ι → β} {H : ⊤ ≤ ⨅i, s i} {b : β} : b ≤ ⊤ :=
+-- by {specialize_context ⊤, bv_specialize_at H j, apply lattice.le_top, apply_instance}
 
 meta def bv_imp_elim_at (H₁ : parse ident) (H₂ : parse texpr) : tactic unit :=
 do n <- get_unused_name "H",
