@@ -507,13 +507,94 @@ open cardinal
 noncomputable def ordinal.mk : ordinal.{u} → bSet 𝔹 := λ η,
 limit_rec_on η ∅ (λ ξ mk_ξ, succ mk_ξ)
 begin
-intros ξ is_limit_ξ ih,
-    let this := ξ.out,
-    have H := quotient.out_eq ξ,
-    have this' : ξ = @ordinal.type this.α this.r this.wo,
-    by { rw[<-H], convert type_def _, dsimp[this], cases ξ.out, refl},
-    refine bv_union ⟨this.α, _, λ _, ⊤⟩,
-    intro x, apply ih, rw this', apply typein_lt_type, exact x,
+  intros ξ is_limit_ξ ih,
+  have this' : ξ = @ordinal.type (ξ.out).α (ξ.out).r (ξ.out).wo,
+    by {rw[<-quotient.out_eq ξ], convert type_def _,
+        rw[quotient.out_eq], cases quotient.out ξ, refl},
+    refine bv_union ⟨ξ.out.α, _, λ x, ⊤⟩,
+    intro x, apply ih, rw this', apply typein_lt_type _ x
+end
+
+@[simp]lemma ordinal.mk_zero : ordinal.mk 0 = (∅ : bSet 𝔹) := by simp[ordinal.mk]
+
+@[simp]lemma ordinal.mk_succ (ξ ξ_pred : ordinal) (h : ξ = ordinal.succ ξ_pred) : (ordinal.mk ξ : bSet 𝔹) = succ (ordinal.mk ξ_pred) :=
+by {simp[h, ordinal.mk]}
+
+@[simp]lemma ordinal.mk_limit (ξ : ordinal) (h : is_limit ξ) : (ordinal.mk ξ : bSet 𝔹) =
+bv_union ⟨ξ.out.α, λ x, ordinal.mk (@typein _ (ξ.out.r) (ξ.out.wo) x), (λ x, ⊤)⟩ :=
+by simp[*, ordinal.mk]
+
+def lift_nat_Well_order : Well_order.{u} :=
+{ α := ulift ℕ,
+  r := (λ x y, x.down < y.down),
+  wo := 
+by {haveI this : (is_well_order ℕ (λ x y, x < y)) := by apply_instance, from { trichotomous := by {change ∀ a b : ulift ℕ, a.down < b.down ∨ a = b ∨ b.down < a.down, intros a b, have := this.trichotomous, specialize this a.down b.down, tidy, left, from ‹_›,
+      right, right, from ‹_›},
+    irrefl := by {intro a, apply this.irrefl},
+    trans := by {intros a b c, apply this.trans},
+    wf := by {have := this.wf, split, cases this with H, intro a, specialize H a.down,
+              induction a, induction a, split, intros y H', cases H', cases H,
+              specialize H_h a_n (by {change a_n < a_n + 1, simp, exact dec_trivial}),
+              specialize a_ih H_h,
+              split, intros y H', by_cases y.down = a_n,
+              subst h, split, intros y' H'', cases a_ih, exact a_ih_h y' H'',
+              
+              have h' : y.down < a_n,
+                by {have := this.trichotomous, specialize this y.down a_n, simp[*, -this] at this, suffices this' : ¬ a_n < y.down, by {simp[*,-this] at this; assumption}, intro H,
+             from nat.lt_irrefl _ (lt_of_lt_of_le H (nat.le_of_lt_succ H'))},
+
+              cases a_ih, from a_ih_h y h'}}}}
+
+lemma lift_nat_Well_order_iso_nat : lift_nat_Well_order.r ≃o (λ x y : ℕ, x < y) :=
+{to_fun := ulift.down,
+  inv_fun := ulift.up,
+  left_inv := by tidy,
+  right_inv := by tidy,
+  ord := by tidy}
+
+noncomputable lemma order_isomorphism_of_equiv {X Y : Well_order.{u}} (H : X ≈ Y) : X.r ≃o Y.r :=
+begin
+  apply classical.choice, cases X, cases Y, apply type_eq.mp, from (quotient.sound H)
+end
+
+lemma order_iso_trans {α β γ} {X : α → α → Prop} {Y : β → β → Prop} {Z : γ → γ → Prop} (H₁ : X ≃o Y) (H₂ : Y ≃o Z) : X ≃o Z :=
+{ to_fun := H₂.to_fun ∘ H₁.to_fun,
+  inv_fun := H₁.inv_fun ∘ H₂.inv_fun,
+  left_inv := by {unfold function.left_inverse, intro x, have := H₂.left_inv, specialize this ((H₁.to_equiv).to_fun x), simp[this], apply H₁.left_inv},
+  right_inv := by {unfold function.right_inverse function.left_inverse, intro x,
+                   have := H₁.right_inv ((H₂.to_equiv).inv_fun x), simp[this], apply H₂.right_inv},
+  ord :=
+    by { intros a b, have this₁ := H₁.ord, specialize @this₁ a b,
+         have this₂ := H₂.ord, specialize @this₂ (H₁.to_equiv a) (H₁.to_equiv b),
+         split; intro H, exact (this₂.mp ∘ this₁.mp) H, exact (this₁.mpr ∘ this₂.mpr) H}}
+
+lemma order_iso_symm {α β} {X : α → α → Prop} {Y : β → β → Prop} (H : X ≃o Y) : Y ≃o X :=
+{ to_fun := H.inv_fun,
+  inv_fun := H.to_fun,
+  left_inv := by apply H.right_inv,
+  right_inv := by apply H.left_inv,
+  ord := by {intros a b,  have := H.ord, split; intro H', apply this.mpr, convert H';
+             [exact (H.right_inv a), exact (H.right_inv b)],
+             specialize @this (H.inv_fun a) (H.inv_fun b), convert this.mp H';
+             [from (H.right_inv a).symm, from (H.right_inv b).symm] }}
+
+lemma omega_out_iso_nat : ordinal.omega.out.r ≃o ((λ x y : ℕ, x < y)) :=
+begin
+  have this₁ := order_isomorphism_of_equiv (@quotient.mk_out (Well_order) _ lift_nat_Well_order),
+  have this₂ := (lift_nat_Well_order_iso_nat),
+  apply order_iso_trans _ this₂, apply order_iso_trans _ this₁,
+  
+  sorry
+end
+
+lemma mk_omega_eq_omega : ⊤ ≤ ordinal.mk ordinal.omega =ᴮ (bSet.omega : bSet 𝔹) :=
+begin
+  rw[ordinal.mk_limit ordinal.omega omega_is_limit], apply le_inf, swap,
+
+  {simp[-top_le_iff], intro k, induction k, induction k, simp, 
+
+    },
+  {sorry}
 end
 
 end ordinals
