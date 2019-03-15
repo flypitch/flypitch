@@ -1,6 +1,6 @@
-import fol set_theory.zfc set_theory.ordinal
+import set_theory.zfc set_theory.ordinal
        order.boolean_algebra order.complete_boolean_algebra
-       .to_mathlib bv_prf order.zorn
+       .to_mathlib order.zorn
 
 local infix ` ⟹ `:65 := lattice.imp
 

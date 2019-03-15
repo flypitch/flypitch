@@ -1,4 +1,4 @@
-import .bvm
+import .bvm .pSet_ordinal
 
 open lattice
 
@@ -578,7 +578,7 @@ lemma order_iso_symm {α β} {X : α → α → Prop} {Y : β → β → Prop} (
              specialize @this (H.inv_fun a) (H.inv_fun b), convert this.mp H';
              [from (H.right_inv a).symm, from (H.right_inv b).symm] }}
 
-lemma omega_out_iso_nat : ordinal.omega.out.r ≃o ((λ x y : ℕ, x < y)) :=
+noncomputable lemma omega_out_iso_nat : ordinal.omega.out.r ≃o ((λ x y : ℕ, x < y)) :=
 begin
   have this₁ := order_isomorphism_of_equiv (@quotient.mk_out (Well_order) _ lift_nat_Well_order),
   have this₂ := (lift_nat_Well_order_iso_nat),
@@ -592,9 +592,19 @@ begin
   rw[ordinal.mk_limit ordinal.omega omega_is_limit], apply le_inf, swap,
 
   {simp[-top_le_iff], intro k, induction k, induction k, simp, 
-
-    },
+   repeat{sorry}},
   {sorry}
+end
+
+lemma check_is_transitive {x : pSet} (H : pSet.is_transitive x) : ⊤ ≤ is_transitive (x̌ : bSet 𝔹) :=
+begin
+  bv_intro y, bv_imp_intro, specialize_context (⊤ : 𝔹),
+  unfold pSet.is_transitive at H,
+end
+
+lemma check_Ord {x : pSet} (H : pSet.Ord x) : ⊤ ≤ Ord (x̌ : bSet 𝔹) :=
+begin
+  sorry
 end
 
 end ordinals

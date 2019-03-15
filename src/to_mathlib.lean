@@ -992,8 +992,6 @@ do e <- resolve_name H,
    tactic.replace H ``(lattice.specialize_context %%Γ %%e),
    swap >> try `[apply lattice.le_top] >> skip
 
-#check (=ₐ)
-
 meta def specialize_context_core (Γ_old : expr) : tactic unit :=
 do  v_a <- target >>= lhs_of_le,
     tp <- infer_type Γ_old,
