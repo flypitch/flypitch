@@ -212,7 +212,8 @@ open lattice
 @[simp]theorem bv_eq_refl : ∀ x, @bv_eq 𝔹 _ x x = ⊤ :=
 begin
   intro x, induction x, simp[bv_eq, -imp_top_iff_le], split; intros;
-  {apply top_unique, simp, apply le_supr_of_le i, have := x_ih i, simp[this]}
+  {apply top_unique, simp only [lattice.top_le_iff, lattice.imp_top_iff_le],
+    apply le_supr_of_le i, have := x_ih i, simp[this]}
 end
 
 @[simp]lemma bv_eq_top_of_eq {x y : bSet 𝔹} (h_eq : x = y) : x =ᴮ y = ⊤ :=
@@ -325,10 +326,12 @@ begin
   rw[bv_eq_unfold],
   apply le_inf; apply le_infi; intro i,
   {fapply infi_le_of_le (x.func i), apply inf_le_left_of_le,
-   induction x, unfold mem, simp, by apply imp_le_of_left_le; apply le_supr_of_le i;
+   induction x, unfold mem, simp only with cleanup,
+   by apply imp_le_of_left_le; apply le_supr_of_le i;
    exact le_inf (by refl) (by rw[bv_eq_refl]; apply le_top)},
   {fapply infi_le_of_le (y.func i), apply inf_le_right_of_le,
-   induction y, unfold mem, simp, by apply imp_le_of_left_le; apply le_supr_of_le i;
+   induction y, unfold mem, simp only with cleanup,
+   by apply imp_le_of_left_le; apply le_supr_of_le i;
    exact le_inf (by refl) (by rw[bv_eq_refl]; apply le_top)},
 end
 
@@ -451,12 +454,12 @@ lemma bounded_forall {v : bSet 𝔹} {ϕ : bSet 𝔹 → 𝔹 } {h_congr : ∀ x
   (⨅(i_x : v.type), (v.bval i_x ⟹ ϕ (v.func i_x))) = (⨅(x : bSet 𝔹), x ∈ᴮ v ⟹ ϕ x)  :=
 begin
   apply le_antisymm,
-    {bv_intro x, cases v, simp, rw[supr_imp_eq],
+    {bv_intro x, cases v, simp only with cleanup, rw[supr_imp_eq],
      bv_intro i_y, apply infi_le_of_le i_y,
      rw[<-deduction,<-inf_assoc], apply le_trans, apply inf_le_inf,
      apply bv_imp_elim, refl, rw[inf_comm, bv_eq_symm], apply h_congr},
          {bv_intro i_x', apply infi_le_of_le (func v i_x'), apply imp_le_of_left_le,
-     cases v, simp, apply le_supr_of_le i_x',
+     cases v, simp only with cleanup, apply le_supr_of_le i_x',
        apply le_inf, refl, rw[bv_eq_refl], apply le_top}
 end
 
@@ -652,7 +655,11 @@ by {apply subst_congr_insert1_left', from ‹_›}
 lemma eq_of_eq_singleton {x y : bSet 𝔹} {c : 𝔹} {h : c ≤ {x} =ᴮ {y}} : c ≤ x =ᴮ y :=
 begin
   apply le_trans h, simp[singleton, has_insert.insert], simp only [insert1_unfold],
-  simp only [bv_eq_unfold], simp, split; intro i; [apply inf_le_left_of_le, apply inf_le_right_of_le];
+  simp only [bv_eq_unfold],
+  simp only [lattice.le_inf_iff, lattice.infi_option, lattice.inf_top_eq,
+ bSet.mem, lattice.top_inf_eq, lattice.supr_option, lattice.top_imp, lattice.sup_bot_eq,
+ lattice.le_infi_iff, bSet.forall_over_empty, bSet.exists_over_empty] with cleanup,
+  split; intro i; [apply inf_le_left_of_le, apply inf_le_right_of_le];
   rw[bv_eq_unfold]; apply inf_le_left_of_le; apply bv_specialize i; refl
 end
 
@@ -782,7 +789,8 @@ noncomputable def B_small_witness : bSet 𝔹 :=
 lemma B_small_witness_supr : (⨆(x : bSet 𝔹), ϕ x) = ⨆(b : (@B_small_witness _ _ ϕ).type), ϕ (B_small_witness.func b) :=
 begin
  apply le_antisymm,
- apply supr_le, intro x, let b : type B_small_witness := by {use ϕ x, simp, exact ⟨x, rfl⟩},
+ apply supr_le, intro x, let b : type B_small_witness :=
+   by {use ϕ x, simp only [set.image_univ, set.mem_range], exact ⟨x, rfl⟩},
  fapply le_supr_of_le, exact b, have := B_small_witness_spec b, dsimp at this, rw[this],
  apply supr_le, intro b, apply le_supr_of_le, swap, exact (fiber_lift b).val, refl
 end
@@ -1426,6 +1434,8 @@ end
 def bv_powerset (u : bSet 𝔹) : bSet 𝔹 :=
 ⟨u.type → 𝔹, λ f, set_of_indicator f, λ f, set_of_indicator f ⊆ᴮ u⟩
 
+prefix `𝒫`:80 := bv_powerset
+
 def bv_powerset' (u : bSet 𝔹) : bSet 𝔹 :=
 ⟨u.type → 𝔹, λ f, set_of_indicator' f, λ f, ⊤⟩
 
@@ -1453,21 +1463,25 @@ def bv_powerset' (u : bSet 𝔹) : bSet 𝔹 :=
 --   {sorry}
 -- end
 
-theorem bSet_axiom_of_powerset : (⨅(u : bSet 𝔹), ⨆(v : _), ⨅(x : bSet 𝔹), x∈ᴮ v ⇔ ⨅(y : x.type), x.bval y ⟹ (x.func y ∈ᴮ u)) = ⊤:=
+
+
+lemma bSet_axiom_of_powerset' {Γ : 𝔹} (u : bSet 𝔹) : Γ ≤ ⨅(x : bSet 𝔹), x∈ᴮ 𝒫 u ⇔ ⨅(y : x.type), x.bval y ⟹ (x.func y ∈ᴮ u) :=
 begin
-  simp only [bSet.bval, bSet.mem, lattice.biimp, bSet.func, lattice.infi_eq_top, bSet.type],
-  intro u, apply top_unique, apply le_supr_of_le (bv_powerset u),
   bv_intro x, apply le_inf,
-  {rw[<-deduction, top_inf_eq], 
+  {apply le_trans le_top,
+   rw[<-deduction, top_inf_eq], 
    unfold bv_powerset, apply supr_le, intro χ,
    suffices : ((set_of_indicator χ) ⊆ᴮ u ⊓ (x =ᴮ (set_of_indicator χ)) : 𝔹) ≤ x ⊆ᴮ u,
      by {convert this, simp[subset_unfold]},
    apply subst_congr_subset_left},
-
-  {simp, have := @bounded_forall _ _ x (λ y, (y ∈ᴮ u)) (by {intros x y, apply subst_congr_mem_left}), rw[this],
+  {apply le_trans le_top,
+    have := @bounded_forall _ _ x (λ y, (y ∈ᴮ u))
+      (by {intros x y, apply subst_congr_mem_left}), rw[this],
   dsimp,
   unfold bv_powerset, simp[subset_unfold], fapply le_supr_of_le,
-  from λ i, u.func i ∈ᴮ x,  have this' := @bounded_forall _ _ (set_of_indicator (λ y, (u.func y ∈ᴮ x))) (λ y, (y ∈ᴮ u)) (by {intros x y, apply subst_congr_mem_left}), dsimp at this', rw[this'],
+  from λ i, u.func i ∈ᴮ x,
+  have this' := @bounded_forall _ _ (set_of_indicator (λ y, (u.func y ∈ᴮ x))) (λ y, (y ∈ᴮ u))
+    (by {intros x y, apply subst_congr_mem_left}), dsimp at this', rw[this'],
   apply le_inf, bv_intro a', apply infi_le_of_le a', rw[supr_imp_eq],
   bv_intro i_y, apply imp_le_of_left_right_le, swap, refl,
   rw[inf_comm, bv_eq_symm], apply subst_congr_mem_left,
@@ -1477,7 +1491,8 @@ begin
   intros a₁ a₂, dsimp, rw[inf_supr_eq], apply supr_le, intro i,
 
   apply le_supr_of_le i,
-  ac_change (a₂ =ᴮ a₁ ⊓  a₁ =ᴮ func u i) ⊓ func u i ∈ᴮ x ≤ func u i ∈ᴮ x ⊓ a₂ =ᴮ func u i, rw[bv_eq_symm], ac_refl,
+  ac_change (a₂ =ᴮ a₁ ⊓  a₁ =ᴮ func u i) ⊓ func u i ∈ᴮ x ≤ func u i ∈ᴮ x ⊓ a₂ =ᴮ func u i,
+    rw[bv_eq_symm], ac_refl,
   
   apply le_trans, apply inf_le_inf, apply bv_eq_trans, refl, rw[inf_comm],
   
@@ -1490,11 +1505,26 @@ begin
    ac_change a₁ =ᴮ func u i ⊓ (bval u i ⊓ a₁ ∈ᴮ x) ≤ a₁ =ᴮ func u i,
    apply inf_le_left_of_le, refl}},
 
-   {have := @bounded_forall _ _ (set_of_indicator (λ y, func _ y ∈ᴮ x)) (λ y, y ∈ᴮ x), rw[this], swap, simp[subst_congr_mem_left],
+   {have := @bounded_forall _ _ (set_of_indicator (λ y, func _ y ∈ᴮ x)) (λ y, y ∈ᴮ x),
+   rw[this], swap, simp[subst_congr_mem_left],
    bv_intro a₁, apply infi_le_of_le a₁,
    unfold set_of_indicator, dsimp, rw[supr_imp_eq],
    bv_intro i, apply from_empty_context,
-   rw[inf_comm, bv_eq_symm], simp[-bv_eq_symm,subst_congr_mem_left]}},
+   rw[inf_comm, bv_eq_symm], simp[-bv_eq_symm,subst_congr_mem_left]}}
+end
+
+theorem bSet_axiom_of_powerset : (⨅(u : bSet 𝔹), ⨆(v : _), ⨅(x : bSet 𝔹), x∈ᴮ v ⇔ ⨅(y : x.type), x.bval y ⟹ (x.func y ∈ᴮ u)) = ⊤:=
+begin
+  apply top_unique, bv_intro u, apply bv_use (𝒫 u),
+  apply bSet_axiom_of_powerset'
+end
+
+lemma bv_powerset_spec {u x : bSet 𝔹} {Γ : 𝔹} : Γ ≤ x ⊆ᴮ u ↔ Γ ≤ x ∈ᴮ 𝒫 u :=
+begin
+  have := bSet_axiom_of_powerset' u, show 𝔹, from Γ,
+  simp only [lattice.biimp] at this,
+  replace this := this x, bv_split, rw[subset_unfold],
+  fsplit; intro H; [from this_right ‹_›, from this_left ‹_›]
 end
 
 
@@ -1661,7 +1691,7 @@ begin
   haveI : decidable_eq α := λ _ _, prop_decidable _,
   by_cases i₁ = i₂,
     subst h, apply top_unique, apply le_sup_left_of_le,
-      bv_intro j, apply bv_imp_intro, simp, apply mem.mk',
+      bv_intro j, apply bv_imp_intro, rw[top_inf_eq], apply mem.mk',
     specialize C_chain h, cases C_chain; apply top_unique;
     [apply le_sup_left_of_le, apply le_sup_right_of_le];
     have := subset'_unfold C_chain; rw[eq_top_iff] at this;

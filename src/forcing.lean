@@ -55,13 +55,11 @@ def mk (ν : (ℵ₂̌  : bSet 𝔹).type) : bSet 𝔹 :=
   @set_of_indicator 𝔹 _ omega $ λ n, χ ν n.down
 
 /-- bSet 𝔹 believes that each `mk ν` is a subset of omega -/
-lemma definite {ν} : ⊤ ≤ mk ν ⊆ᴮ omega := by simp[mk, subset_unfold]; from λ _, omega_definite
+lemma definite {ν} {Γ} : Γ ≤ mk ν ⊆ᴮ omega :=
+by simp[mk, subset_unfold]; from λ _, by {bv_imp_intro, from omega_definite}
 
 /-- bSet 𝔹 believes that each `mk ν` is an element of 𝒫(ω) -/
-lemma definite'  {ν} : ⊤ ≤ mk ν ∈ᴮ bv_powerset omega :=
-begin
-  sorry
-end
+lemma definite' {ν} {Γ} : Γ ≤ mk ν ∈ᴮ bv_powerset omega := bv_powerset_spec.mp definite
 
 /-- Whenever ν₁ ≠ ν₂ < ℵ₂, bSet 𝔹 believes that `mk ν₁` and `mk ν₂` are distinct -/
 lemma inj {ν₁ ν₂} (H_neq : ν₁ ≠ ν₂) : (mk ν₁) =ᴮ (mk ν₂) ≤ ⊥ :=
@@ -69,10 +67,6 @@ sorry -- this lemma requires us to view the Cohen poset as a dense subset of �
 -- see Lemma 5.22 in flypitch-notes
 
 end cohen_real
-
---TODO(jesse) now induce an injection from the check-name of (ordinal.mk ℵ₂) and we should be good
-
-
 
 local notation `ℵ₀` := (omega : bSet 𝔹)
 
@@ -101,7 +95,7 @@ apply le_inf,
     bv_intro ν, bv_imp_intro, 
     have : Γ ≤ (ℵ₂̌ ).func ν ∈ᴮ ℵ₂̌  ⊓ (cohen_real.mk ν ∈ᴮ bv_powerset ℵ₀),
       by {apply le_inf, from le_trans H (by apply mem.mk'),
-          from le_trans le_top (by apply cohen_real.definite')},
+          from cohen_real.definite'},
     from le_trans this (by apply prod_mem),
 
     bv_intro w₁, bv_imp_intro, rw[mem_unfold] at H,
