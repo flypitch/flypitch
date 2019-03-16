@@ -1,4 +1,4 @@
-import .bvm .pSet_ordinal
+import .bvm .pSet_ordinal tactic.where
 
 open lattice
 
@@ -623,14 +623,6 @@ begin
 
   apply le_sup_right_of_le, apply bv_rw' H_2_1_right, simp, apply bv_rw' H_1_1_right, simp,
   from check_mem ‹_›
-end
-
-lemma bv_by_contra {Γ b : 𝔹} {H : Γ ≤ (-b) ⟹ ⊥} : Γ ≤ b :=
-by {simp at H, from ‹_›}
-
-theorem bSet_axiom_of_regularity (x : bSet 𝔹) {Γ : 𝔹} (H : Γ ≤ -(x =ᴮ ∅)) : Γ ≤ ⨆y, y∈ᴮ x ⊓ (⨅z', z' ∈ᴮ x ⟹ (- (z' ∈ᴮ y))) :=
-begin
-  induction x, apply bv_by_contra, sorry
 end
 
 lemma check_ewo_right {x : pSet} (H : pSet.epsilon_well_orders x) : (⊤ : 𝔹) ≤ (⨅u, u ⊆ᴮ x̌ ⟹ (- (u =ᴮ ∅) ⟹ ⨆y, y∈ᴮ u ⊓ (⨅z', z' ∈ᴮ u ⟹ (- (z' ∈ᴮ y))))) :=

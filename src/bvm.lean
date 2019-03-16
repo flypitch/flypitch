@@ -118,6 +118,9 @@ begin
   apply inf_le_right_of_le, apply bv_imp_elim
 end
 
+lemma bv_by_contra {Γ b : 𝔹} {H : Γ ≤ (-b) ⟹ ⊥} : Γ ≤ b :=
+by {simp at H, from ‹_›}
+
 end natded
 end lattice
 
@@ -298,6 +301,9 @@ begin
   suffices : ∀ a : α, ∀ a' : α', A' a' =ᴮ A a = A a =ᴮ A' a',
     by {simp[bv_eq, this, inf_comm]}, from λ _ _, by simp[x_ih ‹α›]
 end
+
+-- @[symm]lemma symm {Γ : 𝔹} {x y : bSet 𝔹} (H : Γ ≤ x =ᴮ y) : Γ ≤ y =ᴮ x :=
+-- by rwa[bv_eq_symm]
 
 -- example {x y : bSet 𝔹} : x =ᴮ y = y =ᴮ x :=
 -- begin
@@ -1575,6 +1581,30 @@ by {induction y, intro IH, apply IH, intro a, specialize y_ih a, apply y_ih, fro
 
 @[elab_as_eliminator]protected lemma rec' {C : bSet 𝔹 → Sort*} : (Π(x : bSet 𝔹), (Π(a : x.type), C (x.func a)) → C x) → Π(y : bSet 𝔹), C y :=
 by {intro H, intro y, induction y with α A B, solve_by_elim}
+
+lemma regularity_aux (x : bSet 𝔹) {Γ : 𝔹} : Γ ≤ ⨅u, x ∈ᴮ u ⟹ ⨆y, y ∈ᴮ u ⊓ (⨅z', z' ∈ᴮ u ⟹ (-(z' ∈ᴮ y))) :=
+begin
+  apply bSet.rec_on' x, clear x, intros x IH,
+    bv_intro u, bv_imp_intro, specialize_context Γ,
+    have := bv_em Γ_1 (⨅z', z' ∈ᴮ u ⟹ (-(z' ∈ᴮ x))),
+    bv_or_elim_at this, apply bv_use x, from le_inf ‹_› ‹_›,
+    rw[neg_infi] at H_right, bv_cases_at H_right x_a,
+    rw[neg_imp] at H_right_1, bv_split,
+    rw[lattice.neg_neg] at H_right_1_right,
+    rw[mem_unfold] at H_right_1_right, bv_cases_at H_right_1_right a,
+    bv_split, have H_in : Γ_4 ≤ (func x a) ∈ᴮ u,
+    rw[bv_eq_symm] at H_right_1_right_1_right,
+    apply @bv_rw' 𝔹 _ _ _ _  H_right_1_right_1_right (λ z, z ∈ᴮ u), simp,
+    from ‹_›,
+    have : Γ_4 ≤ Γ, by {simp[Γ_4, Γ_3, Γ_2, Γ_1, inf_le_right_of_le]},
+    replace IH := le_trans this (IH a u), dsimp at IH, from IH ‹_›
+end
+
+theorem bSet_axiom_of_regularity (x : bSet 𝔹) {Γ : 𝔹} (H : Γ ≤ -(x =ᴮ ∅)) : Γ ≤ ⨆y, y∈ᴮ x ⊓ (⨅z', z' ∈ᴮ x ⟹ (- (z' ∈ᴮ y))) :=
+begin
+  have H_u := exists_mem_of_nonempty x, show 𝔹, from Γ, swap, from ‹_›,
+  bv_cases_at H_u u, have := (regularity_aux u), show 𝔹, from Γ_1, from this x ‹_›,
+end
 
 /-- ∃! x, ϕ x ↔ ∃ x ∀ y, ϕ(x) ⊓ ϕ (y) → y = x -/
 @[reducible]def bv_exists_unique (ϕ : bSet 𝔹 → 𝔹) : 𝔹 :=
