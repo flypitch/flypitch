@@ -428,10 +428,6 @@ begin
   rw[show ϕ y = ϕ y ⊓ ⊤, by simp], rw[<-H, inf_comm, bv_eq_symm], apply h_congr
 end
 
-lemma bv_eq_le_congr_right {u v w} {h : v = w} : u =ᴮ v ≤ (u =ᴮ w : 𝔹) := by rw[h]
-
-lemma bv_eq_le_congr_left {u v w} {h : v = w} : v =ᴮ u ≤ (w =ᴮ u : 𝔹) := by rw[h]
-
 /-- If u = v and u ∈ w, then this implies that v ∈ w -/
 lemma subst_congr_mem_left {u v w : bSet 𝔹} : u =ᴮ v ⊓ u ∈ᴮ w ≤ v ∈ᴮ w :=
 begin
@@ -1577,7 +1573,7 @@ begin
 end
 
 @[elab_as_eliminator]protected lemma rec_on' {C : bSet 𝔹 → Sort*} (y : bSet 𝔹) : (Π(x : bSet 𝔹), (Π(a : x.type), C (x.func a)) → C x) → C y :=
-by {induction y, intro IH, apply IH, intro a, specialize y_ih a, apply y_ih, from ‹_›}
+by {induction y, intro IH, apply IH, from λ a, y_ih a ‹_›}
 
 @[elab_as_eliminator]protected lemma rec' {C : bSet 𝔹 → Sort*} : (Π(x : bSet 𝔹), (Π(a : x.type), C (x.func a)) → C x) → Π(y : bSet 𝔹), C y :=
 by {intro H, intro y, induction y with α A B, solve_by_elim}
