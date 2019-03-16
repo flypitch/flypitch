@@ -1,4 +1,4 @@
-import .bvm .pSet_ordinal tactic.where
+import .bvm .pSet_ordinal
 
 open lattice
 
