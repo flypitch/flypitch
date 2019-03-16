@@ -490,7 +490,7 @@ begin
   rename a_left_left_left_left H, rename i w,
   bv_split, 
  have : Γ ≤ w ⊆ᴮ x,
-   by {rw[subset_unfold'], bv_intro w', bv_imp_intro, specialize_context Γ,
+   by {rw[subset_unfold'], bv_intro w', bv_imp_intro,
        have := mem_of_mem_subset a_left_right H,
        apply mem_of_mem_subset, show bSet 𝔹, from y,
        apply subset_of_mem_transitive ‹_› ‹_›, from ‹_›},
@@ -600,7 +600,7 @@ end
 
 lemma check_is_transitive {x : pSet} (H : pSet.is_transitive x) : ⊤ ≤ is_transitive (x̌ : bSet 𝔹) :=
 begin
-  bv_intro y, bv_imp_intro, specialize_context (⊤ : 𝔹),
+  bv_intro y, bv_imp_intro,
   unfold pSet.is_transitive at H, rw[mem_unfold] at H_1,
   cases x, dsimp at H_1, bv_cases_at H_1 i_y, bv_split,
   apply bv_rw' H_1_1_right, simp, specialize H (x_A i_y) (by apply pSet.mem.mk),
@@ -610,8 +610,8 @@ end
 lemma check_ewo_left {x : pSet} (H : pSet.epsilon_well_orders x) : (⊤ : 𝔹) ≤ (⨅y, y∈ᴮ x̌ ⟹
   (⨅z, z ∈ᴮ x̌ ⟹ (y =ᴮ z ⊔ y ∈ᴮ z ⊔ z ∈ᴮ y))) :=
 begin
-  bv_intro y, bv_imp_intro, specialize_context (⊤ : 𝔹), bv_intro z, bv_imp_intro,
-  specialize_context (Γ), rw[mem_unfold] at H_1 H_2, cases x, dsimp at H_1 H_2,
+  bv_intro y, bv_imp_intro, bv_intro z, bv_imp_intro,
+  rw[mem_unfold] at H_1 H_2, cases x, dsimp at H_1 H_2,
   bv_cases_at H_2 i_z, bv_cases_at H_1 i_y, bv_split,
   specialize H_left (x_A i_y) (by apply pSet.mem.mk) (x_A i_z) (by apply pSet.mem.mk),
   rename H_left this, repeat{cases this},
@@ -627,8 +627,7 @@ end
 
 lemma check_ewo_right {x : pSet} (H : pSet.epsilon_well_orders x) : (⊤ : 𝔹) ≤ (⨅u, u ⊆ᴮ x̌ ⟹ (- (u =ᴮ ∅) ⟹ ⨆y, y∈ᴮ u ⊓ (⨅z', z' ∈ᴮ u ⟹ (- (z' ∈ᴮ y))))) :=
 begin
-  bv_intro u, bv_imp_intro, specialize_context (⊤ : 𝔹),
-  bv_imp_intro, specialize_context Γ, cases H,
+  bv_intro u, bv_imp_intro, bv_imp_intro, cases H,
   rw[subset_unfold'] at H_1, apply bSet_axiom_of_regularity, from ‹_›
 end
 

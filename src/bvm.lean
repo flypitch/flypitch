@@ -1585,7 +1585,7 @@ by {intro H, intro y, induction y with α A B, solve_by_elim}
 lemma regularity_aux (x : bSet 𝔹) {Γ : 𝔹} : Γ ≤ ⨅u, x ∈ᴮ u ⟹ ⨆y, y ∈ᴮ u ⊓ (⨅z', z' ∈ᴮ u ⟹ (-(z' ∈ᴮ y))) :=
 begin
   apply bSet.rec_on' x, clear x, intros x IH,
-    bv_intro u, bv_imp_intro, specialize_context Γ,
+    bv_intro u, bv_imp_intro,
     have := bv_em Γ_1 (⨅z', z' ∈ᴮ u ⟹ (-(z' ∈ᴮ x))),
     bv_or_elim_at this, apply bv_use x, from le_inf ‹_› ‹_›,
     rw[neg_infi] at H_right, bv_cases_at H_right x_a,
@@ -1594,10 +1594,8 @@ begin
     rw[mem_unfold] at H_right_1_right, bv_cases_at H_right_1_right a,
     bv_split, have H_in : Γ_4 ≤ (func x a) ∈ᴮ u,
     rw[bv_eq_symm] at H_right_1_right_1_right,
-    apply @bv_rw' 𝔹 _ _ _ _  H_right_1_right_1_right (λ z, z ∈ᴮ u), simp,
-    from ‹_›,
-    have : Γ_4 ≤ Γ, by {simp[Γ_4, Γ_3, Γ_2, Γ_1, inf_le_right_of_le]},
-    replace IH := le_trans this (IH a u), dsimp at IH, from IH ‹_›
+    apply @bv_rw' 𝔹 _ _ _ _  H_right_1_right_1_right (λ z, z ∈ᴮ u), simp, from ‹_›,
+    from (le_trans (by {dsimp*, simp[inf_le_right_of_le]} : Γ_4 ≤ Γ) (IH a u)) ‹_›
 end
 
 theorem bSet_axiom_of_regularity (x : bSet 𝔹) {Γ : 𝔹} (H : Γ ≤ -(x =ᴮ ∅)) : Γ ≤ ⨆y, y∈ᴮ x ⊓ (⨅z', z' ∈ᴮ x ⟹ (- (z' ∈ᴮ y))) :=
