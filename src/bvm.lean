@@ -1629,7 +1629,7 @@ begin
   bv_intro w₂, apply bv_specialize_left w₂, apply bv_imp_intro, simp only [inf_assoc],
   apply le_trans, apply bv_imp_elim, refl, intros w₁ w₂, apply h₁,
   intros w₁ w₂, apply subst_congr_infi, intro j,
-  apply subst_congr_imp, finish, apply h₂
+  apply subst_congr_imp; simp*
 end
 
 lemma subset'_inductive (X : bSet 𝔹) (H : ⊤ ≤ (⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
