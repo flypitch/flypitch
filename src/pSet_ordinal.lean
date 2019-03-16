@@ -1,4 +1,4 @@
-import set_theory.ordinal set_theory.zfc tactic.tidy tactic.find
+import set_theory.ordinal set_theory.zfc tactic.tidy
 
 open ordinal
 
@@ -16,7 +16,7 @@ namespace pSet
 λ η, limit_rec_on η ∅ (λ ξ mk_ξ, pSet.succ mk_ξ)
 begin
   intros ξ ξ_limit ih,
-  refine Union ⟨ξ.out.α, (λ x, ih (typein _ _) _)⟩,
+  refine ⟨ξ.out.α, λ x, ih (typein _ _) _⟩,
   from ξ.out.α, from ξ.out.r, from ξ.out.wo, from x,
   convert @typein_lt_type _ (ξ.out.r) (ξ.out.wo) x,
   unfold ordinal.type, conv{to_lhs, rw[<-quotient.out_eq ξ]},
@@ -31,7 +31,7 @@ by {rw[H_succ], simp[ordinal.mk]}
 @[simp]lemma ordinal.mk_succ₂ {η : ordinal} : ordinal.mk (ordinal.succ η) = pSet.succ (ordinal.mk η) :=
 by {simp[ordinal.mk]}
 
-@[simp]lemma ordinal.mk_limit {η : ordinal} {H_limit : is_limit η} : ordinal.mk η = Union ⟨η.out.α, λ x, ordinal.mk (@typein _ (η.out.r) (η.out.wo) x)⟩ :=
+@[simp]lemma ordinal.mk_limit {η : ordinal} {H_limit : is_limit η} : ordinal.mk η = ⟨η.out.α, λ x, ordinal.mk (@typein _ (η.out.r) (η.out.wo) x)⟩ :=
 by simp[*, ordinal.mk]
 
 def epsilon_well_orders (x : pSet.{u}) : Prop :=
@@ -168,9 +168,7 @@ begin
   simp, from transitive_succ _ ‹_›,
   intros ξ h_limit ih,
 
-  simp*, apply transitive_Union, intros y Hy, sorry -- need to show that every element of
-    -- an ordinal.mk is extensionally equivalent to the mk of an ordinal
--- also need the appropriate congruence lemma for is_transitive
+  simp*, intros y yH, sorry
 end
 
 lemma mem_mem_false {x y : pSet.{u}} (H₁:  x ∈ y) (H₂ : y ∈ x) : false :=
@@ -265,10 +263,10 @@ begin
       from H (ordinal.mk ξ) ‹_›, apply transitive_mk},
     {rw[this'], simp}},
 
-  intros η h_limit ih ξ hξ, simp only [h_limit, ordinal.mk_limit],
-  apply mem_Union.mpr, use (ordinal.mk (ordinal.succ ξ)), split,
-  swap, simp, split, swap, -- to finish this, need a lemma which says that given a (ξ + 1) which is less than η, there exists an isomorphic initial segment in (quotient.out η)
-  sorry, sorry
+  intros η h_limit ih ξ hξ, simp only [h_limit, ordinal.mk_limit], sorry
+  -- apply mem_Union.mpr, use (ordinal.mk (ordinal.succ ξ)), split,
+  -- swap, simp, split, swap, -- to finish this, need a lemma which says that given a (ξ + 1) which is less than η, there exists an isomorphic initial segment in (quotient.out η)
+  -- sorry, sorry
 end
 
 lemma mk_trichotomy (β₁ β₂ : ordinal.{u}) : (equiv (ordinal.mk β₁) (ordinal.mk β₂)) ∨ (ordinal.mk β₁) ∈ (ordinal.mk β₂) ∨ (ordinal.mk β₂) ∈ (ordinal.mk β₁) :=

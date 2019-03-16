@@ -1411,6 +1411,15 @@ end
 @[reducible, simp]def set_of_indicator {u : bSet 𝔹} (f : u.type → 𝔹) : bSet 𝔹 :=
   ⟨u.type, u.func, f⟩
 
+@[simp, cleanup]lemma set_of_indicator.type {u} {f} :
+  (@set_of_indicator 𝔹 _ u f).type = u.type := rfl
+
+@[simp, cleanup]lemma set_of_indicator.func {u} {f} {i}:
+  (@set_of_indicator 𝔹 _ u f).func i = u.func i := rfl 
+
+@[simp, cleanup]lemma set_of_indicator.bval {u} {f} {i} :
+  (@set_of_indicator 𝔹 _ u f).bval i = f i := rfl
+
 @[reducible, simp]def set_of_indicator' {u : bSet 𝔹} (f : u.type → 𝔹) : bSet 𝔹 :=
   ⟨u.type, u.func, λ i, f i ⊓ u.bval i⟩
 
@@ -1526,11 +1535,17 @@ end
 
 @[reducible]def omega := (ω̌ : bSet 𝔹)
 
+@[simp, cleanup]lemma omega_type : (omega : bSet 𝔹).type = ulift ℕ := by refl
+
 /-- The n-th von Neumann ordinal in bSet 𝔹 is just the check-name of the n-th von Neumann ordinal in pSet -/
 @[reducible]def of_nat : ℕ → bSet 𝔹 := λ n, (pSet.of_nat n)̌
 
-lemma omega_definite {n : ℕ} : of_nat n ∈ᴮ omega = (⊤ : 𝔹) :=
+@[simp, cleanup]lemma omega_func {k} : (omega : bSet 𝔹).func k = of_nat k.down :=
+by refl
+
+lemma omega_definite {n : ℕ} {Γ : 𝔹} : Γ ≤ of_nat n ∈ᴮ omega :=
 begin
+suffices : of_nat n ∈ᴮ omega = (⊤ : 𝔹), from le_trans le_top (by rwa[top_le_iff]),
   induction n, {apply top_unique, apply bv_use (ulift.up 0), simp},
   {apply top_unique, apply bv_use (ulift.up (n_n + 1)), simp}
 end
