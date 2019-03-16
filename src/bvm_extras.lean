@@ -395,6 +395,9 @@ begin
   apply bv_use b, apply check_top_le_bv_eq ‹_›
 end
 
+lemma check_subset_of_subset' {x y : pSet} {Γ : 𝔹} (h_subset : x ⊆ y) : Γ ≤ x̌ ⊆ᴮ y̌ :=
+  le_trans le_top (check_subset_of_subset ‹_›)
+
 end check
 
 section ordinals
@@ -599,7 +602,10 @@ end
 lemma check_is_transitive {x : pSet} (H : pSet.is_transitive x) : ⊤ ≤ is_transitive (x̌ : bSet 𝔹) :=
 begin
   bv_intro y, bv_imp_intro, specialize_context (⊤ : 𝔹),
-  unfold pSet.is_transitive at H,
+  unfold pSet.is_transitive at H, rw[mem_unfold] at H_1,
+  cases x, dsimp at H_1, bv_cases_at H_1 i_y, bv_split,
+  apply bv_rw' H_1_1_right, simp, specialize H (x_A i_y) (by apply pSet.mem.mk),
+  apply check_subset_of_subset' ‹_›
 end
 
 lemma check_Ord {x : pSet} (H : pSet.Ord x) : ⊤ ≤ Ord (x̌ : bSet 𝔹) :=

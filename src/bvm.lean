@@ -1250,6 +1250,23 @@ note that a check-name is not only definite, but recursively definite
 
 postfix `̌ `:90 := check
 
+@[simp, cleanup]lemma check_type {α : Type u} {A : α → pSet} :
+  bSet.type ((pSet.mk α A)̌ ) = α := rfl
+
+@[simp, cleanup]lemma check_type_infi {α : Type u} {A : α → pSet} {s : α → 𝔹} :
+  ⨅(a : bSet.type ((pSet.mk α A)̌ )), s a = ⨅(a : α), s a := by refl
+
+@[simp, cleanup]lemma check_type_supr {α : Type u} {A : α → pSet} {s : α → 𝔹} :
+  ⨆(a : bSet.type ((pSet.mk α A)̌ )), s a = ⨆(a : α), s a := by refl
+
+@[simp, cleanup]lemma pSet.type_mk {α : Type u} {A : α → pSet} : pSet.type (pSet.mk α A) = α
+:= rfl
+
+@[simp, cleanup]lemma check_type' {x : pSet.{u}} : bSet.type (x̌ : bSet 𝔹) = x.type := 
+by {induction x, simp}
+
+
+
 @[simp]lemma check_bval_top (x : pSet) {i} : (x̌ : bSet 𝔹).bval i = ⊤ := by induction x; refl
 
 @[simp]lemma check_empty_eq_empty : (∅ : pSet)̌ = (∅ : bSet 𝔹) :=
