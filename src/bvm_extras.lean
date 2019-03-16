@@ -380,11 +380,11 @@ end extras
 
 section check
 
-lemma check_mem_of_mem {x y : pSet} (h_mem : x ∈ y) : (⊤ : 𝔹) ≤ x̌ ∈ᴮ y̌ :=
+lemma check_mem {x y : pSet} {Γ} (h_mem : x ∈ y) : (Γ : 𝔹) ≤ x̌ ∈ᴮ y̌ :=
 begin
   rw[mem_unfold], cases y, unfold has_mem.mem pSet.mem at h_mem,
   cases h_mem with w_y H_w_y, apply bv_use w_y,
-  apply le_inf, simp, apply check_top_le_bv_eq ‹_›
+  apply le_inf, simp, from check_bv_eq ‹_›
 end
 
 lemma check_subset_of_subset {x y : pSet} (h_subset : x ⊆ y) : (⊤ : 𝔹) ≤ x̌ ⊆ᴮ y̌ :=
@@ -392,18 +392,17 @@ begin
   rw[subset_unfold], cases x, cases y, unfold has_subset.subset pSet.subset at h_subset,
   bv_intro x_j, apply bv_imp_intro, rw[top_inf_eq], apply le_trans, apply mem.mk',
   simp[-top_le_iff], specialize h_subset x_j, cases h_subset with b H_b,
-  apply bv_use b, apply check_top_le_bv_eq ‹_›
+  apply bv_use b, from check_bv_eq ‹_›
 end
 
-lemma check_subset_of_subset' {x y : pSet} {Γ : 𝔹} (h_subset : x ⊆ y) : Γ ≤ x̌ ⊆ᴮ y̌ :=
+lemma check_subset {x y : pSet} {Γ : 𝔹} (h_subset : x ⊆ y) : Γ ≤ x̌ ⊆ᴮ y̌ :=
   le_trans le_top (check_subset_of_subset ‹_›)
 
 end check
 
 section ordinals
 def epsilon_well_orders (x : bSet 𝔹) : 𝔹 :=
-(⨅y, y∈ᴮ x ⟹
-  (⨅z, z ∈ᴮ x ⟹ (y =ᴮ z ⊔ y ∈ᴮ z ⊔ z ∈ᴮ y))) ⊓
+(⨅y, y∈ᴮ x ⟹ (⨅z, z ∈ᴮ x ⟹ (y =ᴮ z ⊔ y ∈ᴮ z ⊔ z ∈ᴮ y))) ⊓
   (⨅u, u ⊆ᴮ x ⟹ (- (u =ᴮ ∅) ⟹ ⨆y, y∈ᴮ u ⊓ (⨅z', z' ∈ᴮ u ⟹ (- (z' ∈ᴮ y)))))
 
 lemma epsilon_dichotomy (x y z : bSet 𝔹) : epsilon_well_orders x ≤ y ∈ᴮ x ⟹ (z ∈ᴮ x ⟹ (y =ᴮ z ⊔ y ∈ᴮ z ⊔ z ∈ᴮ y)) :=
@@ -605,13 +604,47 @@ begin
   unfold pSet.is_transitive at H, rw[mem_unfold] at H_1,
   cases x, dsimp at H_1, bv_cases_at H_1 i_y, bv_split,
   apply bv_rw' H_1_1_right, simp, specialize H (x_A i_y) (by apply pSet.mem.mk),
-  apply check_subset_of_subset' ‹_›
+  apply check_subset ‹_›
 end
 
-lemma check_Ord {x : pSet} (H : pSet.Ord x) : ⊤ ≤ Ord (x̌ : bSet 𝔹) :=
+lemma check_ewo_left {x : pSet} (H : pSet.epsilon_well_orders x) : (⊤ : 𝔹) ≤ (⨅y, y∈ᴮ x̌ ⟹
+  (⨅z, z ∈ᴮ x̌ ⟹ (y =ᴮ z ⊔ y ∈ᴮ z ⊔ z ∈ᴮ y))) :=
 begin
-  sorry
+  bv_intro y, bv_imp_intro, specialize_context (⊤ : 𝔹), bv_intro z, bv_imp_intro,
+  specialize_context (Γ), rw[mem_unfold] at H_1 H_2, cases x, dsimp at H_1 H_2,
+  bv_cases_at H_2 i_z, bv_cases_at H_1 i_y, bv_split,
+  specialize H_left (x_A i_y) (by apply pSet.mem.mk) (x_A i_z) (by apply pSet.mem.mk),
+  rename H_left this, repeat{cases this},
+  apply le_sup_left_of_le, apply le_sup_left_of_le, 
+  apply bv_rw' H_2_1_right, simp, apply bv_rw' H_1_1_right, simp, from check_bv_eq ‹_›,
+
+  apply le_sup_left_of_le, apply le_sup_right_of_le, apply bv_rw' H_2_1_right,
+  simp, apply bv_rw' H_1_1_right, simp, from check_mem ‹_›,
+
+  apply le_sup_right_of_le, apply bv_rw' H_2_1_right, simp, apply bv_rw' H_1_1_right, simp,
+  from check_mem ‹_›
 end
+
+lemma bv_by_contra {Γ b : 𝔹} {H : Γ ≤ (-b) ⟹ ⊥} : Γ ≤ b :=
+by {simp at H, from ‹_›}
+
+theorem bSet_axiom_of_regularity (x : bSet 𝔹) {Γ : 𝔹} (H : Γ ≤ -(x =ᴮ ∅)) : Γ ≤ ⨆y, y∈ᴮ x ⊓ (⨅z', z' ∈ᴮ x ⟹ (- (z' ∈ᴮ y))) :=
+begin
+  induction x, apply bv_by_contra, sorry
+end
+
+lemma check_ewo_right {x : pSet} (H : pSet.epsilon_well_orders x) : (⊤ : 𝔹) ≤ (⨅u, u ⊆ᴮ x̌ ⟹ (- (u =ᴮ ∅) ⟹ ⨆y, y∈ᴮ u ⊓ (⨅z', z' ∈ᴮ u ⟹ (- (z' ∈ᴮ y))))) :=
+begin
+  bv_intro u, bv_imp_intro, specialize_context (⊤ : 𝔹),
+  bv_imp_intro, specialize_context Γ, cases H,
+  rw[subset_unfold'] at H_1, apply bSet_axiom_of_regularity, from ‹_›
+end
+
+lemma check_ewo {x : pSet} (H : pSet.epsilon_well_orders x) : ⊤ ≤ epsilon_well_orders (x̌ : bSet 𝔹) :=
+le_inf (check_ewo_left ‹_›) (check_ewo_right ‹_›)
+
+lemma check_Ord {x : pSet} (H : pSet.Ord x) : ⊤ ≤ Ord (x̌ : bSet 𝔹) :=
+le_inf (check_ewo H.left) (check_is_transitive H.right)
 
 end ordinals
 

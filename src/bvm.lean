@@ -1250,14 +1250,14 @@ note that a check-name is not only definite, but recursively definite
 
 postfix `̌ `:90 := check
 
-@[simp, cleanup]lemma check_type {α : Type u} {A : α → pSet} :
-  bSet.type ((pSet.mk α A)̌ ) = α := rfl
+-- @[simp, cleanup]lemma check_type {α : Type u} {A : α → pSet} :
+--   bSet.type ((pSet.mk α A)̌ ) = α := rfl
 
-@[simp, cleanup]lemma check_type_infi {α : Type u} {A : α → pSet} {s : α → 𝔹} :
-  ⨅(a : bSet.type ((pSet.mk α A)̌ )), s a = ⨅(a : α), s a := by refl
+-- @[simp, cleanup]lemma check_type_infi {α : Type u} {A : α → pSet} {s : α → 𝔹} :
+--   ⨅(a : bSet.type ((pSet.mk α A)̌ )), s a = ⨅(a : α), s a := by refl
 
-@[simp, cleanup]lemma check_type_supr {α : Type u} {A : α → pSet} {s : α → 𝔹} :
-  ⨆(a : bSet.type ((pSet.mk α A)̌ )), s a = ⨆(a : α), s a := by refl
+-- @[simp, cleanup]lemma check_type_supr {α : Type u} {A : α → pSet} {s : α → 𝔹} :
+--   ⨆(a : bSet.type ((pSet.mk α A)̌ )), s a = ⨆(a : α), s a := by refl
 
 @[simp, cleanup]lemma pSet.type_mk {α : Type u} {A : α → pSet} : pSet.type (pSet.mk α A) = α
 := rfl
@@ -1290,9 +1290,9 @@ begin
   apply le_supr_of_le w; simp only [lattice.top_le_iff, bSet.check]; apply (x_ih _); exact h
 end
 
-lemma check_top_le_bv_eq {x y : pSet} :
-  pSet.equiv x y → (⊤ : 𝔹) ≤ x̌ =ᴮ y̌ :=
-by {simp only [top_le_iff], apply check_bv_eq_top_of_equiv}
+lemma check_bv_eq {x y : pSet} {Γ : 𝔹}  (H : pSet.equiv x y) :
+    (Γ : 𝔹) ≤ x̌ =ᴮ y̌ :=
+le_trans (le_top) $ by {simp only [top_le_iff], apply check_bv_eq_top_of_equiv ‹_›}
 
 lemma check_bv_eq_bot_of_not_equiv {x y : pSet} :
   (¬ pSet.equiv x y) → (x̌ =ᴮ y̌) = (⊥ : 𝔹) :=
