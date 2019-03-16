@@ -1132,7 +1132,9 @@ do
    note n none pr >>= λ h, dsimp_hyp h none [] eta_beta_cfg
 
 meta def bv_imp_intro : tactic unit :=
-`[apply lattice.context_imp_intro] >> (get_unused_name "H" >>= tactic.intro) >> skip
+do Γ_old <- target >>= lhs_of_le,
+  `[apply lattice.context_imp_intro] >> (get_unused_name "H" >>= tactic.intro) >> skip,
+  specialize_context_core Γ_old
 
 /-- `ac_change g' changes the current goal `tgt` to `g` by creating a new goal of the form
   `tgt = g`, and will attempt close it with `ac_refl`. -/
