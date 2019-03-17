@@ -23,6 +23,9 @@ begin
   apply bv_context_trans; from ‹_›
 end
 
+@[simp]lemma subst_congr_pair_left' {x z y : bSet 𝔹} {Γ : 𝔹} :
+  Γ ≤ x=ᴮ z → Γ ≤ pair x y =ᴮ pair z y := poset_yoneda_inv Γ (@subst_congr_pair_left _ _ x z y)
+
 @[simp, cleanup]lemma insert1_bval_none {u v : bSet 𝔹} : (bSet.insert1 u ({v})).bval none  = ⊤ :=
 by refl
 
@@ -426,7 +429,7 @@ by {intros x y, unfold is_transitive, revert x y, change B_ext _, simp}
 def Ord (x : bSet 𝔹) : 𝔹 := epsilon_well_orders x ⊓ is_transitive x
 
 /-- x is larger than y if there exists a function f such that for every v ∈ y, there exists a w ∈ x such that (w,v) ∈ f -/
-def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func f) ⊓ ⨅v, v ∈ᴮ y ⟹ ⨆w, w ∈ᴮ x ⊓ pair w v ∈ᴮ f  
+def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func f) ⊓ ⨅v, v ∈ᴮ y ⟹ ⨆w, w ∈ᴮ x ⊓ pair w v ∈ᴮ f
 
 def Card (y : bSet 𝔹) : 𝔹 := Ord(y) ⊓ ⨅x, x ∈ᴮ y ⟹ (- larger_than y x)
 

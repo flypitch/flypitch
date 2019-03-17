@@ -614,6 +614,9 @@ begin
   bv_mp this (h_congr _ _), from ‹_›
 end
 
+@[simp]lemma subst_congr_mem_left' {Γ : 𝔹} {u v w : bSet 𝔹} : Γ ≤ u =ᴮ v → Γ ≤ u ∈ᴮ w → Γ ≤ v ∈ᴮ w :=
+by {intros H₁ H₂, rw[bv_eq_symm] at H₁, apply bv_rw' H₁, simp, from ‹_›}
+
 def is_definite (u : bSet 𝔹) : Prop := ∀ i : u.type, u.bval i = ⊤
 
 lemma eq_empty {u : bSet 𝔹} : u =ᴮ ∅ = -⨆i, u.bval i :=
@@ -1342,6 +1345,16 @@ end
 
 @[simp]lemma check_insert (a b : pSet) : (pSet.insert a b)̌  = (bSet.insert1 (ǎ) (b̌) : bSet 𝔹) :=
 by {induction a, induction b, simp[pSet.insert, bSet.insert1], split; ext; cases x; simp}
+
+lemma mem_check_witness {y x : pSet.{u}} {Γ : 𝔹} {h_nonzero : ⊥ < Γ} (H : Γ ≤ y̌ ∈ᴮ (x̌)) : ∃ i : x.type, Γ ≤ y̌ =ᴮ (x.func i)̌ :=
+begin
+  rw[mem_unfold] at H, simp at H,
+  have := supr_eq_Gamma_max, cases this with w h,
+  use w, tactic.rotate 3, from λ a, (y̌ : bSet 𝔹) =ᴮ (x.func a)̌, from Γ,
+  from ‹_›, induction x, from H, swap, from ‹_›,
+  intros a H, by_contra, have := @check_bv_eq_dichotomy 𝔹 _ y (pSet.func x a),
+  cases this, swap, contradiction, rw[this] at H, apply H, from le_top
+end
 
 end check_names 
 

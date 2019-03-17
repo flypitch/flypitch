@@ -10,6 +10,65 @@ local infix ` ⇔ `:50 := lattice.biimp
 
 universe u
 
+namespace bSet
+section cardinal_preservation
+variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
+
+lemma AE_of_larger_than_check (x y : pSet.{u}) {f : bSet 𝔹} (H : ⊥ < ⨅v, v ∈ᴮ y̌ ⟹ ⨆w, w ∈ᴮ x̌ ⊓ pair w v ∈ᴮ f) :
+  ∀ i : y.type, ∃ j : x.type, ⊥ < (pair ((x.func j)̌ ) ((y.func i)̌ )) ∈ᴮ f :=
+begin
+  intro i, have := H₁ ((y.func i)̌ ), dsimp at this,
+  have H_mem : Γ ≤ (pSet.func y i)̌ ∈ᴮ y̌, by sorry,
+  replace this := this H_mem,
+
+  have H_reindex := @bounded_exists 𝔹 _ (x̌) (λ z, pair z ((pSet.func y i)̌ ) ∈ᴮ f) _,
+  rw[<-H_reindex] at this,
+
+  have := mem_check_witness _, cases this with wit wit_spec, use wit,
+  show 𝔹, from Γ, simp at *, 
+
+  -- have := @maximum_principle 𝔹 _ (λ w, w ∈ᴮ (x̌) ⊓ pair w ((pSet.func y i)̌ ) ∈ᴮ f) _,
+  --   swap, intros x₁ y₁, simp[subst_congr_pair_left], split,
+  --   /- `tidy_context` says -/ apply poset_yoneda,
+  --     work_on_goal 0 { intros Γ_1 a, simp only [le_inf_iff] at *, cases a, cases a_right },
+  --     work_on_goal 2 { cases this, simp only [le_inf_iff] at * }, rw[bv_eq_symm] at a_left,
+  --   apply bv_rw' a_left, simp,
+  --   from ‹_›,
+
+  --   /- `tidy_context` says -/ apply poset_yoneda,
+  --   work_on_goal 0 { intros Γ_1 a, simp only [le_inf_iff] at a, cases a, cases a_right },
+  --   have : Γ_1 ≤ pair y₁ ((pSet.func y i)̌) =ᴮ pair x₁ ((pSet.func y i)̌),
+  --   by {apply subst_congr_pair_left', rwa[bv_eq_symm]},
+  --   apply subst_congr_mem_left', rw[bv_eq_symm], from ‹_›, from ‹_›,
+
+  --   rw[this_h] at this, bv_split, have := mem_check_witness _, cases this with wit wit_spec,
+  --   use wit, show 𝔹, from Γ, rw[bv_eq_symm] at wit_spec, dsimp at wit_spec,
+  --   rw[mem_unfold] at this_left, apply context_Or_elim this_left,
+  --   intros j Hj,
+  --   have : @le_trans _ _ Γ _ _ _ wit_spec,
+
+    
+    -- have := @bv_rw' 𝔹 _  ((pSet.func x wit)̌) (this_w) Γ _ (λ z, pair z ((pSet.func y i)̌ ) ∈ᴮ f) _,
+    -- apply this, from ‹_›, exact wit_spec,
+
+  -- have := mem_check_witness _, cases this with wit wit_spec,
+  -- use wit, bv_cases_at this w, bv_split,
+end
+end cardinal_preservation
+end bSet
+
+  -- have := @maximum_principle 𝔹 _ (λ w, w ∈ᴮ (x̌) ⊓ pair w ((pSet.func y i)̌ ) ∈ᴮ f) _,
+ --    swap, intros x₁ y₁, simp[subst_congr_pair_left], split,
+ --    tidy_context, rw[bv_eq_symm] at a_left, apply bv_rw' a_left, simp,
+ --    from ‹_›,
+
+ --    tidy_context, have : Γ_1 ≤ pair y₁ ((pSet.func y i)̌) =ᴮ pair x₁ ((pSet.func y i)̌),
+ --    by {apply subst_congr_pair_left', rwa[bv_eq_symm]},
+ --    apply subst_congr_mem_left', rw[bv_eq_symm], from ‹_›, from ‹_›,
+ --    have this' : Γ ≤ this_w ∈ᴮ x̌  ⊓ pair this_w (pSet.func y ǐ)  ∈ᴮ f,
+ --     by rwa[<-this_h], bv_split_at this',
+ -- have this₂ := @maximum_principle 𝔹 _ (λ w, w ∈ᴮ (x̌)) _,
+
 namespace pSet
 
 @[reducible]noncomputable def ℵ₁ : pSet.{0} := ordinal.mk (aleph 1).ord
@@ -69,7 +128,6 @@ sorry -- this lemma requires us to view the Cohen poset as a dense subset of �
 end cohen_real
 
 local notation `ℵ₀` := (omega : bSet 𝔹)
-
 local notation `𝔠` := (bv_powerset ℵ₀ : bSet 𝔹)
 
 lemma Card_ℵ₁ : ⊤ ≤ Card(ℵ₁̌  : bSet 𝔹) := sorry
