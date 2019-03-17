@@ -1278,9 +1278,9 @@ postfix `̌ `:90 := check
 @[simp, cleanup]lemma check_type' {x : pSet.{u}} : bSet.type (x̌ : bSet 𝔹) = x.type := 
 by {induction x, simp}
 
-
-
 @[simp]lemma check_bval_top (x : pSet) {i} : (x̌ : bSet 𝔹).bval i = ⊤ := by induction x; refl
+
+@[simp]lemma check_bval_mk {α : Type u} {A : α → pSet} {i} : ((pSet.mk α A)̌ ).bval i = (⊤ : 𝔹) := rfl
 
 @[simp]lemma check_empty_eq_empty : (∅ : pSet)̌ = (∅ : bSet 𝔹) :=
 by {dsimp[check, has_emptyc.emptyc, empty, pSet.empty], tidy}

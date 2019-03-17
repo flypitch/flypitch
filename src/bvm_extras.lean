@@ -401,6 +401,9 @@ end
 lemma check_subset {x y : pSet} {Γ : 𝔹} (h_subset : x ⊆ y) : Γ ≤ x̌ ⊆ᴮ y̌ :=
   le_trans le_top (check_subset_of_subset ‹_›)
 
+@[simp]lemma check_mem' {y : pSet} {i : y.type} : ((y.func i)̌ ) ∈ᴮ y̌ = (⊤ : 𝔹) :=
+by {apply top_unique, apply check_mem, cases y, apply pSet.mem.mk}
+
 end check
 
 section ordinals

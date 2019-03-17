@@ -799,11 +799,6 @@ begin
   rw[h], apply supr_le, intro a', from h_bounded a' (by convert a a')
 end
 
-lemma lt_of_not_le {β : Type*} [partial_order β] {a b : β} : ¬ a ≤ b → b < a :=
-begin
-
-end
-
 lemma supr_max_of_bounded' {α β : Type*} [complete_lattice β] {A : α → β} {b c : β}
 {h : b ≤ ⨆(a:α), A a} {h_lt : c < b} {h_bounded : ∀ a : α, (¬ b ≤ A a) → A a ≤ c} :
   ∃ x : α, b ≤ A x :=
@@ -942,6 +937,14 @@ lemma context_specialize {β : Type*} [complete_lattice β] {ι : Type*} {s : ι
   {Γ : β} (H : Γ ≤ (⨅ i, s i)) (j : ι) : Γ ≤ s j :=
 le_trans H (infi_le _ _)
 
+lemma context_specialize_strict {β : Type*} [complete_lattice β] {ι : Type*} {s : ι → β}
+  {Γ : β} (H : Γ < (⨅ i, s i)) (j : ι) : Γ < s j :=
+begin
+  apply lt_iff_le_and_ne.mpr, split, from le_trans (le_of_lt H) (infi_le _ _),
+  intro H', apply @lt_irrefl β _ _, show β, from (⨅ i, s i),
+  apply lt_of_le_of_lt, show β, from Γ, rw[H'], apply infi_le, from ‹_›
+end
+
 lemma context_split_inf_left {β : Type*} [complete_lattice β] {a₁ a₂ Γ: β} (H : Γ ≤ a₁ ⊓ a₂) : Γ ≤ a₁ :=
 by {rw[le_inf_iff] at H, finish}
 
@@ -971,6 +974,24 @@ lemma bv_em {β : Type*} [boolean_algebra β] (Γ) (b : β) :
 
 lemma neg_imp {β : Type*} [boolean_algebra β] {a b : β} : -(a ⟹ b) = a ⊓ (-b) :=
 by simp[imp]
+
+lemma bot_lt_iff_not_le_bot {α} [bounded_lattice α] {a : α} : ⊥ < a ↔ (¬ a ≤ ⊥) :=
+begin
+  rw[le_bot_iff],
+  split; intro,
+    from bot_lt_iff_ne_bot.mp ‹_›,
+  from bot_lt_iff_ne_bot.mpr ‹_›
+end
+
+lemma nonzero_wit {β : Type*} [complete_lattice β] {ι : Type*} {s : ι → β} :
+  (⊥ < (⨆i, s i)) → ∃ j, (⊥ < s j) :=
+begin
+  intro H, have := bot_lt_iff_not_le_bot.mp ‹_›,
+  haveI : decidable (∃ (j : ι), ⊥ < s j) := classical.prop_decidable _,
+  by_contra, apply this, apply supr_le, intro i, rw[not_exists] at a,
+  specialize a i, haveI : decidable (s i ≤ ⊥) := classical.prop_decidable _,
+  by_contra, have := @bot_lt_iff_not_le_bot β _ (s i), tauto
+end
 
 end lattice
 
@@ -1201,11 +1222,11 @@ meta def tidy_context_tactics : list (tactic string) :=
 
 meta def tidy_split_goals_tactics : list (tactic string) :=
 [ reflexivity >> pure "refl",
-  bv_intro none >> pure "bv_intro",
+ propositional_goal >> assumption >> pure "assumption",
+  propositional_goal >> (`[solve_by_elim])    >> pure "solve_by_elim",
   `[apply lattice.le_inf] >> pure "apply lattice.le_inf",
-  propositional_goal >> assumption >> pure "assumption",
   `[rw[bSet.bv_eq_symm]] >> assumption >> pure "rw[bSet.bv_eq_symm], assumption",
-  propositional_goal >> (`[solve_by_elim])    >> pure "solve_by_elim"
+   bv_intro none >> pure "bv_intro"
 ]
 
 meta def bv_split_goal (trace : parse $ optional (tk "?")) : tactic unit :=

@@ -14,60 +14,29 @@ namespace bSet
 section cardinal_preservation
 variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 
-lemma AE_of_larger_than_check (x y : pSet.{u}) {f : bSet 𝔹} (H : ⊥ < ⨅v, v ∈ᴮ y̌ ⟹ ⨆w, w ∈ᴮ x̌ ⊓ pair w v ∈ᴮ f) :
-  ∀ i : y.type, ∃ j : x.type, ⊥ < (pair ((x.func j)̌ ) ((y.func i)̌ )) ∈ᴮ f :=
+lemma AE_of_check_larger_than_check (x y : pSet.{u}) {f : bSet 𝔹} {Γ} {h_nonzero : ⊥ < Γ} (H : Γ ≤ (is_func f) ⊓ ⨅v, v ∈ᴮ y̌ ⟹ ⨆w, w ∈ᴮ x̌ ⊓ pair w v ∈ᴮ f) :
+  ∀ i : y.type, ∃ j : x.type, ⊥ < (is_func f) ⊓ (pair ((x.func j)̌ ) ((y.func i)̌ )) ∈ᴮ f :=
 begin
-  intro i, have := H₁ ((y.func i)̌ ), dsimp at this,
-  have H_mem : Γ ≤ (pSet.func y i)̌ ∈ᴮ y̌, by sorry,
-  replace this := this H_mem,
-
-  have H_reindex := @bounded_exists 𝔹 _ (x̌) (λ z, pair z ((pSet.func y i)̌ ) ∈ᴮ f) _,
-  rw[<-H_reindex] at this,
-
-  have := mem_check_witness _, cases this with wit wit_spec, use wit,
-  show 𝔹, from Γ, simp at *, 
-
-  -- have := @maximum_principle 𝔹 _ (λ w, w ∈ᴮ (x̌) ⊓ pair w ((pSet.func y i)̌ ) ∈ᴮ f) _,
-  --   swap, intros x₁ y₁, simp[subst_congr_pair_left], split,
-  --   /- `tidy_context` says -/ apply poset_yoneda,
-  --     work_on_goal 0 { intros Γ_1 a, simp only [le_inf_iff] at *, cases a, cases a_right },
-  --     work_on_goal 2 { cases this, simp only [le_inf_iff] at * }, rw[bv_eq_symm] at a_left,
-  --   apply bv_rw' a_left, simp,
-  --   from ‹_›,
-
-  --   /- `tidy_context` says -/ apply poset_yoneda,
-  --   work_on_goal 0 { intros Γ_1 a, simp only [le_inf_iff] at a, cases a, cases a_right },
-  --   have : Γ_1 ≤ pair y₁ ((pSet.func y i)̌) =ᴮ pair x₁ ((pSet.func y i)̌),
-  --   by {apply subst_congr_pair_left', rwa[bv_eq_symm]},
-  --   apply subst_congr_mem_left', rw[bv_eq_symm], from ‹_›, from ‹_›,
-
-  --   rw[this_h] at this, bv_split, have := mem_check_witness _, cases this with wit wit_spec,
-  --   use wit, show 𝔹, from Γ, rw[bv_eq_symm] at wit_spec, dsimp at wit_spec,
-  --   rw[mem_unfold] at this_left, apply context_Or_elim this_left,
-  --   intros j Hj,
-  --   have : @le_trans _ _ Γ _ _ _ wit_spec,
-
-    
-    -- have := @bv_rw' 𝔹 _  ((pSet.func x wit)̌) (this_w) Γ _ (λ z, pair z ((pSet.func y i)̌ ) ∈ᴮ f) _,
-    -- apply this, from ‹_›, exact wit_spec,
-
-  -- have := mem_check_witness _, cases this with wit wit_spec,
-  -- use wit, bv_cases_at this w, bv_split,
+  intro i_v, bv_split_at H, replace H_1_1 := H_1_1 ((y.func i_v)̌ ), simp[check_mem'] at H_1_1,
+  have H' : Γ ≤ is_func f ⊓ ⨆ (w : bSet 𝔹), w ∈ᴮ x̌  ⊓ pair w (pSet.func y i_v̌)  ∈ᴮ f,
+    by bv_split_goal,
+  rw[inf_supr_eq] at H',
+  replace H' := le_trans H' (by {apply supr_le, intro i, recover, show 𝔹,
+    from ⨆ (i : bSet 𝔹), i ∈ᴮ x̌ ⊓ (is_func f ⊓ pair i (pSet.func y i_v̌)  ∈ᴮ f),
+    apply bv_use i, apply le_of_eq, ac_refl}),
+  replace H' := lt_of_lt_of_le h_nonzero H',
+  have := @bounded_exists 𝔹 _ (x̌) (λ z, is_func f ⊓ pair z ((y.func i_v)̌ ) ∈ᴮ f),
+  rw[<-this] at H', swap,
+    {intros x' y',
+    /- `tidy_context` says -/ apply poset_yoneda, intros Γ_1 a,
+    simp only [le_inf_iff] at a H ⊢, cases a, cases H, cases a_right, refine ⟨‹_›, _⟩,
+    have : Γ_1 ≤ pair x' ((y.func i_v)̌ ) =ᴮ pair y' ((y.func i_v)̌ ),
+     from subst_congr_pair_left' ‹_›, apply subst_congr_mem_left'; from ‹_›},
+    {cases x, cases y, convert nonzero_wit H', ext,
+      dsimp with cleanup, rw[top_inf_eq], refl}
 end
 end cardinal_preservation
 end bSet
-
-  -- have := @maximum_principle 𝔹 _ (λ w, w ∈ᴮ (x̌) ⊓ pair w ((pSet.func y i)̌ ) ∈ᴮ f) _,
- --    swap, intros x₁ y₁, simp[subst_congr_pair_left], split,
- --    tidy_context, rw[bv_eq_symm] at a_left, apply bv_rw' a_left, simp,
- --    from ‹_›,
-
- --    tidy_context, have : Γ_1 ≤ pair y₁ ((pSet.func y i)̌) =ᴮ pair x₁ ((pSet.func y i)̌),
- --    by {apply subst_congr_pair_left', rwa[bv_eq_symm]},
- --    apply subst_congr_mem_left', rw[bv_eq_symm], from ‹_›, from ‹_›,
- --    have this' : Γ ≤ this_w ∈ᴮ x̌  ⊓ pair this_w (pSet.func y ǐ)  ∈ᴮ f,
- --     by rwa[<-this_h], bv_split_at this',
- -- have this₂ := @maximum_principle 𝔹 _ (λ w, w ∈ᴮ (x̌)) _,
 
 namespace pSet
 
