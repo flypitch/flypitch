@@ -425,10 +425,10 @@ by {intros x y, unfold is_transitive, revert x y, change B_ext _, simp}
 
 def Ord (x : bSet 𝔹) : 𝔹 := epsilon_well_orders x ⊓ is_transitive x
 
-/-- x is not larger than y if there does not exist a surjective function from x to y -/
-def not_larger_than (x y : bSet 𝔹) : 𝔹 := ⨅f, -(is_func' x y f ⊓ ⨅v, v ∈ᴮ y ⟹ ⨆w, w ∈ᴮ x ⊓ pair w v ∈ᴮ f)
+/-- x is larger than y if there exists a function f such that for every v ∈ y, there exists a w ∈ x such that (w,v) ∈ f -/
+def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func f) ⊓ ⨅v, v ∈ᴮ y ⟹ ⨆w, w ∈ᴮ x ⊓ pair w v ∈ᴮ f  
 
-def Card (x : bSet 𝔹) : 𝔹 := Ord(x) ⊓ ⨅y, y ∈ᴮ x ⟹ not_larger_than y x
+def Card (y : bSet 𝔹) : 𝔹 := Ord(y) ⊓ ⨅x, x ∈ᴮ y ⟹ (- larger_than y x)
 
 lemma is_transitive_of_mem_Ord (y x : bSet 𝔹) : Ord x ⊓ y ∈ᴮ x ≤ (is_transitive y) :=
 begin
