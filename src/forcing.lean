@@ -51,7 +51,7 @@ end
 variables
   (η₁ η₂ : pSet.{u}) (H_infinite : ω ≤ #(η₁.type))
   (H_lt : #(η₁.type) < #(η₂.type))
-  (H_inj₂ : ∀ x y, ¬ pSet.equiv (η₂.func x) (η₂.func y))
+  (H_inj₂ : ∀ x y, x ≠ y → ¬ pSet.equiv (η₂.func x) (η₂.func y))
   (f : bSet 𝔹) (g : η₂.type → η₁.type)
   (H : ∀ β : η₂.type, (⊥ : 𝔹) < is_func f ⊓ pair ((η₁.func (g β)̌ ) ) ((η₂.func β)̌ )∈ᴮ f)
 
@@ -80,7 +80,7 @@ begin
     have H_le_eq : Γ ≤ ((η₂.func β₁_val)̌ ) =ᴮ ((η₂.func β₂_val)̌ ),
      by {apply funext; from ‹_›},
     from le_trans H_le_eq
-           (by {rw[le_bot_iff], apply check_bv_eq_bot_of_not_equiv, apply H_inj₂})},
+           (by {rw[le_bot_iff], apply check_bv_eq_bot_of_not_equiv, apply H_inj₂, tidy})},
    intro H_CCC, specialize H_CCC (g⁻¹'{ξ}) ‹_› ‹_› ‹_›,
    replace H_ξ := (lt_iff_le_and_ne.mp H_ξ).right.symm, contradiction
 end
@@ -165,7 +165,7 @@ begin
   apply bSet.not_CCC_of_uncountable_fiber; try{assumption},
     {sorry},
     {sorry},
-    {sorry},
+    {intros i₁ i₂ H_neq, from ordinal.mk_inj _ _ _ ‹_›},
     {sorry}
 end
 
@@ -180,7 +180,7 @@ begin
   apply bSet.not_CCC_of_uncountable_fiber; try{assumption},
     {sorry},
     {sorry},
-    {sorry},
+    {intros i₁ i₂ H_neq, from ordinal.mk_inj _ _ _ ‹_›},
     {sorry}
 end
 
