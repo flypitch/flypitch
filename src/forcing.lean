@@ -4,6 +4,8 @@ open ordinal cardinal lattice bSet
 
 noncomputable theory
 
+local attribute [instance, priority 0] classical.prop_decidable
+
 local infix ` ⟹ `:65 := lattice.imp
 
 local infix ` ⇔ `:50 := lattice.biimp
@@ -12,18 +14,19 @@ local prefix `#`:70 := cardinal.mk
 
 universe u
 
-namespace bSet
-section cardinal_preservation
-
-local notation `ω` := cardinal.omega
-
 def CCC (𝔹 : Type u) [boolean_algebra 𝔹] : Prop :=
   ∀ ι : Type u, ∀ 𝓐 : ι → 𝔹, (∀ i, ⊥ < 𝓐 i) →
-    (∀ i j, i ≠ j → 𝓐 i ⊓ 𝓐 j ≤ ⊥) → #ι = ω
+    (∀ i j, i ≠ j → 𝓐 i ⊓ 𝓐 j ≤ ⊥) → #ι = cardinal.omega
+
+namespace bSet
+section cardinal_preservation
+local notation `ω` := cardinal.omega
+
 
 variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 
-lemma AE_of_check_larger_than_check (x y : pSet.{u}) {f : bSet 𝔹} {Γ} {h_nonzero : ⊥ < Γ} (H : Γ ≤ (is_func f) ⊓ ⨅v, v ∈ᴮ y̌ ⟹ ⨆w, w ∈ᴮ x̌ ⊓ pair w v ∈ᴮ f) :
+lemma AE_of_check_larger_than_check (x y : pSet.{u}) {f : bSet 𝔹} {Γ}
+  (H : Γ ≤ (is_func f) ⊓ ⨅v, v ∈ᴮ y̌ ⟹ ⨆w, w ∈ᴮ x̌ ⊓ pair w v ∈ᴮ f) (h_nonzero : ⊥ < Γ) :
   ∀ i : y.type, ∃ j : x.type, ⊥ < (is_func f) ⊓ (pair ((x.func j)̌ ) ((y.func i)̌ )) ∈ᴮ f :=
 begin
   intro i_v, bv_split_at H, replace H_1_1 := H_1_1 ((y.func i_v)̌ ), simp[check_mem'] at H_1_1,
@@ -78,7 +81,7 @@ begin
      by {apply funext; from ‹_›},
     from le_trans H_le_eq
            (by {rw[le_bot_iff], apply check_bv_eq_bot_of_not_equiv, apply H_inj₂})},
-   intro H_CCC, specialize H_CCC (g⁻¹'{ξ}) 𝓐 𝓐_nontriv 𝓐_anti,
+   intro H_CCC, specialize H_CCC (g⁻¹'{ξ}) ‹_› ‹_› ‹_›,
    replace H_ξ := (lt_iff_le_and_ne.mp H_ξ).right.symm, contradiction
 end
 
@@ -112,12 +115,16 @@ def is_regular_open : set (set(ℵ₂.type × ℕ)) → Prop := sorry
 
 def 𝔹 : Type := {S // is_regular_open S}
 instance 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 := sorry
+
+theorem 𝔹_CCC : CCC 𝔹 := sorry 
 /-- The principal regular open associated to a pair (ν, n) is the collection of all subsets of
     ℵ₂ × ℕ which contain (ν, n). -/
 def principal_open (ν : (ℵ₂̌  : bSet 𝔹).type) (n : ℕ) : 𝔹 :=
 begin
   simp at ν, use {S | (ν,n) ∈ S}, sorry
 end
+
+
 
 namespace cohen_real
 
@@ -143,23 +150,48 @@ sorry -- this lemma requires us to view the Cohen poset as a dense subset of �
 
 end cohen_real
 
+section neg_CH
+
 local notation `ℵ₀` := (omega : bSet 𝔹)
 local notation `𝔠` := (bv_powerset ℵ₀ : bSet 𝔹)
+local infix `≺`:70 := (λ x y, -(larger_than x y))
 
-lemma Card_ℵ₁ : ⊤ ≤ Card(ℵ₁̌  : bSet 𝔹) := sorry
+lemma ℵ₀_lt_ℵ₁ : (⊤ : 𝔹)  ≤ ℵ₀ ≺ ℵ₁̌  :=
+begin
+  simp[larger_than, -top_le_iff], rw[<-imp_bot],
+  bv_imp_intro, bv_cases_at H f, by_contra,
+  have := classical.axiom_of_choice
+            (bSet.AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
+  cases this with g g_spec,
+  suffices : ¬ CCC 𝔹, from (not_and_self _).mp ⟨this, 𝔹_CCC⟩,
+  apply bSet.not_CCC_of_uncountable_fiber; try{assumption},
+    {sorry},
+    {sorry},
+    {sorry},
+    {sorry}
+end
 
-lemma Card_ℵ₂ : ⊤ ≤ Card (ℵ₂̌  : bSet 𝔹) := sorry
+lemma ℵ₁_lt_ℵ₂ : (⊤ : 𝔹) ≤ ℵ₁̌  ≺ ℵ₂̌  :=
+begin
+  simp[larger_than, -top_le_iff], rw[<-imp_bot],
+  bv_imp_intro, bv_cases_at H f, by_contra,
+  have := classical.axiom_of_choice
+            (bSet.AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
+  cases this with g g_spec,
+  suffices : ¬ CCC 𝔹, from (not_and_self _).mp ⟨this, 𝔹_CCC⟩,
+  apply bSet.not_CCC_of_uncountable_fiber; try{assumption},
+    {sorry},
+    {sorry},
+    {sorry},
+    {sorry}
+end
 
-lemma ℵ₀_lt_ℵ₁ : ⊤ ≤ ℵ₀ ∈ᴮ ℵ₁̌  := sorry
-
-lemma ℵ₁_lt_ℵ₂ : ⊤ ≤ (ℵ₁̌ : bSet 𝔹) ∈ᴮ (ℵ₂̌ : bSet 𝔹) := sorry
-
+lemma cohen_real.mk_ext : ∀ (i j : type (ℵ₂̌  : bSet 𝔹)), func (ℵ₂̌ ) i =ᴮ func (ℵ₂̌ ) j ≤
+  (λ (x : type (ℵ₂̌ )), cohen_real.mk x) i =ᴮ (λ (x : type (ℵ₂̌ )), cohen_real.mk x) j :=
+sorry
 
 noncomputable def neg_CH_func : bSet 𝔹 := @function.mk _ _ (ℵ₂̌ )
-  (λ x, cohen_real.mk x)
-begin
-  sorry
-end
+  (λ x, cohen_real.mk x) cohen_real.mk_ext
 theorem ℵ₂_le_𝔠 : ⊤ ≤ is_func' (ℵ₂̌ ) 𝔠 (neg_CH_func) ⊓ is_inj (neg_CH_func) :=
 begin
 apply le_inf,
@@ -179,3 +211,5 @@ apply le_inf,
 
   {apply mk_inj_of_inj, from λ _ _ _, cohen_real.inj ‹_›},
 end
+
+end neg_CH
