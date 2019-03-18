@@ -198,6 +198,10 @@ def is_func' (x y f : bSet 𝔹) : 𝔹 :=
 def is_inj (f : bSet 𝔹) : 𝔹 :=
   ⨅w₁, ⨅ w₂, ⨅v₁, ⨅ v₂, pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⊓ v₁ =ᴮ v₂ ⟹ w₁ =ᴮ w₂
 
+lemma funext (f x y z : bSet 𝔹) {Γ : 𝔹} (H_func : Γ ≤ is_func f) (H : Γ ≤ (pair x y) ∈ᴮ f)
+  (H' : Γ ≤ (pair x z) ∈ᴮ f) : Γ ≤ y =ᴮ z :=
+by {bv_split, exact H_func_left x x y z (by {bv_split_goal}) (by simp)}
+
 def function.mk {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : bSet 𝔹 :=
 ⟨u.type, λ a, pair (u.func a) (F a), u.bval⟩
 

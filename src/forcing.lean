@@ -8,10 +8,19 @@ local infix ` ⟹ `:65 := lattice.imp
 
 local infix ` ⇔ `:50 := lattice.biimp
 
+local prefix `#`:70 := cardinal.mk
+
 universe u
 
 namespace bSet
 section cardinal_preservation
+
+local notation `ω` := cardinal.omega
+
+def CCC (𝔹 : Type u) [boolean_algebra 𝔹] : Prop :=
+  ∀ ι : Type u, ∀ 𝓐 : ι → 𝔹, (∀ i, ⊥ < 𝓐 i) →
+    (∀ i j, i ≠ j → 𝓐 i ⊓ 𝓐 j ≤ ⊥) → #ι = ω
+
 variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 
 lemma AE_of_check_larger_than_check (x y : pSet.{u}) {f : bSet 𝔹} {Γ} {h_nonzero : ⊥ < Γ} (H : Γ ≤ (is_func f) ⊓ ⨅v, v ∈ᴮ y̌ ⟹ ⨆w, w ∈ᴮ x̌ ⊓ pair w v ∈ᴮ f) :
@@ -28,13 +37,51 @@ begin
   have := @bounded_exists 𝔹 _ (x̌) (λ z, is_func f ⊓ pair z ((y.func i_v)̌ ) ∈ᴮ f),
   rw[<-this] at H', swap,
     {intros x' y',
-    /- `tidy_context` says -/ apply poset_yoneda, intros Γ_1 a,
+    apply poset_yoneda, intros Γ_1 a,
     simp only [le_inf_iff] at a H ⊢, cases a, cases H, cases a_right, refine ⟨‹_›, _⟩,
     have : Γ_1 ≤ pair x' ((y.func i_v)̌ ) =ᴮ pair y' ((y.func i_v)̌ ),
      from subst_congr_pair_left' ‹_›, apply subst_congr_mem_left'; from ‹_›},
-    {cases x, cases y, convert nonzero_wit H', ext,
+    {cases x, cases y, convert nonzero_wit H', ext1,
       dsimp with cleanup, rw[top_inf_eq], refl}
 end
+
+variables
+  (η₁ η₂ : pSet.{u}) (H_infinite : ω ≤ #(η₁.type))
+  (H_lt : #(η₁.type) < #(η₂.type))
+  (H_inj₂ : ∀ x y, ¬ pSet.equiv (η₂.func x) (η₂.func y))
+  (f : bSet 𝔹) (g : η₂.type → η₁.type)
+  (H : ∀ β : η₂.type, (⊥ : 𝔹) < is_func f ⊓ pair ((η₁.func (g β)̌ ) ) ((η₂.func β)̌ )∈ᴮ f)
+
+include H_infinite H_lt H_inj₂ f H
+lemma not_CCC_of_uncountable_fiber (H_ex : ∃ ξ : η₁.type, ω < #(g⁻¹' {ξ})) : ¬ CCC 𝔹 :=
+begin
+  cases H_ex with ξ H_ξ,
+  let 𝓐 : (g⁻¹'{ξ}) → 𝔹 :=
+    λ β, is_func f ⊓ (pair ((η₁.func (g β.val))̌ ) ((η₂.func β.val)̌ )) ∈ᴮ f,
+  have 𝓐_nontriv : ∀ β, ⊥ < 𝓐 β,
+    from λ _, by apply H,
+  have 𝓐_anti : ∀ β₁ β₂, β₁ ≠ β₂ → (𝓐 β₁) ⊓ (𝓐 β₂) ≤ ⊥,
+    by {intros β₁ β₂ h_sep, dsimp[𝓐],
+    /- `tidy_context` says -/ apply poset_yoneda, intros Γ a,
+    cases β₂, cases β₁, cases H_ξ, cases H_lt, cases β₁_property, cases β₂_property,
+    work_on_goal 0 { induction β₂_property, simp only [le_inf_iff] at a,
+                     cases a, cases a_right, cases a_left },
+    work_on_goal 1 { induction β₁_property, simp only [le_inf_iff] at a,
+                     cases a, cases a_right, cases a_left, solve_by_elim },
+    work_on_goal 1 { cases β₂_property,
+      work_on_goal 0 { induction β₂_property, simp only [le_inf_iff] at a,
+        cases a, cases a_right, cases a_left, solve_by_elim}, simp only [le_inf_iff] at a,
+        cases a, cases a_right, cases a_left, solve_by_elim},
+    
+    rw[β₁_property] at a_left_right,
+    have H_le_eq : Γ ≤ ((η₂.func β₁_val)̌ ) =ᴮ ((η₂.func β₂_val)̌ ),
+     by {apply funext; from ‹_›},
+    from le_trans H_le_eq
+           (by {rw[le_bot_iff], apply check_bv_eq_bot_of_not_equiv, apply H_inj₂})},
+   intro H_CCC, specialize H_CCC (g⁻¹'{ξ}) 𝓐 𝓐_nontriv 𝓐_anti,
+   replace H_ξ := (lt_iff_le_and_ne.mp H_ξ).right.symm, contradiction
+end
+
 end cardinal_preservation
 end bSet
 
