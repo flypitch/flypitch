@@ -6,6 +6,8 @@ noncomputable theory
 
 local attribute [instance, priority 0] classical.prop_decidable
 
+local attribute [simp] omega_le_aleph
+
 local infix ` ⟹ `:65 := lattice.imp
 
 local infix ` ⇔ `:50 := lattice.biimp
@@ -88,6 +90,8 @@ end
 end cardinal_preservation
 end bSet
 
+open bSet
+
 namespace pSet
 
 @[reducible]noncomputable def ℵ₁ : pSet.{0} := ordinal.mk (aleph 1).ord
@@ -159,12 +163,12 @@ begin
   simp[larger_than, -top_le_iff], rw[<-imp_bot],
   bv_imp_intro, bv_cases_at H f, by_contra,
   have := classical.axiom_of_choice
-            (bSet.AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
+            (AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
   cases this with g g_spec,
   suffices : ¬ CCC 𝔹, from (not_and_self _).mp ⟨this, 𝔹_CCC⟩,
-  apply bSet.not_CCC_of_uncountable_fiber; try{assumption},
-    {sorry},
-    {sorry},
+  apply not_CCC_of_uncountable_fiber; try{assumption},
+    {from le_of_eq (by simp)},
+    {simp[zero_aleph, -aleph_zero], from zero_lt_one},
     {intros i₁ i₂ H_neq, from ordinal.mk_inj _ _ _ ‹_›},
     {sorry}
 end
@@ -174,12 +178,12 @@ begin
   simp[larger_than, -top_le_iff], rw[<-imp_bot],
   bv_imp_intro, bv_cases_at H f, by_contra,
   have := classical.axiom_of_choice
-            (bSet.AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
+            (AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
   cases this with g g_spec,
   suffices : ¬ CCC 𝔹, from (not_and_self _).mp ⟨this, 𝔹_CCC⟩,
-  apply bSet.not_CCC_of_uncountable_fiber; try{assumption},
-    {sorry},
-    {sorry},
+  apply not_CCC_of_uncountable_fiber; try{assumption},
+    {simp},
+    {simp, from one_lt_two},
     {intros i₁ i₂ H_neq, from ordinal.mk_inj _ _ _ ‹_›},
     {sorry}
 end

@@ -101,16 +101,13 @@ begin
      apply le_trans, apply inf_le_inf; apply eq_inserted_of_eq_singleton, rw[bv_eq_symm], apply bv_eq_trans} 
 end
 
-section distribution
-run_cmd mk_simp_attr `dnf
 
-@[dnf]lemma distrib_inf_over_sup_from_left {β : Type*} [distrib_lattice β] {a b c : β} :
-  c ⊓ (a ⊔ b) = (c ⊓ a) ⊔ (c ⊓ b) := by apply inf_sup_left
+run_cmd do mk_simp_attr `dnf, mk_simp_attr `cnf
 
-@[dnf]lemma distrib_inf_over_sup_from_right {β : Type*} [distrib_lattice β] {a b c : β} :
-  (a ⊔ b) ⊓ c = (a ⊓ c) ⊔ (b ⊓ c) := by apply inf_sup_right
+attribute [dnf] inf_sup_left inf_sup_right
 
-end distribution
+attribute [cnf] sup_inf_left sup_inf_right
+
 /- Taken together, eq_of_eq_pair_left and eq_of_eq_pair_right say that x = v and y = w if and only if pair x y = pair v w -/
 theorem eq_of_eq_pair_left {x y v w: bSet 𝔹} : pair x y =ᴮ pair v w ≤ x =ᴮ v :=
 begin

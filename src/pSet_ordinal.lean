@@ -4,10 +4,16 @@ open ordinal
 
 open cardinal
 
+local prefix `#`:70 := cardinal.mk
+
 noncomputable theory
 
 local attribute [instance, priority 0] classical.prop_decidable
 universe u
+
+@[simp]lemma type_out {η : ordinal} : @ordinal.type _ (η.out.r) (η.out.wo) = η :=
+by {simp[ordinal.type], convert quotient.out_eq η, cases (quotient.out η), refl}
+
 namespace pSet
 
 @[reducible]def succ (x : pSet) : pSet := insert x x
@@ -18,9 +24,7 @@ begin
   intros ξ ξ_limit ih,
   refine ⟨ξ.out.α, λ x, ih (typein _ _) _⟩,
   from ξ.out.α, from ξ.out.r, from ξ.out.wo, from x,
-  convert @typein_lt_type _ (ξ.out.r) (ξ.out.wo) x,
-  unfold ordinal.type, conv{to_lhs, rw[<-quotient.out_eq ξ]},
-  apply quotient.sound, cases quotient.out ξ, refl
+  convert @typein_lt_type _ (ξ.out.r) (ξ.out.wo) x, simp
 end
 
 @[simp]lemma ordinal.mk_zero : ordinal.mk 0 = ∅ := by simp[ordinal.mk]
@@ -299,5 +303,34 @@ lemma Ord_mk (η : ordinal) : Ord (ordinal.mk η) :=
 sorry
 
 lemma ordinal.mk_inj (η : ordinal) : ∀ i j : (ordinal.mk η).type, i ≠ j → ¬ equiv ((ordinal.mk η).func i) ((ordinal.mk η).func j) := sorry
+
+@[simp]lemma mk_type_mk_eq {k} : #(ordinal.mk (aleph k).ord).type = (aleph k) :=
+begin
+  rw[ordinal.mk_limit_type (aleph_is_limit (k))], convert card_ord (aleph k),
+  rw[<-(@card_type _ (aleph k).ord.out.r (aleph k).ord.out.wo)], simp
+end
+
+lemma zero_aleph : cardinal.omega = (aleph 0) := by simp
+
+@[simp]lemma mk_type_omega_eq : #(ordinal.mk (cardinal.omega).ord).type = cardinal.omega :=
+by {rw[<-aleph_zero], apply mk_type_mk_eq}
+
+@[simp]lemma mk_omega_eq_mk_omega : #(pSet.type omega) = cardinal.omega :=
+begin
+  apply quotient.sound,
+  from ⟨{ to_fun := id,
+  inv_fun := id,
+  left_inv := λ _, rfl,
+  right_inv := λ _, rfl}⟩
+end
+
+lemma two_eq_succ_one : (2 : ordinal) = (ordinal.succ 1) :=
+by {rw[succ_eq_add_one], refl}
+
+lemma add_one_lt_add_one {a b : ordinal} : a < b ↔ (a+1) < (b+1) :=
+by {repeat{rw[<-succ_eq_add_one]}, simp[succ_lt_succ]}
+
+lemma one_lt_two : (1 : ordinal) < 2 :=
+by {rw[two_eq_succ_one], from ordinal.lt_succ_self _}
 
 end pSet
