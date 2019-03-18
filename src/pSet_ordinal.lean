@@ -31,8 +31,11 @@ by {rw[H_succ], simp[ordinal.mk]}
 @[simp]lemma ordinal.mk_succ₂ {η : ordinal} : ordinal.mk (ordinal.succ η) = pSet.succ (ordinal.mk η) :=
 by {simp[ordinal.mk]}
 
-@[simp]lemma ordinal.mk_limit {η : ordinal} {H_limit : is_limit η} : ordinal.mk η = ⟨η.out.α, λ x, ordinal.mk (@typein _ (η.out.r) (η.out.wo) x)⟩ :=
+@[simp]lemma ordinal.mk_limit {η : ordinal} (H_limit : is_limit η) : ordinal.mk η = ⟨η.out.α, λ x, ordinal.mk (@typein _ (η.out.r) (η.out.wo) x)⟩ :=
 by simp[*, ordinal.mk]
+
+@[simp]lemma ordinal.mk_limit_type {η : ordinal} (H_limit : is_limit η) : (ordinal.mk η).type = η.out.α :=
+by simp*; refl
 
 def epsilon_well_orders (x : pSet.{u}) : Prop :=
   (∀ y, y ∈ x → (∀ z, z ∈ x → (equiv y z ∨ y ∈ z ∨ z ∈ y))) ∧
@@ -294,5 +297,7 @@ by {split, apply ewo_Union ‹_› ‹_›, apply transitive_Union,
 
 lemma Ord_mk (η : ordinal) : Ord (ordinal.mk η) :=
 sorry
+
+lemma ordinal.mk_inj (η : ordinal) : ∀ i j : (ordinal.mk η).type, i ≠ j → ¬ equiv ((ordinal.mk η).func i) ((ordinal.mk η).func j) := sorry
 
 end pSet

@@ -96,7 +96,7 @@ lemma bv_or_left {a b₁ b₂ : 𝔹} (h₁ : a ≤ b₁) : a ≤ b₁ ⊔ b₂ 
 
 lemma bv_or_right {a b₁ b₂ : 𝔹} (h₂ : a ≤ b₂) : a ≤ b₁ ⊔ b₂ := le_sup_right_of_le h₂
 
-@[ematch] lemma from_empty_context {a b : 𝔹} (h : ⊤ ≤ b) : a ≤ b :=
+lemma from_empty_context {a b : 𝔹} (h : ⊤ ≤ b) : a ≤ b :=
   by refine le_trans _ h; apply le_top
 
 lemma bv_imp_intro {a b c : 𝔹} {h : a ⊓ b ≤ c} :
@@ -163,9 +163,9 @@ run_cmd mk_simp_attr `cleanup
 @[simp, cleanup]def type : bSet 𝔹 → Type u
 | ⟨α, _, _⟩ := α
 
-@[simp, cleanup]lemma type_infi {α : Type*} {A : α → bSet 𝔹} {B C : α → 𝔹} : (⨅(a : type (mk α A B)), C a) = ⨅(a : α), C a := by refl
+@[simp, cleanup]lemma type_infi {α : Type*} {A : α → bSet 𝔹} {B C : α → 𝔹} : (⨅(a : type (mk α A B)), C a) = ⨅(a : α), C a := rfl
 
-@[simp, cleanup]lemma type_supr {α : Type*} {A : α → bSet 𝔹} {B C : α → 𝔹} : (⨆(a : type (mk α A B)), C a) = ⨆(a : α), C a := by refl
+@[simp, cleanup]lemma type_supr {α : Type*} {A : α → bSet 𝔹} {B C : α → 𝔹} : (⨆(a : type (mk α A B)), C a) = ⨆(a : α), C a := rfl
 
 /-- The indexing function of a bSet -/
 @[simp, cleanup]def func : ∀ x : bSet 𝔹, x.type → bSet 𝔹
@@ -196,7 +196,6 @@ instance has_empty_bSet : has_emptyc (bSet 𝔹) := ⟨empty⟩
 element of the first family is extensionally equivalent to
   some element of the second family and vice-versa. -/
 @[reducible]def bv_eq : ∀ (x y : bSet 𝔹), 𝔹
-/- ∀ x ∃ y, m x y ∧ ∀ y ∃ x, m y x, but this time in ~lattice~ -/
 | ⟨α, A, B⟩ ⟨α', A', B'⟩ :=
              (⨅a : α, B a ⟹ ⨆a', B' a' ⊓ bv_eq (A a) (A' a')) ⊓
                (⨅a' : α', B' a' ⟹ ⨆a, B a ⊓ bv_eq (A a) (A' a'))
@@ -669,15 +668,15 @@ end
 lemma eq_singleton_iff_eq {x y : bSet 𝔹} {c : 𝔹} : c ≤ {x} =ᴮ {y} ↔ c ≤ x =ᴮ y :=
 by {split; intros; [apply eq_of_eq_singleton, apply eq_singleton_of_eq]; from ‹_›}
 
-lemma singleton_unfold {x : bSet 𝔹} : {x} = bSet.insert1 x ∅ := by refl
+lemma singleton_unfold {x : bSet 𝔹} : {x} = bSet.insert1 x ∅ := rfl
 
-@[simp]lemma singleton_type {x : bSet 𝔹} : type ({x} : bSet 𝔹) = option (ulift _root_.empty) := by refl
+@[simp]lemma singleton_type {x : bSet 𝔹} : type ({x} : bSet 𝔹) = option (ulift _root_.empty) := rfl
 
-@[simp]lemma singleton_func {x : bSet 𝔹} {o} : func ({x} : bSet 𝔹) o = option.rec_on o x (empty.elim ∘ ulift.down) := by refl
+@[simp]lemma singleton_func {x : bSet 𝔹} {o} : func ({x} : bSet 𝔹) o = option.rec_on o x (empty.elim ∘ ulift.down) := rfl
 
-@[simp]lemma singleton_bval {x : bSet 𝔹} {o} : bval ({x} : bSet 𝔹) o = option.rec_on o ⊤ (empty.elim ∘ ulift.down) := by refl
+@[simp]lemma singleton_bval {x : bSet 𝔹} {o} : bval ({x} : bSet 𝔹) o = option.rec_on o ⊤ (empty.elim ∘ ulift.down) := rfl
 
-@[simp]lemma singleton_bval_none {x : bSet 𝔹} : bval ({x} : bSet 𝔹) none = ⊤ := by refl
+@[simp]lemma singleton_bval_none {x : bSet 𝔹} : bval ({x} : bSet 𝔹) none = ⊤ := rfl
 
 -- @[simp]lemma eq_of_eq_insert_right {u w v : bSet 𝔹} {c : 𝔹} {h : c ≤ bSet.insert1 v u =ᴮ bSet.insert1 v w} : c ≤ u =ᴮ w :=
 -- begin
@@ -1191,9 +1190,9 @@ def bSet_of_core {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} (h : core 
   bSet_of_core_set h set.univ
 
 @[simp]lemma of_core_type {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} {h : core u S} {C : set α} :
-  (bSet_of_core_set h C).type = C := by refl
+  (bSet_of_core_set h C).type = C := rfl
 @[simp]lemma of_core_bval {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} {h : core u S} {C : set α} {i} :
-  (bSet_of_core_set h C).bval i = ⊤ := by refl
+  (bSet_of_core_set h C).bval i = ⊤ := rfl
 
 lemma of_core_mem {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} {h : core u S} {C : set α} {i} :
   ⊤ ≤ (bSet_of_core_set h C).func i ∈ᴮ u := by simp; apply h.left
@@ -1263,20 +1262,32 @@ note that a check-name is not only definite, but recursively definite
 
 postfix `̌ `:90 := check
 
--- @[simp, cleanup]lemma check_type {α : Type u} {A : α → pSet} :
---   bSet.type ((pSet.mk α A)̌ ) = α := rfl
+@[simp, cleanup]lemma check_type {α : Type u} {A : α → pSet} :
+  bSet.type ((pSet.mk α A)̌  : bSet 𝔹) = α := rfl
 
--- @[simp, cleanup]lemma check_type_infi {α : Type u} {A : α → pSet} {s : α → 𝔹} :
---   ⨅(a : bSet.type ((pSet.mk α A)̌ )), s a = ⨅(a : α), s a := by refl
+@[simp, cleanup]lemma check_type_infi {α : Type u} {A : α → pSet} {s : α → 𝔹} :
+  (⨅(a : bSet.type ((pSet.mk α A)̌  : bSet 𝔹)), s a) = (⨅(a : α), s a : 𝔹) :=
+by refl
 
--- @[simp, cleanup]lemma check_type_supr {α : Type u} {A : α → pSet} {s : α → 𝔹} :
---   ⨆(a : bSet.type ((pSet.mk α A)̌ )), s a = ⨆(a : α), s a := by refl
+@[simp, cleanup]lemma check_type_supr {α : Type u} {A : α → pSet} {s : α → 𝔹} :
+(⨆(a : bSet.type ((pSet.mk α A)̌   : bSet 𝔹)), s a) = (⨆(a : α), s a : 𝔹) := rfl
 
 @[simp, cleanup]lemma pSet.type_mk {α : Type u} {A : α → pSet} : pSet.type (pSet.mk α A) = α
 := rfl
 
 @[simp, cleanup]lemma check_type' {x : pSet.{u}} : bSet.type (x̌ : bSet 𝔹) = x.type := 
 by {induction x, simp}
+
+@[reducible, simp]def check_cast {x : pSet} (i : (x̌ : bSet 𝔹).type) : x.type :=
+cast check_type' i
+
+
+lemma check_func {x : pSet} {i} :
+  (x̌ : bSet 𝔹).func i = (x.func (check_cast i))̌  :=
+by induction x; refl
+
+lemma check_unfold {x : pSet.{u}} : (x̌ : bSet 𝔹) = bSet.mk x.type (λ i, (x.func i)̌ ) (λ i, ⊤) :=
+by induction x; refl
 
 @[simp]lemma check_bval_top (x : pSet) {i} : (x̌ : bSet 𝔹).bval i = ⊤ := by induction x; refl
 
@@ -1544,8 +1555,8 @@ end
 section infinity
 local notation `ω` := pSet.omega
 
-@[simp]lemma check_omega_type : (ω̌ : bSet 𝔹).type = ulift ℕ := by refl
-@[simp]lemma check_omega_func : (ω̌: bSet 𝔹).func = λ x, check (pSet.of_nat x.down) := by refl
+@[simp]lemma check_omega_type : (ω̌ : bSet 𝔹).type = ulift ℕ := rfl
+@[simp]lemma check_omega_func : (ω̌: bSet 𝔹).func = λ x, check (pSet.of_nat x.down) := rfl
 
 local postfix `̃ `:70 := pSet.of_nat -- i'm a bit skeptical of this notation
 
@@ -1578,7 +1589,7 @@ end
 
 @[reducible]def omega := (ω̌ : bSet 𝔹)
 
-@[simp, cleanup]lemma omega_type : (omega : bSet 𝔹).type = ulift ℕ := by refl
+@[simp, cleanup]lemma omega_type : (omega : bSet 𝔹).type = ulift ℕ := rfl
 
 /-- The n-th von Neumann ordinal in bSet 𝔹 is just the check-name of the n-th von Neumann ordinal in pSet -/
 @[reducible]def of_nat : ℕ → bSet 𝔹 := λ n, (pSet.of_nat n)̌
@@ -1723,7 +1734,7 @@ begin
  /- Show that ⋃C' is an upper bound on C' in X -/
   have H_internal_ub_spec : ⊤ ≤ ⨅(i_w : C'.type), C'.bval i_w ⟹ C'.func i_w ⊆ᴮ (bv_union C'),
     by {have := bv_union_spec' C', apply le_trans this,
-        have := @bounded_forall 𝔹 _ C' (λ w, w ⊆ᴮ bv_union C'), dsimp at this, rw[this_1],
+        have := @bounded_forall 𝔹 _ C' (λ w, w ⊆ᴮ bv_union C'), dsimp only at this, rw[this_1],
         intros x y, rw[inf_comm, bv_eq_symm], apply subst_congr_subset_left},
 
   have := core_witness h_core (bv_union C') (by {rw[eq_top_iff], exact H_internal_ub_mem}),

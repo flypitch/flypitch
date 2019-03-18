@@ -124,8 +124,6 @@ begin
   simp at ν, use {S | (ν,n) ∈ S}, sorry
 end
 
-
-
 namespace cohen_real
 
 /-- `cohen_real.χ ν` is the indicator function on ℕ induced by every ordinal less than ℵ₂ -/
@@ -188,10 +186,25 @@ end
 
 lemma cohen_real.mk_ext : ∀ (i j : type (ℵ₂̌  : bSet 𝔹)), func (ℵ₂̌ ) i =ᴮ func (ℵ₂̌ ) j ≤
   (λ (x : type (ℵ₂̌ )), cohen_real.mk x) i =ᴮ (λ (x : type (ℵ₂̌ )), cohen_real.mk x) j :=
-sorry
+begin
+  intros i j, by_cases i = j,
+   {simp[h]},
+   {apply poset_yoneda, intros Γ a, simp only [le_inf_iff] at *,
+     have : func (ℵ₂̌ ) i = (ℵ₂.func (check_cast i))̌ ,
+       by simp[check_func],
+     rw[this] at a,
+     have : func (ℵ₂̌ ) j = (ℵ₂.func (check_cast j))̌ ,
+       by simp[check_func],
+     rw[this] at a,
+   suffices : func ℵ₂ (check_cast i)̌  =ᴮ func ℵ₂ (check_cast j)̌  ≤ ⊥,
+     from le_trans a (le_trans this bot_le),
+   rw[le_bot_iff], apply check_bv_eq_bot_of_not_equiv,
+   apply ordinal.mk_inj, unfold check_cast, intro H, cc}
+end
 
 noncomputable def neg_CH_func : bSet 𝔹 := @function.mk _ _ (ℵ₂̌ )
   (λ x, cohen_real.mk x) cohen_real.mk_ext
+
 theorem ℵ₂_le_𝔠 : ⊤ ≤ is_func' (ℵ₂̌ ) 𝔠 (neg_CH_func) ⊓ is_inj (neg_CH_func) :=
 begin
 apply le_inf,
