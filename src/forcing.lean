@@ -47,7 +47,7 @@ begin
     have : Γ_1 ≤ pair x' ((y.func i_v)̌ ) =ᴮ pair y' ((y.func i_v)̌ ),
      from subst_congr_pair_left' ‹_›, apply subst_congr_mem_left'; from ‹_›},
     {cases x, cases y, convert nonzero_wit H', ext1,
-      dsimp with cleanup, rw[top_inf_eq], refl}
+      dsimp with cleanup, rw[top_inf_eq]}
 end
 
 variables

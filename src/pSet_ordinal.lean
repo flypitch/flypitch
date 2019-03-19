@@ -18,14 +18,26 @@ namespace pSet
 
 @[reducible]def succ (x : pSet) : pSet := insert x x
 
+@[simp]lemma typein_lt_type' {ξ : ordinal} {i : ξ.out.α} : @typein _ ξ.out.r ξ.out.wo i < ξ :=
+by {convert @typein_lt_type _ (ξ.out.r) (ξ.out.wo) i, simp}
+
 @[reducible]noncomputable def ordinal.mk : ordinal.{u} → pSet.{u} :=
 λ η, limit_rec_on η ∅ (λ ξ mk_ξ, pSet.succ mk_ξ)
 begin
   intros ξ ξ_limit ih,
   refine ⟨ξ.out.α, λ x, ih (typein _ _) _⟩,
-  from ξ.out.α, from ξ.out.r, from ξ.out.wo, from x,
-  convert @typein_lt_type _ (ξ.out.r) (ξ.out.wo) x, simp
+  from ξ.out.α, from ξ.out.r, from ξ.out.wo, from x, simp
 end
+
+
+@[simp]lemma mk_type {α} {A} : (pSet.mk α A).type = α := rfl
+
+@[simp]lemma mk_func {α} {A} : (pSet.mk α A).func = A := rfl
+
+@[simp]lemma mk_func' {α} {A} {i} : (pSet.mk α A).func i = A i := rfl
+
+@[simp]lemma mk_type_forall {α} {A} {P : (pSet.mk α A).type → Prop} :
+  (∀ x : (pSet.mk α A).type, P x) ↔ ∀ x : α, P x := by refl
 
 @[simp]lemma ordinal.mk_zero : ordinal.mk 0 = ∅ := by simp[ordinal.mk]
 
@@ -331,7 +343,7 @@ by {split, apply ewo_Union ‹_› ‹_›, apply transitive_Union,
 lemma Ord_mk (η : ordinal) : Ord (ordinal.mk η) :=
 sorry
 
-private lemma ordinal.mk_inj_successor : ∀ (o : ordinal), (∀ (i j : type (ordinal.mk o)), i ≠ j →
+private lemma ordinal.mk_inj_successor : ∀ (o : ordinal.{u}), (∀ (i j : type (ordinal.mk o)), i ≠ j →
   ¬equiv (func (ordinal.mk o) i) (func (ordinal.mk o) j)) →
   ∀ (i j : type (ordinal.mk (ordinal.succ o))), i ≠ j →
   ¬equiv (func (ordinal.mk (ordinal.succ o)) i) (func (ordinal.mk (ordinal.succ o)) j) :=
@@ -339,24 +351,62 @@ begin
   intros ξ ih, rw[ordinal.mk_succ], rw[succ_type_forall], intro i, rw[succ_type_forall],
   intros j H_neq, cases i; cases j,
    {exfalso, from H_neq rfl},
-   {simp, intro H, have : (func (ordinal.mk ξ) j) ∈ (ordinal.mk ξ),
+   {simp only [pSet.succ_func_none, pSet.succ_func_some],
+     intro H, have : (func (ordinal.mk ξ) j) ∈ (ordinal.mk ξ),
      by {cases (ordinal.mk ξ), apply mem.mk}, suffices : (ordinal.mk ξ) ∈ (ordinal.mk ξ),
      from mem_self ‹_›, from (mem.congr_left ‹_›).mpr ‹_›},
-   {simp, intro H, have : (func (ordinal.mk ξ) i) ∈ (ordinal.mk ξ),
+   {simp only [pSet.succ_func_none, pSet.succ_func_some],
+     intro H, have : (func (ordinal.mk ξ) i) ∈ (ordinal.mk ξ),
      by {cases (ordinal.mk ξ), apply mem.mk}, suffices : (ordinal.mk ξ) ∈ (ordinal.mk ξ),
      from mem_self ‹_›, from (mem.congr_left ‹_›).mp ‹_›},
    {have : i ≠ j, from λ _, by apply H_neq; simp*, simp*}
 end
 
-private lemma ordinal.mk_inj_limit : ∀ (o : ordinal), is_limit o → (∀ (o' : ordinal),
+theorem zero_eq_type_empty' : (0 : ordinal.{u}) = ordinal.lift (@ordinal.type empty empty_relation _) :=
+begin
+  apply quotient.sound, split,
+  from { to_fun := by tidy,
+  inv_fun := by tidy,
+  left_inv := by exact dec_trivial,
+  right_inv := by exact dec_trivial,
+  ord := by exact dec_trivial}
+end
+
+private lemma ordinal.mk_inj_limit : ∀ (o : ordinal.{u}), is_limit o → (∀ (o' : ordinal),
   o' < o → ∀ (i j : type (ordinal.mk o')), i ≠ j →
     ¬equiv (func (ordinal.mk o') i) (func (ordinal.mk o') j)) →
       ∀ (i j : type (ordinal.mk o)), i ≠ j →
         ¬equiv (func (ordinal.mk o) i) (func (ordinal.mk o) j) :=
 begin
-  intros ξ h_limit ih, rw[ordinal.mk_limit], swap, from ‹_›, dsimp,
-     intros i j H_neq H_equiv,
-  sorry
+  intros ξ h_limit ih, rw[ordinal.mk_limit ‹_›],
+  rw[mk_type_forall], intro i, rw[mk_type_forall], intros j H_neq,
+  simp only [mk_func],
+  let i' := @typein ξ.out.α ((quotient.out ξ).r) ξ.out.wo i,
+  let j' := @typein ξ.out.α ((quotient.out ξ).r) ξ.out.wo j,
+  have := (lt_trichotomy i' j'), cases this, swap, cases this,
+    {suffices : i = j, by contradiction, from ((@typein_inj _ ξ.out.r ξ.out.wo) i j).mp ‹_›},
+    {specialize ih (ordinal.succ i') ((succ_lt_of_is_limit _).mpr (by {simp[i']})),
+      swap, from ‹_›,
+     change ¬ equiv (ordinal.mk i') (ordinal.mk j'),
+     have j''_ex : ∃ j'', @typein _ i'.out.r i'.out.wo j'' = j',
+       by {apply typein_surj, simp*}, cases j''_ex with j'' j''_spec,
+     have := zero_or_succ_or_limit i',
+     cases this, swap, cases this_1,
+       {cases this_1 with i_pred H_pred,
+        rw[ordinal.mk_succ, succ_type_forall] at ih,
+       specialize ih none, rw[succ_type_forall] at ih, rw[H_pred] at ih,
+       rw[ordinal.mk_succ] at ih, --TODO(jesse) write option_succ_type_forall lemma
+
+  specialize ih (some sorry) sorry, sorry -- this should be doable
+     },
+       {rw[ordinal.mk_succ, succ_type_forall] at ih,
+       specialize ih none, rw[succ_type_forall] at ih, rw[ordinal.mk_limit this_1] at ih,
+       specialize ih (some j'') (sorry), convert ih using 2, simp[ordinal.mk_limit this_1],
+       simp*},
+       {have := eq.trans this_1 (by {convert zero_eq_type_empty'}),
+       sorry}, -- need to show nothing is less than 0
+      },
+    {sorry} -- this argument is symmetric
 end
 
      -- let i' := @typein ξ.out.α ((quotient.out ξ).r) ξ.out.wo i,
@@ -365,7 +415,7 @@ end
      -- apply ih, show ordinal, exact (ordinal.succ i'), sorry,
      -- sorry, sorry,
 
-lemma ordinal.mk_inj (η : ordinal) : ∀ (i j : ((ordinal.mk η).type : Type u)) (H_neq : i ≠ j) ,
+lemma ordinal.mk_inj (η : ordinal.{u}) : ∀ (i j : ((ordinal.mk η).type : Type u)) (H_neq : i ≠ j) ,
   ¬ equiv ((ordinal.mk η).func i) ((ordinal.mk η).func j) :=
 begin
   apply limit_rec_on η,
