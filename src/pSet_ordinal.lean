@@ -26,27 +26,6 @@ by {convert @typein_lt_type _ (ξ.out.r) (ξ.out.wo) i, simp}
 λ η, limit_rec_on η ∅ (λ ξ mk_ξ, pSet.succ mk_ξ)
   (λ ξ h_limit ih, ⟨ξ.out.α, λ i, ih (@typein _ ξ.out.r ξ.out.wo i) (by simp)⟩)
 
--- @[reducible]def ordinal.mk : ordinal.{u} → pSet.{u} :=
--- begin
---   intro η, apply well_founded.recursion (wf : well_founded (<)) η,
---   intros ξ' ih, exact ⟨ξ'.out.α, λ i, ih (@typein _ ξ'.out.r ξ'.out.wo i) (by simp)⟩
--- end
--- λ η, limit_rec_on η ∅ (λ ξ mk_ξ, pSet.succ mk_ξ)
--- begin
---   intros ξ ξ_limit ih,
---   refine ⟨ξ.out.α, λ x, ih (typein _ _) _⟩,
---   from ξ.out.α, from ξ.out.r, from ξ.out.wo, from x, simp
--- end
-
-instance hewwo (ξ : ordinal) : has_well_founded ξ.out.α :=
-{ r := ξ.out.r,
-  wf := ξ.out.wo.wf}
-
--- @[reducible]noncomputable def ordinal.mk : ordinal.{u} → pSet.{u}
--- | ξ := ⟨ξ.out.α, λ i, ordinal.mk (@typein _ ξ.out.r ξ.out.wo i)⟩
--- using_well_founded {dec_tac := `[change (@typein _ ξ.out.r ξ.out.wo i) < ξ, simp]}
--- -- using_well_founded {rel_tac := λ _ _, `[by apply_instance]}
-
 @[simp]lemma mk_type {α} {A} : (pSet.mk α A).type = α := rfl
 
 @[simp]lemma mk_func {α} {A} : (pSet.mk α A).func = A := rfl
@@ -55,21 +34,6 @@ instance hewwo (ξ : ordinal) : has_well_founded ξ.out.α :=
 
 @[simp]lemma mk_type_forall {α} {A} {P : (pSet.mk α A).type → Prop} :
   (∀ x : (pSet.mk α A).type, P x) ↔ ∀ x : α, P x := by refl
-
--- @[simp]lemma ordinal.mk_type {ξ} : (ordinal.mk ξ).type = ξ.out.α :=
--- begin
---   apply well_founded.induction wf ξ,
---   intros η ih,
--- end
-
--- def mk_type_cast {ξ : ordinal} : (ordinal.mk ξ).type → ξ.out.α :=
--- cast ordinal.mk_type
-
--- def mk_type_cast' {ξ : ordinal} : ξ.out.α → (ordinal.mk ξ).type :=
--- cast ordinal.mk_type.symm
-
--- @[simp]lemma ordinal.mk_func {ξ} {i} : (ordinal.mk ξ).func i = ordinal.mk (@typein _ ξ.out.r ξ.out.wo (mk_type_cast i)) :=
--- sorry
 
 @[simp]lemma ordinal.mk_zero : ordinal.mk 0 = ∅ :=
 by simp[ordinal.mk]
