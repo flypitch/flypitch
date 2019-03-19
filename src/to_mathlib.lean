@@ -946,6 +946,9 @@ begin
   [apply H₁, apply H₂]; from inf_le_left
 end
 
+lemma context_and_intro {β : Type*} [lattice β] {Γ} {a₁ a₂ : β}
+  (H₁ : Γ ≤ a₁) (H₂ : Γ ≤ a₂) : Γ ≤ a₁ ⊓ a₂ := le_inf ‹_› ‹_›
+
 lemma specialize_context {β : Type*} [partial_order β] {Γ b : β} (Γ' : β) {H_le : Γ' ≤ Γ} (H : Γ ≤ b)
   : Γ' ≤ b :=
 le_trans H_le H
@@ -1182,6 +1185,14 @@ meta def bv_split : tactic unit :=
 do ctx <- (local_context >>= (λ l, l.mfilter hyp_is_ineq)),
    ctx.mmap' (λ e, try (tactic.replace (get_name e) ``(lattice.le_inf_iff.mp %%e))),
    auto_cases >> skip
+
+meta def bv_and_intro (H₁ H₂ : parse ident) : tactic unit :=
+do
+  H₁ <- resolve_name H₁,
+  H₂ <- resolve_name H₂,
+  e <- to_expr ``(lattice.context_and_intro %%H₁ %%H₂),
+   n <- get_unused_name "H",
+   note n none e >> skip
 
 -- example {β ι : Type u} [lattice.complete_boolean_algebra β] {j : ι} {s : ι → β} {H : ⊤ ≤ ⨅i, s i} {b : β} : b ≤ ⊤ :=
 -- by {specialize_context ⊤, bv_specialize_at H j, apply lattice.le_top, apply_instance}
