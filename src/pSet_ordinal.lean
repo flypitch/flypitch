@@ -1,4 +1,4 @@
-import set_theory.ordinal set_theory.zfc tactic.tidy
+import set_theory.ordinal set_theory.zfc tactic.tidy set_theory.cofinality
 
 open ordinal
 
@@ -460,5 +460,26 @@ by {repeat{rw[<-succ_eq_add_one]}, simp[succ_lt_succ]}
 
 lemma one_lt_two : (1 : ordinal) < 2 :=
 by {rw[two_eq_succ_one], from ordinal.lt_succ_self _}
+
+lemma aleph_two_eq_succ_aleph_one : (aleph 2) = (cardinal.succ (aleph 1)) :=
+by rw[<-aleph_succ]; congr
+
+lemma aleph_one_eq_succ_aleph_zero : (aleph 1) = (cardinal.succ cardinal.omega) :=
+by {rw[<-aleph_zero, <-aleph_succ], congr, simp}
+
+lemma is_regular_aleph_one : is_regular (aleph 1) :=
+by {rw[aleph_one_eq_succ_aleph_zero]; apply succ_is_regular,refl}
+
+lemma is_regular_aleph_two : is_regular (aleph 2) :=
+by {rw[aleph_two_eq_succ_aleph_one]; apply succ_is_regular; apply omega_le_aleph}
+
+@[simp]lemma omega_lt_aleph_one : cardinal.omega < (aleph 1) :=
+by {rw[<-aleph_zero], apply cardinal.aleph_lt.mpr, from zero_lt_one}
+
+@[simp]lemma aleph_one_lt_aleph_two : aleph 1 < aleph 2 :=
+by {apply cardinal.aleph_lt.mpr, from one_lt_two}
+
+@[simp]lemma omega_lt_aleph_two : cardinal.omega < (aleph 2) :=
+lt_trans (omega_lt_aleph_one) (by simp)
 
 end pSet

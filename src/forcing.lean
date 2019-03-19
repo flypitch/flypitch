@@ -1,4 +1,4 @@
-import .bvm_extras .pSet_ordinal
+import .bvm_extras .pSet_ordinal .set_theory
 
 open ordinal cardinal lattice bSet
 
@@ -168,9 +168,12 @@ begin
   suffices : ¬ CCC 𝔹, from (not_and_self _).mp ⟨this, 𝔹_CCC⟩,
   apply not_CCC_of_uncountable_fiber; try{assumption},
     {from le_of_eq (by simp)},
-    {simp[zero_aleph, -aleph_zero], from zero_lt_one},
+    {simp},
     {intros i₁ i₂ H_neq, from ordinal.mk_inj _ _ _ ‹_›},
-    {sorry}
+    {dsimp at g, have := is_regular_aleph_one.right,
+     have := infinite_pigeonhole g _ _,
+     cases this with ξ H_ξ₁, use ξ, rw[H_ξ₁],
+     all_goals{simp*}, rw[this], simp}
 end
 
 lemma ℵ₁_lt_ℵ₂ : (⊤ : 𝔹) ≤ ℵ₁̌  ≺ ℵ₂̌  :=
@@ -183,9 +186,12 @@ begin
   suffices : ¬ CCC 𝔹, from (not_and_self _).mp ⟨this, 𝔹_CCC⟩,
   apply not_CCC_of_uncountable_fiber; try{assumption},
     {simp},
-    {simp, from one_lt_two},
+    {simp},
     {intros i₁ i₂ H_neq, from ordinal.mk_inj _ _ _ ‹_›},
-    {sorry}
+    {dsimp at g, have := is_regular_aleph_two.right,
+     have := infinite_pigeonhole g _ _,
+     cases this with ξ H_ξ₁, use ξ, rw[H_ξ₁],
+     all_goals{simp*}, rw[this], simp}
 end
 
 lemma cohen_real.mk_ext : ∀ (i j : type (ℵ₂̌  : bSet 𝔹)), func (ℵ₂̌ ) i =ᴮ func (ℵ₂̌ ) j ≤
