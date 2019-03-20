@@ -3,6 +3,59 @@ import .to_mathlib
 universe variables u v w
 noncomputable theory
 
+section subtype
+open function subtype
+def subtype.coind {α β} (f : α → β) {p : β → Prop} (h : ∀a, p (f a)) : α → subtype p :=
+λ a, ⟨f a, h a⟩
+
+/- note: almost the same as `cod_restrict` -/
+theorem subtype.coind_injective {α β} {f : α → β} {p : β → Prop} (h : ∀a, p (f a))
+  (hf : injective f) : injective (subtype.coind f h) :=
+λ x y hxy, hf $ by apply congr_arg subtype.val hxy
+end subtype
+
+namespace function
+open set
+variables {α : Type u} {β : Type v}
+lemma injective_of_increasing (r : α → α → Prop) (s : β → β → Prop) [is_trichotomous α r]
+  [is_irrefl β s] (f : α → β) (hf : ∀{x y}, r x y → s (f x) (f y)) : injective f :=
+begin
+  intros x y hxy,
+  rcases trichotomous_of r x y with h | h | h,
+  have := hf h, rw hxy at this, exfalso, exact irrefl_of s (f y) this,
+  exact h,
+  have := hf h, rw hxy at this, exfalso, exact irrefl_of s (f y) this
+end
+
+namespace embedding
+protected def subtype_map {p : α → Prop} {q : β → Prop} (f : α ↪ β)
+  (h : ∀{{x}}, p x → q (f x)) : {x : α // p x} ↪ {y : β // q y} :=
+⟨λ x, ⟨f x.1, h x.2⟩, subtype.coind_injective _ $ injective_comp f.2 subtype.val_injective⟩
+
+protected def image (f : α ↪ β) : set α ↪ set β :=
+⟨image f, injective_image f.2⟩
+
+end embedding
+
+end function
+
+
+namespace equiv
+
+variables {α : Type u} {β : Type v}
+
+def set_congr (e : α ≃ β) : set α ≃ set β :=
+⟨λ s, e '' s, λ t, e.symm '' t, symm_image_image e, symm_image_image e.symm⟩
+
+def subtype_congr {p q : α → Prop} (e : ∀x, p x ↔ q x) : subtype p ≃ subtype q :=
+⟨λ x, ⟨x.1, (e x.1).1 x.2⟩, λ x, ⟨x.1, (e x.1).2 x.2⟩,
+ λ ⟨x, hx⟩, subtype.eq rfl, λ ⟨x, hx⟩, subtype.eq rfl⟩
+
+@[simp] lemma subtype_congr_mk {p q : α → Prop} (e : ∀x, p x ↔ q x)
+  {x : α} (h : p x) : subtype_congr e ⟨x, h⟩ = ⟨x, (e x).1 h⟩ := rfl
+
+end equiv
+
 namespace Well_order
 
 attribute [instance] Well_order.wo
@@ -49,57 +102,278 @@ end
 end well_founded
 
 namespace cardinal
+open function equiv
+
+variables {α β : Type u}
+
+lemma zero_power_le (c : cardinal.{u}) : (0 : cardinal.{u}) ^ c ≤ 1 :=
+by { by_cases h : c = 0, rw [h, power_zero], rw [zero_power h], exact le_of_lt zero_lt_one }
+
+lemma add_one_eq {a : cardinal} (ha : omega ≤ a) : a + 1 = a :=
+have 1 ≤ a, from le_trans (le_of_lt one_lt_omega) ha,
+by simp only [max_eq_left, add_eq_max, ha, this]
+
+lemma succ_ne_zero (c : cardinal) : succ c ≠ 0 :=
+by { rw [←pos_iff_ne_zero, lt_succ], apply zero_le }
 
 lemma mk_univ (α : Type u) : mk (@set.univ α) = mk α :=
 quotient.sound ⟨equiv.set.univ α⟩
 
-lemma mk_image_le {α β : Type u} (f : α → β) (s : set α) : mk (f '' s) ≤ mk s :=
+lemma mk_le_of_subset {s t : set α} (h : s ⊆ t) : mk s ≤ mk t :=
+⟨embedding_of_subset h⟩
+
+lemma mk_le_of_subproperty {p q : α → Prop} (h : ∀x, p x → q x) : mk {x // p x} ≤ mk {x // q x} :=
+⟨embedding_of_subset h⟩
+
+lemma mk_le_of_surjective (f : α → β) (h : surjective f) : mk β ≤ mk α :=
+⟨embedding.of_surjective h⟩
+
+lemma mk_image_le (f : α → β) (s : set α) : mk (f '' s) ≤ mk s :=
 begin
-  constructor, fapply function.embedding.of_surjective,
+  fapply mk_le_of_surjective,
   { rintro ⟨x, hx⟩, exact ⟨f x, mem_image_of_mem f hx⟩ },
   { rintro ⟨y, ⟨x, hx, h⟩⟩, exact ⟨⟨x, hx⟩, subtype.eq h⟩ }
 end
 
-lemma mk_image_eq {α β : Type u} (f : α → β) (s : set α) (h : function.injective f) :
-  mk (f '' s) = mk s :=
+lemma mk_image_eq (f : α → β) (s : set α) (h : injective f) : mk (f '' s) = mk s :=
 quotient.sound ⟨(equiv.set.image f s h).symm⟩
 
-lemma mk_range_le {α β : Type u} (f : α → β) : mk (range f) ≤ mk α :=
+lemma mk_range_le (f : α → β) : mk (range f) ≤ mk α :=
 begin
-  constructor, fapply function.embedding.of_surjective,
+  fapply mk_le_of_surjective,
   { intro x, exact ⟨f x, mem_range_self x⟩ },
   { intro y, rcases y.2 with ⟨x, h⟩, exact ⟨x, subtype.eq h⟩ }
 end
 
-lemma mk_range_eq {α β : Type u} (f : α → β) (h : function.injective f) : mk (range f) = mk α :=
+lemma mk_range_eq (f : α → β) (h : injective f) : mk (range f) = mk α :=
 quotient.sound ⟨(equiv.set.range f h).symm⟩
+
+lemma mk_subtype_of_equiv (p : α → Prop) (e : α ≃ β) :
+  mk {a : α // p a} = mk {b : β // p (e.symm b)} :=
+quotient.sound ⟨subtype_equiv_of_subtype e⟩
+
+
+-- lemma mk_set (α : Type u) : mk (set α) = 2 ^ mk α :=
+-- sorry
+
+lemma mk_preimage_of_injective_lift {α : Type u} {β : Type v} (f : α → β) (s : set β)
+  (h : injective f) : lift.{u v} (mk (f ⁻¹' s)) ≤ lift.{v u} (mk s) :=
+begin
+  constructor, apply embedding.congr equiv.ulift.symm equiv.ulift.symm,
+  refine ⟨subtype.coind (λ x, f x.1) (λ x, x.2), _⟩,
+  apply subtype.coind_injective, exact injective_comp h subtype.val_injective
+end
+
+lemma mk_preimage_of_injective_of_onto_lift {α : Type u} {β : Type v} (f : α → β) (s : set β)
+  (h : injective f) (h2 : s ⊆ range f) : lift.{u v} (mk (f ⁻¹' s)) = lift.{v u} (mk s) :=
+begin
+  apply le_antisymm (mk_preimage_of_injective_lift f s h),
+  constructor, apply embedding.congr equiv.ulift.symm equiv.ulift.symm,
+  fsplit,
+  { rintro ⟨y, hy⟩, rcases classical.psigma_of_exists (h2 hy) with ⟨x, rfl⟩, exact ⟨x, hy⟩ },
+  rintro ⟨y, hy⟩ ⟨y', hy'⟩, dsimp,
+  rcases classical.psigma_of_exists (h2 hy) with ⟨x, rfl⟩,
+  rcases classical.psigma_of_exists (h2 hy') with ⟨x', rfl⟩,
+  simp [h]
+end
+
+lemma mk_preimage_of_injective (f : α → β) (s : set β) (h : injective f) :
+  mk (f ⁻¹' s) ≤ mk s :=
+by { convert mk_preimage_of_injective_lift.{u u} f s h using 1; rw [lift_id] }
+
+-- lemma mk_preimage_of_bijective (f : α → β) (s : set β) (h : bijective f) :
+--   mk (f ⁻¹' s) = mk s :=
+-- sorry
+
+-- lemma mk_preimage_of_equiv (f : α ≃ β) (s : set β) : mk (f ⁻¹' s) = mk s :=
+-- mk_preimage_of_bijective _ _ f.bijective
+
+-- lemma power_le_power_left' : ∀{a b c : cardinal.{u}}, b ≠ 0 → b ≤ c → a ^ b ≤ a ^ c :=
+-- sorry
+
+/-- The function α^{<β}, defined to be sup_{γ < β} α^γ.
+  We index over {s : set β.out // mk s < β } instead of {γ // γ < β}, because the latter lives in a
+  higher universe -/
+def powerlt (α β : cardinal.{u}) : cardinal.{u} :=
+-- @min.{u+1 u} {γ : cardinal // ∀ δ < β, α ^ δ ≤ γ}
+--   ⟨⟨max (α ^ β) 1, λ δ hδ, _⟩⟩
+--   subtype.val
+sup.{u u} (λ(s : {s : set β.out // mk s < β}), α ^ mk.{u} s)
+
+infix ` ^< `:80 := powerlt
+
+def out_embedding {c c' : cardinal} (h : c ≤ c') : nonempty (c.out ↪ c'.out) :=
+by rwa [←quotient.out_eq c, ←quotient.out_eq c'] at h
+
+def powerlt_helper {c c' : cardinal} (h : c < c') :
+  ∃(s : {s : set c'.out // mk s < c'}), mk s = c :=
+begin
+  cases out_embedding (le_of_lt h) with f,
+  have : mk ↥(range ⇑f) = c, { rwa [mk_range_eq, mk, quotient.out_eq c], exact f.2 },
+  exact ⟨⟨range f, by convert h⟩, this⟩
+end
+
+lemma le_powerlt {c₁ c₂ c₃ : cardinal} (h : c₂ < c₃) : c₁ ^ c₂ ≤ c₁ ^< c₃ :=
+by { rcases powerlt_helper h with ⟨s, rfl⟩, apply le_sup _ s }
+
+lemma powerlt_le {c₁ c₂ c₃ : cardinal} : c₁ ^< c₂ ≤ c₃ ↔ ∀(c₄ < c₂), c₁ ^ c₄ ≤ c₃ :=
+begin
+  rw [powerlt, sup_le],
+  split,
+  { intros h c₄ hc₄, rcases powerlt_helper hc₄ with ⟨s, rfl⟩, exact h s },
+  intros h s, exact h _ s.2
+end
+
+lemma powerlt_le_powerlt_left {a b c : cardinal} (h : b ≤ c) : a ^< b ≤ a ^< c :=
+by { rw [powerlt, sup_le], rintro ⟨s, hs⟩, apply le_powerlt, exact lt_of_lt_of_le hs h }
+
+-- lemma powerlt_eq (α β : Type u) :
+--   powerlt (mk α) (mk β) = mk.{u} (Σ(s : {s : set β // mk s < mk β}), s → α) :=
+-- begin
+
+-- end
+-- sup.{u u} (λ(s : {s : set β.out // mk s < β}), α ^ mk.{u} s)
+-- quotient.lift_on₂ α β (λ γ δ, mk.{u} (Σ(s : {s : set δ // mk s < mk δ}), s → γ))
+--   begin
+--     rintro γ₁ δ₁ γ₂ δ₂ ⟨e₁⟩ ⟨e₂⟩, dsimp, refine quotient.sound ⟨_⟩,
+--     refine (equiv.sigma_congr_left $ _).symm.trans _,
+--     { exact {s : set δ₂ // mk s < mk δ₂} },
+--     { refine (equiv.subtype_equiv_of_subtype $ equiv.set_congr e₂.symm).trans _,
+--       apply equiv.subtype_congr, intro s,
+--       convert iff.rfl using 2,
+--       change mk s = mk (e₂ '' s), rw [mk_image_eq], exact e₂.bijective.1,
+--       exact quotient.sound ⟨e₂⟩ },
+--     apply equiv.sigma_congr_right, rintro ⟨s, hs⟩,
+--     apply equiv.arrow_congr _ e₁,
+--     dsimp [equiv.set_congr, equiv.subtype_congr, equiv.subtype_equiv_of_subtype, subtype.map],
+--     symmetry, apply equiv.set.image, exact e₂.symm.bijective.1
+--   end
+
+
+-- lemma powerlt_le_powerlt_right {a b c : cardinal} : a ≤ b → a ^< c ≤ b ^< c :=
+-- sorry
+
+-- lemma powerlt_zero (a : cardinal) : a ^< 0 = 0 :=
+-- sorry
+
+lemma powerlt_succ {c₁ c₂ : cardinal} (h : c₁ ≠ 0) : c₁ ^< c₂.succ = c₁ ^ c₂ :=
+begin
+  apply le_antisymm,
+  { rw powerlt_le, intros c₃ h2, apply power_le_power_left h, rwa [←lt_succ] },
+  { apply le_powerlt, apply lt_succ_self }
+end
+
+lemma powerlt_max {c₁ c₂ c₃ : cardinal} : c₁ ^< max c₂ c₃ = max (c₁ ^< c₂) (c₁ ^< c₃) :=
+by { cases le_total c₂ c₃; simp only [max_eq_left, max_eq_right, h, powerlt_le_powerlt_left] }
+
+lemma zero_powerlt {a : cardinal} (h : a ≠ 0) : 0 ^< a = 1 :=
+begin
+  apply le_antisymm,
+  { rw [powerlt_le], intros c hc, apply zero_power_le },
+  convert le_powerlt (pos_iff_ne_zero.2 h), rw [power_zero]
+end
+
+-- lemma mk_bounded_set (α : Type u) (c : cardinal) :
+--   mk {t : set α // mk t < c} ≤ mk α ^< max c omega :=
+-- begin
+--   have : ∀{c : cardinal}, omega ≤ c → mk {t : set α // mk t < c} ≤ mk α ^< c,
+--   { clear c, intro c, refine quotient.induction_on c _, clear c,
+--     intros β hβ, sorry
+
+--    },
+--   refine le_trans _ (this (le_max_right _ _)), apply mk_le_of_subproperty,
+--   rintro t ⟨ht₁, ht₂⟩, exact ⟨ht₁, lt_of_lt_of_le ht₂ (le_max_left _ _)⟩
+-- end
+
+local attribute [instance] [priority 0] classical.prop_decidable
+lemma mk_bounded_set_le_of_omega_le (α : Type u) (c : cardinal) (hα : omega ≤ mk α) :
+  mk {t : set α // mk t ≤ c} ≤ mk α ^ c :=
+begin
+  refine le_trans _ (by rw [←add_one_eq hα]), refine quotient.induction_on c _, clear c, intro β,
+  fapply mk_le_of_surjective,
+  { intro f, refine ⟨sum.inl ⁻¹' range f, _⟩,
+    refine le_trans (mk_preimage_of_injective _ _ (λ x y, sum.inl.inj)) _,
+    apply mk_range_le },
+  rintro ⟨s, ⟨g⟩⟩,
+  refine ⟨λ y, if h : ∃(x : s), g x = y then sum.inl (classical.some h).val else sum.inr ⟨⟩, _⟩,
+  apply subtype.eq, ext,
+  split,
+  { rintro ⟨y, h⟩, dsimp only at h, by_cases h' : ∃ (z : s), g z = y,
+    { rw [dif_pos h'] at h, cases sum.inl.inj h, exact (classical.some h').2 },
+    { rw [dif_neg h'] at h, cases h }},
+  { intro h, have : ∃(z : s), g z = g ⟨x, h⟩, exact ⟨⟨x, h⟩, rfl⟩,
+    refine ⟨g ⟨x, h⟩, _⟩, dsimp only, rw [dif_pos this], congr',
+    suffices : classical.some this = ⟨x, h⟩, exact congr_arg subtype.val this,
+    apply g.2, exact classical.some_spec this }
+end
+
+lemma mk_bounded_set_le (α : Type u) (c : cardinal) :
+  mk {t : set α // mk t ≤ c} ≤ max (mk α) omega ^ c :=
+begin
+  transitivity mk {t : set (ulift.{u} nat ⊕ α) // mk t ≤ c},
+  { refine ⟨embedding.subtype_map _ _⟩, apply embedding.image,
+    refine ⟨sum.inr, _⟩, apply sum.inr.inj, intros s hs, exact le_trans (mk_image_le _ _) hs },
+  refine le_trans
+    (mk_bounded_set_le_of_omega_le (ulift.{u} nat ⊕ α) c (le_add_right omega (mk α))) _,
+  rw [max_comm, ←add_eq_max]; refl
+end
+
+-- lemma mk_bounded_set_le (α : Type u) (c : cardinal) :
+--   mk {t : set α // mk t ≤ c} ≤ max (mk α ^ c) (mk α ^< omega) :=
+-- sorry
+
+
+-- lemma mk_bounded_subset {α : Type u} (s : set α) (c : cardinal) :
+--   mk {t : set α // t ⊆ s ∧ mk t < c} ≤ mk s ^< max c omega :=
+-- begin
+--   have : ∀{c : cardinal}, omega ≤ c → mk {t : set α // t ⊆ s ∧ mk t < c} ≤ mk s ^< c,
+--   { clear c, intro c, refine quotient.induction_on c _, clear c,
+--     intros α hα, sorry
+--     -- transitivity mk ⋃(c' : {c' : cardinal // c' < c}), {t : set α | t ⊆ s ∧ mk t = c'},
+--     -- apply le_of_eq, sorry,
+--     -- rw [←lift_le.{u (u+1)}, lift_mk],
+--     -- transitivity mk ⋃(c' : {c' : cardinal // c' < c}),
+--     --   {t : set (ulift.{u+1} α) | t ⊆ ulift.up '' s ∧ mk t = lift.{u (u+1)} c'.1},
+--     -- sorry,
+--     -- refine le_trans mk_Union_le_sum_mk _,
+--    },
+--   refine le_trans _ (this (le_max_right _ _)), apply mk_le_of_subproperty,
+--   rintro t ⟨ht₁, ht₂⟩, exact ⟨ht₁, lt_of_lt_of_le ht₂ (le_max_left _ _)⟩
+-- end
+
+lemma mk_bounded_subset_le {α : Type u} (s : set α) (c : cardinal) :
+  mk {t : set α // t ⊆ s ∧ mk t ≤ c} ≤ max (mk s) omega ^ c :=
+begin
+  refine le_trans _ (mk_bounded_set_le s c),
+  refine ⟨embedding.cod_restrict _ _ _⟩,
+  refine ⟨λ t, subtype.val ⁻¹' t.1, _⟩,
+  { rintros ⟨t, ht1, ht2⟩ ⟨t', h1t', h2t'⟩ h, apply subtype.eq, dsimp only at h ⊢,
+    refine (preimage_eq_preimage' _ _).1 h; rw [range_val]; assumption },
+  rintro ⟨t, h1t, h2t⟩, exact le_trans (mk_preimage_of_injective _ _ subtype.val_injective) h2t
+end
+
+-- begin
+--   have := mk_bounded_subset s c.succ, simp only [lt_succ] at this,
+--   apply le_trans this, rw [powerlt_max],
+--   by_cases h : mk s = 0,
+--   { rw [h, zero_powerlt omega_ne_zero, zero_powerlt (succ_ne_zero c), max_self, max_eq_right],
+--     apply zero_power_le },
+--   rw [powerlt_succ h]
+-- end
 
 end cardinal
 
-namespace function
-lemma injective_of_increasing {α β} (r : α → α → Prop) (s : β → β → Prop) [is_trichotomous α r]
-  [is_irrefl β s] (f : α → β) (hf : ∀{x y}, r x y → s (f x) (f y)) : injective f :=
-begin
-  intros x y hxy,
-  rcases trichotomous_of r x y with h | h | h,
-  have := hf h, rw hxy at this, exfalso, exact irrefl_of s (f y) this,
-  exact h,
-  have := hf h, rw hxy at this, exfalso, exact irrefl_of s (f y) this
-end
-
-end function
-
 namespace ordinal
 
+open function
 variables {α : Type u} {β : Type v} {γ : Type w}
 local attribute [instance] [priority 0] classical.prop_decidable
 
+lemma injective_typein (r : α → α → Prop) [is_well_order α r] : injective (typein r) :=
+injective_of_increasing r (<) (typein r) (λ x y, (typein_lt_typein r).2)
+
 def typesub (r : α → α → Prop) [is_well_order α r] (s : set α) : ordinal :=
 type (subrel r s)
-
-/-- The function α^{<β}, defined to be sup_{γ < β} α^γ -/
-def powerlt (α β : ordinal.{u}) : ordinal.{u} :=
-bsup.{u u} β (λ γ _, power α γ)
 
 -- def strict_upper_bounds [has_lt α] (s : set α) : set α := { x | ∀a ∈ s, a < x }
 -- def unbounded {α : Type u} [preorder α] (s : set α) : Prop := strict_upper_bounds s = ∅
@@ -217,14 +491,14 @@ begin
   rw [←principal_seg.of_element_top r x], exact congr_arg principal_seg.top (subsingleton.elim _ _)
 end
 
-def typein' (r : α → α → Prop) [is_well_order α r] : r ≃o subrel (<) (< type r) :=
+def typein_iso (r : α → α → Prop) [is_well_order α r] : r ≃o subrel (<) (< type r) :=
 ⟨⟨λ x, ⟨typein r x, typein_lt_type r x⟩, nth r, nth_typein r, λ y, subtype.eq (typein_nth r y)⟩,
   λ a b, (typein_lt_typein r).symm⟩
 
 lemma nth_lt_nth (r : α → α → Prop) [is_well_order α r] {o o' : {x // x < type r}} :
   o.1 < o'.1 ↔ r (nth r o) (nth r o') :=
 begin
-  rw [(typein' r).ord], dsimp [subrel, typein'], rw [typein_nth, typein_nth], refl
+  rw [(typein_iso r).ord], dsimp [subrel, typein_iso], rw [typein_nth, typein_nth], refl
 end
 
 lemma le_iff_not_gt [linear_order α] (x y : α) : x ≤ y ↔ ¬x > y :=
@@ -261,6 +535,18 @@ end
 --   sup
 
 open cardinal
+
+lemma type_subrel_lt (o : ordinal.{u}) :
+  type (subrel (<) {o' : ordinal | o' < o}) = ordinal.lift.{u u+1} o :=
+begin
+  refine quotient.induction_on o _,
+  rintro ⟨α, r, wo⟩, resetI, apply quotient.sound,
+  constructor, symmetry, refine (order_iso.preimage equiv.ulift r).trans (typein_iso r)
+end
+
+lemma mk_initial_seg (o : ordinal.{u}) :
+  mk {o' : ordinal | o' < o} = cardinal.lift.{u u+1} o.card :=
+by rw [lift_card, ←type_subrel_lt, card_type]
 
 namespace order
 lemma cof_le (r : α → α → Prop) [is_refl α r] {S : set α} (h : ∀a, ∃(b ∈ S), r a b) :
@@ -458,7 +744,7 @@ open function
 lemma delta_system_lemma_3 (κ : cardinal) (hκ : cardinal.omega ≤ κ)
   {θ : Type u} (θr : θ → θ → Prop) [θwo : is_well_order θ θr] (hκθ : κ < mk θ)
   (hθ : is_regular $ mk θ) (θtype_eq : type θr = ord (mk θ))
-  (hθ_le : ∀(β < type θr), card (powerlt β κ.ord) < mk θ)
+  (hθ_le : ∀(β < mk θ), β ^< κ < mk θ)
   {ρ : Type u} (ρr : ρ → ρ → Prop) [ρwo : is_well_order ρ ρr] (hρ : mk ρ < κ)
   {A : set (set θ)} (hA : mk (subtype A) = mk θ) (hA2 : ∀{s : set θ} (h : s ∈ A), ρr ≃o subrel θr s)
   (hA3 : unbounded θr (⋃₀ A)) :
@@ -483,14 +769,6 @@ begin
     apply (ord_is_limit hθ.1).2, apply lt_of_not_ge, intro h,
     apply ρwo.wf.not_lt_min _ _ _ hξ, apply unbounded_range_of_sup_ge,
     dsimp, rw [θtype_eq], exact h },
-  have θr_unbounded : ∀(x : θ), ∃y, θr x y,
-  { intro y, apply has_succ_of_is_limit, rw [θtype_eq], exact ord_is_limit hθ.1 },
-  have : ∀(x : θ), ∃s : A, θr x (nr s ξ₀),
-  { intro x, have : good ξ₀ := ρwo.wf.min_mem good _,
-    cases θr_unbounded x with y hy,
-    rcases this y with ⟨z, ⟨s, rfl⟩, hz⟩,
-    refine ⟨s, _⟩, rcases trichotomous_of θr (nr s ξ₀) y with hw | rfl | hw,
-    exfalso, exact hz hw, exact hy, exact trans hy hw },
   let pick' : ∀(μ : θ), ∀(pick : ∀y, θr y μ → A), ordinal :=
   λ μ pick, max α₀ $ sup.{u u} (λ x : ρ × {x // θr x μ}, ι $ nr (pick x.2.val x.2.2) x.1),
   have pick'_lt : ∀(μ : θ) (pick : ∀y, θr y μ → A), pick' μ pick < type θr,
@@ -502,18 +780,24 @@ begin
       rw [←ord_lt_ord, ←θtype_eq], apply lt_of_le_of_lt (ord_le_type (subrel θr {x | θr x μ})),
       apply typein_lt_type },
     rintro ⟨x, y, hy⟩, rw [←θtype_eq], apply typein_lt_type },
+  have : ∀(x : θ), ∃s : A, θr x (nr s ξ₀),
+  { intro x, have : good ξ₀ := ρwo.wf.min_mem good _,
+    have θr_unbounded : ∀(x : θ), ∃y, θr x y,
+    { intro y, apply has_succ_of_is_limit, rw [θtype_eq], exact ord_is_limit hθ.1 },
+    cases θr_unbounded x with y hy,
+    rcases this y with ⟨z, ⟨s, rfl⟩, hz⟩,
+    refine ⟨s, _⟩, rcases trichotomous_of θr (nr s ξ₀) y with hw | rfl | hw,
+    exfalso, exact hz hw, exact hy, exact trans hy hw },
   let pick : θ → A := θwo.wf.fix
     (λ μ pick, classical.some $ this $ nth θr $ ⟨pick' μ pick, pick'_lt μ pick⟩),
-  let A2 := range (subtype.val ∘ pick),
   have lt_pick : ∀(μ : θ),
     θr (nth θr $ ⟨pick' μ (λ y _, pick y), pick'_lt μ (λ y _, pick y)⟩) (nr (pick μ) ξ₀),
   { intro μ, dsimp [pick], rw [θwo.wf.fix_eq _ μ], apply classical.some_spec (this _) },
-  have α₀_lt_pick : ∀(μ : θ), θr (nth θr ⟨α₀, hα₀⟩) (nr (pick μ) ξ₀),
-  { intro μ, apply trans_trichotomous_left _ (lt_pick μ), rw nth_le_nth, apply le_max_left },
   have pick_lt_pick : ∀{μ ν : θ} (h : θr ν μ) (η : ρ),
     θr (nr (pick ν) η) (nr (pick μ) ξ₀),
   { intros, apply trans_trichotomous_left _ (lt_pick μ), rw [←typein_le_typein, typein_nth],
     refine le_trans _ (le_max_right _ _), refine le_trans _ (le_sup _ ⟨η, ν, h⟩), refl },
+  let A2 := range (subtype.val ∘ pick),
   have h1A2 : mk A2 = mk θ,
   { have increasing_pick : ∀{{x y : θ}}, θr x y → θr (nr (pick x) ξ₀) (nr (pick y) ξ₀),
     { intros x y hxy, apply pick_lt_pick hxy ξ₀ },
@@ -522,6 +806,13 @@ begin
       congr' 1, exact hx },
     rw [mk_range_eq], apply injective_comp, exact subtype.val_injective, apply injective_pick },
   let sub_α₀ : set θ := ι ⁻¹' {c | c < α₀},
+  have h1sub_α₀ : mk ↥sub_α₀ = α₀.card,
+  { rw [←cardinal.lift_inj.{_ u+1}, mk_preimage_of_injective_of_onto_lift],
+    rw [mk_initial_seg, cardinal.lift_lift],
+    exact injective_typein θr,
+    intros o ho,
+    rcases typein_surj θr (lt_trans ho hα₀) with ⟨_, rfl⟩,
+    apply mem_range_self },
   have h2A2' : ∀{x y : θ}, θr x y → (pick x).val ∩ (pick y).val ⊆ sub_α₀,
   { rintros x y hxy z ⟨hzx, hzy⟩,
     let η := typein (subrel θr (pick y)) ⟨z, hzy⟩,
@@ -551,17 +842,41 @@ begin
     apply h2A2' h,
     exfalso, apply hxy, rw h,
     rw [inter_comm], apply h2A2' h },
+  let codomain := {s : set θ // s ⊆ sub_α₀ ∧ mk s ≤ mk ρ},
+  have hsub_α₀ : mk ↥sub_α₀ < mk θ,
+  { rw [h1sub_α₀, ←ord_lt_ord, ←θtype_eq], refine lt_of_le_of_lt (ord_card_le _) hα₀ },
+  have hcodomain : ∀(s : A2), s.val ∩ sub_α₀ ⊆ sub_α₀ ∧ mk (↥(s.val ∩ sub_α₀)) ≤ mk ρ,
+  { have α₀_lt_pick : ∀(μ : θ), θr (nth θr ⟨α₀, hα₀⟩) (nr (pick μ) ξ₀),
+    { intro μ, apply trans_trichotomous_left _ (lt_pick μ), rw nth_le_nth, apply le_max_left },
+    rintro ⟨s, hs⟩, refine ⟨inter_subset_right _ _, _⟩,
+    rcases hs with ⟨μ, rfl⟩, dsimp,
+    transitivity mk {x : (pick μ).val // ι x.1 < α₀},
+    { apply le_of_eq, apply quotient.sound, constructor,
+      symmetry, refine (equiv.subtype_subtype_equiv_subtype _ _).trans _, simp only [exists_prop] },
+    let f := (hA2 (pick μ).2).to_equiv,
+    rw [mk_subtype_of_equiv _ f.symm],
+    transitivity mk { x : ρ // ρr x ξ₀},
+    { apply mk_le_of_subproperty, intros x hx,
+      rw [(hA2 (pick μ).2).ord], dsimp only [subrel, order.preimage],
+      refine trans _ (α₀_lt_pick μ),
+      rw [←nth_typein θr (f x).val, ←nth_lt_nth θr], exact hx },
+    transitivity (typein ρr ξ₀).card, { rw [typein, card_type], refl },
+    rw [←card_type ρr], apply card_le_card, apply le_of_lt, apply typein_lt_type },
+  let f : A2 → codomain := λs, ⟨s.val ∩ sub_α₀, hcodomain s⟩,
   have : ∃r B, r ⊆ sub_α₀ ∧ B ⊆ A2 ∧ mk B = mk θ ∧ ∀(x ∈ B), x ∩ sub_α₀ = r,
   { have h1 : cardinal.omega ≤ mk ↥A2, { rw [h1A2], exact hθ.1 },
-    have h2 : mk (set ↥sub_α₀) < cof (ord (mk ↥A2)), { sorry },
-    cases infinite_pigeonhole (λ(s : A2), (subtype.val ⁻¹' s.val : set sub_α₀)) h1 h2 with r' hr',
-    let r := subtype.val '' r',
-    refine ⟨r, subtype.val '' ((λ (s : A2), s.val ∩ sub_α₀) ⁻¹' {r}), _, _, _, _⟩,
+    have h2 : mk codomain < cof (ord (mk ↥A2)),
+    { rw [h1A2, hθ.2],
+      apply lt_of_le_of_lt (mk_bounded_subset_le _ _),
+      refine lt_of_le_of_lt (le_powerlt hρ) (hθ_le _ _),
+      apply max_lt hsub_α₀ (lt_of_le_of_lt hκ hκθ) },
+    cases infinite_pigeonhole f h1 h2 with r' hr',
+    refine ⟨r'.val, subtype.val '' (f ⁻¹' {r'}), _, _, _, _⟩,
+    { rintro x hx, exact r'.2.1 hx },
     { rintro _ ⟨⟨x, hx⟩, _, rfl⟩, exact hx },
-    { rintro _ ⟨⟨x, hx⟩, _, rfl⟩, exact hx },
-    { rw [mk_image_eq, ←h1A2, ←hr'], sorry, apply subtype.val_injective },
+    { rw [mk_image_eq _ _ subtype.val_injective, ←h1A2, ←hr'] },
     { rintro _ ⟨⟨x, hx⟩, hx', rfl⟩,
-      simpa only [set.mem_singleton_iff, set.mem_preimage_eq] using hx' }},
+      simpa only [set.mem_singleton_iff, set.mem_preimage_eq, f, subtype.ext] using hx' }},
   rcases this with ⟨r, B, hr, h1B, h2B, h3B⟩,
   refine ⟨B, subset.trans h1B _, h2B, r, _⟩, rw [range_subset_iff], intro x, exact (pick x).2,
   intros x y hx hy hxy, rw [←h3B x hx], apply set.ext, intro z, split,

@@ -402,6 +402,7 @@ by rw [←union_singleton, union_comm]; apply diff_subset_iff
 ext $ λ x, ⟨λ h, ⟨⟩, λ h, ⟨{x}, ⟨⟨x, rfl⟩, mem_singleton x⟩⟩⟩
 
 -- generalizes set.image_preimage_eq
+-- todo: remove, and only use image_preimage_eq_of_subset
 lemma image_preimage_eq_of_subset_image {f : α → β} {s : set β}
   {t : set α} (h : s ⊆ f '' t) : f '' (f ⁻¹' s) = s :=
 subset.antisymm
@@ -436,6 +437,23 @@ begin
   intro hx, rcases h hx with ⟨x, rfl⟩, apply mem_image_of_mem, exact hx
 end
 
+lemma preimage_subset_preimage_iff {s t : set α} {f : β → α} (hs : s ⊆ range f) :
+  f ⁻¹' s ⊆ f ⁻¹' t ↔ s ⊆ t :=
+begin
+  split,
+  { intros h x hx, rcases hs hx with ⟨y, rfl⟩, exact h hx },
+  intros h x, apply h
+end
+
+lemma preimage_eq_preimage' {s t : set α} {f : β → α} (hs : s ⊆ range f) (ht : t ⊆ range f) :
+  f ⁻¹' s = f ⁻¹' t ↔ s = t :=
+begin
+  split,
+  { intro h, apply subset.antisymm, rw [←preimage_subset_preimage_iff hs, h],
+    rw [←preimage_subset_preimage_iff ht, h] },
+  rintro rfl, refl
+end
+
 lemma subset_union2_left {s t u : set α} : s ⊆ s ∪ t ∪ u :=
 subset.trans (subset_union_left _ _) (subset_union_left _ _)
 
@@ -451,6 +469,12 @@ begin
   { rintro ⟨s, ⟨y, rfl⟩, ⟨⟨s, hs⟩, rfl⟩⟩, refine ⟨_, hs, _⟩, exact (f ⟨s, hs⟩ y).2 },
   { rintro ⟨s, hs, hx⟩, cases hf ⟨s, hs⟩ ⟨x, hx⟩ with y hy, refine ⟨_, ⟨y, rfl⟩, ⟨⟨s, hs⟩, _⟩⟩,
     exact congr_arg subtype.val hy }
+end
+
+lemma range_val (s : set α) : range (subtype.val : s → α) = s :=
+begin
+  ext, split, rintro ⟨⟨x, h⟩, rfl⟩, exact h,
+  intro h, exact ⟨⟨x, h⟩, rfl⟩
 end
 
 end set
@@ -1062,7 +1086,7 @@ meta def hyp_is_ineq_sup (e : expr) : tactic bool :=
   (do `(%%x ≤ %%y ⊔ %%z) <- infer_type e,
      return tt)<|> return ff
 
-meta def trace_sup_inequalities : tactic unit := 
+meta def trace_sup_inequalities : tactic unit :=
   (local_context >>= λ l, l.mfilter (hyp_is_ineq_sup)) >>= trace
 
 meta def specialize_context_at (H : parse ident) (Γ : parse texpr) : tactic unit :=
@@ -1090,7 +1114,7 @@ do  v_a <- target >>= lhs_of_le,
                          e'' <- lhs_of_le H_tp,
                          succeeds (unify Γ_new e'') >>
                    tactic.replace (get_name H) ``(_ : %%Γ_new ≤ _) >> swap >> assumption)
-  
+
 
 /-- If the goal is an inequality `a ≤ b`, extracts `a` and attempts to specialize all
   facts in context of the form `Γ ≤ d` to `a ≤ d` (this requires a ≤ Γ) -/
@@ -1115,21 +1139,21 @@ do
   specialize_context_core Γ_old
 
 meta def bv_or_elim_at_core (e : expr) (Γ_old : expr) : tactic unit :=
-do 
+do
    n <- get_unused_name "H_left",
    n' <- get_unused_name "H_right",
    `[apply lattice.context_or_elim],
     tactic.exact e,
    (tactic.intro n) >> specialize_context_core Γ_old, swap,
    (tactic.intro n') >> specialize_context_core Γ_old, swap
-   
+
 
 meta def bv_or_elim_at (H : parse ident) : tactic unit :=
 do Γ_old <- target >>= lhs_of_le,
    e <- resolve_name H >>= to_expr,
    bv_or_elim_at_core e Γ_old
 
-meta def auto_or_elim_step : tactic unit := 
+meta def auto_or_elim_step : tactic unit :=
 do  ctx <- local_context >>= (λ l, l.mfilter hyp_is_ineq_sup),
     if ctx.length > 0 then
     ctx.mmap' (λ e, do Γ_old <- target >>= lhs_of_le, bv_or_elim_at_core e Γ_old)
@@ -1179,7 +1203,7 @@ do n₁ <- get_unused_name H,
    e <- to_expr ``(lattice.context_split_inf_left %%e_H),
    note n₁ none e >>= λ h, dsimp_hyp h none [] eta_beta_cfg,
    e <- to_expr ``(lattice.context_split_inf_right %%e_H),
-   note n₂ none e >>= λ h, dsimp_hyp h none [] eta_beta_cfg   
+   note n₂ none e >>= λ h, dsimp_hyp h none [] eta_beta_cfg
 
 meta def bv_split : tactic unit :=
 do ctx <- (local_context >>= (λ l, l.mfilter hyp_is_ineq)),
@@ -1219,7 +1243,7 @@ do Γ_old <- target >>= lhs_of_le,
 /-- `ac_change g' changes the current goal `tgt` to `g` by creating a new goal of the form
   `tgt = g`, and will attempt close it with `ac_refl`. -/
 meta def ac_change (r : parse texpr) : tactic unit :=
-do 
+do
    v₁ <- mk_mvar,
    v₂ <- mk_mvar,
    refine ``(eq.mpr %%v₁ (%%v₂ : %%r)),
@@ -1240,11 +1264,11 @@ do
 -- -- a₁ a₂ a₃ a₄ : α
 -- -- ⊢ a₁ ⊔ (a₂ ⊔ a₃ ⊔ a₄) = ⊤
 -- end
-   
+
 
 
 meta def tidy_context_tactics : list (tactic string) :=
-[ reflexivity                                 >> pure "refl", 
+[ reflexivity                                 >> pure "refl",
   propositional_goal >> assumption            >> pure "assumption",
   intros1                                     >>= λ ns, pure ("intros " ++ (" ".intercalate (ns.map (λ e, e.to_string)))),
   auto_cases,
@@ -1274,7 +1298,7 @@ meta def cfg_of_context_cfg : context_cfg → cfg :=
   trace_result_prefix := X.trace_result_prefix,
   tactics := X.tactics}
 
-meta def tidy_context (cfg : context_cfg := {}) : tactic unit := 
+meta def tidy_context (cfg : context_cfg := {}) : tactic unit :=
 `[apply poset_yoneda] >> tidy (cfg_of_context_cfg cfg)
 
 end natded_tactics
