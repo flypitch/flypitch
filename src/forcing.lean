@@ -1,4 +1,4 @@
-import .bvm_extras .pSet_ordinal .set_theory cohen_poset
+import .bvm_extras .pSet_ordinal .set_theory
 
 open ordinal cardinal lattice bSet
 
@@ -118,15 +118,82 @@ open pSet
 def is_regular_open : set (set(ℵ₂.type × ℕ)) → Prop := sorry
 
 def 𝔹 : Type := {S // is_regular_open S}
-instance 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 := sorry
+instance 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 :={ sup := sorry,
+  le := (λ x y, x.1 ⊆ y.1),
+  lt := sorry,
+  le_refl := sorry,
+  le_trans := sorry,
+  lt_iff_le_not_le := sorry,
+  le_antisymm := sorry,
+  le_sup_left := sorry,
+  le_sup_right := sorry,
+  sup_le := sorry,
+  inf := sorry,
+  inf_le_left := sorry,
+  inf_le_right := sorry,
+  le_inf := sorry,
+  le_sup_inf := sorry,
+  top := sorry,
+  le_top := sorry,
+  bot := sorry,
+  bot_le := sorry,
+  neg := sorry,
+  sub := sorry,
+  inf_neg_eq_bot := sorry,
+  sup_neg_eq_top := sorry,
+  sub_eq := sorry,
+  Sup := sorry,
+  Inf := sorry,
+  le_Sup := sorry,
+  Sup_le := sorry,
+  Inf_le := sorry,
+  le_Inf := sorry,
+  infi_sup_le_sup_Inf := sorry,
+  inf_Sup_le_supr_inf := sorry,
+  bot_lt_top := sorry }
+
+private lemma eq₁ : ((type (ℵ₂̌  : bSet 𝔹)) × ℕ) = ((type ℵ₂) × ℕ) :=
+by {cases ℵ₂, refl}
+
+private lemma eq₂ : set ((type (ℵ₂̌  : bSet 𝔹)) × ℕ) = set ((type ℵ₂) × ℕ) :=
+by {cases ℵ₂, refl}
+
+-- lemma 𝔹'_cast : (set (type ℵ₂ × ℕ)) = (set ((ℵ₂̌  : bSet 𝔹').type × ℕ)) :=
+--   by {cases (ℵ₂), refl}
+
+-- lemma 𝔹'_cast_set : set (set (type ℵ₂ × ℕ)) = set (set ((ℵ₂̌  : bSet 𝔹').type × ℕ)) :=
+--   by {cases (ℵ₂), refl}
+
+-- def is_regular_open' : set (set ((ℵ₂ ̌).type × ℕ)) → Prop :=
+-- λ S, is_regular_open (cast 𝔹'_cast_set.symm S)
+
+-- def 𝔹 : Type := {S // is_regular_open' S}
+
+-- instance 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 := sorry
 
 theorem 𝔹_CCC : CCC 𝔹 := sorry 
 /-- The principal regular open associated to a pair (ν, n) is the collection of all subsets of
     ℵ₂ × ℕ which contain (ν, n). -/
 def principal_open (ν : (ℵ₂̌  : bSet 𝔹).type) (n : ℕ) : 𝔹 :=
 begin
-  simp at ν, use {S | (ν,n) ∈ S}, sorry
+  use {S | cast eq₁ (ν, n) ∈ S}, sorry
 end
+
+@[reducible]def 𝒞 := finset ((ℵ₂ ̌ : bSet 𝔹).type × ℕ)
+
+-- instance : has_insert ((ℵ₂ ̌).type × ℕ) 𝒞 := ⟨by {dsimp[𝒞], exact insert}⟩
+
+def ι : 𝒞 → 𝔹 :=
+λ p, ⟨{S | (p.to_set) ⊆ (cast eq₂.symm S)}, sorry⟩
+
+lemma 𝒞_dense {b : 𝔹} (H : ⊥ < b) : ∃ p : 𝒞, ι p ≤ b := sorry 
+
+lemma 𝒞_nonzero (p : 𝒞) : ⊥ ≠ (ι p) := sorry
+
+lemma 𝒞_disjoint_row (p : 𝒞) : ∃ n : ℕ, ∀ ξ : ℵ₂.type, (cast eq₁.symm (ξ,n)) ∉ p :=
+sorry
+
+lemma 𝒞_anti {p₁ p₂ : 𝒞} : p₁ ⊆ p₂ → ι p₂ ≤ ι p₁  := sorry
 
 namespace cohen_real
 
@@ -140,15 +207,42 @@ def mk (ν : (ℵ₂̌  : bSet 𝔹).type) : bSet 𝔹 :=
 
 /-- bSet 𝔹 believes that each `mk ν` is a subset of omega -/
 lemma definite {ν} {Γ} : Γ ≤ mk ν ⊆ᴮ omega :=
-by simp[mk, subset_unfold]; from λ _, by {bv_imp_intro, from omega_definite}
+by simp [mk, subset_unfold]; from λ _, by rw[<-deduction]; convert omega_definite
 
 /-- bSet 𝔹 believes that each `mk ν` is an element of 𝒫(ω) -/
 lemma definite' {ν} {Γ} : Γ ≤ mk ν ∈ᴮ bv_powerset omega := bv_powerset_spec.mp definite
 
+lemma sep {n} {Γ} {ν₁ ν₂} (H₁ : Γ ≤ (of_nat n) ∈ᴮ (mk ν₁)) (H₂ : Γ ≤ (- ((of_nat n) ∈ᴮ (mk ν₂)))) :
+  Γ ≤ (- ((mk ν₁) =ᴮ (mk ν₂))) :=
+begin
+  rw[bv_eq_unfold], rw[neg_inf, neg_infi, neg_infi], simp only [neg_imp],
+  -- let x := _, let y := _, change Γ ≤ x ⊔ y, 
+  apply le_sup_left_of_le, rw[@bounded_exists 𝔹 _ (mk ν₁) (λ z, -(z ∈ᴮ mk ν₂)) _],
+  swap, change B_ext _, simp[-imp_bot, imp_bot.symm],
+  apply bv_use (bSet.of_nat n), bv_split_goal
+end
+
 /-- Whenever ν₁ ≠ ν₂ < ℵ₂, bSet 𝔹 believes that `mk ν₁` and `mk ν₂` are distinct -/
 lemma inj {ν₁ ν₂} (H_neq : ν₁ ≠ ν₂) : (mk ν₁) =ᴮ (mk ν₂) ≤ ⊥ :=
-sorry -- this lemma requires us to view the Cohen poset as a dense subset of 𝔹
--- see Lemma 5.22 in flypitch-notes
+begin
+  by_contra, replace h := (bot_lt_iff_not_le_bot.mpr ‹_›),
+  cases 𝒞_dense h with p H_p, cases 𝒞_disjoint_row p with n H_n,
+  let p' := insert (ν₁,n) (p),
+  have this₀ : ι p' ≤ ι p,
+    from 𝒞_anti (by {dsimp[p'], from λ i _, by {simp, from or.inr ‹_›}}),
+  have this₁ : ι p' ≤ (ñ̌) ∈ᴮ (cohen_real.mk ν₁),
+    by {rw[mem_unfold], apply bv_use (ulift.up n), refine le_inf _ bv_eq_refl',
+         {change _ ⊆ _, sorry}
+      },
+  have this₂ : ι p' ≤ - ((ñ̌) ∈ᴮ (cohen_real.mk ν₂)),
+    by sorry,
+  have this₃ : ι p' ≤ - (mk ν₁ =ᴮ mk ν₂),
+    from sep ‹_› ‹_›,
+  have this₄ : ι p' ≤ (mk ν₁ =ᴮ mk ν₂),
+    from le_trans this₀ ‹_›,
+  suffices : ι p' = ⊥, from (not_and_self _).mp ⟨(𝒞_nonzero p'), this.symm⟩,
+  bv_and_intro this₃ this₄, simpa using H
+end
 
 end cohen_real
 
@@ -212,8 +306,8 @@ begin
    apply ordinal.mk_inj, unfold check_cast, intro H, cc}
 end
 
-noncomputable def neg_CH_func : bSet 𝔹 := @function.mk _ _ (ℵ₂̌ )
-  (λ x, cohen_real.mk x) cohen_real.mk_ext
+noncomputable def neg_CH_func : bSet 𝔹 :=
+@function.mk _ _ (ℵ₂̌ ) (λ x, cohen_real.mk x) cohen_real.mk_ext
 
 theorem ℵ₂_le_𝔠 : ⊤ ≤ is_func' (ℵ₂̌ ) 𝔠 (neg_CH_func) ⊓ is_inj (neg_CH_func) :=
 begin

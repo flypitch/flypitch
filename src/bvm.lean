@@ -215,6 +215,9 @@ begin
     apply le_supr_of_le i, have := x_ih i, simp[this]}
 end
 
+theorem bv_eq_refl' {Γ : 𝔹} {x} : Γ ≤ x =ᴮ x :=
+le_trans le_top (by simp)
+
 @[simp]lemma bv_eq_top_of_eq {x y : bSet 𝔹} (h_eq : x = y) : x =ᴮ y = ⊤ :=
 by simp*
 
@@ -1278,9 +1281,14 @@ by refl
 @[simp, cleanup]lemma check_type' {x : pSet.{u}} : bSet.type (x̌ : bSet 𝔹) = x.type := 
 by {induction x, simp}
 
+@[simp, cleanup]lemma check_type'_set {x : pSet} : set (bSet.type (x̌ : bSet 𝔹)) = set (x.type) :=
+by {induction x, simp}
+
 @[reducible, simp]def check_cast {x : pSet} (i : (x̌ : bSet 𝔹).type) : x.type :=
 cast check_type' i
 
+@[reducible, simp] def check_cast_set {x : pSet} (S : set (x̌ : bSet 𝔹).type) : set (x.type) :=
+cast check_type'_set S
 
 lemma check_func {x : pSet} {i} :
   (x̌ : bSet 𝔹).func i = (x.func (check_cast i))̌  :=
@@ -1558,7 +1566,7 @@ local notation `ω` := pSet.omega
 @[simp]lemma check_omega_type : (ω̌ : bSet 𝔹).type = ulift ℕ := rfl
 @[simp]lemma check_omega_func : (ω̌: bSet 𝔹).func = λ x, check (pSet.of_nat x.down) := rfl
 
-local postfix `̃ `:70 := pSet.of_nat -- i'm a bit skeptical of this notation
+postfix `̃ `:70 := pSet.of_nat -- i'm a bit skeptical of this notation
 
 @[simp, reducible]def axiom_of_infinity_spec (u : bSet 𝔹) : 𝔹 :=
   (∅∈ᴮ u) ⊓ (⨅(i_x : u.type), ⨆(i_y : u.type), (u.func i_x ∈ᴮ u.func i_y))
