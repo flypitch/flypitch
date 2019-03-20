@@ -4,7 +4,7 @@ open ordinal cardinal lattice bSet
 
 noncomputable theory
 
-local attribute [instance, priority 0] classical.prop_decidable
+local attribute [instance] classical.prop_decidable
 
 local attribute [simp] omega_le_aleph
 
@@ -186,21 +186,28 @@ begin
   use {S | cast eq₁ (ν, n) ∈ S}, sorry
 end
 
-@[reducible]def 𝒞 := finset ((ℵ₂ ̌ : bSet 𝔹).type × ℕ)
+lemma neg_principal_open {ν n} {S} : S ∈ (- (principal_open ν n)).val ↔ (cast eq₁ (ν,n) ∈ (-S))
+:= sorry
+
+structure 𝒞 : Type :=
+(ins : finset ((ℵ₂ ̌ : bSet 𝔹).type × ℕ))
+(out : finset ((ℵ₂ ̌ : bSet 𝔹).type × ℕ))
+(H : by {haveI : has_inter (finset ((ℵ₂ ̌ : bSet 𝔹).type × ℕ)) := by apply_instance, from (ins ∩ out : finset _) = ∅})
 
 -- instance : has_insert ((ℵ₂ ̌).type × ℕ) 𝒞 := ⟨by {dsimp[𝒞], exact insert}⟩
 
 def ι : 𝒞 → 𝔹 :=
-λ p, ⟨{S | (p.to_set) ⊆ (cast eq₂.symm S)}, sorry⟩
+λ p, ⟨{S | (p.ins.to_set) ⊆ (cast eq₂.symm S) ∧
+           (p.out.to_set) ⊆ (cast eq₂.symm (- S))}, sorry⟩
 
 lemma 𝒞_dense {b : 𝔹} (H : ⊥ < b) : ∃ p : 𝒞, ι p ≤ b := sorry 
 
 lemma 𝒞_nonzero (p : 𝒞) : ⊥ ≠ (ι p) := sorry
 
-lemma 𝒞_disjoint_row (p : 𝒞) : ∃ n : ℕ, ∀ ξ : ℵ₂.type, (cast eq₁.symm (ξ,n)) ∉ p :=
+lemma 𝒞_disjoint_row (p : 𝒞) : ∃ n : ℕ, ∀ ξ : ℵ₂.type, (cast eq₁.symm (ξ,n)) ∉ p.ins ∧ (cast eq₁.symm (ξ,n)) ∉ p.out :=
 sorry
 
-lemma 𝒞_anti {p₁ p₂ : 𝒞} : p₁ ⊆ p₂ → ι p₂ ≤ ι p₁  := sorry
+lemma 𝒞_anti {p₁ p₂ : 𝒞} : p₁.ins ⊆ p₂.ins → p₁.out ⊆ p₂.out → ι p₂ ≤ ι p₁  := sorry
 
 namespace cohen_real
 
@@ -235,33 +242,49 @@ begin
   apply bv_use (bSet.of_nat n), bv_split_goal
 end
 
-lemma not_mem_of_not_mem {p} {ν} {n} (H : (ν,n) ∉ p) : ι p ≤ -( (of_nat n) ∈ᴮ (mk ν)) :=
+lemma not_mem_of_not_mem {p : 𝒞} {ν} {n} (H : (ν,n) ∈ p.out) : ι p ≤ -( (of_nat n) ∈ᴮ (mk ν)) :=
 begin
 rw[mem_unfold, neg_supr], bv_intro k, rw[neg_inf], simp,
        by_cases n = k.down, swap, rw[bSet.of_nat_inj ‹_›],
        from le_sup_right_of_le (by simp),
        apply le_sup_left_of_le, rw[<-h],
-       rw[le_iff_subset], unfold ι χ principal_open, intros S H_S, sorry,
+       rw[le_iff_subset], unfold ι χ principal_open, rintros S ⟨H_S₁, H_S₂⟩,
+       apply neg_principal_open.mpr, have := H_S₂ H, convert this,
+       from eq₀.symm, from eq₀.symm, from eq₀.symm, cc, cc
 end
+
+private lemma inj_cast_lemma (ν' : type (ℵ₂̌  : bSet 𝔹)) (n' : ℕ) :
+  cast eq₁.symm (cast eq₀ ν', n') = (ν', n') :=
+begin
+  let a := _, change cast a _ = _,
+  let b := _, change cast _ (cast b _, _) = _,
+  simp[b] at a, dedup, change cast a_1 _ = _, cc
+end
+
 /-- Whenever ν₁ ≠ ν₂ < ℵ₂, bSet 𝔹 believes that `mk ν₁` and `mk ν₂` are distinct -/
 lemma inj {ν₁ ν₂} (H_neq : ν₁ ≠ ν₂) : (mk ν₁) =ᴮ (mk ν₂) ≤ ⊥ :=
 begin
   by_contra, replace h := (bot_lt_iff_not_le_bot.mpr ‹_›),
   cases 𝒞_dense h with p H_p, cases 𝒞_disjoint_row p with n H_n,
-  let p' := insert (ν₁,n) (p),
+  let p' : 𝒞 := { ins := insert (ν₁,n) (p.ins),
+  out := insert (ν₂,n) p.out,
+  H := by {ext, split; intro H, swap, cases H, have := p.H, simp at H, cases a_1 with ν' n',
+           cases H with H₁ H₂, specialize H_n (cast eq₀ ν'), cases H_n, cases H₁; cases H₂, cc,
+           exfalso, apply H_n_right, convert H₂, rw[show n = n', by cc], apply inj_cast_lemma,
+           exfalso, apply H_n_left, convert H₁, rw[show n = n', by cc], apply inj_cast_lemma,
+           rw[<-this], simp[*,-this]} },
   have this₀ : ι p' ≤ ι p,
-    from 𝒞_anti (by {dsimp[p'], from λ i _, by {simp, from or.inr ‹_›}}),
+    from 𝒞_anti (by {dsimp[p'], from λ i _, by {simp, from or.inr ‹_›}})
+                (by {dsimp[p'], from λ i _, by {simp, from or.inr ‹_›}}),
   have this₁ : ι p' ≤ (ñ̌) ∈ᴮ (cohen_real.mk ν₁),
     by {rw[mem_unfold], apply bv_use (ulift.up n), refine le_inf _ bv_eq_refl',
          {simp[le_iff_subset, χ, principal_open, ι],
-         have : (ν₁, n) ∈ p',
-           by simp[p'], intros S H_S,
-           specialize H_S this, convert H_S; [simp,simp,simp,cc,cc]}},
+         have : (ν₁, n) ∈ p'.ins,
+           by simp[p'], intros S H_S H_S',
+           specialize H_S this, convert H_S;
+           [from eq₀.symm,from eq₀.symm,from eq₀.symm,cc,cc]}},
   have this₂ : ι p' ≤ - ((ñ̌) ∈ᴮ (cohen_real.mk ν₂)),
-    by {have : (ν₂, n) ∉ p', by {simp[p'], rw[not_or_distrib], refine ⟨H_neq.symm, _⟩,
-        convert H_n (cast eq₀ ν₂), cases ℵ₂, let h₁ := _, let h₂ := _,
-        change _ = cast h₁ (cast h₂ _,_), simp[h₂] at h₁, dedup,
-        change _ = cast h₁_1 _, cc},
+    by {have : (ν₂, n) ∈ p'.out, by {simp[p']},
        from not_mem_of_not_mem ‹_›},
   have this₃ : ι p' ≤ - (mk ν₁ =ᴮ mk ν₂),
     from sep ‹_› ‹_›,
