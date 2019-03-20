@@ -405,6 +405,9 @@ lemma check_subset {x y : pSet} {Γ : 𝔹} (h_subset : x ⊆ y) : Γ ≤ x̌ �
 @[simp]lemma check_mem' {y : pSet} {i : y.type} : ((y.func i)̌ ) ∈ᴮ y̌ = (⊤ : 𝔹) :=
 by {apply top_unique, apply check_mem, cases y, apply pSet.mem.mk}
 
+lemma of_nat_inj {n k : ℕ} (H_neq : n ≠ k) : ((of_nat n : bSet 𝔹) =ᴮ of_nat k) = ⊥ :=
+check_bv_eq_bot_of_not_equiv (pSet.of_nat_inj ‹_›)
+
 end check
 
 section ordinals
@@ -587,23 +590,23 @@ lemma order_iso_symm {α β} {X : α → α → Prop} {Y : β → β → Prop} (
              specialize @this (H.inv_fun a) (H.inv_fun b), convert this.mp H';
              [from (H.right_inv a).symm, from (H.right_inv b).symm] }}
 
-noncomputable lemma omega_out_iso_nat : ordinal.omega.out.r ≃o ((λ x y : ℕ, x < y)) :=
-begin
-  have this₁ := order_isomorphism_of_equiv (@quotient.mk_out (Well_order) _ lift_nat_Well_order),
-  have this₂ := (lift_nat_Well_order_iso_nat),
-  apply order_iso_trans _ this₂, apply order_iso_trans _ this₁,
+-- noncomputable lemma omega_out_iso_nat : ordinal.omega.out.r ≃o ((λ x y : ℕ, x < y)) :=
+-- begin
+--   have this₁ := order_isomorphism_of_equiv (@quotient.mk_out (Well_order) _ lift_nat_Well_order),
+--   have this₂ := (lift_nat_Well_order_iso_nat),
+--   apply order_iso_trans _ this₂, apply order_iso_trans _ this₁,
   
-  sorry
-end
+--   sorry
+-- end
 
-lemma mk_omega_eq_omega : ⊤ ≤ ordinal.mk ordinal.omega =ᴮ (bSet.omega : bSet 𝔹) :=
-begin
-  rw[ordinal.mk_limit ordinal.omega omega_is_limit], apply le_inf, swap,
+-- lemma mk_omega_eq_omega : ⊤ ≤ ordinal.mk ordinal.omega =ᴮ (bSet.omega : bSet 𝔹) :=
+-- begin
+--   rw[ordinal.mk_limit ordinal.omega omega_is_limit], apply le_inf, swap,
 
-  {simp[-top_le_iff], intro k, induction k, induction k, simp, 
-   repeat{sorry}},
-  {sorry}
-end
+--   {simp[-top_le_iff], intro k, induction k, induction k, simp, 
+--    repeat{sorry}},
+--   {sorry}
+-- end
 
 lemma check_is_transitive {x : pSet} (H : pSet.is_transitive x) : ⊤ ≤ is_transitive (x̌ : bSet 𝔹) :=
 begin

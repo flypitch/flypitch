@@ -482,4 +482,41 @@ by {apply cardinal.aleph_lt.mpr, from one_lt_two}
 @[simp]lemma omega_lt_aleph_two : cardinal.omega < (aleph 2) :=
 lt_trans (omega_lt_aleph_one) (by simp)
 
+lemma subset_refl {x : pSet} : x ⊆ x :=
+by {apply subset_of_all_mem, from λ _ _, by assumption}
+
+lemma subset_trans {x y z : pSet} : x ⊆ y → y ⊆ z → x ⊆ z :=
+by {simp only [subset_all_mem], tidy}
+
+lemma subset_of_le {k₁ k₂ : ℕ} (H : k₁ ≤ k₂) : of_nat k₁ ⊆ of_nat k₂ :=
+begin
+  induction k₂ with k₂ ih, replace H := nat.eq_zero_of_le_zero H, rw[H], unfold of_nat,
+  from @subset_refl ∅,
+  by_cases k₁ = (k₂ + 1),
+  rw[h], apply subset_refl,
+  have := nat.le_of_lt_succ (nat.lt_of_le_and_ne ‹_› ‹_›),
+  suffices : of_nat k₁ ⊆ of_nat k₂,
+    by {apply subset_trans this, unfold of_nat, apply subset_of_all_mem, intros w Hw,
+        from mem_insert' (or.inr ‹_›)},
+  from ih ‹_› 
+end
+
+lemma false_of_subset_of_nat_ge {k₁ k₂ : ℕ} (H : k₁ < k₂) : ¬ (of_nat k₂ ⊆ of_nat k₁) :=
+begin
+  intro H, suffices : (of_nat k₁) ∈ of_nat k₁, from mem_self ‹_›,
+  suffices : of_nat (k₁ + 1) ⊆ of_nat k₂,
+    by {have := subset_trans this H, apply all_mem_of_subset this, apply mem_insert',
+    left, from equiv.refl _},
+  from subset_of_le (nat.succ_le_of_lt ‹_›)
+end
+
+lemma le_of_subset {k₁ k₂ : ℕ} (H : of_nat k₁ ⊆ of_nat k₂) : k₁ ≤ k₂ :=
+by {by_contra, simp at a, replace a := false_of_subset_of_nat_ge a, contradiction}
+
+lemma of_nat_inj {n k : ℕ} (H_neq : n ≠ k) : ¬ (pSet.equiv (of_nat n : pSet.{u}) (of_nat k : pSet.{u})) :=
+begin
+  intro H, replace H := (equiv.ext _ _).mp H, cases H with H₁ H₂,
+  apply H_neq, apply le_antisymm; from le_of_subset ‹_›
+end
+
 end pSet

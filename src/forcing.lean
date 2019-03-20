@@ -118,39 +118,46 @@ open pSet
 def is_regular_open : set (set(ℵ₂.type × ℕ)) → Prop := sorry
 
 def 𝔹 : Type := {S // is_regular_open S}
-instance 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 :={ sup := sorry,
-  le := (λ x y, x.1 ⊆ y.1),
-  lt := sorry,
-  le_refl := sorry,
-  le_trans := sorry,
-  lt_iff_le_not_le := sorry,
-  le_antisymm := sorry,
-  le_sup_left := sorry,
-  le_sup_right := sorry,
-  sup_le := sorry,
-  inf := sorry,
-  inf_le_left := sorry,
-  inf_le_right := sorry,
-  le_inf := sorry,
-  le_sup_inf := sorry,
-  top := sorry,
-  le_top := sorry,
-  bot := sorry,
-  bot_le := sorry,
-  neg := sorry,
-  sub := sorry,
-  inf_neg_eq_bot := sorry,
-  sup_neg_eq_top := sorry,
-  sub_eq := sorry,
-  Sup := sorry,
-  Inf := sorry,
-  le_Sup := sorry,
-  Sup_le := sorry,
-  Inf_le := sorry,
-  le_Inf := sorry,
-  infi_sup_le_sup_Inf := sorry,
-  inf_Sup_le_supr_inf := sorry,
-  bot_lt_top := sorry }
+instance 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 := sorry
+-- { sup := sorry,
+--   le := (λ x y, x.1 ⊆ y.1),
+--   lt := sorry,
+--   le_refl := sorry,
+--   le_trans := sorry,
+--   lt_iff_le_not_le := sorry,
+--   le_antisymm := sorry,
+--   le_sup_left := sorry,
+--   le_sup_right := sorry,
+--   sup_le := sorry,
+--   inf := sorry,
+--   inf_le_left := sorry,
+--   inf_le_right := sorry,
+--   le_inf := sorry,
+--   le_sup_inf := sorry,
+--   top := sorry,
+--   le_top := sorry,
+--   bot := sorry,
+--   bot_le := sorry,
+--   neg := sorry,
+--   sub := sorry,
+--   inf_neg_eq_bot := sorry,
+--   sup_neg_eq_top := sorry,
+--   sub_eq := sorry,
+--   Sup := sorry,
+--   Inf := sorry,
+--   le_Sup := sorry,
+--   Sup_le := sorry,
+--   Inf_le := sorry,
+--   le_Inf := sorry,
+--   infi_sup_le_sup_Inf := sorry,
+--   inf_Sup_le_supr_inf := sorry,
+--   bot_lt_top := sorry }
+
+-- remove this after the instance has been defined
+-- filling the instance stub with `sorry` messes up unification
+lemma le_iff_subset {x y : 𝔹} : x ≤ y ↔ x.1 ⊆ y.1 := sorry
+
+private lemma eq₀ : (ℵ₂̌  : bSet 𝔹).type = (ℵ₂).type := by cases ℵ₂; refl
 
 private lemma eq₁ : ((type (ℵ₂̌  : bSet 𝔹)) × ℕ) = ((type ℵ₂) × ℕ) :=
 by {cases ℵ₂, refl}
@@ -205,6 +212,12 @@ def χ (ν : (ℵ₂̌  : bSet 𝔹).type) : ℕ → 𝔹 :=
 def mk (ν : (ℵ₂̌  : bSet 𝔹).type) : bSet 𝔹 :=
   @set_of_indicator 𝔹 _ omega $ λ n, χ ν n.down
 
+@[simp, cleanup]lemma mk_type {ν} : (mk ν).type = ulift ℕ := rfl
+
+@[simp, cleanup]lemma mk_func {ν} {n} : (mk ν).func n = bSet.of_nat (n.down) := rfl
+
+@[simp, cleanup]lemma mk_bval {ν} {n} : (mk ν).bval n = (χ ν) (n.down) := rfl
+
 /-- bSet 𝔹 believes that each `mk ν` is a subset of omega -/
 lemma definite {ν} {Γ} : Γ ≤ mk ν ⊆ᴮ omega :=
 by simp [mk, subset_unfold]; from λ _, by rw[<-deduction]; convert omega_definite
@@ -212,16 +225,24 @@ by simp [mk, subset_unfold]; from λ _, by rw[<-deduction]; convert omega_defini
 /-- bSet 𝔹 believes that each `mk ν` is an element of 𝒫(ω) -/
 lemma definite' {ν} {Γ} : Γ ≤ mk ν ∈ᴮ bv_powerset omega := bv_powerset_spec.mp definite
 
+-- TODO(jesse) refactor this proof to use axiom of extensionality instead, or prove a more general version
 lemma sep {n} {Γ} {ν₁ ν₂} (H₁ : Γ ≤ (of_nat n) ∈ᴮ (mk ν₁)) (H₂ : Γ ≤ (- ((of_nat n) ∈ᴮ (mk ν₂)))) :
   Γ ≤ (- ((mk ν₁) =ᴮ (mk ν₂))) :=
 begin
   rw[bv_eq_unfold], rw[neg_inf, neg_infi, neg_infi], simp only [neg_imp],
-  -- let x := _, let y := _, change Γ ≤ x ⊔ y, 
   apply le_sup_left_of_le, rw[@bounded_exists 𝔹 _ (mk ν₁) (λ z, -(z ∈ᴮ mk ν₂)) _],
   swap, change B_ext _, simp[-imp_bot, imp_bot.symm],
   apply bv_use (bSet.of_nat n), bv_split_goal
 end
 
+lemma not_mem_of_not_mem {p} {ν} {n} (H : (ν,n) ∉ p) : ι p ≤ -( (of_nat n) ∈ᴮ (mk ν)) :=
+begin
+rw[mem_unfold, neg_supr], bv_intro k, rw[neg_inf], simp,
+       by_cases n = k.down, swap, rw[bSet.of_nat_inj ‹_›],
+       from le_sup_right_of_le (by simp),
+       apply le_sup_left_of_le, rw[<-h],
+       rw[le_iff_subset], unfold ι χ principal_open, intros S H_S, sorry,
+end
 /-- Whenever ν₁ ≠ ν₂ < ℵ₂, bSet 𝔹 believes that `mk ν₁` and `mk ν₂` are distinct -/
 lemma inj {ν₁ ν₂} (H_neq : ν₁ ≠ ν₂) : (mk ν₁) =ᴮ (mk ν₂) ≤ ⊥ :=
 begin
@@ -232,10 +253,16 @@ begin
     from 𝒞_anti (by {dsimp[p'], from λ i _, by {simp, from or.inr ‹_›}}),
   have this₁ : ι p' ≤ (ñ̌) ∈ᴮ (cohen_real.mk ν₁),
     by {rw[mem_unfold], apply bv_use (ulift.up n), refine le_inf _ bv_eq_refl',
-         {change _ ⊆ _, sorry}
-      },
+         {simp[le_iff_subset, χ, principal_open, ι],
+         have : (ν₁, n) ∈ p',
+           by simp[p'], intros S H_S,
+           specialize H_S this, convert H_S; [simp,simp,simp,cc,cc]}},
   have this₂ : ι p' ≤ - ((ñ̌) ∈ᴮ (cohen_real.mk ν₂)),
-    by sorry,
+    by {have : (ν₂, n) ∉ p', by {simp[p'], rw[not_or_distrib], refine ⟨H_neq.symm, _⟩,
+        convert H_n (cast eq₀ ν₂), cases ℵ₂, let h₁ := _, let h₂ := _,
+        change _ = cast h₁ (cast h₂ _,_), simp[h₂] at h₁, dedup,
+        change _ = cast h₁_1 _, cc},
+       from not_mem_of_not_mem ‹_›},
   have this₃ : ι p' ≤ - (mk ν₁ =ᴮ mk ν₂),
     from sep ‹_› ‹_›,
   have this₄ : ι p' ≤ (mk ν₁ =ᴮ mk ν₂),
