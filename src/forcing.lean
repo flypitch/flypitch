@@ -1,4 +1,4 @@
-import .bvm_extras .pSet_ordinal .set_theory
+import .bvm_extras .pSet_ordinal .set_theory cohen_poset
 
 open ordinal cardinal lattice bSet
 
