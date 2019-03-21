@@ -217,16 +217,16 @@ begin
   apply mem_Union.mpr, use y, use ‹_›, from ‹_›
 end
 
-lemma transitive_mk (η : ordinal.{u}) : is_transitive $ ordinal.mk η :=
-begin
-  apply limit_rec_on η,
-    simp[Ord_empty.right],
-    intros ξ ih,
-  simp, from transitive_succ _ ‹_›,
-  intros ξ h_limit ih,
+-- lemma transitive_mk (η : ordinal.{u}) : is_transitive $ ordinal.mk η :=
+-- begin
+--   apply limit_rec_on η,
+--     simp[Ord_empty.right],
+--     intros ξ ih,
+--   simp, from transitive_succ _ ‹_›,
+--   intros ξ h_limit ih,
 
-  simp*, intros y yH, sorry
-end
+--   simp*, intros y yH, sorry
+-- end
 
 lemma mem_mem_false {x y : pSet.{u}} (H₁:  x ∈ y) (H₂ : y ∈ x) : false :=
 begin
@@ -304,38 +304,38 @@ begin
   use y, from ⟨‹_›,‹_›⟩
 end
 
-lemma mk_lt_of_lt {β₁ β₂ : ordinal.{u}} (H : β₁ < β₂) : ordinal.mk β₁ ∈ ordinal.mk β₂ :=
-begin
-  revert H, revert β₁, apply limit_rec_on β₂,
-  intros β₁ H, exfalso, sorry, -- there is no principal segment in 0
+-- lemma mk_lt_of_lt {β₁ β₂ : ordinal.{u}} (H : β₁ < β₂) : ordinal.mk β₁ ∈ ordinal.mk β₂ :=
+-- begin
+--   revert H, revert β₁, apply limit_rec_on β₂,
+--   intros β₁ H, exfalso, sorry, -- there is no principal segment in 0
 
-  intro η, intro ih,
-  intros ξ h_ξ,
+--   intro η, intro ih,
+--   intros ξ h_ξ,
 
-  {haveI po_ord : partial_order ordinal.{u} := by apply_instance,
-  have : ξ ≤ η, from ordinal.lt_succ.mp ‹_›,
-  have this' := (@le_iff_lt_or_eq ordinal _ ξ η).mp ‹_›,
-  cases this',
-    {have this'' := @ih ξ ‹_›,
-      suffices H : is_transitive (ordinal.mk (ordinal.succ η)),
-      specialize H (ordinal.mk η) (by simp), rw[subset_all_mem] at H,
-      from H (ordinal.mk ξ) ‹_›, apply transitive_mk},
-    {rw[this'], simp}},
+--   {haveI po_ord : partial_order ordinal.{u} := by apply_instance,
+--   have : ξ ≤ η, from ordinal.lt_succ.mp ‹_›,
+--   have this' := (@le_iff_lt_or_eq ordinal _ ξ η).mp ‹_›,
+--   cases this',
+--     {have this'' := @ih ξ ‹_›,
+--       suffices H : is_transitive (ordinal.mk (ordinal.succ η)),
+--       specialize H (ordinal.mk η) (by simp), rw[subset_all_mem] at H,
+--       from H (ordinal.mk ξ) ‹_›, apply transitive_mk},
+--     {rw[this'], simp}},
 
-  intros η h_limit ih ξ hξ, simp only [h_limit, ordinal.mk_limit], sorry
-  -- apply mem_Union.mpr, use (ordinal.mk (ordinal.succ ξ)), split,
-  -- swap, simp, split, swap, -- to finish this, need a lemma which says that given a (ξ + 1) which is less than η, there exists an isomorphic initial segment in (quotient.out η)
-  -- sorry, sorry
-end
+--   intros η h_limit ih ξ hξ, simp only [h_limit, ordinal.mk_limit], sorry
+--   -- apply mem_Union.mpr, use (ordinal.mk (ordinal.succ ξ)), split,
+--   -- swap, simp, split, swap, -- to finish this, need a lemma which says that given a (ξ + 1) which is less than η, there exists an isomorphic initial segment in (quotient.out η)
+--   -- sorry, sorry
+-- end
 
-lemma mk_trichotomy (β₁ β₂ : ordinal.{u}) : (equiv (ordinal.mk β₁) (ordinal.mk β₂)) ∨ (ordinal.mk β₁) ∈ (ordinal.mk β₂) ∨ (ordinal.mk β₂) ∈ (ordinal.mk β₁) :=
-begin
-  have := lt_trichotomy β₁ β₂,
-  repeat{cases this},
-    right,left, from mk_lt_of_lt ‹_›,
-    left, apply equiv.refl,
-    right,right, from mk_lt_of_lt ‹_›
-end
+-- lemma mk_trichotomy (β₁ β₂ : ordinal.{u}) : (equiv (ordinal.mk β₁) (ordinal.mk β₂)) ∨ (ordinal.mk β₁) ∈ (ordinal.mk β₂) ∨ (ordinal.mk β₂) ∈ (ordinal.mk β₁) :=
+-- begin
+--   have := lt_trichotomy β₁ β₂,
+--   repeat{cases this},
+--     right,left, from mk_lt_of_lt ‹_›,
+--     left, apply equiv.refl,
+--     right,right, from mk_lt_of_lt ‹_›
+-- end
 
 private lemma ordinal.mk_inj_successor : ∀ (o : ordinal.{u}), (∀ (i j : type (ordinal.mk o)), i ≠ j →
   ¬equiv (func (ordinal.mk o) i) (func (ordinal.mk o) j)) →

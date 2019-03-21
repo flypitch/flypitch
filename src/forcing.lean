@@ -118,6 +118,9 @@ open pSet
 @[reducible]def is_regular_open : set (set(ℵ₂.type × ℕ)) → Prop := λ S, is_regular S
 
 def 𝔹 : Type := {S // is_regular_open S}
+
+instance : nonempty set(ℵ₂.type × ℕ) := ⟨∅⟩
+
 instance 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 := sorry
 -- { sup := sorry,
 --   le := (λ x y, x.1 ⊆ y.1),
@@ -196,7 +199,7 @@ lemma neg_principal_open {ν n} {S} : S ∈ (- (principal_open ν n)).val ↔ (c
 structure 𝒞 : Type :=
 (ins : finset ((ℵ₂ ̌ : bSet 𝔹).type × ℕ))
 (out : finset ((ℵ₂ ̌ : bSet 𝔹).type × ℕ))
-(H : by {haveI : has_inter (finset ((ℵ₂ ̌ : bSet 𝔹).type × ℕ)) := by apply_instance, from (ins ∩ out : finset _) = ∅})
+(H : (ins ∩ out) = ∅)
 
 -- instance : has_insert ((ℵ₂ ̌).type × ℕ) 𝒞 := ⟨by {dsimp[𝒞], exact insert}⟩
 
@@ -205,6 +208,8 @@ def ι : 𝒞 → 𝔹 :=
            (p.out.to_set) ⊆ (cast eq₂.symm (- S))}, sorry⟩
 
 lemma 𝒞_dense {b : 𝔹} (H : ⊥ < b) : ∃ p : 𝒞, ι p ≤ b := sorry 
+-- TODO(jesse) use that b is open, b is a union of basis elements,
+-- and 𝒞 is dense for the basis elements
 
 lemma to_set_inter {α : Type*} {p₁ p₂ : finset α} : (p₁ ∩ p₂).to_set = (p₁.to_set ∩ p₂.to_set) :=
 by {ext, split; intros; unfold finset.to_set at *, tidy}
