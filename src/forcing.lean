@@ -1,4 +1,4 @@
-import .bvm_extras .pSet_ordinal .set_theory
+import .bvm_extras .pSet_ordinal .set_theory .regular_open_algebra
 
 open ordinal cardinal lattice bSet
 
@@ -115,7 +115,7 @@ open pSet
 -- def ℵ₀' : Well_order.{0} := ⟨ℕ, (<), by apply_instance⟩
 
 
-def is_regular_open : set (set(ℵ₂.type × ℕ)) → Prop := sorry
+@[reducible]def is_regular_open : set (set(ℵ₂.type × ℕ)) → Prop := λ S, is_regular S
 
 def 𝔹 : Type := {S // is_regular_open S}
 instance 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 := sorry
@@ -157,6 +157,8 @@ instance 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 := sorr
 -- filling the instance stub with `sorry` messes up unification
 lemma le_iff_subset {x y : 𝔹} : x ≤ y ↔ x.1 ⊆ y.1 := sorry
 
+lemma bot_eq_empty : (⊥ : 𝔹) = ⟨∅, is_regular_empty⟩ := sorry
+
 private lemma eq₀ : (ℵ₂̌  : bSet 𝔹).type = (ℵ₂).type := by cases ℵ₂; refl
 
 private lemma eq₁ : ((type (ℵ₂̌  : bSet 𝔹)) × ℕ) = ((type ℵ₂) × ℕ) :=
@@ -179,11 +181,13 @@ by {cases ℵ₂, refl}
 -- instance 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 := sorry
 
 theorem 𝔹_CCC : CCC 𝔹 := sorry 
+
 /-- The principal regular open associated to a pair (ν, n) is the collection of all subsets of
     ℵ₂ × ℕ which contain (ν, n). -/
 def principal_open (ν : (ℵ₂̌  : bSet 𝔹).type) (n : ℕ) : 𝔹 :=
 begin
-  use {S | cast eq₁ (ν, n) ∈ S}, sorry
+  use {S | cast eq₁ (ν, n) ∈ S},
+  {sorry}
 end
 
 lemma neg_principal_open {ν n} {S} : S ∈ (- (principal_open ν n)).val ↔ (cast eq₁ (ν,n) ∈ (-S))
@@ -202,12 +206,46 @@ def ι : 𝒞 → 𝔹 :=
 
 lemma 𝒞_dense {b : 𝔹} (H : ⊥ < b) : ∃ p : 𝒞, ι p ≤ b := sorry 
 
-lemma 𝒞_nonzero (p : 𝒞) : ⊥ ≠ (ι p) := sorry
+lemma to_set_inter {α : Type*} {p₁ p₂ : finset α} : (p₁ ∩ p₂).to_set = (p₁.to_set ∩ p₂.to_set) :=
+by {ext, split; intros; unfold finset.to_set at *, tidy}
+
+@[simp]lemma to_set_empty {α : Type*} : finset.to_set (∅ : finset α) = ∅ :=
+by {unfold finset.to_set, refl}
+
+lemma not_mem_of_inter_empty_left {α : Type*} {p₁ p₂ : finset α}
+  (H : p₁ ∩ p₂ = ∅) {a : α} : a ∈ p₁.to_set → ¬ a ∈ p₂.to_set :=
+begin
+  intro H', intro H'',
+  have this₀ : a ∈ p₁.to_set ∩ p₂.to_set := ⟨‹_›,‹_›⟩,
+  rw[<-to_set_inter] at this₀, have this₁ := congr_arg finset.to_set H,
+  rw[this₁] at this₀, cases this₀ 
+end
+
+lemma not_mem_of_inter_empty_right {α : Type*} {p₁ p₂ : finset α}
+  (H : p₂ ∩ p₁ = ∅) {a : α} : a ∈ p₁.to_set → ¬ a ∈ p₂.to_set :=
+by {rw[finset.inter_comm] at H, apply not_mem_of_inter_empty_left, from ‹_›}
+
+lemma 𝒞_nonzero (p : 𝒞) : ⊥ ≠ (ι p) :=
+begin
+  intro H, replace H := H.symm, rw[eq_bot_iff] at H, rw[le_iff_subset] at H,
+  rw[bot_eq_empty] at H,
+  suffices : nonempty (ι p).val,
+    by {have := classical.choice this, specialize H this.property, cases H},
+  apply nonempty.intro, fsplit, exact (cast eq₂ p.ins.to_set),
+  split, finish, intro x, cases x with ν n, intro H,
+  suffices : cast eq₁ (ν, n) ∈ - cast eq₂ (p.ins).to_set,
+    {convert this, from eq₀, from eq₀, from eq₀, cc, cc},
+  suffices : (ν, n) ∈ - p.ins.to_set,
+    {convert this, from eq₀.symm, from eq₀.symm, from eq₀.symm, cc, from eq₀.symm,
+     from eq₀.symm, from eq₀.symm, from eq₀.symm, cc},
+  from not_mem_of_inter_empty_right p.H H
+end
 
 lemma 𝒞_disjoint_row (p : 𝒞) : ∃ n : ℕ, ∀ ξ : ℵ₂.type, (cast eq₁.symm (ξ,n)) ∉ p.ins ∧ (cast eq₁.symm (ξ,n)) ∉ p.out :=
 sorry
 
-lemma 𝒞_anti {p₁ p₂ : 𝒞} : p₁.ins ⊆ p₂.ins → p₁.out ⊆ p₂.out → ι p₂ ≤ ι p₁  := sorry
+lemma 𝒞_anti {p₁ p₂ : 𝒞} : p₁.ins ⊆ p₂.ins → p₁.out ⊆ p₂.out → ι p₂ ≤ ι p₁  :=
+by {intros H₁ H₂, rw[le_iff_subset], tidy}
 
 namespace cohen_real
 
