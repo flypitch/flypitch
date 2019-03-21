@@ -119,7 +119,7 @@ open pSet
 
 def 𝔹 : Type := {S // is_regular_open S}
 
-instance : nonempty set(ℵ₂.type × ℕ) := ⟨∅⟩
+instance : nonempty (set $ ℵ₂.type × ℕ) := ⟨∅⟩
 
 instance 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 := sorry
 -- { sup := sorry,
