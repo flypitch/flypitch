@@ -1,4 +1,4 @@
-import .bvm_extras .pSet_ordinal .set_theory .regular_open_algebra
+import .bvm_extras .pSet_ordinal .set_theory .regular_open_algebra .cantor_space
 
 open ordinal cardinal lattice bSet
 
@@ -112,17 +112,12 @@ open pSet
 -- sorry
 
 def 𝔹 : Type := @regular_opens (set(ℵ₂.type × ℕ)) (Pi.topological_space)
--- {s // is_regular_open S}
+
 instance H_nonempty : nonempty (set $ ℵ₂.type × ℕ) := ⟨∅⟩
 
 @[instance, priority 1000]def 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 :=
 regular_open_algebra (H_nonempty)
--- instance 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 := regular_open_algebra (H_nonempty)
 
--- variables [σ : nontrivial_complete_boolean_algebra 𝔹]
-          -- {le_iff_subset' : ∀{x y : 𝔹}, x ≤ y ↔ x.1 ⊆ y.1}
-          -- {bot_eq_empty : (⊥ : 𝔹) = ⟨∅, is_regular_empty⟩}
--- include σ
 lemma le_iff_subset' {x y : 𝔹} : x ≤ y ↔ x.1 ⊆ y.1 := by refl
 
 lemma bot_eq_empty : (⊥ : 𝔹) = ⟨∅, is_regular_empty⟩ := rfl
@@ -135,27 +130,25 @@ by {cases ℵ₂, refl}
 private lemma eq₂ : set ((type (ℵ₂̌  : bSet 𝔹)) × ℕ) = set ((type ℵ₂) × ℕ) :=
 by {cases ℵ₂, refl}
 
--- lemma 𝔹'_cast : (set (type ℵ₂ × ℕ)) = (set ((ℵ₂̌  : bSet 𝔹').type × ℕ)) :=
---   by {cases (ℵ₂), refl}
-
--- lemma 𝔹'_cast_set : set (set (type ℵ₂ × ℕ)) = set (set ((ℵ₂̌  : bSet 𝔹').type × ℕ)) :=
---   by {cases (ℵ₂), refl}
-
--- def is_regular_open' : set (set ((ℵ₂ ̌).type × ℕ)) → Prop :=
--- λ S, is_regular_open (cast 𝔹'_cast_set.symm S)
-
--- def 𝔹 : Type := {S // is_regular_open' S}
-
--- instance 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 := sorry
-
 theorem 𝔹_CCC : CCC 𝔹 := sorry 
+
+local notation `𝒳` := set(ℵ₂.type × ℕ)
+
+open topological_space
+
+def standard_basis : set (set 𝒳) := sorry
+
+lemma standard_basis_basis : is_topological_basis standard_basis := sorry
 
 /-- The principal regular open associated to a pair (ν, n) is the collection of all subsets of
     ℵ₂ × ℕ which contain (ν, n). -/
 def principal_open (ν : (ℵ₂̌  : bSet 𝔹).type) (n : ℕ) : 𝔹 :=
 begin
   use {S | cast eq₁ (ν, n) ∈ S},
-  {sorry}
+  apply is_regular_of_clopen, split,
+    {sorry}, -- describe a topological basis for the product space and show that these are
+    -- clopen basis elements
+    {rw[<-is_open_compl_iff], sorry},
 end
 
 lemma neg_principal_open {ν n} {S} : S ∈ (- (principal_open ν n)).val ↔ (cast eq₁ (ν,n) ∈ (-S))

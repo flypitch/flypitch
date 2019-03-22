@@ -5,13 +5,6 @@ local attribute [instance] classical.prop_decidable
 
 open topological_space set
 
-def Prop_space : topological_space Prop := ⊤
-
--- instance discrete_Prop : discrete_topology Prop := ⟨rfl⟩
-
--- instance product_topology {α : Type*} : topological_space (set α) :=
--- Pi.topological_space
-
 meta def not_as_big_bertha : tactic string := `[cc] >> pure "cc"
 
 meta def with_cc : list (tactic string) := tactic.tidy.default_tactics ++ [not_as_big_bertha]
@@ -22,37 +15,10 @@ lemma subtype.eq_iff {α : Type*} {P : α → Prop} {a b : subtype P} :
 
 lemma subset_ext {α : Type*} {S₁ S₂ : set α} (H : S₁ ⊆ S₂) (H' : S₂ ⊆ S₁) : S₁ = S₂ := by tidy
 
-lemma eq_true_of_provable {p : Prop} (h : p) : (p = true) := by simp[h]
-
-lemma eq_false_of_provable_neg {p : Prop} (h : ¬ p) : (p = false) := by finish
-
-@[reducible, simp]noncomputable def Prop_to_bool (p : Prop) : bool :=
-by {haveI := classical.prop_decidable p, by_cases p, exact true, exact false}
-
-@[simp]lemma Prop_to_bool_true : Prop_to_bool true = tt := by simp
-
-@[simp]lemma Prop_to_bool_false : Prop_to_bool false = ff := by simp
-
-noncomputable lemma equiv_Prop_bool : equiv Prop bool :=
-begin
-  refine ⟨Prop_to_bool,by {intro b, cases b, exact false, exact true},_,_⟩,
-  {unfold function.left_inverse, intro p, haveI := classical.prop_decidable p, by_cases p,
-  rw[eq_true_of_provable h, Prop_to_bool_true],
-  rw[eq_false_of_provable_neg h, Prop_to_bool_false],},
-  {intro x, cases x; finish}
-end
-
-noncomputable instance Prop_encodable : encodable Prop :=
- @encodable.of_equiv _ _ (by apply_instance) equiv_Prop_bool
-
 theorem subset_trans {α : Type*} {a b c : set α} : a ⊆ b →  b ⊆ c → a ⊆ c :=
 assume x h, by {intros x Ha, solve_by_elim}
 
 end lemmas
-
-instance Prop_separable : separable_space Prop :=
-{ exists_countable_closure_eq_univ :=
-  by {use set.univ, refine ⟨countable_encodable _, by simp⟩}}
 
 namespace topological_space
 section topology_lemmas
