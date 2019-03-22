@@ -1044,6 +1044,10 @@ begin
   by_contra, have := @bot_lt_iff_not_le_bot β _ (s i), tauto
 end
 
+def CCC (𝔹 : Type u) [boolean_algebra 𝔹] : Prop :=
+  ∀ ι : Type u, ∀ 𝓐 : ι → 𝔹, (∀ i, ⊥ < 𝓐 i) →
+    (∀ i j, i ≠ j → 𝓐 i ⊓ 𝓐 j ≤ ⊥) → (cardinal.mk ι) = cardinal.omega
+
 end lattice
 
 namespace tactic
