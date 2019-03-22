@@ -7,10 +7,10 @@ open topological_space set
 
 def Prop_space : topological_space Prop := ⊤
 
-instance discrete_Prop : discrete_topology Prop := ⟨rfl⟩
+-- instance discrete_Prop : discrete_topology Prop := ⟨rfl⟩
 
-instance product_topology {α : Type*} : topological_space (set α) :=
-Pi.topological_space
+-- instance product_topology {α : Type*} : topological_space (set α) :=
+-- Pi.topological_space
 
 meta def not_as_big_bertha : tactic string := `[cc] >> pure "cc"
 
@@ -129,7 +129,8 @@ include τ
 
 -- @[reducible,simp,ematch]def int_of_cl (S : set α) := interior (closure S)
 
-@[reducible]def perp (S : set α) := - (closure S)
+def perp (S : set α) := - (closure S)
+local attribute [reducible] perp
 
 local postfix `ᵖ`:80 := perp
 
@@ -274,8 +275,6 @@ end
 @[simp]lemma is_regular_inter {S₁ S₂ : set α} (H₁ : is_regular S₁) (H₂ : is_regular S₂) : is_regular (S₁ ∩ S₂) :=
 by {rw[regular_iff_p_p] at *, rw[p_p_inter_eq_inter_p_p (is_open_of_p_p H₁) (is_open_of_p_p H₂)], cc}
 
-def lattice_opens : complete_lattice (opens α) := by apply_instance
-
 end regular
 
 section regular_algebra
@@ -289,11 +288,13 @@ variables {α : Type*} [τ : topological_space α]
 
 include τ
 
+local attribute [reducible] perp
+
 variable (α)
 @[reducible]def regular_opens := {S : set α // is_regular S}
 
 variable{α}
-instance regular_open_poset : partial_order (regular_opens α) :=
+def regular_open_poset : partial_order (regular_opens α) :=
 {le := λ S₁ S₂, S₁.val ⊆ S₂.val,
   lt := λ S₁ S₂, S₁.val ⊆ S₂.val ∧ S₁.val ≠ S₂.val,
   le_refl := by {intro a, simp only},
@@ -307,10 +308,11 @@ instance regular_open_poset : partial_order (regular_opens α) :=
       intros a b H₁ H₂, apply subtype.eq,
       ext; intros; split; intros, from H₁ ‹_›, from H₂ ‹_›
     end}
+local attribute [instance] regular_open_poset
 
 lemma le_iff_subset {S₁ S₂ : regular_opens α} : S₁ ≤ S₂ ↔ S₁.val ⊆ S₂ := by refl
 
-instance regular_open_lattice : lattice (regular_opens α) :=
+def regular_open_lattice : lattice (regular_opens α) :=
 { sup := λ S₁ S₂, ⟨(S₁.val ∪ S₂.val)ᵖᵖ, by {apply is_regular_sup}⟩,
     le_sup_left :=
     begin
@@ -337,13 +339,16 @@ instance regular_open_lattice : lattice (regular_opens α) :=
       intros a b c H₁ H₂, intros x Hx, split; solve_by_elim
     end,
   ..regular_open_poset}
+local attribute [instance] regular_open_lattice
 
-instance regular_open_bounded_lattice : bounded_lattice (regular_opens α) :=
+def regular_open_bounded_lattice : bounded_lattice (regular_opens α) :=
 {  top := ⟨set.univ, is_regular_univ⟩,
   le_top := by tidy,
   bot := ⟨∅, is_regular_empty⟩,
   bot_le := by tidy,
  .. regular_open_lattice}
+
+local attribute [instance] regular_open_bounded_lattice
 
 def regular_open.neg : (regular_opens α) → (regular_opens α) := λ x, ⟨xᵖ, by {rw[regular_iff_p_p], symmetry, apply p_eq_p_p_p,
                        from is_open_of_is_regular x.property}⟩
@@ -387,20 +392,27 @@ end
 lemma perp_self_empty {S : set α} : S ∩ (Sᵖ) = ∅ :=
 by tidy
 
-@[simp, priority 0]lemma inf_unfold {x₁ x₂ : (regular_opens α)} : (x₁ ⊓ x₂) = ⟨x₁.val ∩ x₂.val, is_regular_inter x₁.property x₂.property⟩ :=
+lemma inf_unfold {x₁ x₂ : (regular_opens α)} : (x₁ ⊓ x₂) = ⟨x₁.val ∩ x₂.val, is_regular_inter x₁.property x₂.property⟩ :=
 by refl
+local attribute [simp, priority 0] inf_unfold
 
-@[simp, priority 0]lemma neg_unfold {x : (regular_opens α)} : (- x) = ⟨xᵖ, by {rw[regular_iff_p_p], symmetry, apply p_eq_p_p_p,
+lemma neg_unfold {x : (regular_opens α)} : (- x) = ⟨xᵖ, by {rw[regular_iff_p_p], symmetry, apply p_eq_p_p_p,
                        from is_open_of_is_regular x.property}⟩ := by refl
+
+local attribute [simp, priority 0] neg_unfold
+
 @[simp]lemma neg_neg_eq_self {x : (regular_opens α)} : - - x = x :=
 begin
   simp, apply subtype.eq, simp, apply is_regular_eq_p_p, from x.property
 end
+local attribute [simp] neg_neg_eq_self
 
-@[simp, priority 0]lemma sup_unfold {x₁ x₂ : (regular_opens α)} :
+lemma sup_unfold {x₁ x₂ : (regular_opens α)} :
   (x₁ ⊔ x₂) = ⟨(x₁.val ∪ x₂.val)ᵖᵖ, by {apply is_regular_sup}⟩ := by refl
+local attribute [simp, priority 0] sup_unfold
 
-@[simp, priority 0]lemma top_unfold : (⊤ : (regular_opens α)).val = set.univ := rfl
+lemma top_unfold : (⊤ : (regular_opens α)).val = set.univ := rfl
+local attribute [simp, priority 0] top_unfold
 
 lemma regular_open_inf_neg_eq_bot : ∀ (x : (regular_opens α)), x ⊓ -x = ⊥ :=
 by {tidy, suffices : x_val ∩ (x_valᵖ) = (⊥ : (regular_opens α)).val, apply subtype.eq,
@@ -417,7 +429,7 @@ begin
       right, from ‹_›
 end
 
-instance regular_open_boolean_algebra : boolean_algebra (regular_opens α) :=
+def regular_open_boolean_algebra : boolean_algebra (regular_opens α) :=
 {le_sup_inf :=
     begin
       intros x y z,
@@ -445,6 +457,8 @@ instance regular_open_boolean_algebra : boolean_algebra (regular_opens α) :=
   .. regular_open_has_neg,
   .. regular_open_bounded_lattice
 }
+
+local attribute [instance] regular_open_boolean_algebra
 
 def regular_open_has_Inf : has_Inf (regular_opens α) :=
 { Inf := λ 𝒮, ⟨regular_open.neg ((Sup) ((λ x : (regular_opens α), -x) '' 𝒮)),
@@ -482,7 +496,7 @@ begin
       apply H_mme, simp*
 end
 
-instance regular_open_complete_lattice : complete_lattice (regular_opens α) :=
+def regular_open_complete_lattice : complete_lattice (regular_opens α) :=
 {le_Sup := regular_open_le_Sup,
   Sup_le := regular_open_Sup_le,
   Inf_le := regular_open_Inf_le,
@@ -492,6 +506,8 @@ instance regular_open_complete_lattice : complete_lattice (regular_opens α) :=
   .. regular_open_has_Sup,
   .. regular_open_has_neg,
   .. regular_open_bounded_lattice}
+
+local attribute [instance] regular_open_complete_lattice
 
 lemma regular_open_inf_Sup_le_supr_inf : ∀(a : (regular_opens α)) s, a ⊓ Sup s ≤ (⨆ b ∈ s, a ⊓ b) :=
 begin
@@ -508,9 +524,6 @@ end
 lemma shift_neg_right {a b : (regular_opens α)} (h : a = -b) : -a = b :=
 by {rw[h], from lattice.neg_neg}
 
-end regular_algebra
-
-section regular_algebra2
 -- variables {α : Type*} [τ : topological_space α] 
 
 -- local postfix `ᵖ`:80 := perp
@@ -520,53 +533,60 @@ section regular_algebra2
 -- local notation `int`:65 := interior
 
 -- include τ
--- lemma regular_open_infi_sup_le_sup_Inf : ∀(a : (regular_opens α)) s, (⨅ b ∈ s, a ⊔ b) ≤ a ⊔ Inf s :=
--- begin 
---   intros A 𝒜,
---   have : A ⊔ Inf 𝒜 = -(-A ⊓ -(Inf 𝒜)),
---     by {symmetry, apply shift_neg_right, rw[neg_sup]},
---   rw[this], apply @neg_le_neg' ((regular_opens α)) _,
---   unfold infi,
---   simp only[Inf_unfold], have this₁ := @lattice.neg_neg (regular_opens α) _ _,
---   rw[this₁], have this₂ := @lattice.neg_neg (regular_opens α) _ _, rw[this₂],
---   have this' := @le_trans (regular_opens α) _,
---   have := @regular_open_inf_Sup_le_supr_inf α _ (-A) (has_neg.neg '' 𝒜),
---   have this_le := @le_trans (regular_opens α) _, specialize this_le this,
---   swap, from Sup
---       (has_neg.neg '' range (λ (b : {S // is_regular S}), -Sup (has_neg.neg '' range (λ (H : b ∈ 𝒜), A ⊔ b)))),
---   rw[inf_comm], rw[deduction], have := @Sup_le (regular_opens α) _ (has_neg.neg '' 𝒜),
---   let X := _, change _ ≤ X, specialize @this X, apply this, intros b Hb, dsimp[X], rw[<-deduction, inf_comm],
---   clear this_le, simp only [mem_image] at Hb, cases Hb with b' Hb', rcases Hb' with ⟨H'', ⟨Hb''₁, Hb''₂⟩⟩,
---   change -A ⊓ -(b') ≤ _,
---   have : -A ⊓ (-b') = -(A ⊔ b'), by {rw[<-neg_sup]}, rw[this],
---   have := @le_Sup (regular_opens α) _ (has_neg.neg '' range (λ (b : subtype is_regular), -Sup (has_neg.neg '' range (λ (H : b ∈ 𝒜), A ⊔ b)))),
---   apply this, simp only [mem_image],
---   use (A ⊔ b'), split, apply mem_range.mpr,
---   use b', apply shift_neg_right, clear this,
---   apply le_antisymm, 
---   apply @Sup_le (regular_opens α) _ (has_neg.neg '' range (λ (H : b' ∈ 𝒜), A ⊔ b')) (-(A ⊔ b')),
---   intros b'' Hb'',
---   simp at Hb'', rcases Hb'' with ⟨w, ⟨⟨Hw₁, Hw₂⟩, ⟨Hw₃, Hw₄⟩⟩⟩,
---     rw[<-Hw₄], replace Hw₂ := (congr_arg perp Hw₂).symm,
---     simp only [Hw₂], apply le_of_eq _, refl,
+lemma regular_open_infi_sup_le_sup_Inf : ∀(a : (regular_opens α)) s, (⨅ b ∈ s, a ⊔ b) ≤ a ⊔ Inf s :=
+begin 
+  intros A 𝒜,
+  have : A ⊔ Inf 𝒜 = -(-A ⊓ -(Inf 𝒜)),
+    by {symmetry, apply shift_neg_right, rw[neg_sup]},
+  rw[this], apply @neg_le_neg' ((regular_opens α)) _,
+  unfold infi,
+  simp only[Inf_unfold], have this₁ := @lattice.neg_neg (regular_opens α) _ _,
+  rw[this₁], have this₂ := @lattice.neg_neg (regular_opens α) _ _, rw[this₂],
+  have this' := @le_trans (regular_opens α) _,
+  have := @regular_open_inf_Sup_le_supr_inf α _ (-A) (has_neg.neg '' 𝒜),
+  have this_le := @le_trans (regular_opens α) _, specialize this_le this,
+  swap, from Sup
+      (has_neg.neg '' range (λ (b : {S // is_regular S}), -Sup (has_neg.neg '' range (λ (H : b ∈ 𝒜), A ⊔ b)))),
+  rw[inf_comm], rw[deduction], have := @Sup_le (regular_opens α) _ (has_neg.neg '' 𝒜),
+  let X := _, change _ ≤ X, specialize @this X, apply this, intros b Hb, dsimp[X], rw[<-deduction, inf_comm],
+  clear this_le, simp only [mem_image] at Hb, cases Hb with b' Hb', rcases Hb' with ⟨H'', ⟨Hb''₁, Hb''₂⟩⟩,
+  change -A ⊓ -(b') ≤ _,
+  have : -A ⊓ (-b') = -(A ⊔ b'), by {rw[<-neg_sup]}, rw[this],
+  have := @le_Sup (regular_opens α) _ (has_neg.neg '' range (λ (b : subtype is_regular), -Sup (has_neg.neg '' range (λ (H : b ∈ 𝒜), A ⊔ b)))),
+  apply this, simp only [mem_image],
+  use (A ⊔ b'), split, apply mem_range.mpr,
+  use b', apply shift_neg_right, clear this,
+  apply le_antisymm, 
+  apply @Sup_le (regular_opens α) _ (has_neg.neg '' range (λ (H : b' ∈ 𝒜), A ⊔ b')) (-(A ⊔ b')),
+  intros b'' Hb'',
+  simp at Hb'', rcases Hb'' with ⟨w, ⟨⟨Hw₁, Hw₂⟩, ⟨Hw₃, Hw₄⟩⟩⟩,
+    rw[<-Hw₄], replace Hw₂ := (congr_arg perp Hw₂).symm,
+    simp only [Hw₂], apply le_of_eq _, refl,
   
---   apply @le_Sup (regular_opens α) _ (has_neg.neg '' range (λ (H : b' ∈ 𝒜), A ⊔ b')), simp only [mem_range, mem_image], use (A ⊔ b'), use H'',
---   refl, refl
--- end
+  apply @le_Sup (regular_opens α) _ (has_neg.neg '' range (λ (H : b' ∈ 𝒜), A ⊔ b')), simp only [mem_range, mem_image], use (A ⊔ b'), use H'',
+  refl, refl
+end
 
--- instance regular_open_algebra (H_nonempty : nonempty α) :
---   nontrivial_complete_boolean_algebra (regular_opens α) :=
--- {infi_sup_le_sup_Inf := regular_open_infi_sup_le_sup_Inf,
---   inf_Sup_le_supr_inf := regular_open_inf_Sup_le_supr_inf,
---   bot_lt_top :=
---     by {apply lt_iff_le_and_ne.mpr, split,
---        have := regular_open_bounded_lattice.bot_le, specialize this ⊤,
---        from this, intro H, simp[subtype.eq_iff] at H,
---        change (∅ : set α) = univ at H, tactic.unfreeze_local_instances,
---        cases H_nonempty, suffices : H_nonempty ∈ (∅ : set α), by {cases this}, simp[H]},
---   .. regular_open_boolean_algebra,
---   ..regular_open_complete_lattice
---   }
+def regular_open_algebra (H_nonempty : nonempty α) :
+  nontrivial_complete_boolean_algebra (regular_opens α) :=
+{infi_sup_le_sup_Inf := regular_open_infi_sup_le_sup_Inf,
+  inf_Sup_le_supr_inf := regular_open_inf_Sup_le_supr_inf,
+  bot_lt_top :=
+    by {apply lt_iff_le_and_ne.mpr, split,
+       have := regular_open_bounded_lattice.bot_le, specialize this ⊤,
+       from this, intro H, simp[subtype.eq_iff] at H,
+       change (∅ : set α) = univ at H, tactic.unfreeze_local_instances,
+       cases H_nonempty, suffices : H_nonempty ∈ (∅ : set α), by {cases this}, simp[H]},
+  .. regular_open_boolean_algebra,
+  ..regular_open_complete_lattice
+  }
+
+example : ⊤ ≤ ⊤ ⊔ (⊤ : regular_opens α)  :=
+begin
+  sorry
+end
 
 
-end regular_algebra2
+end regular_algebra
+
+
