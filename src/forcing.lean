@@ -113,13 +113,16 @@ open pSet
 
 def 𝔹 : Type := @regular_opens (set(ℵ₂.type × ℕ)) (Pi.topological_space)
 -- {s // is_regular_open S}
-
 instance H_nonempty : nonempty (set $ ℵ₂.type × ℕ) := ⟨∅⟩
 
 @[instance, priority 1000]def 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 :=
 regular_open_algebra (H_nonempty)
+-- instance 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 := regular_open_algebra (H_nonempty)
 
-
+-- variables [σ : nontrivial_complete_boolean_algebra 𝔹]
+          -- {le_iff_subset' : ∀{x y : 𝔹}, x ≤ y ↔ x.1 ⊆ y.1}
+          -- {bot_eq_empty : (⊥ : 𝔹) = ⟨∅, is_regular_empty⟩}
+-- include σ
 lemma le_iff_subset' {x y : 𝔹} : x ≤ y ↔ x.1 ⊆ y.1 := by refl
 
 lemma bot_eq_empty : (⊥ : 𝔹) = ⟨∅, is_regular_empty⟩ := rfl
@@ -219,7 +222,14 @@ lemma 𝒞_anti {p₁ p₂ : 𝒞} : p₁.ins ⊆ p₂.ins → p₁.out ⊆ p₂
 by {intros H₁ H₂, rw[le_iff_subset'], tidy}
 
 namespace cohen_real
+section cohen_real
 
+-- attribute [instance, priority 0] 𝔹_boolean_algebra
+
+-- variable [σ : nontrivial_complete_boolean_algebra 𝔹]
+
+-- attribute [instance, priority 1000] σ
+-- include σ
 /-- `cohen_real.χ ν` is the indicator function on ℕ induced by every ordinal less than ℵ₂ -/
 def χ (ν : (ℵ₂̌  : bSet 𝔹).type) : ℕ → 𝔹 :=
   λ n, principal_open ν n
@@ -247,7 +257,7 @@ lemma sep {n} {Γ} {ν₁ ν₂} (H₁ : Γ ≤ (of_nat n) ∈ᴮ (mk ν₁)) (H
   Γ ≤ (- ((mk ν₁) =ᴮ (mk ν₂))) :=
 begin
   rw[bv_eq_unfold], rw[neg_inf, neg_infi, neg_infi], simp only [neg_imp],
-  apply le_sup_left_of_le, rw[@bounded_exists 𝔹 _ (mk ν₁) (λ z, -(z ∈ᴮ mk ν₂)) _],
+  refine le_sup_left_of_le _, rw[@bounded_exists 𝔹 _ (mk ν₁) (λ z, -(z ∈ᴮ mk ν₂)) _],
   swap, change B_ext _, simp[-imp_bot, imp_bot.symm],
   apply bv_use (bSet.of_nat n), bv_split_goal
 end
@@ -257,7 +267,7 @@ begin
 rw[mem_unfold, neg_supr], bv_intro k, rw[neg_inf], simp,
        by_cases n = k.down, swap, rw[bSet.of_nat_inj ‹_›],
        from le_sup_right_of_le (by simp),
-       apply le_sup_left_of_le, rw[<-h],
+       refine le_sup_left_of_le _, rw[<-h],
        rw[le_iff_subset'], unfold ι χ principal_open, rintros S ⟨H_S₁, H_S₂⟩,
        apply neg_principal_open.mpr, have := H_S₂ H, convert this,
        from eq₀.symm, from eq₀.symm, from eq₀.symm, cc, cc
@@ -268,7 +278,7 @@ private lemma inj_cast_lemma (ν' : type (ℵ₂̌  : bSet 𝔹)) (n' : ℕ) :
 begin
   let a := _, change cast a _ = _,
   let b := _, change cast _ (cast b _, _) = _,
-  simp[b] at a, dedup, change cast a_1 _ = _, cc
+  simp[b] at a, tactic.unfreeze_local_instances, dedup, change cast a_1 _ = _, cc
 end
 
 /-- Whenever ν₁ ≠ ν₂ < ℵ₂, bSet 𝔹 believes that `mk ν₁` and `mk ν₂` are distinct -/
@@ -305,6 +315,7 @@ begin
 end
 
 end cohen_real
+end cohen_real
 
 section neg_CH
 
@@ -315,7 +326,7 @@ local infix `≺`:70 := (λ x y, -(larger_than x y))
 lemma ℵ₀_lt_ℵ₁ : (⊤ : 𝔹)  ≤ ℵ₀ ≺ ℵ₁̌  :=
 begin
   simp[larger_than, -top_le_iff], rw[<-imp_bot],
-  bv_imp_intro, bv_cases_at H f, by_contra,
+  bv_imp_intro, bv_cases_at' H f, by_contra,
   have := classical.axiom_of_choice
             (AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
   cases this with g g_spec,
@@ -333,7 +344,7 @@ end
 lemma ℵ₁_lt_ℵ₂ : (⊤ : 𝔹) ≤ ℵ₁̌  ≺ ℵ₂̌  :=
 begin
   simp[larger_than, -top_le_iff], rw[<-imp_bot],
-  bv_imp_intro, bv_cases_at H f, by_contra,
+  bv_imp_intro, bv_cases_at' H f, by_contra,
   have := classical.axiom_of_choice
             (AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
   cases this with g g_spec,
@@ -353,7 +364,7 @@ lemma cohen_real.mk_ext : ∀ (i j : type (ℵ₂̌  : bSet 𝔹)), func (ℵ₂
 begin
   intros i j, by_cases i = j,
    {simp[h]},
-   {apply poset_yoneda, intros Γ a, simp only [le_inf_iff] at *,
+   {refine poset_yoneda _, intros Γ a, simp only [le_inf_iff] at *,
      have : func (ℵ₂̌ ) i = (ℵ₂.func (check_cast i))̌ ,
        by simp[check_func],
      rw[this] at a,
@@ -371,22 +382,22 @@ noncomputable def neg_CH_func : bSet 𝔹 :=
 
 theorem ℵ₂_le_𝔠 : ⊤ ≤ is_func' (ℵ₂̌ ) 𝔠 (neg_CH_func) ⊓ is_inj (neg_CH_func) :=
 begin
-apply le_inf,
+refine le_inf _ _,
 
-  {unfold neg_CH_func, apply le_inf, apply le_inf, apply mk_is_func,
+  {unfold neg_CH_func, refine le_inf (le_inf _ _) _, refine mk_is_func _ _,
     simp only [subset_unfold] with cleanup,
     bv_intro ν, bv_imp_intro, 
     have : Γ ≤ (ℵ₂̌ ).func ν ∈ᴮ ℵ₂̌  ⊓ (cohen_real.mk ν ∈ᴮ bv_powerset ℵ₀),
-      by {apply le_inf, from le_trans H (by apply mem.mk'),
+      by {refine le_inf _ _, from le_trans H (by refine mem.mk' _ _),
           from cohen_real.definite'},
-    from le_trans this (by apply prod_mem),
+    from le_trans this (prod_mem),
 
     bv_intro w₁, bv_imp_intro, rw[mem_unfold] at H,
-    bv_cases_at H ν, apply bv_use (cohen_real.mk ν),
+    bv_cases_at' H ν, apply bv_use (cohen_real.mk ν),
     rw[mem_unfold], apply bv_use ν, bv_split,
-    from le_inf ‹_› (by apply le_trans H_1_right; apply subst_congr_pair_left)},
+    from le_inf ‹_› (by apply le_trans H_1_right; from subst_congr_pair_left)},
 
-  {apply mk_inj_of_inj, from λ _ _ _, cohen_real.inj ‹_›},
+  {refine mk_inj_of_inj _ _, from λ _ _ _, cohen_real.inj ‹_›},
 end
 
 end neg_CH

@@ -945,7 +945,7 @@ end
 @[simp]lemma top_le_imp_top {β : Type*} {b : β} [boolean_algebra β] : ⊤ ≤ b ⟹ ⊤ :=
 by rw[<-deduction]; apply le_top
 
-lemma poset_yoneda {β : Type*} [partial_order β] {a b : β} {H : ∀ Γ : β, Γ ≤ a → Γ ≤ b} : a ≤ b :=
+lemma poset_yoneda {β : Type*} [partial_order β] {a b : β} (H : ∀ Γ : β, Γ ≤ a → Γ ≤ b) : a ≤ b :=
 by specialize H a; finish
 
 lemma poset_yoneda_inv {β : Type*} [partial_order β] {a b : β} (Γ : β) (H : a ≤ b) :
@@ -1058,8 +1058,8 @@ open lean.parser lean interactive.types
 
 local postfix `?`:9001 := optional
 meta def bv_intro : parse ident_? → tactic unit
-| none := propagate_tags (`[apply lattice.le_infi] >> intro1 >> tactic.skip)
-| (some n) := propagate_tags (`[apply lattice.le_infi] >> tactic.intro n >> tactic.skip)
+| none := propagate_tags (`[refine lattice.le_infi _] >> intro1 >> tactic.skip)
+| (some n) := propagate_tags (`[refine lattice.le_infi _] >> tactic.intro n >> tactic.skip)
 
 meta def get_name : ∀(e : expr), name
 | (expr.const c [])          := c
@@ -1099,7 +1099,7 @@ meta def trace_sup_inequalities : tactic unit :=
 meta def specialize_context_at (H : parse ident) (Γ : parse texpr) : tactic unit :=
 do e <- resolve_name H,
    tactic.replace H ``(lattice.specialize_context %%Γ %%e),
-   swap >> try `[apply lattice.le_top] >> skip
+   swap >> try `[refine lattice.le_top] >> skip
 
 meta def specialize_context_core (Γ_old : expr) : tactic unit :=
 do  v_a <- target >>= lhs_of_le,
@@ -1141,16 +1141,24 @@ do
   e₀ <- resolve_name H,
   e₀' <- to_expr e₀,
   Γ_old <- target >>= lhs_of_le,
-  `[apply lattice.context_Or_elim] >> tactic.exact e₀' >>
-  tactic.intro i >> ((get_unused_name H) >>= tactic.intro) >> skip,
+  `[refine lattice.context_Or_elim %%e₀'],
+  tactic.intro i >> ((get_unused_name H) >>= tactic.intro) >> 
   specialize_context_core Γ_old
+
+meta def bv_cases_at' (H : parse ident) (i : parse ident_)  : tactic unit :=
+do
+  e₀ <- resolve_name H,
+  e₀' <- to_expr e₀,
+  Γ_old <- target >>= lhs_of_le,
+  `[refine lattice.context_Or_elim %%e₀'],
+  tactic.intro i >> ((get_unused_name H) >>= tactic.intro) >> 
+  skip
 
 meta def bv_or_elim_at_core (e : expr) (Γ_old : expr) : tactic unit :=
 do
    n <- get_unused_name "H_left",
    n' <- get_unused_name "H_right",
-   `[apply lattice.context_or_elim],
-    tactic.exact e,
+   `[apply lattice.context_or_elim %%e],
    (tactic.intro n) >> specialize_context_core Γ_old, swap,
    (tactic.intro n') >> specialize_context_core Γ_old, swap
 
@@ -1244,7 +1252,7 @@ do
 
 meta def bv_imp_intro : tactic unit :=
 do Γ_old <- target >>= lhs_of_le,
-  `[apply lattice.context_imp_intro] >> (get_unused_name "H" >>= tactic.intro) >> skip,
+  `[refine lattice.context_imp_intro _] >> (get_unused_name "H" >>= tactic.intro) >> skip,
   specialize_context_core Γ_old
 
 /-- `ac_change g' changes the current goal `tgt` to `g` by creating a new goal of the form
@@ -1287,7 +1295,7 @@ meta def tidy_split_goals_tactics : list (tactic string) :=
 [ reflexivity >> pure "refl",
  propositional_goal >> assumption >> pure "assumption",
   propositional_goal >> (`[solve_by_elim])    >> pure "solve_by_elim",
-  `[apply lattice.le_inf] >> pure "apply lattice.le_inf",
+  `[refine lattice.le_inf _ _] >> pure "refine lattice.le_inf _ _",
   `[rw[bSet.bv_eq_symm]] >> assumption >> pure "rw[bSet.bv_eq_symm], assumption",
    bv_intro none >> pure "bv_intro"
 ]

@@ -581,12 +581,5 @@ def regular_open_algebra (H_nonempty : nonempty α) :
   ..regular_open_complete_lattice
   }
 
-example : ⊤ ≤ ⊤ ⊔ (⊤ : regular_opens α)  :=
-begin
-  sorry
-end
-
-
 end regular_algebra
-
 

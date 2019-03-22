@@ -1,4 +1,4 @@
-import data.pfun data.set tactic.tidy data.set.countable data.set.basic .to_mathlib pSet.ordinal
+import data.pfun data.set tactic.tidy data.set.countable data.set.basic .to_mathlib .pSet_ordinal
 -- local attribute [instance] classical.prop_decidable
 
 /- The Cohen poset of finite partial functions (2^(2^ω)) × ω → 2 -/
