@@ -41,21 +41,45 @@ end
 noncomputable instance Prop_encodable : encodable Prop :=
  @encodable.of_equiv _ _ (by apply_instance) equiv_Prop_bool
 
+theorem subset_trans {α : Type*} {a b c : set α} : a ⊆ b →  b ⊆ c → a ⊆ c :=
+assume x h, by {intros x Ha, solve_by_elim}
+
 end lemmas
 
 instance Prop_separable : separable_space Prop :=
 { exists_countable_closure_eq_univ :=
   by {use set.univ, refine ⟨countable_encodable _, by simp⟩}}
 
+namespace topological_space
 section topology_lemmas
 variables {α : Type*} [τ : topological_space α]
+local notation `cl`:65 := closure
 
-include τ
+local notation `int`:65 := interior
+
 attribute [simp] interior_eq_of_open
 
+include τ
 
-theorem subset_trans {a b c : set α} : a ⊆ b →  b ⊆ c → a ⊆ c :=
-assume x h, by {intros x Ha, solve_by_elim}
+def dense {S : set α} : Prop := ∀ U : set α, @is_open α τ U → U ≠ ∅ → U ∩ S ≠ ∅
+
+def nowhere_dense (S : set α) : Prop := int (cl S) = ∅
+
+lemma frontier_closed_of_open {S : set α} (H : @is_open _ τ S) : is_closed (frontier S) :=
+begin
+  unfold frontier, rw[diff_eq], apply is_closed_inter, tidy
+end
+
+lemma frontier_nowhere_dense_of_open {S : set α} (H : @is_open _ τ S) : nowhere_dense (frontier S) :=
+begin
+  unfold nowhere_dense frontier,
+  ext, split; intros, swap, cases a,
+  rw[diff_eq] at a,
+  rw[show cl(cl S ∩ -int S) = cl(S) ∩ -int S,
+    by {apply closure_eq_of_is_closed, from frontier_closed_of_open H}] at a,
+  rw[show int S = S, by {apply interior_eq_of_open, from ‹_›}] at a,
+  rw[interior_inter] at a, simp at a, tidy
+end
 
 @[ematch]lemma is_clopen_interior {S : set α} (H : (: is_clopen S :)) : interior S = S :=
 interior_eq_of_open H.left
@@ -87,6 +111,9 @@ by {split, clear H, intro, rw[<-subset_anti], convert a, simp, finish}
 lemma compl_mono {s t : set α} (H : s ⊆ t) : - t ⊆ - s := by simp[*,subset_anti]
 
 end topology_lemmas
+end topological_space
+
+open topological_space
 
 open lattice
 section regular
@@ -365,7 +392,7 @@ end
 instance regular_open_boolean_algebra : boolean_algebra {S : set α // is_regular S} :=
 {le_sup_inf :=
     begin
-      intros x y z, intros a Ha, sorry
+      intros x y z, intros a Ha, simp, 
     end,
   sub := λ A B, A ⊓ (-B),
   inf_neg_eq_bot := regular_open_inf_neg_eq_bot,
