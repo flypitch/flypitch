@@ -735,6 +735,9 @@ sup_le (le_sup_left_of_le $ neg_le_neg h) (by apply le_sup_right)
   a₁ ⟹ a₂ ≤ b₁ ⟹ b₂ :=
 sup_le (le_sup_left_of_le (neg_le_neg h₁)) (le_sup_right_of_le h₂)
 
+lemma neg_le_neg' {α : Type*} [boolean_algebra α] {a b : α} : b ≤ -a → a ≤ -b :=
+by {intro H, rw[show b = - - b, by simp] at H, rwa[<-neg_le_neg_iff_le]}
+
 lemma inf_imp_eq {α : Type*} [boolean_algebra α] {a b c : α} :
   a ⊓ (b ⟹ c) = (a ⟹ b) ⟹ (a ⊓ c) :=
 by unfold imp; simp[inf_sup_left]
