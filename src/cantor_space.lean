@@ -40,6 +40,14 @@ instance Prop_separable : separable_space Prop :=
 { exists_countable_closure_eq_univ :=
   by {use set.univ, refine ⟨set.countable_encodable _, by simp⟩}}
 
+@[ematch]lemma is_open_of_compl_closed {α : Type*} [topological_space α] {S : set α} (H : (: is_closed (-S) :)) : is_open S :=
+by rwa[<-is_closed_compl_iff]
+
+@[ematch]lemma is_closed_of_compl_open {α : Type*} [topological_space α] {S : set α} (H : (: is_open (-S) :)) : is_closed S :=
+by rwa[<-is_open_compl_iff]
+
+namespace cantor_space
+section cantor_space
 variables {α : Type*}
 
 def principal_open (x : α) : set (set α) := {S | x ∈ S}
@@ -48,6 +56,9 @@ def co_principal_open (x : α) : set (set α) := {S | x ∉ S}
 
 @[simp]lemma neg_principal_open {x : α} : co_principal_open x = -(principal_open x)  :=
 by unfold principal_open; refl
+
+@[simp]lemma neg_co_principal_open {x : α} : - (co_principal_open x) = principal_open x :=
+by {simp[principal_open]}
 
 -- lemma is_open_induced_iff' {α β : Type*} {f : α → β} [t : topological_space β] {s : set α} {f : α → β} :
 --    (∃t, is_open t ∧ f ⁻¹' t = s) ↔ @topological_space.is_open α (t.induced f) s := is_open_induced_iff.symm
@@ -98,8 +109,18 @@ lemma le_iff_opens_sub {β : Type*} {τ₁ τ₂ : topological_space β} :
 @[simp]lemma is_open_generated_from_basic {β : Type*} [topological_space β] {s : set (set β)} {x ∈ s} :
   is_open (generate_from s) x := by {constructor, from ‹_›}
 
-@[simp]lemma is_open_principal_open {a : α} : is_open (principal_open a) :=
+lemma is_open_principal_open {a : α} : is_open (principal_open a) :=
   by apply (le_trans (opens_over_le_τ a) (τ_le_product_topology _)); simp[opens_over]
 
-@[simp]lemma is_open_co_principal_open {a : α} : is_open (co_principal_open a) := 
+lemma is_open_co_principal_open {a : α} : is_open (co_principal_open a) := 
   by apply (le_trans (opens_over_le_τ a) (τ_le_product_topology _)); simp[opens_over]
+
+lemma is_closed_principal_open {a : α} : is_closed (principal_open a) :=
+by {apply is_closed_of_compl_open, from is_open_co_principal_open}
+
+lemma is_closed_co_principal_open {a : α} : is_closed (co_principal_open a) :=
+by {apply is_closed_of_compl_open,
+    simp only [neg_principal_open, lattice.neg_neg], from is_open_principal_open}
+
+end cantor_space
+end cantor_space

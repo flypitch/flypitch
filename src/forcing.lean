@@ -136,19 +136,13 @@ local notation `𝒳` := set(ℵ₂.type × ℕ)
 
 open topological_space
 
-def standard_basis : set (set 𝒳) := sorry
-
-lemma standard_basis_basis : is_topological_basis standard_basis := sorry
-
 /-- The principal regular open associated to a pair (ν, n) is the collection of all subsets of
     ℵ₂ × ℕ which contain (ν, n). -/
 def principal_open (ν : (ℵ₂̌  : bSet 𝔹).type) (n : ℕ) : 𝔹 :=
 begin
-  use {S | cast eq₁ (ν, n) ∈ S},
-  apply is_regular_of_clopen, split,
-    {sorry}, -- describe a topological basis for the product space and show that these are
-    -- clopen basis elements
-    {rw[<-is_open_compl_iff], sorry},
+  use (cantor_space.principal_open (cast eq₁ (ν, n))),
+  apply is_regular_of_clopen, split, from cantor_space.is_open_principal_open,
+    {rw[<-is_open_compl_iff], from cantor_space.is_open_co_principal_open},
 end
 
 lemma neg_principal_open {ν n} {S} : S ∈ (- (principal_open ν n)).val ↔ (cast eq₁ (ν,n) ∈ (-S))
