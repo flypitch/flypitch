@@ -124,9 +124,36 @@ by {cases ℵ₂, refl}
 private lemma eq₂ : set ((type (ℵ₂̌  : bSet 𝔹)) × ℕ) = set ((type ℵ₂) × ℕ) :=
 by {cases ℵ₂, refl}
 
+lemma pi₂_cast₁ {α β γ : Type*} (H' : α = β) {p : α × γ} {q : β × γ} (H : p == q) :
+  p.1 == q.1 :=
+by {subst H', subst H}
+
+lemma pi₂_cast₂ {α β γ : Type*} (H' : α = β) {p : α × γ} {q : β × γ} (H : p == q) :
+  p.2 = q.2 :=
+by {subst H', subst H}
+
 lemma compl_cast₂ {α β : Type*} {a : set α} {b : set β} (H' : α = β) (H : -a == b) : a == -b :=
 begin
   subst H', subst H, apply heq_of_eq, simp
+end
+
+lemma eq₁_cast (p : ((type (ℵ₂̌  : bSet 𝔹)) × ℕ)) {prf : ((type (ℵ₂̌  : bSet 𝔹)) × ℕ) = (((type ℵ₂) × ℕ))} {prf' : (type (ℵ₂̌  : bSet 𝔹)) = (ℵ₂.type)} : cast prf p = (cast prf' p.1, p.2) :=
+begin
+  ext, swap, simp, h_generalize H_x : p == x, apply pi₂_cast₂, from eq₀.symm, from H_x.symm,
+  h_generalize H_x : p == x, simp, h_generalize H_y : p.fst == y,
+  apply eq_of_heq, suffices : x.fst == p.fst, from heq.trans this H_y,
+  apply pi₂_cast₁, from eq₀.symm, from H_x.symm
+end
+
+-- lemma eq₁_cast' {ξ : (ℵ₂̌  : bSet 𝔹).type} {n : ℕ} {prf : ((type (ℵ₂̌  : bSet 𝔹)) × ℕ) = (((type ℵ₂) × ℕ))} {prf' : (type (ℵ₂̌  : bSet 𝔹)) = (ℵ₂.type)} : cast prf (ξ, n) = (cast prf' ξ, n) :=
+-- by apply eq₁_cast
+
+lemma eq₁_cast' (p : (((type ℵ₂) × ℕ))) {prf : ((type (ℵ₂̌  : bSet 𝔹)) × ℕ) = (((type ℵ₂) × ℕ))} {prf' : (type (ℵ₂̌  : bSet 𝔹)) = (ℵ₂.type)} : cast prf.symm p = (cast prf'.symm p.1, p.2) :=
+begin
+  ext, swap, simp, h_generalize H_x : p == x, apply pi₂_cast₂, from eq₀, from H_x.symm,
+  h_generalize H_x : p == x, simp, h_generalize H_y : p.fst == y,
+  apply eq_of_heq, suffices : x.fst == p.fst, from heq.trans this H_y,
+  apply pi₂_cast₁, from eq₀, from H_x.symm
 end
 
 theorem 𝔹_CCC : CCC 𝔹 := sorry 
@@ -236,10 +263,35 @@ begin
   from not_mem_of_inter_empty_right p.H H
 end
 
+lemma subset_of_eq {α : Type*} {a b : finset α} (H : a = b) : a ⊆ b := by rw[H]; refl
+
 lemma 𝒞_disjoint_row (p : 𝒞) : ∃ n : ℕ, ∀ ξ : ℵ₂.type, (cast eq₁.symm (ξ,n)) ∉ p.ins ∧ (cast eq₁.symm (ξ,n)) ∉ p.out :=
 begin
   let Y := (finset.image π₂ p.ins) ∪ (finset.image π₂ p.out),
-  sorry --TODO(jesse) case on whether or not both are empty; if not, take the max
+  by_cases (p.ins ∪ p.out) = ∅,
+  use 0, intro ξ, split, intro x, apply (subset_of_eq h), simp, left, from x,
+  intro x, apply (subset_of_eq h), simp, right, from x,
+  let Y' := finset.image π₂ (p.ins ∪ p.out),
+  have Y'_nonempty : Y' ≠ ∅,
+    by {dsimp[Y'], intro H, apply h, ext; split; intros, swap, cases a_1,
+      have : π₂ a ∈ finset.image π₂ (p.ins ∪ p.out), simp,
+      use a.fst, simp at a_1, convert a_1, cases a, refl, cases a, refl,
+      rw[H] at this, cases this},
+  have := finset.max_of_ne_empty,
+  specialize this Y'_nonempty, cases this with N HN, swap, apply_instance,
+  use (N+1), intro ξ, split,
+    intro X, let prf := _, change cast prf (ξ, N + 1) ∈ p.ins at X,
+    rw[eq₁_cast'] at X, swap, from eq₀,
+    have : N + 1 ∈ Y',
+      by {simp, use cast eq₀.symm ξ, from or.inl X},
+    suffices : N + 1 ≤ N, by {revert this, change ¬ (N + 1 ≤ N), apply nat.not_succ_le_self},
+    apply finset.le_max_of_mem this ‹_›,
+  intro X, let prf := _, change cast prf (ξ, N + 1) ∈ p.out at X,
+    rw[eq₁_cast'] at X, swap, from eq₀,
+    have : N + 1 ∈ Y',
+      by {simp, use cast eq₀.symm ξ, from or.inr X},
+    suffices : N + 1 ≤ N, by {revert this, change ¬ (N + 1 ≤ N), apply nat.not_succ_le_self},
+    apply finset.le_max_of_mem this ‹_›
 end
 
 lemma 𝒞_anti {p₁ p₂ : 𝒞} : p₁.ins ⊆ p₂.ins → p₁.out ⊆ p₂.out → ι p₂ ≤ ι p₁  :=
