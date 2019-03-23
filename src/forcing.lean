@@ -102,14 +102,6 @@ by induction x; refl
 end pSet
 
 open pSet
--- /-- A well-ordered type order-isomorphic to ℵ₂ -/
--- @[reducible]noncomputable def ℵ₂' : Well_order.{0} := (aleph 2).ord.out
-
--- /-- (ℕ, <) is, by definition, a well-ordered type order-isomorphic to ℵ₀ -/
--- def ℵ₀' : Well_order.{0} := ⟨ℕ, (<), by apply_instance⟩
-
--- @[reducible]def is_regular_open : set (set(ℵ₂.type × ℕ)) → Prop := -- is_regular
--- sorry
 
 def 𝔹 : Type := @regular_opens (set(ℵ₂.type × ℕ)) (Pi.topological_space)
 
@@ -141,27 +133,44 @@ open topological_space
 def principal_open (ν : (ℵ₂̌  : bSet 𝔹).type) (n : ℕ) : 𝔹 :=
 begin
   use (cantor_space.principal_open (cast eq₁ (ν, n))),
-  apply is_regular_of_clopen, split, from cantor_space.is_open_principal_open,
-    {rw[<-is_open_compl_iff], from cantor_space.is_open_co_principal_open},
+  from is_regular_of_clopen (cantor_space.is_clopen_principal_open)
 end
 
-lemma neg_principal_open {ν n} {S} : S ∈ (- (principal_open ν n)).val ↔ (cast eq₁ (ν,n) ∈ (-S))
-:= sorry
+lemma is_clopen_principal_open {ν n} : is_clopen (principal_open ν n).val :=
+  cantor_space.is_clopen_principal_open
 
--- #check (by apply_instance : has_inter $ finset ((ℵ₂ ̌ : bSet 𝔹).type × ℕ))
+local postfix `ᵖ`:80 := perp
+
+local notation `cl`:65 := closure
+
+local notation `int`:65 := interior
+
+lemma perp_eq_compl_of_clopen {β : Type*} [topological_space β] {S : set β} (H : is_clopen S) : Sᵖ = (-S) :=
+by {unfold perp, rw[closure_eq_of_is_closed H.right]}
+
+lemma mem_neg_principal_open_of_not_mem {ν n S} : (cast eq₁ (ν,n) ∈ (-S)) → S ∈ (- (principal_open ν n)).val :=
+begin
+  intro H, simp only [neg_unfold], rw[perp_eq_compl_of_clopen],
+  swap, from is_clopen_principal_open, from H
+end
 
 structure 𝒞 : Type :=
 (ins : finset ((ℵ₂ ̌ : bSet 𝔹).type × ℕ))
 (out : finset ((ℵ₂ ̌ : bSet 𝔹).type × ℕ))
 (H : ins ∩ out = ∅)
 
---((ins ∩ out) : finset ((ℵ₂ ̌ : bSet 𝔹).type × ℕ)) = (∅ : finset ((ℵ₂ ̌ : bSet 𝔹).type × ℕ)
+@[reducible]def π₂ : (ℵ₂̌  : bSet 𝔹).type × ℕ → ℕ := λ x, x.snd
 
--- instance : has_insert ((ℵ₂ ̌).type × ℕ) 𝒞 := ⟨by {dsimp[𝒞], exact insert}⟩
+-- def nat_supp : finset ((ℵ₂ ̌ : bSet 𝔹).type × ℕ) → set ℕ :=
+-- λ X, {n | ∃ (ξ : ℵ₂.type), (cast eq₁.symm (ξ,n)) ∈ X}
+
+-- lemma nat_supp_finite {X} : set.finite $ nat_supp X := sorry
 
 def ι : 𝒞 → 𝔹 :=
 λ p, ⟨{S | (p.ins.to_set) ⊆ (cast eq₂.symm S) ∧
            (p.out.to_set) ⊆ (cast eq₂.symm (- S))}, sorry⟩
+--TODO(jesse) show that this is a conjunction of a finite conjection of clopens
+-- and therefore clopen
 
 lemma 𝒞_dense {b : 𝔹} (H : ⊥ < b) : ∃ p : 𝒞, ι p ≤ b := sorry 
 -- TODO(jesse) use that b is open, b is a union of basis elements,
@@ -203,7 +212,10 @@ begin
 end
 
 lemma 𝒞_disjoint_row (p : 𝒞) : ∃ n : ℕ, ∀ ξ : ℵ₂.type, (cast eq₁.symm (ξ,n)) ∉ p.ins ∧ (cast eq₁.symm (ξ,n)) ∉ p.out :=
-sorry
+begin
+  let Y := (finset.image π₂ p.ins) ∪ (finset.image π₂ p.out),
+  sorry --TODO(jesse) case on whether or not both are empty; if not, take the max
+end
 
 lemma 𝒞_anti {p₁ p₂ : 𝒞} : p₁.ins ⊆ p₂.ins → p₁.out ⊆ p₂.out → ι p₂ ≤ ι p₁  :=
 by {intros H₁ H₂, rw[le_iff_subset'], tidy}
@@ -256,7 +268,7 @@ rw[mem_unfold, neg_supr], bv_intro k, rw[neg_inf], simp,
        from le_sup_right_of_le (by simp),
        refine le_sup_left_of_le _, rw[<-h],
        rw[le_iff_subset'], unfold ι χ principal_open, rintros S ⟨H_S₁, H_S₂⟩,
-       apply neg_principal_open.mpr, have := H_S₂ H, convert this,
+       apply mem_neg_principal_open_of_not_mem, have := H_S₂ H, convert this,
        from eq₀.symm, from eq₀.symm, from eq₀.symm, cc, cc
 end
 
@@ -285,11 +297,10 @@ begin
                 (by {dsimp[p'], from λ i _, by {simp, from or.inr ‹_›}}),
   have this₁ : ι p' ≤ (ñ̌) ∈ᴮ (cohen_real.mk ν₁),
     by {rw[mem_unfold], apply bv_use (ulift.up n), refine le_inf _ bv_eq_refl',
-         {simp[le_iff_subset', χ, principal_open, ι],
+         {simp [le_iff_subset', χ, principal_open, ι, cantor_space.principal_open],
          have : (ν₁, n) ∈ p'.ins,
-           by simp[p'], intros S H_S H_S',
-           specialize H_S this, convert H_S;
-           [from eq₀.symm,from eq₀.symm,from eq₀.symm,cc,cc]}},
+           by simp[p'], intros S H_S _, specialize H_S this,
+              convert H_S; [from eq₀.symm, from eq₀.symm, from eq₀.symm, cc, cc]}},
   have this₂ : ι p' ≤ - ((ñ̌) ∈ᴮ (cohen_real.mk ν₂)),
     by {have : (ν₂, n) ∈ p'.out, by {simp[p']},
        from not_mem_of_not_mem ‹_›},

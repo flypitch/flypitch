@@ -122,5 +122,8 @@ lemma is_closed_co_principal_open {a : α} : is_closed (co_principal_open a) :=
 by {apply is_closed_of_compl_open,
     simp only [neg_principal_open, lattice.neg_neg], from is_open_principal_open}
 
+lemma is_clopen_principal_open {a : α} : is_clopen (principal_open a) :=
+  ⟨is_open_principal_open, is_closed_principal_open⟩
+
 end cantor_space
 end cantor_space
