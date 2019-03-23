@@ -32,6 +32,9 @@ by {convert @typein_lt_type _ (ξ.out.r) (ξ.out.wo) i, simp}
 
 @[simp]lemma mk_func' {α} {A} {i} : (pSet.mk α A).func i = A i := rfl
 
+lemma mk_eq {x : pSet} : x = ⟨x.type, x.func⟩ :=
+by induction x; refl
+
 @[simp]lemma mk_type_forall {α} {A} {P : (pSet.mk α A).type → Prop} :
   (∀ x : (pSet.mk α A).type, P x) ↔ ∀ x : α, P x := by refl
 

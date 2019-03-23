@@ -46,6 +46,58 @@ by rwa[<-is_closed_compl_iff]
 @[ematch]lemma is_closed_of_compl_open {α : Type*} [topological_space α] {S : set α} (H : (: is_open (-S) :)) : is_closed S :=
 by rwa[<-is_open_compl_iff]
 
+def clopens (α : Type*) [topological_space α] : Type* := {S : set α // is_clopen S}
+
+instance clopens_lattice {α : Type*} [topological_space α] : lattice (clopens α) :=
+{ sup := λ S₁ S₂, ⟨S₁.1 ∪ S₂.1, by {apply is_clopen_union, tidy}⟩,
+  le := λ S₁ S₂, S₁.1 ⊆ S₂.1,
+  lt := λ S₁ S₂, S₁.1 ⊆ S₂.1 ∧ S₁.1 ≠ S₂.1,
+  le_refl := by tidy,
+  le_trans := by tidy,
+  lt_iff_le_not_le :=
+    by {intros; split; intros,
+      {split, {from a_1.left},
+        intro H, apply a_1.right, apply subset_ext, from a_1.left, from ‹_›},
+        {/- `tidy` says -/ cases a_1, cases b, cases a, cases a_property,
+        cases b_property, dsimp at *, fsplit,
+        work_on_goal 0 { assumption }, intros a, induction a, solve_by_elim}},
+  le_antisymm := by {intros, apply subtype.eq, apply subset_ext; from ‹_›},
+  le_sup_left := by {intros, simp, intros x Hx, left, from ‹_›},
+  le_sup_right := by {intros, simp, intros x Hx, right, from ‹_›},
+  sup_le := by {intros, intros x Hx, cases Hx, from a_1 ‹_›, from a_2 ‹_›},
+  inf := λ S₁ S₂, ⟨S₁.1 ∩ S₂.1, by {apply is_clopen_inter, from S₁.property, from S₂.property}⟩,
+  inf_le_left := by {intros, simp, intros x Hx, from Hx.left},
+  inf_le_right := by {intros, simp, intros x Hx, from Hx.right},
+  le_inf := by {intros, simp, intros x Hx, from ⟨a_1 ‹_›, a_2 ‹_›⟩}}
+
+instance clopens_bounded_lattice {α : Type*} [topological_space α] : bounded_lattice (clopens α) :=
+{top := ⟨set.univ, is_clopen_univ⟩,
+  le_top := by tidy,
+  bot := ⟨∅, is_clopen_empty⟩,
+  bot_le := by tidy,
+ .. clopens_lattice}
+
+noncomputable def finset_clopens_mk {α : Type*} [topological_space α] {X : finset (set α)} (H : ∀ S ∈ X, is_clopen S) : finset (clopens α) :=
+begin
+  apply finset.image, show finset _, from finset.attach X,
+  intro x, cases x with x Hx, use x, from H x Hx
+end
+
+lemma is_clopen_finite_inter {α : Type*} [topological_space α] {X : finset (set α)}
+  (H_X : ∀ S ∈ X, is_clopen S) : is_clopen (finset.inf X id) :=
+begin
+  revert H_X, apply finset.induction_on X, intro _, from is_clopen_univ,
+  intros a A H_a H_A IH, simp at ⊢ IH, apply is_clopen_inter,
+  from IH a (or.inl rfl), apply H_A, intros S H_S, from IH S (or.inr H_S)
+end
+
+lemma is_clopen_finite_inter' {α α' : Type*} [topological_space α] {X : finset α'} {f : α' → set (α)} (H_f : ∀ x ∈ X, is_clopen (f x)) : is_clopen (finset.inf X f) :=
+begin
+  revert H_f, apply finset.induction_on X, intro _, from is_clopen_univ,
+  intros a A H_a H_A IH, simp at ⊢ IH, apply is_clopen_inter,
+  from IH a (or.inl rfl), apply H_A, intros S H_S, from IH S (or.inr H_S)
+end
+
 namespace cantor_space
 section cantor_space
 variables {α : Type*}
@@ -92,9 +144,9 @@ begin
     rwa[<-a_1], rwa[fiber_over_false]},
   apply is_open_induced_iff.mpr, fsplit, exact {true}, fsplit,
   apply is_open_discrete,
-    {ext1, ext1, dsimp at *, fsplit,
+    {ext1, ext1, fsplit,
       work_on_goal 0 { intros a_1, cases a_1, work_on_goal 0 { cc },
-      dsimp at *, solve_by_elim }, intros a_1, rwa[fiber_over_true]},
+      dsimp at a_1, cases a_1 }, intros a_1, rwa[fiber_over_true]},
 end
 
 lemma opens_over_le_τ (a : α) : generate_from (opens_over a) ≤ τ a :=
@@ -124,6 +176,59 @@ by {apply is_closed_of_compl_open,
 
 lemma is_clopen_principal_open {a : α} : is_clopen (principal_open a) :=
   ⟨is_open_principal_open, is_closed_principal_open⟩
+
+lemma is_clopen_co_principal_open {a : α} : is_clopen (co_principal_open a) :=
+  ⟨is_open_co_principal_open, is_closed_co_principal_open⟩
+
+@[reducible]def principal_open_finset (F : finset α) : set (set α) := {S | F.to_set ⊆ S}
+
+@[simp]lemma principal_open_finset_insert {F : finset α} {a : α} : principal_open_finset (insert a F) = principal_open_finset {a} ∩ principal_open_finset F :=
+begin
+  ext, split; intros; unfold principal_open_finset at *,
+  tidy, apply a_1, unfold finset.to_set, simp,
+  apply a_1, unfold finset.to_set at *, simp, right, from a_3,
+  unfold finset.to_set at *, simp at *, cases a_3,
+  apply a_1_left, from a_3, apply a_1_right, from a_3
+end
+
+lemma principal_open_finset_eq_inter (F : finset α) : principal_open_finset F = (finset.inf F (principal_open)) :=
+begin
+  apply finset.induction_on F,
+    {tidy},
+  intros a A h_a IH, simp, rw[<-IH], ext, split; intros,
+  tidy, apply a_1_left, simp[finset.to_set]
+end
+
+@[reducible] def co_principal_open_finset (F : finset α) : set (set α) := {S | F.to_set ⊆ (-S)}
+
+@[simp]lemma co_principal_open_finset_insert {F : finset α} {a : α} : co_principal_open_finset (insert a F) = co_principal_open_finset {a} ∩ co_principal_open_finset F :=
+begin
+  ext, split; intros; unfold co_principal_open_finset at *,
+  split, intros a_2 H, simp at a_1, apply a_1, unfold finset.to_set at ⊢ H,
+  {tidy}, intros a_2 H, simp at a_1, apply a_1, unfold finset.to_set at ⊢ H,
+  {tidy, right, from ‹_›}, intros a_2 H, simp[finset.to_set] at *,
+  cases H, apply a_1.left, simpa, apply a_1.right, simpa
+end
+
+lemma co_principal_open_finset_eq_inter (F : finset α) : co_principal_open_finset F = (finset.inf F (co_principal_open)) :=
+begin
+  apply finset.induction_on F,
+    {tidy},
+  intros a A h_a IH, simp, rw[<-IH], ext, split; intros,
+  tidy, apply a_1_left, simp[finset.to_set], from a_1
+end
+
+lemma is_clopen_principal_open_finset (F : finset α) : is_clopen (principal_open_finset F) :=
+begin
+  rw[principal_open_finset_eq_inter], apply is_clopen_finite_inter',
+  intros x H_x, from is_clopen_principal_open
+end
+
+lemma is_clopen_co_principal_open_finset (F : finset α) : is_clopen (co_principal_open_finset F) :=
+begin
+  rw[co_principal_open_finset_eq_inter], apply is_clopen_finite_inter',
+  from λ _ _, is_clopen_co_principal_open
+end
 
 end cantor_space
 end cantor_space

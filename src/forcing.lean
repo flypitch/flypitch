@@ -1,4 +1,4 @@
-import .bvm_extras .pSet_ordinal .set_theory .regular_open_algebra .cantor_space
+import .bvm_extras .pSet_ordinal .set_theory .regular_open_algebra .cantor_space logic.function
 
 open ordinal cardinal lattice bSet
 
@@ -93,6 +93,8 @@ namespace pSet
 
 @[reducible]noncomputable def ℵ₂ : pSet.{0} := ordinal.mk (aleph 2).ord
 
+lemma ℵ₂_unfold : ℵ₂ = ⟨ℵ₂.type, ℵ₂.func⟩ := mk_eq
+
 @[simp, cleanup]lemma Union_type {x : pSet} : (type (Union x)) = Σ(a:x.type), (x.func a).type :=
 by induction x; refl
 
@@ -121,6 +123,11 @@ by {cases ℵ₂, refl}
 
 private lemma eq₂ : set ((type (ℵ₂̌  : bSet 𝔹)) × ℕ) = set ((type ℵ₂) × ℕ) :=
 by {cases ℵ₂, refl}
+
+lemma compl_cast₂ {α β : Type*} {a : set α} {b : set β} (H' : α = β) (H : -a == b) : a == -b :=
+begin
+  subst H', subst H, apply heq_of_eq, simp
+end
 
 theorem 𝔹_CCC : CCC 𝔹 := sorry 
 
@@ -168,13 +175,31 @@ structure 𝒞 : Type :=
 
 def ι : 𝒞 → 𝔹 :=
 λ p, ⟨{S | (p.ins.to_set) ⊆ (cast eq₂.symm S) ∧
-           (p.out.to_set) ⊆ (cast eq₂.symm (- S))}, sorry⟩
---TODO(jesse) show that this is a conjunction of a finite conjection of clopens
--- and therefore clopen
+           (p.out.to_set) ⊆ (cast eq₂.symm (- S))},
+is_regular_of_clopen
+     begin
+       change is_clopen
+         ({S | p.ins.to_set ⊆ cast eq₂.symm S} ∩ {S | p.out.to_set ⊆ (cast eq₂.symm (-S))}),
+       refine is_clopen_inter _ _,
+         have := cantor_space.is_clopen_principal_open_finset p.ins,
+         convert this, from eq₀.symm, from eq₀.symm, from eq₀.symm,
+           {apply function.hfunext, from eq₂.symm, intros a a' H_heq,
+             apply heq_of_eq, convert rfl, cc},
+
+         have := cantor_space.is_clopen_co_principal_open_finset p.out,
+         convert this, from eq₀.symm, from eq₀.symm, from eq₀.symm,
+         {apply function.hfunext, from eq₂.symm, intros a a' H_heq,
+          apply heq_of_eq, convert rfl, h_generalize Hx : (-a) == x,
+          have := heq.subst H_heq, swap,
+          from λ _ y, y == -x,
+          suffices : a' = -x, by {rw[this], simp},
+          apply eq_of_heq, apply this, apply compl_cast₂, from eq₁.symm,
+          from Hx}
+     end⟩
 
 lemma 𝒞_dense {b : 𝔹} (H : ⊥ < b) : ∃ p : 𝒞, ι p ≤ b := sorry 
 -- TODO(jesse) use that b is open, b is a union of basis elements,
--- and 𝒞 is dense for the basis elements
+-- and 𝒞 is dense for the basis elements (maybe use subbasis characterization)
 
 lemma to_set_inter {α : Type*} {p₁ p₂ : finset α} : (p₁ ∩ p₂).to_set = (p₁.to_set ∩ p₂.to_set) :=
 by {ext, split; intros; unfold finset.to_set at *, tidy}
