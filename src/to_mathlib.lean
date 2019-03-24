@@ -48,6 +48,9 @@ lemma or_not_iff_true (p : Prop) : (p ∨ ¬ p) ↔ true :=
 lemma nonempty_of_not_empty {α : Type u} (s : set α) (h : ¬ s = ∅) : nonempty s :=
 by {haveI : decidable (nonempty s) := prop_decidable _, by_contra, simp[not_exists_not] at a, apply h, ext, exact ⟨a x, false.elim⟩ }
 
+lemma nonempty_of_not_empty_finset {α : Type u} (s : finset α) (h : ¬ s = ∅) : nonempty s.to_set :=
+by {haveI : decidable (nonempty s.to_set) := prop_decidable _, by_contra, simp[not_exists_not] at a, apply h, ext, tidy}
+
 end classical
 
 

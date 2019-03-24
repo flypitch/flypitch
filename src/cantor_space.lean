@@ -295,6 +295,41 @@ by {simp[standard_basis], right, use ∅, use {a}, tidy}
 lemma univ_mem_standard_basis : set.univ ∈ (@standard_basis α) :=
 by {simp[standard_basis], use ∅, use ∅, tidy}
 
+lemma intersection_standard_basis_nonempty' {α : Type*} {p_ins p_out : finset α} {H : p_ins ∩ p_out = ∅} : ∃ X, X ∈ finset.inf p_ins principal_open ∩ finset.inf p_out co_principal_open :=
+begin
+  use p_ins.to_set, rw[<-principal_open_finset_eq_inter, <-co_principal_open_finset_eq_inter],
+  simp[finset.to_set], intros x Hx, simp, intro H', apply ((finset.ext).mp H x).mp,
+  rw[finset.mem_inter], from ⟨‹_›,‹_›⟩
+end
+
+lemma intersection_standard_basis_nonempty {α : Type*} {T : set (set α)} {p_ins p_out : finset α} {H_eq : T = finset.inf p_ins principal_open ∩ finset.inf p_out co_principal_open} {H : p_ins ∩ p_out = ∅} : ¬⋂₀ finset.to_set (finset.image principal_open p_ins ∪ finset.image co_principal_open p_out) = ∅ :=
+begin
+  intro H', simp[finset.to_set] at H', replace H' := (set.ext_iff _ _).mp H',
+  cases @intersection_standard_basis_nonempty' _ p_ins p_out ‹_› with a H_a, subst H_eq,
+  rw[<-principal_open_finset_eq_inter, <-co_principal_open_finset_eq_inter] at H_a, cases H_a,
+  specialize H' a, apply H'.mp, simp, simp[not_forall] at H',
+  rcases H' with ⟨s, ⟨⟨w', Hw'_1, Hw'_2⟩, H_a'⟩⟩; intros t Ht; cases Ht;
+  rcases Ht with ⟨w, H_w, H_w_eq⟩; subst H_w_eq, tidy
+end
+
+
+lemma standard_basis_reindex {α : Type*} {T : set (set α)} {p_ins p_out : finset α} {H_eq : T = finset.inf p_ins principal_open ∩ finset.inf p_out co_principal_open} {H : p_ins ∩ p_out = ∅} : ⋂₀ finset.to_set (finset.image principal_open p_ins ∪ finset.image co_principal_open p_out) = T :=
+begin
+  subst H_eq, rw[<-principal_open_finset_eq_inter, <-co_principal_open_finset_eq_inter],
+  simp[finset.to_set], ext; split; intro H',
+    {rw[set.mem_sInter] at H',
+    
+    simp[principal_open_finset, co_principal_open_finset], split,
+    intros a Ha, specialize H' (principal_open a), apply H',
+    right, use a, from ⟨‹_›, rfl⟩,
+
+    intros a Ha, specialize H' (co_principal_open a), apply H',
+    left, use a, from ⟨‹_›, rfl⟩,},
+
+    {rw[set.mem_sInter], intros T hT, simp at hT, cases hT,
+    simp[finset.to_set] at H', tidy}
+end
+
 lemma is_topological_basis_standard_basis : @is_topological_basis (set α) _ standard_basis :=
 begin
   repeat{split},
@@ -372,9 +407,9 @@ begin
   cases Hx' with a Hx, rw[set.mem_Union], 
   use a, rw[<-Hx.right], from principal_open_mem_opens_over,
 
-  sorry, sorry
+  by {apply intersection_standard_basis_nonempty; from ‹_›},
 
-  }
+  by {apply standard_basis_reindex; from ‹_›}}
 end
 
 end cantor_space
