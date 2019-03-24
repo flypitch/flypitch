@@ -45,6 +45,9 @@ end
 lemma or_not_iff_true (p : Prop) : (p ∨ ¬ p) ↔ true :=
 ⟨λ_, trivial, λ_, or_not⟩
 
+lemma nonempty_of_not_empty {α : Type u} (s : set α) (h : ¬ s = ∅) : nonempty s :=
+by {haveI : decidable (nonempty s) := prop_decidable _, by_contra, simp[not_exists_not] at a, apply h, ext, exact ⟨a x, false.elim⟩ }
+
 end classical
 
 

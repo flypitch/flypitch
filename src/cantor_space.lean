@@ -258,6 +258,16 @@ begin
   use τ a, split, use a, refl, apply opens_over_le_τ a, constructor, cc
 end
 
+def standard_basis : set (set (set α)) :=
+{T : set (set α) | ∃ p_ins p_out : finset α, T = (finset.inf p_ins principal_open) ∩ (finset.inf p_out co_principal_open) ∧ p_ins ∩ p_out = ∅}
+
+lemma is_topological_basis_standard_basis : @is_topological_basis (set α) _ standard_basis :=
+begin
+  repeat{split},
+  {sorry},
+  {sorry},
+  {sorry}
+end
 
 end cantor_space
 end cantor_space

@@ -224,9 +224,23 @@ is_regular_of_clopen
           from Hx}
      end⟩
 
-lemma 𝒞_dense {b : 𝔹} (H : ⊥ < b) : ∃ p : 𝒞, ι p ≤ b := sorry 
--- TODO(jesse) use that b is open, b is a union of basis elements,
--- and 𝒞 is dense for the basis elements (maybe use subbasis characterization)
+open cantor_space
+
+lemma 𝒞_dense_basis : ∀ T ∈ @standard_basis (ℵ₂.type × ℕ), ∃ p : 𝒞, (ι p).val ⊆ T :=
+begin
+  sorry
+end
+
+lemma 𝒞_dense {b : 𝔹} (H : ⊥ < b) : ∃ p : 𝒞, ι p ≤ b :=
+begin
+  cases (classical.choice (classical.nonempty_of_not_empty _ H.right.symm)) with S_wit H_wit,
+  change ∃ p, (ι p).val ⊆ b.val,
+  have := mem_basis_subset_of_mem_open (is_topological_basis_standard_basis) H_wit (is_open_of_is_regular b.property),
+  rcases (mem_basis_subset_of_mem_open
+           (is_topological_basis_standard_basis) H_wit (is_open_of_is_regular b.property))
+         with ⟨v, Hv₁, Hv₂, Hv₃⟩,
+  cases (𝒞_dense_basis ‹_› ‹_›) with p H_p, from ⟨p, subset_trans H_p ‹_›⟩
+end
 
 lemma to_set_inter {α : Type*} {p₁ p₂ : finset α} : (p₁ ∩ p₂).to_set = (p₁.to_set ∩ p₂.to_set) :=
 by {ext, split; intros; unfold finset.to_set at *, tidy}
