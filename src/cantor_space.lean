@@ -246,7 +246,7 @@ begin
   from λ _ _, is_clopen_co_principal_open
 end
 
-lemma product_topology_generated_from : (product_topology : topological_space (set α)) = generate_from (⋃(a : α), opens_over a) :=
+lemma product_topology_generate_from : (product_topology : topological_space (set α)) = generate_from (⋃(a : α), opens_over a) :=
 begin
   apply le_antisymm, refine supr_le _, intro a,
   refine le_trans (τ_le_opens_over a) _, apply generate_from_mono,
@@ -259,14 +259,18 @@ begin
 end
 
 def standard_basis : set (set (set α)) :=
-{T : set (set α) | ∃ p_ins p_out : finset α, T = (finset.inf p_ins principal_open) ∩ (finset.inf p_out co_principal_open) ∧ p_ins ∩ p_out = ∅}
+{T : set (set α) | ∃ p_ins p_out : finset α, T = (finset.inf p_ins principal_open) ∩ (finset.inf p_out co_principal_open) ∧ p_ins ∩ p_out = ∅} ∪ {∅}
 
 lemma is_topological_basis_standard_basis : @is_topological_basis (set α) _ standard_basis :=
 begin
   repeat{split},
   {sorry},
   {sorry},
-  {sorry}
+  {rw[product_topology_generate_from], apply le_antisymm, apply generate_from_mono,
+  intros X H_X, rcases H_X with ⟨w, ⟨a, H_w⟩, H_X⟩,
+  unfold standard_basis, simp, subst H_w, repeat{cases H_X},
+  
+  }
 end
 
 end cantor_space

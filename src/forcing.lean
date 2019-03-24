@@ -232,9 +232,11 @@ open cantor_space
 lemma prop_decidable_cast_lemma {α β : Type*} (H : α = β) {a b : α} {a' b' : β} (H_a : a == a') (H_b : b == b') : classical.prop_decidable (a = b) == classical.prop_decidable (a' = b') :=
 by {subst H, subst H_a, subst H_b}
 
-lemma 𝒞_dense_basis : ∀ T ∈ @standard_basis (ℵ₂.type × ℕ), ∃ p : 𝒞, (ι p).val ⊆ T :=
+lemma 𝒞_dense_basis : ∀ T ∈ @standard_basis (ℵ₂.type × ℕ), ∀ h_nonempty : T ≠ ∅,
+  ∃ p : 𝒞, (ι p).val ⊆ T :=
 begin
-  intros T Ht, simp[standard_basis] at Ht,
+  intros T Ht H_nonempty, simp[standard_basis] at Ht,
+  cases Ht with H_empty Ht, contradiction,
   rcases Ht with ⟨p_ins, p_out, H₁, H₂⟩,
   fsplit, refine ⟨_,_,_⟩, from cast eq₃.symm p_ins,
   from cast eq₃.symm p_out, swap, rw[<-co_principal_open_finset_eq_inter] at H₁,
@@ -260,7 +262,8 @@ begin
   rcases (mem_basis_subset_of_mem_open
            (is_topological_basis_standard_basis) H_wit (is_open_of_is_regular b.property))
          with ⟨v, Hv₁, Hv₂, Hv₃⟩,
-  cases (𝒞_dense_basis ‹_› ‹_›) with p H_p, from ⟨p, subset_trans H_p ‹_›⟩
+  have : v ≠ ∅, by {intro H, rw[H] at Hv₂, cases Hv₂},
+  cases (𝒞_dense_basis ‹_› ‹_› ‹_›) with p H_p, from ⟨p, subset_trans H_p ‹_›⟩
 end
 
 lemma to_set_inter {α : Type*} {p₁ p₂ : finset α} : (p₁ ∩ p₂).to_set = (p₁.to_set ∩ p₂.to_set) :=
