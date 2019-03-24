@@ -273,6 +273,19 @@ end
 def standard_basis : set (set (set α)) :=
 {T : set (set α) | ∃ p_ins p_out : finset α, T = (finset.inf p_ins principal_open) ∩ (finset.inf p_out co_principal_open) ∧ p_ins ∩ p_out = ∅} ∪ {∅}
 
+lemma ins₁_out₂_disjoint {x : set α} {p_ins₁ p_out₁ p_ins₂ p_out₂ : finset α}
+  (H_mem₁ : x ∈ finset.inf p_ins₁ principal_open ∩ finset.inf p_out₁ co_principal_open)
+  (H_mem₂ : x ∈ finset.inf p_ins₂ principal_open ∩ finset.inf p_out₂ co_principal_open)
+  (H_disjoint₁ : p_ins₁ ∩ p_out₁ = ∅) (H_disjoint₂ : p_ins₂ ∩ p_out₂ = ∅)
+  {a : α} (Ha_left : a ∈ p_ins₁)
+  (Ha_right : a ∈ p_out₂) : false :=
+begin
+  rw[<-principal_open_finset_eq_inter, <-co_principal_open_finset_eq_inter] at H_mem₁ H_mem₂,
+  suffices : a ∉ x ∧ a ∈ x, from (not_and_self _).mp this, split,
+  rw[set.mem_inter_iff] at H_mem₂, apply H_mem₂.right ‹_›,
+  rw[set.mem_inter_iff] at H_mem₁, apply H_mem₁.left ‹_›
+end
+
 @[simp]lemma principal_open_mem_standard_basis {a : α} : (principal_open a) ∈ (@standard_basis α) :=
 by {simp[standard_basis], right, use {a}, use ∅, tidy}
 
@@ -285,7 +298,43 @@ by {simp[standard_basis], use ∅, use ∅, tidy}
 lemma is_topological_basis_standard_basis : @is_topological_basis (set α) _ standard_basis :=
 begin
   repeat{split},
-  {intros, sorry},
+  {intros t₁ H₁ t₂ H₂ x Hx, cases H₁; cases H₂,
+    {rcases H₁ with ⟨p_ins₁, p_out₁, H₁, H₁'⟩, rcases H₂ with ⟨p_ins₂, p_out₂, H₂, H₂'⟩,
+      use (finset.inf (p_ins₁ ∪ p_ins₂) principal_open) ∩ (finset.inf (p_out₁ ∪ p_out₂) co_principal_open), split, swap, split,
+    split, rw[<-principal_open_finset_eq_inter], unfold principal_open_finset,
+    simp, intros a Ha, simp[finset.to_set] at Ha, subst H₁, subst H₂,
+    simp at Hx, rcases Hx with ⟨⟨Hx1, Hx2⟩, Hx3, Hx4⟩, cases Ha,
+    rw[<-principal_open_finset_eq_inter] at Hx1, apply Hx1, from Ha,
+    rw[<-principal_open_finset_eq_inter] at Hx3, apply Hx3, from Ha,
+
+    rw[<-co_principal_open_finset_eq_inter], unfold co_principal_open_finset,
+    simp, intros a Ha, simp[finset.to_set] at Ha, subst H₁, subst H₂,
+    simp at Hx, rcases Hx with ⟨⟨Hx1, Hx2⟩, Hx3, Hx4⟩, cases Ha,
+    rw[<-co_principal_open_finset_eq_inter] at Hx2, apply Hx2, from Ha,
+    rw[<-co_principal_open_finset_eq_inter] at Hx4, apply Hx4, from Ha,
+
+    rw[<-principal_open_finset_eq_inter, <-co_principal_open_finset_eq_inter],
+    intros a Ha, unfold principal_open_finset co_principal_open_finset at Ha,
+    cases Ha with Ha₁ Ha₂, substs H₁ H₂, split,
+    rw[<-principal_open_finset_eq_inter, <-co_principal_open_finset_eq_inter],
+    split, intros x Hx, apply Ha₁, simp[finset.to_set], left, from Hx,
+    intros x Hx, apply Ha₂, simp[finset.to_set], left, from Hx,
+    
+    rw[<-principal_open_finset_eq_inter, <-co_principal_open_finset_eq_inter],
+    split, intros x Hx, apply Ha₁, simp[finset.to_set], right, from Hx,
+    intros x Hx, apply Ha₂, simp[finset.to_set], right, from Hx,
+
+    use (p_ins₁ ∪ p_ins₂), use (p_out₁ ∪ p_out₂), refine ⟨rfl, _⟩,
+    simp only [finset.inter_distrib_left, finset.inter_distrib_right],
+    ext1, split; intro Ha, swap, cases Ha, simp [H₁', H₂'] at Ha,
+    repeat{cases Ha}; exfalso; substs H₁ H₂; cases Hx,
+    from ins₁_out₂_disjoint Hx_left Hx_right ‹_› ‹_› Ha_left Ha_right,
+    from ins₁_out₂_disjoint Hx_right Hx_left ‹_› ‹_› Ha_right Ha_left
+    },
+    {replace H₂ := set.mem_singleton_iff.mp H₂, subst H₂, exfalso, simpa using Hx},
+    {replace H₁ := set.mem_singleton_iff.mp H₁, subst H₁, exfalso, simpa using Hx},
+    {replace H₁ := set.mem_singleton_iff.mp H₁, subst H₁, exfalso, simpa using Hx}
+  },
   {ext, split; intros, trivial, rw[set.mem_sUnion], use set.univ,
     use univ_mem_standard_basis},
   {rw[product_topology_generate_from], apply le_antisymm, apply generate_from_mono,
