@@ -1,4 +1,4 @@
-import .to_mathlib .regular_open_algebra tactic.tidy
+import .to_mathlib .regular_open_algebra tactic.tidy data.set.finite
 
 local attribute [instance] classical.prop_decidable
 
@@ -116,6 +116,18 @@ by {simp[principal_open]}
 --    (∃t, is_open t ∧ f ⁻¹' t = s) ↔ @topological_space.is_open α (t.induced f) s := is_open_induced_iff.symm
 
 def opens_over (x : α) : set(set(set α)) := {principal_open x, co_principal_open x, set.univ, ∅}
+
+@[simp]lemma principal_open_mem_opens_over {x : α} : principal_open x ∈ opens_over x :=
+by {right,right,right, from set.mem_singleton _}
+
+@[simp]lemma co_principal_open_mem_opens_over {x : α} : co_principal_open x ∈ opens_over x :=
+by {right,right,left, refl}
+
+@[simp]lemma univ_mem_opens_over {x : α} : set.univ ∈ opens_over x :=
+by {right,left, refl}
+
+@[simp]lemma empty_mem_opens_over {x : α} : ∅ ∈ opens_over x :=
+by {left, refl}
 
 /-- Given a : α, τ is the topology induced by pulling back the
   discrete topology on Prop along the a'th projection map -/
@@ -261,15 +273,58 @@ end
 def standard_basis : set (set (set α)) :=
 {T : set (set α) | ∃ p_ins p_out : finset α, T = (finset.inf p_ins principal_open) ∩ (finset.inf p_out co_principal_open) ∧ p_ins ∩ p_out = ∅} ∪ {∅}
 
+@[simp]lemma principal_open_mem_standard_basis {a : α} : (principal_open a) ∈ (@standard_basis α) :=
+by {simp[standard_basis], right, use {a}, use ∅, tidy}
+
+@[simp]lemma co_principal_open_mem_standard_basis {a : α} : co_principal_open a ∈ (@standard_basis α) :=
+by {simp[standard_basis], right, use ∅, use {a}, tidy}
+
+lemma univ_mem_standard_basis : set.univ ∈ (@standard_basis α) :=
+by {simp[standard_basis], use ∅, use ∅, tidy}
+
 lemma is_topological_basis_standard_basis : @is_topological_basis (set α) _ standard_basis :=
 begin
   repeat{split},
-  {sorry},
-  {sorry},
+  {intros, sorry},
+  {ext, split; intros, trivial, rw[set.mem_sUnion], use set.univ,
+    use univ_mem_standard_basis},
   {rw[product_topology_generate_from], apply le_antisymm, apply generate_from_mono,
   intros X H_X, rcases H_X with ⟨w, ⟨a, H_w⟩, H_X⟩,
-  unfold standard_basis, simp, subst H_w, repeat{cases H_X},
+  unfold standard_basis, simp, subst H_w, repeat{cases H_X}, left, refl,
+  right, use ∅, use ∅, {simp, refl}, right, use ∅, use {a},
+    {/- `tidy` says -/ simp, ext1,   fsplit, work_on_goal 0
+    { intros a_1, fsplit, work_on_goal 0 { fsplit },
+    fsplit, work_on_goal 0 { assumption },  fsplit },
+    intros a_1 a_2, cases a_1, cases a_1_right, solve_by_elim}, right, use {a}, use ∅,
+  {/- `tidy` says -/ simp, ext1, fsplit, work_on_goal 0
+    { intros a_1, fsplit, work_on_goal 0 { fsplit, work_on_goal 0 { assumption }, fsplit },
+    fsplit }, intros a_1, cases a_1, cases a_1_left, assumption},
   
+  apply generate_from_le_iff_subset_is_open.mpr, intros T hT, unfold standard_basis at hT,
+  cases hT with hT h_empty, swap, rw[set.mem_singleton_iff] at h_empty, subst h_empty,
+  apply @is_open_empty _ (generate_from _),
+
+  simp, have := is_topological_basis_of_subbasis (product_topology_generate_from), swap, from α,
+  rw[<-product_topology_generate_from],
+  apply is_open_of_is_topological_basis this, simp,
+  rcases hT with ⟨p_ins, p_out, H_eq, H⟩,
+  use ((finset.image principal_open p_ins) ∪ (finset.image co_principal_open p_out)).to_set,
+  split, split, from finset.finite_to_set _, split,
+  apply finset.induction_on p_ins, apply finset.induction_on p_out,
+  simp, intros x Hx, cases Hx, intros a A H_a H_A, simp, intros x Hx,
+  simp[finset.to_set] at Hx, cases Hx, rw[set.mem_Union], use a, rw[Hx],
+  rw[<-neg_principal_open], from co_principal_open_mem_opens_over,
+  rw[set.mem_Union], cases Hx with a Hx, use a, rw[<-Hx.right],
+  rw[<-neg_principal_open], from co_principal_open_mem_opens_over,
+  intros a A H_a H_A, simp, intros x Hx, simp[finset.to_set] at Hx, cases Hx,
+  rw[Hx], rw[set.mem_Union], use a, from principal_open_mem_opens_over,
+  cases Hx with Hx Hx', rw[set.mem_Union], cases Hx with a Hx,
+  use a, rw[<-Hx.right, <-neg_principal_open], from co_principal_open_mem_opens_over,
+  cases Hx' with a Hx, rw[set.mem_Union], 
+  use a, rw[<-Hx.right], from principal_open_mem_opens_over,
+
+  sorry, sorry
+
   }
 end
 
