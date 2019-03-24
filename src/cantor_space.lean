@@ -158,6 +158,22 @@ by {unfold product_topology Pi.topological_space; from le_supr _ _}
 lemma le_iff_opens_sub {β : Type*} {τ₁ τ₂ : topological_space β} :
   τ₁ ≤ τ₂ ↔ {S | τ₁.is_open S} ⊆ {S | τ₂.is_open S} := by refl
 
+lemma τ_le_opens_over (a : α) : τ a ≤ generate_from (opens_over a) :=
+by {apply le_iff_opens_sub.mpr, intros X H, cases H, cases H_h,
+   by_cases true ∈ H_w; by_cases false ∈ H_w,
+   {constructor, rw[<-H_h_right], unfold opens_over, repeat{split}, right,left,
+    ext, by_cases a ∈ x, split, from λ _, trivial, intro, simp[h], from ‹_›,
+    split, from λ _, trivial, intro, simp[h], from ‹_›},
+   {constructor, rw[<-H_h_right], unfold opens_over, repeat{split}, right, right, right,
+     simp, ext, by_cases a ∈ x, split, intro H, simp[principal_open], from ‹_›,
+     intro H, simp[*, -H_h_right], split; intros, subst H_h_right, simp* at a_1, cases a_1,
+     subst H_h_right, simp[principal_open, *, -a_1] at a_1, cases a_1},
+   {constructor, rw[<-H_h_right], unfold opens_over, repeat{split}, right, right, left,
+     simp, ext, split; intros; subst H_h_right; simp* at a_1; by_cases a ∈ x,
+     tidy {tactics := with_cc}},
+   {have : H_w = ∅, ext, split; intros, by_cases x; simp* at a_1; cases a_1, cases a_1,
+    subst this, subst H_h_right, simp, by apply @is_open_empty _ (generate_from _)}}
+
 @[simp]lemma is_open_generated_from_basic {β : Type*} [topological_space β] {s : set (set β)} {x ∈ s} :
   is_open (generate_from s) x := by {constructor, from ‹_›}
 
@@ -207,7 +223,7 @@ begin
   split, intros a_2 H, simp at a_1, apply a_1, unfold finset.to_set at ⊢ H,
   {tidy}, intros a_2 H, simp at a_1, apply a_1, unfold finset.to_set at ⊢ H,
   {tidy, right, from ‹_›}, intros a_2 H, simp[finset.to_set] at *,
-  cases H, apply a_1.left, simpa, apply a_1.right, simpa
+  cases H; [apply a_1.left, apply a_1.right]; simpa
 end
 
 lemma co_principal_open_finset_eq_inter (F : finset α) : co_principal_open_finset F = (finset.inf F (co_principal_open)) :=
@@ -221,7 +237,7 @@ end
 lemma is_clopen_principal_open_finset (F : finset α) : is_clopen (principal_open_finset F) :=
 begin
   rw[principal_open_finset_eq_inter], apply is_clopen_finite_inter',
-  intros x H_x, from is_clopen_principal_open
+  from λ _ _, is_clopen_principal_open
 end
 
 lemma is_clopen_co_principal_open_finset (F : finset α) : is_clopen (co_principal_open_finset F) :=
@@ -229,6 +245,19 @@ begin
   rw[co_principal_open_finset_eq_inter], apply is_clopen_finite_inter',
   from λ _ _, is_clopen_co_principal_open
 end
+
+lemma product_topology_generated_from : (product_topology : topological_space (set α)) = generate_from (⋃(a : α), opens_over a) :=
+begin
+  apply le_antisymm, refine supr_le _, intro a,
+  refine le_trans (τ_le_opens_over a) _, apply generate_from_mono,
+  intros X H, constructor, simp, use a, from H,
+
+  unfold product_topology Pi.topological_space, change _ ≤ generate_from _,
+  apply generate_from_mono,
+  intros X HX, rcases HX with ⟨W, ⟨H₁, H₂⟩⟩, simp, cases H₁ with a Ha,
+  use τ a, split, use a, refl, apply opens_over_le_τ a, constructor, cc
+end
+
 
 end cantor_space
 end cantor_space
