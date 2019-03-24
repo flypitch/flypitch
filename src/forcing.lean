@@ -124,6 +124,9 @@ by {cases ℵ₂, refl}
 private lemma eq₂ : set ((type (ℵ₂̌  : bSet 𝔹)) × ℕ) = set ((type ℵ₂) × ℕ) :=
 by {cases ℵ₂, refl}
 
+private lemma eq₃ : finset ((type (ℵ₂̌  : bSet 𝔹)) × ℕ) = finset (type ℵ₂ × ℕ) :=
+by {cases ℵ₂, refl}
+
 lemma pi₂_cast₁ {α β γ : Type*} (H' : α = β) {p : α × γ} {q : β × γ} (H : p == q) :
   p.1 == q.1 :=
 by {subst H', subst H}
@@ -226,9 +229,27 @@ is_regular_of_clopen
 
 open cantor_space
 
+lemma prop_decidable_cast_lemma {α β : Type*} (H : α = β) {a b : α} {a' b' : β} (H_a : a == a') (H_b : b == b') : classical.prop_decidable (a = b) == classical.prop_decidable (a' = b') :=
+by {subst H, subst H_a, subst H_b}
+
 lemma 𝒞_dense_basis : ∀ T ∈ @standard_basis (ℵ₂.type × ℕ), ∃ p : 𝒞, (ι p).val ⊆ T :=
 begin
-  sorry
+  intros T Ht, simp[standard_basis] at Ht,
+  rcases Ht with ⟨p_ins, p_out, H₁, H₂⟩,
+  fsplit, refine ⟨_,_,_⟩, from cast eq₃.symm p_ins,
+  from cast eq₃.symm p_out, swap, rw[<-co_principal_open_finset_eq_inter] at H₁,
+  rw[<-principal_open_finset_eq_inter] at H₁, subst H₁,
+  intros S HS, split, cases HS, dsimp at HS_left, simp[principal_open_finset],
+  {convert HS_left,
+    from eq₀.symm, from eq₀.symm, from eq₀.symm, all_goals{symmetry, from cast_heq _ _}},
+  cases HS, dsimp at HS_right, simp[principal_open_finset],
+  {convert HS_right,
+    from eq₀.symm, from eq₀.symm, from eq₀.symm, all_goals{symmetry, from cast_heq _ _}},
+  convert H₂, from eq₀, from eq₀, from eq₀,
+  apply function.hfunext, from eq₁, intros a a' H,
+  apply function.hfunext, from eq₁, intros b b' H',
+  from prop_decidable_cast_lemma eq₁ ‹_› ‹_›,
+  from cast_heq _ _, from cast_heq _ _, from eq₀, from eq₀ 
 end
 
 lemma 𝒞_dense {b : 𝔹} (H : ⊥ < b) : ∃ p : 𝒞, ι p ≤ b :=
@@ -358,7 +379,7 @@ rw[mem_unfold, neg_supr], bv_intro k, rw[neg_inf], simp,
        by_cases n = k.down, swap, rw[bSet.of_nat_inj ‹_›],
        from le_sup_right_of_le (by simp),
        refine le_sup_left_of_le _, rw[<-h],
-       rw[le_iff_subset'], unfold ι χ principal_open, rintros S ⟨H_S₁, H_S₂⟩,
+       rw[le_iff_subset'], unfold ι χ, rintros S ⟨H_S₁, H_S₂⟩,
        apply mem_neg_principal_open_of_not_mem, have := H_S₂ H, convert this,
        from eq₀.symm, from eq₀.symm, from eq₀.symm, cc, cc
 end
@@ -388,7 +409,7 @@ begin
                 (by {dsimp[p'], from λ i _, by {simp, from or.inr ‹_›}}),
   have this₁ : ι p' ≤ (ñ̌) ∈ᴮ (cohen_real.mk ν₁),
     by {rw[mem_unfold], apply bv_use (ulift.up n), refine le_inf _ bv_eq_refl',
-         {simp [le_iff_subset', χ, principal_open, ι, cantor_space.principal_open],
+         {simp [le_iff_subset', χ, _root_.principal_open, ι, cantor_space.principal_open],
          have : (ν₁, n) ∈ p'.ins,
            by simp[p'], intros S H_S _, specialize H_S this,
               convert H_S; [from eq₀.symm, from eq₀.symm, from eq₀.symm, cc, cc]}},
