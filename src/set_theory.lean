@@ -182,6 +182,9 @@ lemma mk_sUnion {α : Type u} (A : set (set α)) :
   mk (⋃₀ A) ≤ mk A * cardinal.sup.{u u} (λ s : A, mk s) :=
 by { rw [sUnion_eq_Union], refine le_trans mk_Union_le_sum_mk (sum_le_sup _) }
 
+lemma finset_card_lt_omega (s : finset α) : mk (↑s : set α) < omega :=
+by { rw [lt_omega_iff_fintype], exact ⟨finset.subtype.fintype s⟩ }
+
 -- lemma mk_set (α : Type u) : mk (set α) = 2 ^ mk α :=
 -- sorry
 
@@ -231,6 +234,14 @@ begin
   apply exists_congr, intro t, rw [mk_image_eq], apply subtype.val_injective
 end
 
+lemma power_nat_le {c : cardinal.{u}} {n : ℕ} (h  : omega ≤ c) : c ^ (n : cardinal.{u}) ≤ c :=
+begin
+  induction n; unfold_coes; rw [nat.cast],
+  { rw [power_zero], exact le_trans (le_of_lt one_lt_omega) h },
+  rw [power_add, power_one, mul_comm],
+  convert mul_le_max_of_omega_le_left h, rw [max_eq_left], exact n_ih
+end
+
 /-- The function α^{<β}, defined to be sup_{γ < β} α^γ.
   We index over {s : set β.out // mk s < β } instead of {γ // γ < β}, because the latter lives in a
   higher universe -/
@@ -262,6 +273,21 @@ begin
   split,
   { intros h c₄ hc₄, rcases powerlt_helper hc₄ with ⟨s, rfl⟩, exact h s },
   intros h s, exact h _ s.2
+end
+
+lemma powerlt_omega {c : cardinal} (h : omega ≤ c) : c ^< omega = c :=
+begin
+  apply le_antisymm,
+  { rw [powerlt_le], intro c', rw [lt_omega], rintro ⟨n, rfl⟩, apply power_nat_le h },
+  convert le_powerlt one_lt_omega, rw [power_one]
+end
+
+lemma powerlt_omega_le (c : cardinal) : c ^< omega ≤ max c omega :=
+begin
+  cases le_or_gt omega c,
+  { rw [powerlt_omega h], apply le_max_left },
+  rw [powerlt_le], intros c' hc',
+  refine le_trans (le_of_lt $ power_lt_omega h hc') (le_max_right _ _)
 end
 
 lemma powerlt_le_powerlt_left {a b c : cardinal} (h : b ≤ c) : a ^< b ≤ a ^< c :=
@@ -911,72 +937,6 @@ begin
   intro hz, refine ⟨hz.1, _⟩, rw [h3B x hx, ←h3B y hy] at hz, exact hz.1
 end
 
-/- A special case where we require `mk A = θ` -/
-theorem delta_system_lemma_1 {α : Type u} {κ : cardinal} (hκ : cardinal.omega ≤ κ) {θ} (hκθ : κ < θ)
-  (hθ : is_regular θ) (hθ_le : ∀(c < θ), c ^< κ < θ) (A : set (set α))
-  (hA : mk A = θ) (h2A : ∀{s : set α} (h : s ∈ A), mk s < κ) :
-  ∃(B ⊆ A), mk B = θ ∧ is_delta_system B :=
-begin
-  revert hθ hθ_le hκ hκθ hA h2A, refine quotient.induction_on θ _, clear θ,
-  intros θ hθ hθ_le hκ hκθ hA h2A, rcases ord_eq θ with ⟨θr, θwo, θtype_eq⟩,
-  resetI,
-  let β := ⋃₀ A,
-  have hβ : mk β ≤ mk θ,
-  { refine le_trans (mk_sUnion _) _, rw [hA],
-    refine le_trans (mul_le_max_of_omega_le_left _) _, exact hθ.1,
-    apply max_le, refl, rw [cardinal.sup_le],
-    intro s, apply le_of_lt, apply lt_trans (h2A s.2) hκθ },
-  have h2β : A ⊆ powerset (range (subtype.val : β → α)),
-  { intros s hs x hx, refine ⟨⟨x, ⟨s, hs, hx⟩⟩, rfl⟩ },
-  have f : β ↪ θ, { exact (classical.choice hβ) },
-  let A₀ : set (set θ) := image f ∘ preimage subtype.val '' A,
-  have hA₀ : mk θ ≤ mk A₀,
-  { rw [mk_image_eq_of_inj_on, hA], refl,
-    apply inj_on_comp_of_injective_left (injective_image f.2),
-    apply inj_on_preimage h2β },
-  let κα := κ.ord.out.α,
-  let κr := κ.ord.out.r,
-  have h3A₀ : ∀(s : A₀), type (subrel θr ↑s) < type κr,
-  { rintro ⟨t, ht⟩, rw [type_out, lt_ord, card_type], change mk t < κ,
-    rcases ht with ⟨s, hs, rfl⟩,
-    rw [mk_image_eq], rw [mk_preimage_of_injective_of_onto], apply h2A hs,
-    apply subtype.val_injective, apply h2β hs, exact f.2 },
-  have hκθ' : mk κα < cof (ord (mk θ)),
-  { rw [←card_type κr, type_out, card_ord], convert hκθ, exact hθ.2 },
-  let g : A₀ → κα := λ s : A₀, nth κr ⟨type (subrel θr s), h3A₀ s⟩,
-  rcases infinite_pigeonhole_set g (mk θ) hA₀ hθ.1 hκθ' with ⟨ρ', A₁, hA₁, h2A₁, h3A₁⟩,
-  let ρ := { x : κα | x < ρ' },
-  let ρr := subrel κr ρ,
-  have hρ : mk ρ < κ, { exact card_typein_out_lt κ ρ', },
-  have h4A₁ : Π(s ∈ A₁), ρr ≃o subrel θr s,
-  { intros s hs, symmetry,
-    have : type (subrel θr s) = typein κr ρ', { rw [← h3A₁ hs, typein_nth], refl },
-    exact classical.choice (quotient.exact this) },
-  have h5A₁ : unbounded θr (⋃₀ A₁),
-  { rw [←not_bounded_iff], rintro ⟨x, hx⟩, apply not_lt_of_ge h2A₁,
-    refine lt_of_le_of_lt _ (hθ_le (max (typein θr x).card omega) _),
-    have := mk_bounded_subset_le {y | θr y x} (typein κr ρ').card,
-    refine le_trans (le_trans _ this) _,
-    { apply mk_le_of_subset, intros s hs, split, intros y hy, exact hx y ⟨s, hs, hy⟩,
-      rw [←h3A₁ hs, typein_nth], refl },
-    apply le_powerlt, exact hρ,
-    apply max_lt,
-    apply card_typein_lt θr x θtype_eq, apply lt_of_le_of_lt hκ hκθ },
-  rcases delta_system_lemma_2 hκ θr hκθ hθ θtype_eq hθ_le ρr hρ h4A₁ h5A₁ with ⟨B, h1B, h2B, h3B⟩,
-  refine ⟨image subtype.val ∘ preimage f '' B, _, _, _⟩,
-  { rw [image_subset_iff], refine subset.trans h1B (subset.trans hA₁ _),
-    rw [←image_subset_iff, ←image_comp], convert subset.refl A,
-    convert image_eq_image_of_eq_on _, symmetry, apply image_id,
-    intros s hs, dsimp only [function.comp],
-    rw [preimage_image_eq], apply image_preimage_eq_of_subset, apply h2β hs, exact f.2 },
-  { rw [mk_image_eq_of_inj_on], exact h2B,
-    apply inj_on_comp_of_injective_left (injective_image subtype.val_injective),
-    apply inj_on_preimage,
-    intros s hs, rcases hA₁ (h1B hs) with ⟨t, ht, rfl⟩, apply image_subset_range },
-  rw [image_comp], apply is_delta_system_image subtype.val_injective,
-  apply is_delta_system_preimage h3B
-end
-
 /-- The delta-system lemma. [Kunen 1980, Theorem 1.6, p49] -/
 theorem delta_system_lemma {α : Type u} {κ : cardinal} (hκ : cardinal.omega ≤ κ) {θ} (hκθ : κ < θ)
   (hθ : is_regular θ) (hθ_le : ∀(c < θ), c ^< κ < θ) (A : set (set α))
@@ -1043,6 +1003,22 @@ begin
     intros s hs, rcases hA₁ (h1B hs) with ⟨t, ht, rfl⟩, apply image_subset_range },
   rw [image_comp], apply is_delta_system_image subtype.val_injective,
   apply is_delta_system_preimage h3B
+end
+
+theorem delta_system_lemma_countable {α} (A : set (finset α)) (h : cardinal.omega < mk A) :
+  ∃(B ⊆ A), cardinal.omega < mk B ∧ is_delta_system (finset.to_set '' B) :=
+begin
+  have :  ∀ (c : cardinal), c < succ omega → c ^< omega < succ omega,
+  { intros c hc, refine lt_of_le_of_lt (powerlt_omega_le _) _,
+    apply max_lt hc (lt_succ_self _) },
+  rcases delta_system_lemma (le_refl _) (lt_succ_self _) (succ_is_regular (le_refl _)) this
+    (finset.to_set '' A) _ _ with ⟨B', h1B', h2B', h3B'⟩,
+  rcases subset_image_iff.mp h1B' with ⟨B, HB, rfl⟩,
+  refine ⟨B, HB, _, h3B'⟩,
+  { rw [mk_image_eq] at h2B', rw [h2B'], apply cardinal.lt_succ_self,
+    apply finset.to_set_injective },
+  { rw [mk_image_eq, cardinal.succ_le], exact h, apply finset.to_set_injective },
+  rintro _ ⟨s, hs, rfl⟩, apply finset_card_lt_omega
 end
 
 end delta_system

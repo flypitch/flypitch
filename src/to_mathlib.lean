@@ -504,11 +504,30 @@ begin
   rw [image_preimage_eq_of_subset], exact hs₂, rw [range_val], exact hs₁
 end
 
+lemma subset_image_iff {f : α → β} {s : set α} {t : set β} :
+  t ⊆ f '' s ↔ ∃t', t' ⊆ s ∧ f '' t' = t :=
+begin
+  split,
+  { intro h,
+    have : ∀(y : t), ∃x ∈ s, f x = y,
+    { rintros ⟨y, hy⟩, rcases h hy with ⟨x, hx, hx'⟩, exact ⟨x, hx, hx'⟩ },
+    let g : t → α := λy, classical.some (this y),
+    have : ∀(y : t), g y ∈ s ∧ f (g y) = y,
+    { intro y, cases classical.some_spec (this y) with h h', exact ⟨h,h'⟩ },
+    refine ⟨range g, _, _⟩,
+    { rintro _ ⟨y, rfl⟩, exact (this y).1 },
+    apply subset.antisymm,
+    { rintro _ ⟨_, ⟨y, rfl⟩, rfl⟩, rw [(this y).2], exact y.2 },
+    { rintro y hy, refine ⟨g ⟨y, hy⟩, mem_range_self _, _⟩, rw [(this ⟨y, hy⟩).2], refl }},
+  { rintro ⟨t, ht, rfl⟩, apply image_subset f ht }
+end
+
 
 end set
 open nat
 
 namespace finset
+open function
 variables {α : Type u} {β : Type v} [decidable_eq α] [decidable_eq β]
 
 def to_set_sdiff (s t : finset α) : (s \ t).to_set = s.to_set \ t.to_set :=
@@ -539,6 +558,9 @@ begin
   { intro x, simp },
   { intro x, simp, intros hx hx₂, refine ⟨or.resolve_left (h hx) hx₂, hx₂⟩ }
 end
+
+lemma to_set_injective {α} : injective (finset.to_set : finset α → set α) :=
+λ s t, coe_inj.1
 
 end finset
 
