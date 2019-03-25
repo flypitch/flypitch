@@ -436,6 +436,8 @@ local notation `ℵ₀` := (omega : bSet 𝔹)
 local notation `𝔠` := (bv_powerset ℵ₀ : bSet 𝔹)
 local infix `≺`:70 := (λ x y, -(larger_than x y))
 
+local infix `≼`:70 := (λ x y, ⨆f, is_func' (x) y f ⊓ is_inj f)
+
 lemma ℵ₀_lt_ℵ₁ : (⊤ : 𝔹)  ≤ ℵ₀ ≺ ℵ₁̌  :=
 begin
   simp[larger_than, -top_le_iff], rw[<-imp_bot],
@@ -511,6 +513,16 @@ refine le_inf _ _,
     from le_inf ‹_› (by apply le_trans H_1_right; from subst_congr_pair_left)},
 
   {refine mk_inj_of_inj _ _, from λ _ _ _, cohen_real.inj ‹_›},
+end
+
+def CH : 𝔹 := - ⨆ x, ⨆y, (ℵ₀ ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(ℵ₀))
+
+theorem neg_CH : ⊤ ≤ -CH :=
+begin
+  dsimp [CH], rw[lattice.neg_neg], apply bv_use (ℵ₁̌ ),
+  apply bv_use (ℵ₂̌ ), simp only [lattice.le_inf_iff],
+  refine ⟨⟨ℵ₀_lt_ℵ₁,ℵ₁_lt_ℵ₂⟩,bv_use neg_CH_func⟩,
+  from ℵ₂_le_𝔠
 end
 
 end neg_CH

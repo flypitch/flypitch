@@ -305,6 +305,8 @@ begin
     by {simp[bv_eq, this, inf_comm]}, from λ _ _, by simp[x_ih ‹α›]
 end
 
+def bv_symm {Γ} {x y : bSet 𝔹} (H : Γ ≤ x =ᴮ y) : Γ ≤ y =ᴮ x := by rwa[bv_eq_symm]
+
 -- @[symm]lemma symm {Γ : 𝔹} {x y : bSet 𝔹} (H : Γ ≤ x =ᴮ y) : Γ ≤ y =ᴮ x :=
 -- by rwa[bv_eq_symm]
 
@@ -355,10 +357,10 @@ by apply le_antisymm; [apply subset_subset_of_eq, apply eq_of_subset_subset]
 @[simp]lemma subset_self {x : bSet 𝔹} {Γ : 𝔹} : Γ ≤ x ⊆ᴮ x :=
 by {apply le_trans, apply le_top, rw[show ⊤ = x =ᴮ x, by simp[bv_eq_refl]], rw[eq_iff_subset_subset], apply inf_le_left}
 
-theorem subset_ext {x y : bSet 𝔹} {c : 𝔹} {h₁ : c ≤ x ⊆ᴮ y} {h₂ : c ≤ y ⊆ᴮ x} : c ≤ x =ᴮ y :=
+theorem subset_ext {x y : bSet 𝔹} {Γ : 𝔹} {h₁ : Γ ≤ x ⊆ᴮ y} {h₂ : Γ ≤ y ⊆ᴮ x} : Γ ≤ x =ᴮ y :=
 begin
   apply bv_have h₂, rw[deduction], apply bv_have h₁, rw[<-deduction],
-  ac_change c ⊓ (x ⊆ᴮ y ⊓ y ⊆ᴮ x) ≤ x =ᴮ y, apply inf_le_right_of_le,
+  ac_change Γ ⊓ (x ⊆ᴮ y ⊓ y ⊆ᴮ x) ≤ x =ᴮ y, apply inf_le_right_of_le,
   apply eq_of_subset_subset
 end
 
@@ -482,6 +484,9 @@ begin
   simp only [subset_unfold], have := @bounded_forall 𝔹 _ x (λ y, y∈ᴮ u),
   dsimp at this, rw[this], intros, apply subst_congr_mem_left
 end
+
+theorem mem_ext {x y : bSet 𝔹} {Γ : 𝔹} {h₁ : Γ ≤ ⨅z, z ∈ᴮ x ⟹ z ∈ᴮ y} {h₂ : Γ ≤ ⨅z, z ∈ᴮ y ⟹ z ∈ᴮ x} : Γ ≤ x =ᴮ y :=
+by {apply subset_ext; rw[subset_unfold']; from ‹_›}
 
 @[simp]lemma subset_self_eq_top {x : bSet 𝔹} : x ⊆ᴮ x = ⊤ :=
 top_unique subset_self
@@ -618,6 +623,13 @@ end
 
 @[simp]lemma subst_congr_mem_left' {Γ : 𝔹} {u v w : bSet 𝔹} : Γ ≤ u =ᴮ v → Γ ≤ u ∈ᴮ w → Γ ≤ v ∈ᴮ w :=
 by {intros H₁ H₂, rw[bv_eq_symm] at H₁, apply bv_rw' H₁, simp, from ‹_›}
+
+lemma subst_congr_mem_right' {Γ : 𝔹} {u v w : bSet 𝔹} : Γ ≤ w =ᴮ v → Γ ≤ u ∈ᴮ w → Γ ≤ u ∈ᴮ v :=
+by {intros H₁ H₂, rw[bv_eq_symm] at H₁, apply bv_rw' H₁, simp, from ‹_›}
+
+lemma mem_congr {Γ : 𝔹} {x₁ x₂ y₁ y₂ : bSet 𝔹} {H₁ : Γ ≤ x₁ =ᴮ y₁} {H₂ : Γ ≤ x₂ =ᴮ y₂} {H₃ : Γ ≤ x₁ ∈ᴮ x₂} :
+  Γ ≤ y₁ ∈ᴮ y₂ :=
+by {rw[bv_eq_symm] at H₁ H₂, apply bv_rw' H₁, simp, apply bv_rw' H₂, simpa}
 
 def is_definite (u : bSet 𝔹) : Prop := ∀ i : u.type, u.bval i = ⊤
 
@@ -1421,8 +1433,22 @@ begin
        {rw[<-inf_assoc], apply inf_le_right_of_le, refl}},
 end
 
+lemma bv_union_spec' (u : bSet 𝔹) {Γ} : Γ ≤ ⨅ (x : bSet 𝔹), (x ∈ᴮ bv_union u ⟹ ⨆ (y : type u), u.bval y ⊓ x ∈ᴮ func u y) ⊓
+        ((⨆ y, y ∈ᴮ u ⊓ x ∈ᴮ y) ⟹ x ∈ᴮ bv_union u) :=
+begin
+  have := bv_union_spec u,
+  bv_intro x, apply le_inf,
+    replace this := this x, bv_split_at this,
+    from le_trans (le_top) ‹_›,
+  replace this := this x, bv_split_at this,
+  bv_imp_intro, specialize_context_at this_1_1 Γ_1,
+  replace this_1_1 := this_1_1 _, from ‹_›,
+  rw[@bounded_exists 𝔹 _ u (λ z, x ∈ᴮ z)], from ‹_›,
+  change B_ext _, simp
+end
+
 /-- For every x ∈ u, x ⊆ᴮ ⋃ u.-/
-lemma bv_union_spec' (u : bSet 𝔹) : ⊤ ≤ ⨅(x : bSet 𝔹), (x ∈ᴮ u) ⟹ (x ⊆ᴮ bv_union u) :=
+lemma bv_union_spec'' (u : bSet 𝔹) : ⊤ ≤ ⨅(x : bSet 𝔹), (x ∈ᴮ u) ⟹ (x ⊆ᴮ bv_union u) :=
 begin
   bv_intro x, rw[<-deduction], simp[subset_unfold], intro i_v, rw[<-deduction, inf_comm],
   apply le_trans, apply inf_le_inf, apply mem.mk', refl,
@@ -1439,6 +1465,40 @@ begin
     apply bv_use y,
     ac_change bval u y ⊓ (func x i_v ∈ᴮ x ⊓ x =ᴮ func u y) ≤ u.bval y ⊓ (func x i_v ∈ᴮ func u y),
     apply inf_le_inf, refl, rw[inf_comm], apply subst_congr_mem_right
+end
+
+lemma bv_union_congr {x y : bSet 𝔹} {Γ} (H_eq : Γ ≤ x =ᴮ y) : Γ ≤ bv_union x =ᴮ bv_union y :=
+begin
+  apply mem_ext; bv_intro z; bv_imp_intro,
+    have := bv_union_spec x z, bv_split,
+    specialize_context_at this_left Γ_1,
+    specialize_context_at this_right Γ_1,
+    replace this_left := this_left H,
+    have := bv_union_spec y z, bv_split,
+    specialize_context_at this_left_1 Γ_1,
+    specialize_context_at this_right_1 Γ_1,
+    replace this_right_1 := this_right_1 _, from ‹_›,
+    rw[@bounded_exists 𝔹 _ y (λ w, z ∈ᴮ w)],
+    rw[@bounded_exists 𝔹 _ x (λ w, z ∈ᴮ w)] at this_left,
+    bv_cases_at this_left w, bv_split_at this_left_2,
+    apply bv_use w, apply le_inf,
+    apply bv_rw' (bv_symm H_eq), simp, from ‹_›,
+    from ‹_›, change B_ext _, simp, change B_ext _, simp,
+
+    have := bv_union_spec y z, bv_split,
+    specialize_context_at this_left Γ_1,
+    specialize_context_at this_right Γ_1,
+    replace this_left := this_left H,
+    have := bv_union_spec x z, bv_split,
+    specialize_context_at this_left_1 Γ_1,
+    specialize_context_at this_right_1 Γ_1,
+    replace this_right_1 := this_right_1 _, from ‹_›,
+    rw[@bounded_exists 𝔹 _ x (λ w, z ∈ᴮ w)],
+    rw[@bounded_exists 𝔹 _ y (λ w, z ∈ᴮ w)] at this_left,
+    bv_cases_at this_left w, bv_split_at this_left_2,
+    apply bv_use w, apply le_inf,
+    apply bv_rw' (H_eq), simp, from ‹_›,
+    from ‹_›, change B_ext _, simp, change B_ext _, simp
 end
 
 theorem bSet_axiom_of_union : (⨅ (u : bSet 𝔹), (⨆v, ⨅x,
@@ -1741,7 +1801,7 @@ begin
           rw[forall_forall_reindex (λ z₁ z₂, ((z₁ ⊆ᴮ z₂) ⊔ (z₂ ⊆ᴮ z₁) : 𝔹))]; simp}},
  /- Show that ⋃C' is an upper bound on C' in X -/
   have H_internal_ub_spec : ⊤ ≤ ⨅(i_w : C'.type), C'.bval i_w ⟹ C'.func i_w ⊆ᴮ (bv_union C'),
-    by {have := bv_union_spec' C', apply le_trans this,
+    by {have := bv_union_spec'' C', apply le_trans this,
         have := @bounded_forall 𝔹 _ C' (λ w, w ⊆ᴮ bv_union C'), dsimp only at this, rw[this_1],
         intros x y, rw[inf_comm, bv_eq_symm], apply subst_congr_subset_left},
 

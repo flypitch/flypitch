@@ -26,6 +26,27 @@ end
 @[simp]lemma subst_congr_pair_left' {x z y : bSet 𝔹} {Γ : 𝔹} :
   Γ ≤ x=ᴮ z → Γ ≤ pair x y =ᴮ pair z y := poset_yoneda_inv Γ (@subst_congr_pair_left _ _ x z y)
 
+lemma subst_congr_pair_right {x y z : bSet 𝔹} : y =ᴮ z ≤ pair x y =ᴮ pair x z :=
+by unfold pair; simp*
+
+lemma subst_congr_pair_right' {Γ} {x y z : bSet 𝔹} (H : Γ ≤ y =ᴮ z) : Γ ≤ pair x y =ᴮ pair x z :=
+poset_yoneda_inv Γ (@subst_congr_pair_right _ _ x y z) ‹_›
+
+lemma pair_congr {x₁ x₂ y₁ y₂ : bSet 𝔹} {Γ : 𝔹} {H₁ : Γ ≤ x₁ =ᴮ y₁} {H₂ : Γ ≤ x₂ =ᴮ y₂} : Γ ≤ pair x₁ x₂ =ᴮ pair y₁ y₂ :=
+begin
+  apply bv_rw' H₁,
+    {intros v₁ v₂, tidy_context,
+      have : Γ_1 ≤ pair v₂ x₂ =ᴮ pair v₁ x₂,
+        by {apply subst_congr_pair_left', rwa[bv_eq_symm]},
+      from bv_context_trans this a_right,},
+  apply bv_rw' H₂,  
+    {intros v₁ v₂, tidy_context,
+       have : Γ_1 ≤ pair y₁ v₂ =ᴮ pair y₁ v₁,
+         by {apply subst_congr_pair_right', rwa[bv_eq_symm]},
+       from bv_context_trans this a_right},
+  from bv_eq_refl'
+end
+
 @[simp, cleanup]lemma insert1_bval_none {u v : bSet 𝔹} : (bSet.insert1 u ({v})).bval none  = ⊤ :=
 by refl
 
