@@ -79,7 +79,8 @@ begin
     from le_trans H_le_eq
            (by {rw[le_bot_iff], apply check_bv_eq_bot_of_not_equiv, apply H_inj₂, tidy})},
    intro H_CCC, specialize H_CCC (g⁻¹'{ξ}) ‹_› ‹_› ‹_›,
-   replace H_ξ := (lt_iff_le_and_ne.mp H_ξ).right.symm, contradiction
+   replace H_ξ := (lt_iff_le_and_ne.mp H_ξ),
+   from (not_and_self _).mp ⟨H_ξ.right, (le_antisymm H_ξ.left H_CCC)⟩
 end
 
 end cardinal_preservation
@@ -521,7 +522,7 @@ theorem neg_CH : ⊤ ≤ -CH :=
 begin
   dsimp [CH], rw[lattice.neg_neg], apply bv_use (ℵ₁̌ ),
   apply bv_use (ℵ₂̌ ), simp only [lattice.le_inf_iff],
-  refine ⟨⟨ℵ₀_lt_ℵ₁,ℵ₁_lt_ℵ₂⟩,bv_use neg_CH_func⟩,
+  refine ⟨⟨ℵ₀_lt_ℵ₁ ,ℵ₁_lt_ℵ₂⟩, bv_use neg_CH_func⟩,
   from ℵ₂_le_𝔠
 end
 

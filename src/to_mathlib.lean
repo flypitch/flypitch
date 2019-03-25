@@ -1096,7 +1096,7 @@ end
 
 def CCC (𝔹 : Type u) [boolean_algebra 𝔹] : Prop :=
   ∀ ι : Type u, ∀ 𝓐 : ι → 𝔹, (∀ i, ⊥ < 𝓐 i) →
-    (∀ i j, i ≠ j → 𝓐 i ⊓ 𝓐 j ≤ ⊥) → (cardinal.mk ι) = cardinal.omega
+    (∀ i j, i ≠ j → 𝓐 i ⊓ 𝓐 j ≤ ⊥) → (cardinal.mk ι) ≤ cardinal.omega
 
 end lattice
 
