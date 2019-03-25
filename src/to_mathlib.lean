@@ -483,6 +483,28 @@ begin
   intro h, exact ⟨⟨x, h⟩, rfl⟩
 end
 
+lemma inj_on_comp_of_injective_left {g : β → γ} {f : α → β} {a : set α} (hg : injective g)
+  (hf : inj_on f a) : inj_on (g ∘ f) a :=
+inj_on_comp (maps_to_univ _ _) (injective_iff_inj_on_univ.mp hg) hf
+
+lemma inj_on_preimage {f : α → β} {B : set (set β)} (hB : B ⊆ powerset (range f)) :
+  inj_on (preimage f) B :=
+begin
+  intros s t hs ht hst,
+  rw [←image_preimage_eq_of_subset (hB hs), ←image_preimage_eq_of_subset (hB ht), hst]
+end
+
+lemma exists_set_subtype {t : set α} (p : set α → Prop) :
+(∃(s : set t), p (subtype.val '' s)) ↔ ∃(s : set α), s ⊆ t ∧ p s :=
+begin
+  split,
+  { rintro ⟨s, hs⟩, refine ⟨subtype.val '' s, _, hs⟩,
+    convert image_subset_range _ _, rw [range_val] },
+  rintro ⟨s, hs₁, hs₂⟩, refine ⟨subtype.val ⁻¹' s, _⟩,
+  rw [image_preimage_eq_of_subset], exact hs₂, rw [range_val], exact hs₁
+end
+
+
 end set
 open nat
 
@@ -1148,7 +1170,7 @@ do
   e₀' <- to_expr e₀,
   Γ_old <- target >>= lhs_of_le,
   `[refine lattice.context_Or_elim %%e₀'],
-  tactic.intro i >> ((get_unused_name H) >>= tactic.intro) >> 
+  tactic.intro i >> ((get_unused_name H) >>= tactic.intro) >>
   specialize_context_core Γ_old
 
 meta def bv_cases_at' (H : parse ident) (i : parse ident_)  : tactic unit :=
@@ -1157,7 +1179,7 @@ do
   e₀' <- to_expr e₀,
   Γ_old <- target >>= lhs_of_le,
   `[refine lattice.context_Or_elim %%e₀'],
-  tactic.intro i >> ((get_unused_name H) >>= tactic.intro) >> 
+  tactic.intro i >> ((get_unused_name H) >>= tactic.intro) >>
   skip
 
 meta def bv_or_elim_at_core (e : expr) (Γ_old : expr) : tactic unit :=
