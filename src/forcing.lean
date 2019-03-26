@@ -72,7 +72,7 @@ begin
       work_on_goal 0 { induction β₂_property, simp only [le_inf_iff] at a,
         cases a, cases a_right, cases a_left, solve_by_elim}, simp only [le_inf_iff] at a,
         cases a, cases a_right, cases a_left, solve_by_elim},
-    
+
     rw[β₁_property] at a_left_right,
     have H_le_eq : Γ ≤ ((η₂.func β₁_val)̌ ) =ᴮ ((η₂.func β₂_val)̌ ),
      by {apply funext; from ‹_›},
@@ -160,7 +160,10 @@ begin
   apply pi₂_cast₁, from eq₀, from H_x.symm
 end
 
-theorem 𝔹_CCC : CCC 𝔹 := sorry 
+theorem 𝔹_CCC : CCC 𝔹 :=
+begin
+  apply CCC_regular_opens, apply countable_chain_condition_set
+end
 
 local notation `𝒳` := set(ℵ₂.type × ℕ)
 
@@ -252,7 +255,7 @@ begin
   apply function.hfunext, from eq₁, intros a a' H,
   apply function.hfunext, from eq₁, intros b b' H',
   from prop_decidable_cast_lemma eq₁ ‹_› ‹_›,
-  from cast_heq _ _, from cast_heq _ _, from eq₀, from eq₀ 
+  from cast_heq _ _, from cast_heq _ _, from eq₀, from eq₀
 end
 
 lemma 𝒞_dense {b : 𝔹} (H : ⊥ < b) : ∃ p : 𝒞, ι p ≤ b :=
@@ -279,7 +282,7 @@ begin
   intro H', intro H'',
   have this₀ : a ∈ p₁.to_set ∩ p₂.to_set := ⟨‹_›,‹_›⟩,
   rw[<-to_set_inter] at this₀, have this₁ := congr_arg finset.to_set H,
-  rw[this₁] at this₀, cases this₀ 
+  rw[this₁] at this₀, cases this₀
 end
 
 lemma not_mem_of_inter_empty_right {α : Type*} {p₁ p₂ : finset α}
@@ -502,7 +505,7 @@ refine le_inf _ _,
 
   {unfold neg_CH_func, refine le_inf (le_inf _ _) _, refine mk_is_func _ _,
     simp only [subset_unfold] with cleanup,
-    bv_intro ν, bv_imp_intro, 
+    bv_intro ν, bv_imp_intro,
     have : Γ ≤ (ℵ₂̌ ).func ν ∈ᴮ ℵ₂̌  ⊓ (cohen_real.mk ν ∈ᴮ bv_powerset ℵ₀),
       by {refine le_inf _ _, from le_trans H (by refine mem.mk' _ _),
           from cohen_real.definite'},

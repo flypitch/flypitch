@@ -522,6 +522,8 @@ begin
   { rintro ⟨t, ht, rfl⟩, apply image_subset f ht }
 end
 
+lemma image_eq_range (f : α → β) (s : set α) : f '' s = range (λ(x : s), f x.1) :=
+by { ext, split, rintro ⟨x, h1, h2⟩, exact ⟨⟨x, h1⟩, h2⟩, rintro ⟨⟨x, h1⟩, h2⟩, exact ⟨x, h1, h2⟩ }
 
 end set
 open nat

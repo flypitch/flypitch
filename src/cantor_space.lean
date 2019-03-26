@@ -1,5 +1,6 @@
-import .to_mathlib .regular_open_algebra tactic.tidy data.set.finite
+import .regular_open_algebra data.set.finite
 
+universes u v
 local attribute [instance] classical.prop_decidable
 
 /- Some facts about Cantor spaces: topological spaces of the form (set α) -/
@@ -192,7 +193,7 @@ by {apply le_iff_opens_sub.mpr, intros X H, cases H, cases H_h,
 lemma is_open_principal_open {a : α} : is_open (principal_open a) :=
   by apply (le_trans (opens_over_le_τ a) (τ_le_product_topology _)); simp[opens_over]
 
-lemma is_open_co_principal_open {a : α} : is_open (co_principal_open a) := 
+lemma is_open_co_principal_open {a : α} : is_open (co_principal_open a) :=
   by apply (le_trans (opens_over_le_τ a) (τ_le_product_topology _)); simp[opens_over]
 
 lemma is_closed_principal_open {a : α} : is_closed (principal_open a) :=
@@ -318,7 +319,7 @@ begin
   subst H_eq, rw[<-principal_open_finset_eq_inter, <-co_principal_open_finset_eq_inter],
   simp[finset.to_set], ext; split; intro H',
     {rw[set.mem_sInter] at H',
-    
+
     simp[principal_open_finset, co_principal_open_finset], split,
     intros a Ha, specialize H' (principal_open a), apply H',
     right, use a, from ⟨‹_›, rfl⟩,
@@ -354,7 +355,7 @@ begin
     rw[<-principal_open_finset_eq_inter, <-co_principal_open_finset_eq_inter],
     split, intros x Hx, apply Ha₁, simp[finset.to_set], left, from Hx,
     intros x Hx, apply Ha₂, simp[finset.to_set], left, from Hx,
-    
+
     rw[<-principal_open_finset_eq_inter, <-co_principal_open_finset_eq_inter],
     split, intros x Hx, apply Ha₁, simp[finset.to_set], right, from Hx,
     intros x Hx, apply Ha₂, simp[finset.to_set], right, from Hx,
@@ -383,7 +384,7 @@ begin
   {/- `tidy` says -/ simp, ext1, fsplit, work_on_goal 0
     { intros a_1, fsplit, work_on_goal 0 { fsplit, work_on_goal 0 { assumption }, fsplit },
     fsplit }, intros a_1, cases a_1, cases a_1_left, assumption},
-  
+
   apply generate_from_le_iff_subset_is_open.mpr, intros T hT, unfold standard_basis at hT,
   cases hT with hT h_empty, swap, rw[set.mem_singleton_iff] at h_empty, subst h_empty,
   apply @is_open_empty _ (generate_from _),
@@ -404,12 +405,23 @@ begin
   rw[Hx], rw[set.mem_Union], use a, from principal_open_mem_opens_over,
   cases Hx with Hx Hx', rw[set.mem_Union], cases Hx with a Hx,
   use a, rw[<-Hx.right, <-neg_principal_open], from co_principal_open_mem_opens_over,
-  cases Hx' with a Hx, rw[set.mem_Union], 
+  cases Hx' with a Hx, rw[set.mem_Union],
   use a, rw[<-Hx.right], from principal_open_mem_opens_over,
 
   by {apply intersection_standard_basis_nonempty; from ‹_›},
 
   by {apply standard_basis_reindex; from ‹_›}}
+end
+
+open cardinal
+lemma countable_chain_condition_set {α : Type u} : countable_chain_condition (set α) :=
+begin
+  apply countable_chain_condition_pi, intros s hs,
+  apply countable_chain_condition_of_countable, apply le_of_lt,
+  convert @power_lt_omega (mk (ulift Prop)) (mk s) _ _ using 1,
+  { refine quotient.sound ⟨equiv.arrow_congr (equiv.refl _) equiv.ulift.symm⟩ },
+  { rw [prop_eq_two], convert cardinal.nat_lt_omega 2, rw [nat.cast_bit0, nat.cast_one] },
+  rwa lt_omega_iff_finite
 end
 
 end cantor_space

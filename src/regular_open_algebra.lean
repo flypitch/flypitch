@@ -1,4 +1,4 @@
-import topology.basic tactic.tidy to_mathlib
+import topology.basic tactic.tidy to_mathlib .set_theory
 order.complete_boolean_algebra data.set.basic
 
 local attribute [instance] classical.prop_decidable
@@ -90,7 +90,7 @@ section regular
 variables {α : Type*} [τ : topological_space α]
 
 include τ
-@[ematch, reducible]def is_regular (S : set α) : Prop := 
+@[ematch, reducible]def is_regular (S : set α) : Prop :=
  S = interior (closure S)
 
 -- @[reducible,simp,ematch]def int_of_cl (S : set α) := interior (closure S)
@@ -490,7 +490,7 @@ end
 lemma shift_neg_right {a b : (regular_opens α)} (h : a = -b) : -a = b :=
 by {rw[h], from lattice.neg_neg}
 
--- variables {α : Type*} [τ : topological_space α] 
+-- variables {α : Type*} [τ : topological_space α]
 
 -- local postfix `ᵖ`:80 := perp
 
@@ -500,7 +500,7 @@ by {rw[h], from lattice.neg_neg}
 
 -- include τ
 lemma regular_open_infi_sup_le_sup_Inf : ∀(a : (regular_opens α)) s, (⨅ b ∈ s, a ⊔ b) ≤ a ⊔ Inf s :=
-begin 
+begin
   intros A 𝒜,
   have : A ⊔ Inf 𝒜 = -(-A ⊓ -(Inf 𝒜)),
     by {symmetry, apply shift_neg_right, rw[neg_sup]},
@@ -522,13 +522,13 @@ begin
   apply this, simp only [mem_image],
   use (A ⊔ b'), split, apply mem_range.mpr,
   use b', apply shift_neg_right, clear this,
-  apply le_antisymm, 
+  apply le_antisymm,
   apply @Sup_le (regular_opens α) _ (has_neg.neg '' range (λ (H : b' ∈ 𝒜), A ⊔ b')) (-(A ⊔ b')),
   intros b'' Hb'',
   simp at Hb'', rcases Hb'' with ⟨w, ⟨⟨Hw₁, Hw₂⟩, ⟨Hw₃, Hw₄⟩⟩⟩,
     rw[<-Hw₄], replace Hw₂ := (congr_arg perp Hw₂).symm,
     simp only [Hw₂], apply le_of_eq _, refl,
-  
+
   apply @le_Sup (regular_opens α) _ (has_neg.neg '' range (λ (H : b' ∈ 𝒜), A ⊔ b')), simp only [mem_range, mem_image], use (A ⊔ b'), use H'',
   refl, refl
 end
@@ -546,6 +546,25 @@ def regular_open_algebra (H_nonempty : nonempty α) :
   .. regular_open_boolean_algebra,
   ..regular_open_complete_lattice
   }
+
+open cardinal function
+local attribute [instance] [priority 0] subtype.preorder -- why is regular_opens reducible? :/
+lemma CCC_regular_opens (h : countable_chain_condition α) : CCC (regular_opens α) :=
+begin
+  intros β O hO h2O,
+  have O_inj : injective (subtype.val ∘ O),
+  { apply injective_comp subtype.val_injective, intros x y hxy,
+    by_contra, apply not_le_of_gt (hO y),
+    have := h2O _ _ a, rwa [hxy, inf_self] at this },
+  have := h (range (subtype.val ∘ O)) _ _,
+  rw [countable_iff] at this, convert this using 1,
+  { rw [mk_range_eq], exact O_inj },
+  { rintro _ ⟨x, rfl⟩, exact is_open_of_is_regular (O x).2 },
+  { rintro _ _ ⟨x, rfl⟩ ⟨y, rfl⟩ hxy,
+    have : x ≠ y, { intro h, apply hxy, exact congr_arg (subtype.val ∘ O) h },
+    refine subset.antisymm _ (empty_subset _), exact h2O _ _ this }
+end
+
 
 end regular_algebra
 
