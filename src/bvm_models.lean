@@ -111,7 +111,7 @@ local prefix `&'`:max := bd_var
 -- ∀ x y, (∀ z, (z ∈ x → z ∈ y) ∧ (z ∈ y → z ∈ x) → x = y)
 
 def axiom_of_extensionality : sentence L_ZFC' :=
-  ∀' ∀' ∀' (((&'0  ∈' &'2 ⟹ (&'0 ∈' &'1)) ⊓ ((&'0 ∈' &'1) ⟹ &'0 ∈' &'2)) ⟹ (&2 ≃ &1))
+  ∀' ∀'  (∀'((&'0  ∈' &'2 ⟹ (&'0 ∈' &'1)) ⊓ ((&'0 ∈' &'1) ⟹ &'0 ∈' &'2)) ⟹ (&2 ≃ &1))
 
 lemma bSet_models_extensionality : ⊤ ⊩[V 𝔹] axiom_of_extensionality :=
 begin

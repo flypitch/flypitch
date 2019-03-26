@@ -176,7 +176,7 @@ run_cmd mk_simp_attr `cleanup
 | ⟨_, _, B⟩ := B
 
 @[simp, cleanup]def mk_type_func_bval : ∀ x : bSet 𝔹, mk x.type x.func x.bval = x :=
-  λ x, by induction x; {simp only with cleanup, repeat{split, repeat{refl}}}
+  λ x, by cases x; refl
 
 def empty : bSet 𝔹 :=
   ⟨ulift empty, empty.elim ∘ ulift.down, empty.elim ∘ ulift.down⟩

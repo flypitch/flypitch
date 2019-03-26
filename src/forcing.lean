@@ -80,7 +80,7 @@ begin
            (by {rw[le_bot_iff], apply check_bv_eq_bot_of_not_equiv, apply H_inj₂, tidy})},
    intro H_CCC, specialize H_CCC (g⁻¹'{ξ}) ‹_› ‹_› ‹_›,
    replace H_ξ := (lt_iff_le_and_ne.mp H_ξ),
-   from (not_and_self _).mp ⟨H_ξ.right, (le_antisymm H_ξ.left H_CCC)⟩
+   from absurd (le_antisymm H_ξ.left H_CCC) H_ξ.right
 end
 
 end cardinal_preservation
@@ -94,7 +94,7 @@ namespace pSet
 
 @[reducible]noncomputable def ℵ₂ : pSet.{0} := ordinal.mk (aleph 2).ord
 
-lemma ℵ₂_unfold : ℵ₂ = ⟨ℵ₂.type, ℵ₂.func⟩ := mk_eq
+lemma ℵ₂_unfold : ℵ₂ = ⟨ℵ₂.type, ℵ₂.func⟩ := by cases ℵ₂; refl
 
 @[simp, cleanup]lemma Union_type {x : pSet} : (type (Union x)) = Σ(a:x.type), (x.func a).type :=
 by induction x; refl
@@ -393,11 +393,11 @@ private lemma inj_cast_lemma (ν' : type (ℵ₂̌  : bSet 𝔹)) (n' : ℕ) :
 begin
   let a := _, change cast a _ = _,
   let b := _, change cast _ (cast b _, _) = _,
-  simp[b] at a, tactic.unfreeze_local_instances, dedup, change cast a_1 _ = _, cc
+  simp[b] at a, dedup, change cast a_1 _ = _, cc
 end
 
 /-- Whenever ν₁ ≠ ν₂ < ℵ₂, bSet 𝔹 believes that `mk ν₁` and `mk ν₂` are distinct -/
-lemma inj {ν₁ ν₂} (H_neq : ν₁ ≠ ν₂) : (mk ν₁) =ᴮ (mk ν₂) ≤ ⊥ :=
+lemma inj {ν₁ ν₂} (H_neq : ν₁ ≠ ν₂) : (mk ν₁) =ᴮ (mk ν₂) ≤ (⊥ : 𝔹) :=
 begin
   by_contra, replace h := (bot_lt_iff_not_le_bot.mpr ‹_›),
   cases 𝒞_dense h with p H_p, cases 𝒞_disjoint_row p with n H_n,
@@ -424,7 +424,7 @@ begin
     from sep ‹_› ‹_›,
   have this₄ : ι p' ≤ (mk ν₁ =ᴮ mk ν₂),
     from le_trans this₀ ‹_›,
-  suffices : ι p' = ⊥, from (not_and_self _).mp ⟨(𝒞_nonzero p'), this.symm⟩,
+  suffices : ι p' = ⊥, from absurd this.symm (𝒞_nonzero p'),
   bv_and_intro this₃ this₄, simpa using H
 end
 
@@ -446,7 +446,7 @@ begin
   have := classical.axiom_of_choice
             (AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
   cases this with g g_spec,
-  suffices : ¬ CCC 𝔹, from (not_and_self _).mp ⟨this, 𝔹_CCC⟩,
+  suffices : ¬ CCC 𝔹, from absurd 𝔹_CCC this,
   apply not_CCC_of_uncountable_fiber; try{assumption},
     {from le_of_eq (by simp)},
     {simp},
@@ -464,7 +464,7 @@ begin
   have := classical.axiom_of_choice
             (AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
   cases this with g g_spec,
-  suffices : ¬ CCC 𝔹, from (not_and_self _).mp ⟨this, 𝔹_CCC⟩,
+  suffices : ¬ CCC 𝔹, from absurd 𝔹_CCC this,
   apply not_CCC_of_uncountable_fiber; try{assumption},
     {simp},
     {simp},
