@@ -477,6 +477,15 @@ begin
     exact congr_arg subtype.val hy }
 end
 
+lemma Union_range_eq_Union {ι α β : Type*} (C : ι → set α)
+  {f : ∀(x : ι), β → C x} (hf : ∀(x : ι), surjective (f x)) :
+  (⋃(y : β), range (λ(x : ι), (f x y).val)) = ⋃x, C x :=
+begin
+  ext x, rw [mem_Union, mem_Union], split,
+  { rintro ⟨y, ⟨i, rfl⟩⟩, exact ⟨i, (f i y).2⟩ },
+  { rintro ⟨i, hx⟩, cases hf i ⟨x, hx⟩ with y hy, refine ⟨y, ⟨i, congr_arg subtype.val hy⟩⟩ }
+end
+
 lemma range_val (s : set α) : range (subtype.val : s → α) = s :=
 begin
   ext, split, rintro ⟨⟨x, h⟩, rfl⟩, exact h,
@@ -524,6 +533,7 @@ end
 
 lemma image_eq_range (f : α → β) (s : set α) : f '' s = range (λ(x : s), f x.1) :=
 by { ext, split, rintro ⟨x, h1, h2⟩, exact ⟨⟨x, h1⟩, h2⟩, rintro ⟨⟨x, h1⟩, h2⟩, exact ⟨x, h1, h2⟩ }
+
 
 end set
 open nat

@@ -5,11 +5,18 @@ note: in comment above cofinality, change sentence with
 +  `∀ a, ∃ b ∈ S, ¬(b > a)`. It is defined for all ordinals, but
 -/
 
-universe variables u v w
+universe variables u v w w'
 noncomputable theory
 
 section subtype
 open function subtype
+
+def restrict {α} {β : α → Type*} (f : ∀x, β x) (s : set α) (x : s) : β x.1 :=
+f x.1
+
+lemma restrict_def {α β} (f : α → β) (s : set α) : restrict f s = f ∘ subtype.val :=
+by refl
+
 def subtype.coind {α β} (f : α → β) {p : β → Prop} (h : ∀a, p (f a)) : α → subtype p :=
 λ a, ⟨f a, h a⟩
 
@@ -176,6 +183,10 @@ end
 lemma mk_image_eq (f : α → β) (s : set α) (h : injective f) : mk (f '' s) = mk s :=
 quotient.sound ⟨(equiv.set.image f s h).symm⟩
 
+lemma mk_image_eq_lift {α : Type u} {β : Type v} (f : α → β) (s : set α) (h : injective f) :
+  lift.{v u} (mk (f '' s)) = lift.{u v} (mk s) :=
+quotient.sound ⟨equiv.ulift.trans ((equiv.set.image f s h).symm.trans equiv.ulift.symm)⟩
+
 lemma mk_image_eq_of_inj_on (f : α → β) (s : set α) (h : inj_on f s) : mk (f '' s) = mk s :=
 le_antisymm (mk_image_le f s) $ ⟨⟨λ⟨x, hx⟩, ⟨f x, mem_image_of_mem f hx⟩,
   λ⟨x, hx⟩ ⟨x', hx'⟩ hxx', subtype.eq $ h hx hx' $ by apply congr_arg subtype.val hxx'⟩⟩
@@ -202,9 +213,13 @@ by { refine quotient.sound ⟨_⟩, symmetry, apply (subtype_subtype_equiv_subty
 --   mk { x : s // t x.1 } = mk ({ x ∈ s | t x } : set α) :=
 
 
-lemma mk_sUnion {α : Type u} (A : set (set α)) :
+lemma mk_sUnion_le {α : Type u} (A : set (set α)) :
   mk (⋃₀ A) ≤ mk A * cardinal.sup.{u u} (λ s : A, mk s) :=
 by { rw [sUnion_eq_Union], refine le_trans mk_Union_le_sum_mk (sum_le_sup _) }
+
+lemma mk_bUnion_le {ι α : Type u} (A : ι → set α) (s : set ι) :
+  mk (⋃(x ∈ s), A x) ≤ mk s * cardinal.sup.{u u} (λ x : s, mk (A x.1)) :=
+by { rw [bUnion_eq_Union], refine le_trans mk_Union_le_sum_mk (sum_le_sup _) }
 
 lemma finset_card_lt_omega (s : finset α) : mk (↑s : set α) < omega :=
 by { rw [lt_omega_iff_fintype], exact ⟨finset.subtype.fintype s⟩ }
@@ -216,7 +231,7 @@ lemma mk_preimage_of_injective_lift {α : Type u} {β : Type v} (f : α → β) 
   (h : injective f) : lift.{u v} (mk (f ⁻¹' s)) ≤ lift.{v u} (mk s) :=
 begin
   constructor, apply embedding.congr equiv.ulift.symm equiv.ulift.symm,
-  refine ⟨subtype.coind (λ x, f x.1) (λ x, x.2), _⟩,
+  use subtype.coind (λ x, f x.1) (λ x, x.2),
   apply subtype.coind_injective, exact injective_comp h subtype.val_injective
 end
 
@@ -285,7 +300,7 @@ end
 lemma countable_iff (s : set α) : countable s ↔ mk s ≤ omega :=
 begin
   rw [countable_iff_exists_injective], split,
-  rintro ⟨f, hf⟩, refine ⟨embedding.trans ⟨f, hf⟩ equiv.ulift.symm.to_embedding⟩,
+  rintro ⟨f, hf⟩, exact ⟨embedding.trans ⟨f, hf⟩ equiv.ulift.symm.to_embedding⟩,
   rintro ⟨f'⟩, cases embedding.trans f' equiv.ulift.to_embedding with f hf, exact ⟨f, hf⟩
 end
 
@@ -404,18 +419,18 @@ lemma mk_bounded_set_le_of_omega_le (α : Type u) (c : cardinal) (hα : omega �
 begin
   refine le_trans _ (by rw [←add_one_eq hα]), refine quotient.induction_on c _, clear c, intro β,
   fapply mk_le_of_surjective,
-  { intro f, refine ⟨sum.inl ⁻¹' range f, _⟩,
+  { intro f, use sum.inl ⁻¹' range f,
     refine le_trans (mk_preimage_of_injective _ _ (λ x y, sum.inl.inj)) _,
     apply mk_range_le },
   rintro ⟨s, ⟨g⟩⟩,
-  refine ⟨λ y, if h : ∃(x : s), g x = y then sum.inl (classical.some h).val else sum.inr ⟨⟩, _⟩,
+  use λ y, if h : ∃(x : s), g x = y then sum.inl (classical.some h).val else sum.inr ⟨⟩,
   apply subtype.eq, ext,
   split,
   { rintro ⟨y, h⟩, dsimp only at h, by_cases h' : ∃ (z : s), g z = y,
     { rw [dif_pos h'] at h, cases sum.inl.inj h, exact (classical.some h').2 },
     { rw [dif_neg h'] at h, cases h }},
   { intro h, have : ∃(z : s), g z = g ⟨x, h⟩, exact ⟨⟨x, h⟩, rfl⟩,
-    refine ⟨g ⟨x, h⟩, _⟩, dsimp only, rw [dif_pos this], congr',
+    use g ⟨x, h⟩, dsimp only, rw [dif_pos this], congr',
     suffices : classical.some this = ⟨x, h⟩, exact congr_arg subtype.val this,
     apply g.2, exact classical.some_spec this }
 end
@@ -425,7 +440,7 @@ lemma mk_bounded_set_le (α : Type u) (c : cardinal) :
 begin
   transitivity mk {t : set (ulift.{u} nat ⊕ α) // mk t ≤ c},
   { refine ⟨embedding.subtype_map _ _⟩, apply embedding.image,
-    refine ⟨sum.inr, _⟩, apply sum.inr.inj, intros s hs, exact le_trans (mk_image_le _ _) hs },
+    use sum.inr, apply sum.inr.inj, intros s hs, exact le_trans (mk_image_le _ _) hs },
   refine le_trans
     (mk_bounded_set_le_of_omega_le (ulift.{u} nat ⊕ α) c (le_add_right omega (mk α))) _,
   rw [max_comm, ←add_eq_max]; refl
@@ -460,12 +475,12 @@ end
 --   rintro t ⟨ht₁, ht₂⟩, exact ⟨ht₁, lt_of_lt_of_le ht₂ (le_max_left _ _)⟩
 -- end
 
-lemma mk_bounded_subset_le {α : Type u} (s : set α) (c : cardinal) :
+lemma mk_bounded_subset_le {α : Type u} (s : set α) (c : cardinal.{u}) :
   mk {t : set α // t ⊆ s ∧ mk t ≤ c} ≤ max (mk s) omega ^ c :=
 begin
   refine le_trans _ (mk_bounded_set_le s c),
   refine ⟨embedding.cod_restrict _ _ _⟩,
-  refine ⟨λ t, subtype.val ⁻¹' t.1, _⟩,
+  use λ t, subtype.val ⁻¹' t.1,
   { rintros ⟨t, ht1, ht2⟩ ⟨t', h1t', h2t'⟩ h, apply subtype.eq, dsimp only at h ⊢,
     refine (preimage_eq_preimage' _ _).1 h; rw [range_val]; assumption },
   rintro ⟨t, h1t, h2t⟩, exact le_trans (mk_preimage_of_injective _ _ subtype.val_injective) h2t
@@ -776,7 +791,7 @@ begin
     apply mul_lt_of_lt h₁ (lt_of_lt_of_le h₂ $ cof_ord_le _),
     exact sup_lt _ h₂ h },
   rw [not_forall] at this, cases this with x h,
-  refine ⟨x, _⟩, apply le_antisymm _ (le_of_not_gt h),
+  use x, apply le_antisymm _ (le_of_not_gt h),
   rw [le_mk_iff_exists_set], exact ⟨_, rfl⟩
 end
 
@@ -786,7 +801,7 @@ theorem infinite_pigeonhole_card {β α : Type u} (f : β → α) (θ : cardinal
 begin
   rcases le_mk_iff_exists_set.1 hθ with ⟨s, rfl⟩,
   cases infinite_pigeonhole (f ∘ subtype.val : s → α) h₁ h₂ with a ha,
-  refine ⟨a, _⟩, rw [←ha, @preimage_comp _ _ _ subtype.val f],
+  use a, rw [←ha, @preimage_comp _ _ _ subtype.val f],
   apply mk_preimage_of_injective _ _ subtype.val_injective
 end
 
@@ -808,44 +823,62 @@ end ordinal
 open ordinal
 
 section delta_system
-variables {α : Type u} {β : Type v} {A : set (set α)}
-def is_delta_system (A : set (set α)) :=
-∃(root : set α), ∀{{x y}}, x ∈ A → y ∈ A → x ≠ y → x ∩ y = root
+variables {ι : Type w} {ι' : Type w'} {α : Type u} {β : Type v} {A : ι → set α}
+def is_delta_system (A : ι → set α) :=
+∃(root : set α), ∀{{x y}}, x ≠ y → A x ∩ A y = root
 
 open cardinal
-def root_subset (hA : 2 ≤ mk A) {root : set α} {s : set α} (hs : s ∈ A)
-  (h : ∀{{x y}}, x ∈ A → y ∈ A → x ≠ y → x ∩ y = root) : root ⊆ s :=
+def root_subset (hι : 2 ≤ mk ι) {root : set α} (x : ι)
+  (h : ∀{{x y}}, x ≠ y → A x ∩ A y = root) : root ⊆ A x :=
 begin
-  cases exists_unequal_element hA ⟨s, hs⟩ with t ht,
-  rw [←h hs t.2 (λh, ht $ subtype.val_injective h)], apply inter_subset_left
+  cases exists_unequal_element hι x with y hy, rw [←h hy], apply inter_subset_left
 end
 
-def finite_root (hA : 2 ≤ mk A) {root : set α} (h2A : ∀(s ∈ A), finite s)
-  (h : ∀{{x y}}, x ∈ A → y ∈ A → x ≠ y → x ∩ y = root) : finite root :=
+def finite_root (hι : 2 ≤ mk ι) {root : set α} (h2A : ∀(x : ι), finite (A x))
+  (h : ∀{{x y}}, x ≠ y → A x ∩ A y = root) : finite root :=
 begin
-  rcases exists_two_elements hA with ⟨t, u, htu⟩,
-  rw [←h t.2 u.2 (λh, htu $ subtype.val_injective h)],
-  exact finite_subset (h2A t.1 t.2) (inter_subset_left _ _)
+  rcases exists_two_elements hι with ⟨t, u, htu⟩,
+  rw [←h htu], exact finite_subset (h2A t) (inter_subset_left _ _)
 end
 
 open function
-lemma is_delta_system_image {f : α → β} (hf : injective f) (h : is_delta_system A) :
-  is_delta_system (image f '' A) :=
+lemma is_delta_system_preimage (f : β → α) (h : is_delta_system A) :
+  is_delta_system (preimage f ∘ A) :=
 begin
-  cases h with r hr,
-  refine ⟨f '' r, _⟩,
-  rintro _ _ ⟨x, hx, rfl⟩ ⟨y, hy, rfl⟩ hxy,
-  rw [image_inter hf], apply congr_arg (image f), apply hr hx hy, intro hxy', apply hxy, rw hxy'
+  cases h with r hr, use f ⁻¹' r, rintro x y hxy,
+  rw [←preimage_inter], apply congr_arg (preimage f), apply hr hxy
 end
 
-lemma is_delta_system_preimage {f : β → α} (h : is_delta_system A) :
-  is_delta_system (preimage f '' A) :=
+lemma is_delta_system_image {f : α → β} (hf : injective f) :
+  is_delta_system (image f ∘ A) ↔ is_delta_system A :=
 begin
-  cases h with r hr,
-  refine ⟨f ⁻¹' r, _⟩,
-  rintro _ _ ⟨x, hx, rfl⟩ ⟨y, hy, rfl⟩ hxy,
-  rw [←preimage_inter], apply congr_arg (preimage f), apply hr hx hy, intro hxy', apply hxy, rw hxy'
+  split,
+  { intro h, have := is_delta_system_preimage f h,
+    convert this, apply funext, intro x, dsimp, rw [preimage_image_eq _ hf] },
+  rintro ⟨r, hr⟩, use f '' r, rintro x y hxy,
+  rw [image_inter hf], apply congr_arg (image f), apply hr hxy
 end
+
+lemma is_delta_system_preimage_iff {f : β → α} (hf : injective f) (hf₂ : ∀i, A i ⊆ range f) :
+  is_delta_system (preimage f ∘ A) ↔ is_delta_system A :=
+begin
+  split, rintro ⟨r, hr⟩, use f '' r, intros i j hij,
+  rw [←hr hij, ←image_inter hf, image_preimage_eq_of_subset (hf₂ i),
+    image_preimage_eq_of_subset (hf₂ j)],
+  apply is_delta_system_preimage
+end
+
+lemma is_delta_system_precompose (f : ι' → ι) (hf : injective f) (h : is_delta_system A) :
+  is_delta_system (A ∘ f) :=
+by { cases h with r hr, use r, intros x y hxy, exact hr (λ hxy', hxy $ hf hxy') }
+
+lemma is_delta_system_precompose_iff (f : ι' ≃ ι) : is_delta_system A ↔ is_delta_system (A ∘ f) :=
+begin
+  use is_delta_system_precompose f f.bijective.1,
+  intro h, convert is_delta_system_precompose f.symm f.symm.bijective.1 h, apply funext,
+  intro i, simp [equiv.apply_inverse_apply, comp_app],
+end
+
 end delta_system
 
 
@@ -866,20 +899,19 @@ lemma delta_system_lemma_2 {κ : cardinal} (hκ : cardinal.omega ≤ κ)
   {θ : Type u} (θr : θ → θ → Prop) [θwo : is_well_order θ θr] (hκθ : κ < mk θ)
   (hθ : is_regular $ mk θ) (θtype_eq : ord (mk θ) = type θr) (hθ_le : ∀(β < mk θ), β ^< κ < mk θ)
   {ρ : Type u} (ρr : ρ → ρ → Prop) [ρwo : is_well_order ρ ρr] (hρ : mk ρ < κ)
-  {A : set (set θ)} (hA2 : ∀{s : set θ} (h : s ∈ A), ρr ≃o subrel θr s)
-  (hA3 : unbounded θr (⋃₀ A)) : ∃(B ⊆ A), mk B = mk θ ∧ is_delta_system B :=
+  {ι : Type u} {A : ι → set θ} (h2A : ∀i, ρr ≃o subrel θr (A i))
+  (h3A : unbounded θr (⋃i, A i)) : ∃(t : set ι), mk t = mk θ ∧ is_delta_system (restrict A t) :=
 begin
   haveI := decidable_linear_order_of_is_well_order θr,
-  let ι : θ → ordinal := typein θr,
-  let nr : A → ρ → θ := λ s ξ, (hA2 s.2 ξ).val,
-  let good : ρ → Prop := λ ξ, unbounded θr (range $ λ x, nr x ξ),
+  let nr : ι → ρ → θ := λ i ξ, (h2A i ξ).val,
+  let good : ρ → Prop := λ ξ, unbounded θr (range $ λ i, nr i ξ),
   have : ∃ξ : ρ, good ξ,
-  { apply unbounded_of_unbounded_Union θr (λ ξ, range $ λ x, nr x ξ),
-    { rw [Union_range_eq_sUnion], exact hA3, intro s, exact (hA2 s.2).to_equiv.bijective.2 },
+  { apply unbounded_of_unbounded_Union θr (λ ξ, range $ λ i, nr i ξ),
+    { rw [Union_range_eq_Union], exact h3A, intro i, exact (h2A i).to_equiv.bijective.2 },
     { rw [cof_type_eq, ←θtype_eq, hθ.2], refine lt_trans hρ hκθ }},
   let ξ₀ : ρ := ρwo.wf.min good (ne_empty_of_exists_mem this),
-  let α₀ : ordinal := sup.{u u} (λ o : {x // ρr x ξ₀}, sup.{u u} $ λ s : A,
-    ordinal.succ $ ι $ nr s o.1),
+  let α₀ : ordinal := sup.{u u} (λ o : {x // ρr x ξ₀}, sup.{u u} $ λ x : ι,
+    ordinal.succ $ typein θr $ nr x o.1),
   have hα₀ : α₀ < type θr ,
   { rw [←θtype_eq], apply sup_lt_ord_of_is_regular _ hθ,
     { refine lt_of_le_of_lt _ (lt_trans hρ hκθ), rw [typein_card_eq, ←card_type ρr],
@@ -888,9 +920,9 @@ begin
     apply (ord_is_limit hθ.1).2, apply lt_of_not_ge, intro h,
     apply ρwo.wf.not_lt_min _ _ _ hξ, apply unbounded_range_of_sup_ge,
     dsimp, rw [←θtype_eq], exact h },
-  let pick' : ∀(μ : θ), ∀(pick : ∀y, θr y μ → A), ordinal :=
-  λ μ pick, max α₀ $ sup.{u u} (λ x : ρ × {x // θr x μ}, ι $ nr (pick x.2.val x.2.2) x.1),
-  have pick'_lt : ∀(μ : θ) (pick : ∀y, θr y μ → A), pick' μ pick < type θr,
+  let pick' : ∀(μ : θ), ∀(pick : ∀y, θr y μ → ι), ordinal :=
+  λ μ pick, max α₀ $ sup.{u u} (λ x : ρ × {x // θr x μ}, typein θr $ nr (pick x.2.val x.2.2) x.1),
+  have pick'_lt : ∀(μ : θ) (pick : ∀y, θr y μ → ι), pick' μ pick < type θr,
   { intros μ pick,
     apply max_lt hα₀,
     rw [←θtype_eq],
@@ -899,15 +931,15 @@ begin
       rw [←ord_lt_ord, θtype_eq], apply lt_of_le_of_lt (ord_le_type (subrel θr {x | θr x μ})),
       apply typein_lt_type },
     rintro ⟨x, y, hy⟩, rw [θtype_eq], apply typein_lt_type },
-  have : ∀(x : θ), ∃s : A, θr x (nr s ξ₀),
+  have : ∀(x : θ), ∃i : ι, θr x (nr i ξ₀),
   { intro x, have : good ξ₀ := ρwo.wf.min_mem good _,
     have θr_unbounded : ∀(x : θ), ∃y, θr x y,
     { intro y, apply has_succ_of_is_limit, rw [←θtype_eq], exact ord_is_limit hθ.1 },
     cases θr_unbounded x with y hy,
-    rcases this y with ⟨z, ⟨s, rfl⟩, hz⟩,
-    refine ⟨s, _⟩, rcases trichotomous_of θr (nr s ξ₀) y with hw | rfl | hw,
+    rcases this y with ⟨z, ⟨i, rfl⟩, hz⟩,
+    use i, rcases trichotomous_of θr (nr i ξ₀) y with hw | rfl | hw,
     exfalso, exact hz hw, exact hy, exact trans hy hw },
-  let pick : θ → A := θwo.wf.fix
+  let pick : θ → ι := θwo.wf.fix
     (λ μ pick, classical.some $ this $ nth θr $ ⟨pick' μ pick, pick'_lt μ pick⟩),
   have lt_pick : ∀(μ : θ),
     θr (nth θr $ ⟨pick' μ (λ y _, pick y), pick'_lt μ (λ y _, pick y)⟩) (nr (pick μ) ξ₀),
@@ -916,15 +948,7 @@ begin
     θr (nr (pick ν) η) (nr (pick μ) ξ₀),
   { intros, apply trans_trichotomous_left _ (lt_pick μ), rw [←typein_le_typein, typein_nth],
     refine le_trans _ (le_max_right _ _), refine le_trans _ (le_sup _ ⟨η, ν, h⟩), refl },
-  let A2 := range (subtype.val ∘ pick),
-  have h1A2 : mk A2 = mk θ,
-  { have increasing_pick : ∀{{x y : θ}}, θr x y → θr (nr (pick x) ξ₀) (nr (pick y) ξ₀),
-    { intros x y hxy, apply pick_lt_pick hxy ξ₀ },
-    have injective_pick : injective pick,
-    { intros x y hx, apply injective_of_increasing _ _ _ increasing_pick, dsimp only,
-      congr' 1, exact hx },
-    rw [mk_range_eq], apply injective_comp, exact subtype.val_injective, apply injective_pick },
-  let sub_α₀ : set θ := ι ⁻¹' {c | c < α₀},
+  let sub_α₀ : set θ := typein θr ⁻¹' {c | c < α₀},
   have h1sub_α₀ : mk ↥sub_α₀ = α₀.card,
   { rw [←cardinal.lift_inj.{_ u+1}, mk_preimage_of_injective_of_onto_lift],
     rw [mk_initial_seg, cardinal.lift_lift],
@@ -932,31 +956,38 @@ begin
     intros o ho,
     rcases typein_surj θr (lt_trans ho hα₀) with ⟨_, rfl⟩,
     apply mem_range_self },
-  have h2A2' : ∀{x y : θ}, θr x y → (pick x).val ∩ (pick y).val ⊆ sub_α₀,
+  have h2A2' : ∀{x y : θ}, θr x y → A (pick x) ∩ A (pick y) ⊆ sub_α₀,
   { rintros x y hxy z ⟨hzx, hzy⟩,
-    let η := typein (subrel θr (pick y)) ⟨z, hzy⟩,
-    have η_def : z = (nth (subrel θr (pick y)) ⟨η, typein_lt_type _ _⟩).val, { rw [nth_typein] },
+    let η := typein (subrel θr $ A $ pick y) ⟨z, hzy⟩,
+    have η_def : z = (nth (subrel θr $ A $ pick y) ⟨η, typein_lt_type _ _⟩).val, {rw [nth_typein]},
     cases lt_or_ge η (typein ρr ξ₀) with h h,
     { rw [mem_preimage_eq, mem_set_of_eq],
       refine lt_of_lt_of_le _ (ordinal.le_sup _ _),
       { refine ⟨nth ρr ⟨η, lt_trans h (typein_lt_type _ _)⟩, _⟩,
         rw [←typein_lt_typein ρr, typein_nth], exact h },
       refine lt_of_lt_of_le _ (ordinal.le_sup _ (pick y)),
-      convert lt_succ_self (ι z), rw [η_def],
-      dsimp [nr], congr' 1, apply order_iso_nth' (hA2 _) },
+      convert lt_succ_self (typein θr z), rw [η_def],
+      dsimp [nr], congr' 1, apply order_iso_nth' (h2A _) },
     exfalso,
     have η_lt : η < type ρr,
-    { convert typein_lt_type (subrel θr (pick y)) ⟨z, hzy⟩ using 1, apply quotient.sound,
-      exact ⟨hA2 (pick y).2⟩ },
+    { convert typein_lt_type (subrel θr $ A $ pick y) ⟨z, hzy⟩ using 1, apply quotient.sound,
+      exact ⟨h2A (pick y)⟩ },
     have : ¬ρr (nth ρr ⟨η, η_lt⟩) ξ₀, { rw [←typein_le_typein, typein_nth], exact h },
     apply this,
-    rw [(hA2 (pick y).2).ord], dsimp only [subrel, order.preimage],
-    convert pick_lt_pick hxy ((hA2 (pick x).2).symm ⟨z, hzx⟩) using 1,
-    transitivity z, { rw [η_def], congr' 1, apply order_iso_nth (hA2 _) },
+    rw [(h2A (pick y)).ord], dsimp only [subrel, order.preimage],
+    convert pick_lt_pick hxy ((h2A (pick x)).symm ⟨z, hzx⟩) using 1,
+    transitivity z, { rw [η_def], congr' 1, apply order_iso_nth (h2A _) },
     transitivity subtype.val ⟨z, hzx⟩, refl,
     congr' 1, symmetry, apply equiv.right_inv },
-  have h2A2 : ∀(x ∈ A2) (y ∈ A2), x ≠ y → x ∩ y ⊆ sub_α₀,
-  { rintros _ ⟨x, rfl⟩ _ ⟨y, rfl⟩ hxy,
+  have h1A2 : mk (range pick) = mk θ,
+  { have increasing_pick : ∀{{x y : θ}}, θr x y → θr (nr (pick x) ξ₀) (nr (pick y) ξ₀),
+    { intros x y hxy, apply pick_lt_pick hxy ξ₀ },
+    have injective_pick : injective pick,
+    { intros x y hx, apply injective_of_increasing _ _ _ increasing_pick, dsimp only,
+      congr' 1, exact hx },
+    rw [mk_range_eq], apply injective_pick },
+  have h2A2 : ∀(x y : range pick), x ≠ y → A x ∩ A y ⊆ sub_α₀,
+  { rintro ⟨_, ⟨x, rfl⟩⟩ ⟨_, ⟨y, rfl⟩⟩ hxy,
     rcases trichotomous_of θr x y with h | h | h,
     apply h2A2' h,
     exfalso, apply hxy, rw h,
@@ -964,26 +995,26 @@ begin
   let codomain := {s : set θ // s ⊆ sub_α₀ ∧ mk s ≤ mk ρ},
   have hsub_α₀ : mk ↥sub_α₀ < mk θ,
   { rw [h1sub_α₀, ←ord_lt_ord, θtype_eq], refine lt_of_le_of_lt (ord_card_le _) hα₀ },
-  have hcodomain : ∀(s : A2), s.val ∩ sub_α₀ ⊆ sub_α₀ ∧ mk (↥(s.val ∩ sub_α₀)) ≤ mk ρ,
+  have hcodomain : ∀(x : range pick), A x ∩ sub_α₀ ⊆ sub_α₀ ∧ mk (↥(A x ∩ sub_α₀)) ≤ mk ρ,
   { have α₀_lt_pick : ∀(μ : θ), θr (nth θr ⟨α₀, hα₀⟩) (nr (pick μ) ξ₀),
     { intro μ, apply trans_trichotomous_left _ (lt_pick μ), rw nth_le_nth, apply le_max_left },
     rintro ⟨s, hs⟩, refine ⟨inter_subset_right _ _, _⟩,
     rcases hs with ⟨μ, rfl⟩, dsimp,
-    transitivity mk {x : (pick μ).val // ι x.1 < α₀},
+    transitivity mk {x : A (pick μ) // typein θr x.1 < α₀},
     { apply le_of_eq, apply mk_sep },
-    let f := (hA2 (pick μ).2).to_equiv,
+    let f := (h2A (pick μ)).to_equiv,
     rw [mk_subtype_of_equiv _ f.symm],
     transitivity mk { x : ρ // ρr x ξ₀},
     { apply mk_le_of_subproperty, intros x hx,
-      rw [(hA2 (pick μ).2).ord], dsimp only [subrel, order.preimage],
+      rw [(h2A (pick μ)).ord], dsimp only [subrel, order.preimage],
       refine trans _ (α₀_lt_pick μ),
       rw [←nth_typein θr (f x).val, ←nth_lt_nth θr], exact hx },
     transitivity (typein ρr ξ₀).card, { rw [typein, card_type], refl },
     rw [←card_type ρr], apply card_le_card, apply le_of_lt, apply typein_lt_type },
-  let f : A2 → codomain := λs, ⟨s.val ∩ sub_α₀, hcodomain s⟩,
-  have : ∃r B, r ⊆ sub_α₀ ∧ B ⊆ A2 ∧ mk B = mk θ ∧ ∀(x ∈ B), x ∩ sub_α₀ = r,
-  { have h1 : cardinal.omega ≤ mk ↥A2, { rw [h1A2], exact hθ.1 },
-    have h2 : mk codomain < cof (ord (mk ↥A2)),
+  let f : range pick → codomain := λx, ⟨A x.1 ∩ sub_α₀, hcodomain x⟩,
+  have : ∃r (t : set ι), r ⊆ sub_α₀ ∧ t ⊆ range pick ∧ mk t = mk θ ∧ ∀{{x}}, x ∈ t → A x ∩ sub_α₀ = r,
+  { have h1 : cardinal.omega ≤ mk (range pick), { rw [h1A2], exact hθ.1 },
+    have h2 : mk codomain < cof (ord $ mk $ range pick),
     { rw [h1A2, hθ.2],
       apply lt_of_le_of_lt (mk_bounded_subset_le _ _),
       refine lt_of_le_of_lt (le_powerlt hρ) (hθ_le _ _),
@@ -995,93 +1026,111 @@ begin
     { rw [mk_image_eq _ _ subtype.val_injective, ←h1A2, ←hr'] },
     { rintro _ ⟨⟨x, hx⟩, hx', rfl⟩,
       simpa only [set.mem_singleton_iff, set.mem_preimage_eq, f, subtype.ext] using hx' }},
-  rcases this with ⟨r, B, hr, h1B, h2B, h3B⟩,
-  refine ⟨B, subset.trans h1B _, h2B, r, _⟩, rw [range_subset_iff], intro x, exact (pick x).2,
-  intros x y hx hy hxy, rw [←h3B x hx], apply set.ext, intro z, split,
-  intro hz, refine ⟨hz.1, h2A2 x (h1B hx) y (h1B hy) hxy hz⟩,
-  intro hz, refine ⟨hz.1, _⟩, rw [h3B x hx, ←h3B y hy] at hz, exact hz.1
+  rcases this with ⟨r, t, hr, h1t, h2t, h3t⟩,
+  refine ⟨t, h2t, r, _⟩,
+  intros x y hxy, rw [←h3t x.2], apply set.ext, intro z, split,
+  intro hz, refine ⟨hz.1, h2A2 ⟨x, h1t x.2⟩ ⟨y, h1t y.2⟩ _ hz⟩,
+  intro h, apply hxy, apply subtype.eq, apply congr_arg subtype.val h,
+  intro hz, refine ⟨hz.1, _⟩, rw [h3t x.2, ←h3t y.2] at hz, exact hz.1
+end
+
+local attribute [instance] [priority 0] classical.prop_decidable
+lemma delta_system_lemma_1 {κ : cardinal} (hκ : cardinal.omega ≤ κ)
+  {θ : Type u} (θr : θ → θ → Prop) [θwo : is_well_order θ θr] (hκθ : κ < mk θ)
+  (hθ : is_regular $ mk θ) (θtype_eq : ord (mk θ) = type θr) (hθ_le : ∀(β < mk θ), β ^< κ < mk θ)
+  {ρ : Type u} (ρr : ρ → ρ → Prop) [ρwo : is_well_order ρ ρr] (hρ : mk ρ < κ)
+  {ι : Type u} {A : ι → set θ} (h2A : ∀i, ρr ≃o subrel θr (A i)) (hι : mk θ = mk ι) :
+    ∃(t : set ι), mk t = mk θ ∧ is_delta_system (restrict A t) :=
+begin
+  by_cases h3A : unbounded θr (⋃i, A i),
+  exact delta_system_lemma_2 hκ θr hκθ hθ θtype_eq hθ_le ρr hρ h2A h3A,
+  rw [not_unbounded_iff] at h3A, cases h3A with μ hμ,
+  let γ := ⋃i, A i,
+  let A' : @set.univ ι → {s : set θ // s ⊆ γ ∧ mk s ≤ mk ρ} :=
+  λx, ⟨restrict A set.univ x, subset_Union A x.1, _⟩,
+  swap, { apply le_of_eq, apply quotient.sound, exact ⟨(h2A x.1).to_equiv.symm⟩ },
+  rcases infinite_pigeonhole_set A' (mk θ) _ hθ.1 _ with ⟨R, t, h₁t, h₂t, h₃t⟩,
+  have : ∀(x : t), restrict A t x = R.1 := λ x, congr_arg subtype.val (h₃t x.2),
+  refine ⟨t, _, R.1, _⟩,
+  { apply le_antisymm _ h₂t, rw [hι], apply mk_set_le },
+  { intros i j hij, rw [this i, this j, inter_self] },
+  { rw [mk_univ, hι] },
+  refine lt_of_le_of_lt (mk_bounded_subset_le _ _) _, refine lt_of_le_of_lt (le_powerlt hρ) _,
+  rw [hθ.2], apply hθ_le, apply max_lt _ (lt_of_le_of_lt hκ hκθ),
+  rw [←ord_lt_ord, θtype_eq],
+  apply lt_of_le_of_lt _ (typein_lt_type θr μ),
+  rw [ord_le, typein, card_type], apply mk_le_of_subset hμ
 end
 
 /-- The delta-system lemma. [Kunen 1980, Theorem 1.6, p49] -/
-theorem delta_system_lemma {α : Type u} {κ : cardinal} (hκ : cardinal.omega ≤ κ) {θ} (hκθ : κ < θ)
-  (hθ : is_regular θ) (hθ_le : ∀(c < θ), c ^< κ < θ) (A : set (set α))
-  (hA : θ ≤ mk A) (h2A : ∀{s : set α} (h : s ∈ A), mk s < κ) :
-  ∃(B ⊆ A), mk B = θ ∧ is_delta_system B :=
+theorem delta_system_lemma {α ι : Type u} {κ : cardinal} (hκ : cardinal.omega ≤ κ) {θ} (hκθ : κ < θ)
+  (hθ : is_regular θ) (hθ_le : ∀(c < θ), c ^< κ < θ) (A : ι → set α)
+  (hA : θ ≤ mk ι) (h2A : ∀i, mk (A i) < κ) :
+  ∃(t : set ι), mk t = θ ∧ is_delta_system (restrict A t) :=
 begin
-  revert hθ hθ_le hκ hκθ hA h2A, refine quotient.induction_on θ _, clear θ,
-  intros θ hθ hθ_le hκ hκθ hA h2A, rcases ord_eq θ with ⟨θr, θwo, θtype_eq⟩,
-  rcases le_mk_iff_exists_subset.mp hA with ⟨A', hA'A, hA'⟩,
-  have h2A' : ∀{s : set α} (h : s ∈ A'), mk s < κ := (λ s hs, h2A (hA'A hs)),
+  revert hθ hθ_le hκ hκθ hA h2A, refine quotient.induction_on θ _, clear θ, intro θ, intros,
+  rcases ord_eq θ with ⟨θr, θwo, θtype_eq⟩,
+  rcases le_mk_iff_exists_set.mp hA with ⟨t₁, ht₁⟩,
   resetI,
-  let β := ⋃₀ A',
+  let β := ⋃(i ∈ t₁), A i,
   have hβ : mk β ≤ mk θ,
-  { refine le_trans (mk_sUnion _) _, rw [hA'],
+  { refine le_trans (mk_bUnion_le _ _) _, rw [ht₁],
     refine le_trans (mul_le_max_of_omega_le_left _) _, exact hθ.1,
     apply max_le, refl, rw [cardinal.sup_le],
-    intro s, apply le_of_lt, apply lt_trans (h2A' s.2) hκθ },
-  have h2β : A' ⊆ powerset (range (subtype.val : β → α)),
-  { intros s hs x hx, refine ⟨⟨x, ⟨s, hs, hx⟩⟩, rfl⟩ },
+    intro i, apply le_of_lt, apply lt_trans (h2A i.1) hκθ },
+  have h2β : A '' t₁ ⊆ powerset (range (subtype.val : β → α)),
+  { rintro _ ⟨i, hi, rfl⟩ x hx, refine ⟨⟨x, mem_bUnion hi hx⟩, rfl⟩ },
   have f : β ↪ θ, { exact (classical.choice hβ) },
-  let A₀ : set (set θ) := image f ∘ preimage subtype.val '' A',
-  have hA₀ : mk θ ≤ mk A₀,
-  { rw [mk_image_eq_of_inj_on, hA'], refl,
-    apply inj_on_comp_of_injective_left (injective_image f.2),
-    apply inj_on_preimage h2β },
+  let A₀ : ι → set θ := image f ∘ preimage subtype.val ∘ A,
   let κα := κ.ord.out.α,
   let κr := κ.ord.out.r,
-  have h3A₀ : ∀(s : A₀), type (subrel θr ↑s) < type κr,
-  { rintro ⟨t, ht⟩, rw [type_out, lt_ord, card_type], change mk t < κ,
-    rcases ht with ⟨s, hs, rfl⟩,
-    rw [mk_image_eq], rw [mk_preimage_of_injective_of_onto], apply h2A' hs,
-    apply subtype.val_injective, apply h2β hs, exact f.2 },
+  have h3A₀ : ∀(i : t₁), type (subrel θr (A₀ i)) < type κr,
+  { rintro ⟨i, hi⟩, rw [type_out, lt_ord, card_type],
+    rw [mk_image_eq], rw [mk_preimage_of_injective_of_onto], apply h2A i,
+    apply subtype.val_injective, apply h2β (mem_image_of_mem _ hi), exact f.2 },
   have hκθ' : mk κα < cof (ord (mk θ)),
   { rw [←card_type κr, type_out, card_ord], convert hκθ, exact hθ.2 },
-  let g : A₀ → κα := λ s : A₀, nth κr ⟨type (subrel θr s), h3A₀ s⟩,
-  rcases infinite_pigeonhole_set g (mk θ) hA₀ hθ.1 hκθ' with ⟨ρ', A₁, hA₁, h2A₁, h3A₁⟩,
+  let g : t₁ → κα := λ i : t₁, nth κr ⟨type (subrel θr (A₀ i)), h3A₀ i⟩,
+  rcases infinite_pigeonhole_set g (mk θ) (ge_of_eq ht₁) hθ.1 hκθ' with ⟨ρ', t₂, ht₂, h2t₂, h3t₂⟩,
   let ρ := { x : κα | x < ρ' },
   let ρr := subrel κr ρ,
   have hρ : mk ρ < κ, { exact card_typein_out_lt κ ρ', },
-  have h4A₁ : Π(s ∈ A₁), ρr ≃o subrel θr s,
-  { intros s hs, symmetry,
-    have : type (subrel θr s) = typein κr ρ', { rw [← h3A₁ hs, typein_nth], refl },
+  have h4A₁ : Π(i : t₂), ρr ≃o subrel θr (A₀ i),
+  { rintro ⟨i, hi⟩, symmetry,
+    have : type (subrel θr (A₀ i)) = typein κr ρ', { rw [← h3t₂ hi, typein_nth], refl },
     exact classical.choice (quotient.exact this) },
-  have h5A₁ : unbounded θr (⋃₀ A₁),
-  { rw [←not_bounded_iff], rintro ⟨x, hx⟩, apply not_lt_of_ge h2A₁,
-    refine lt_of_le_of_lt _ (hθ_le (max (typein θr x).card omega) _),
-    have := mk_bounded_subset_le {y | θr y x} (typein κr ρ').card,
-    refine le_trans (le_trans _ this) _,
-    { apply mk_le_of_subset, intros s hs, split, intros y hy, exact hx y ⟨s, hs, hy⟩,
-      rw [←h3A₁ hs, typein_nth], refl },
-    apply le_powerlt, exact hρ,
-    apply max_lt,
-    apply card_typein_lt θr x θtype_eq, apply lt_of_le_of_lt hκ hκθ },
-  rcases delta_system_lemma_2 hκ θr hκθ hθ θtype_eq hθ_le ρr hρ h4A₁ h5A₁ with ⟨B, h1B, h2B, h3B⟩,
-  refine ⟨image subtype.val ∘ preimage f '' B, _, _, _⟩,
-  { rw [image_subset_iff], refine subset.trans h1B (subset.trans hA₁ _),
-    rw [←image_subset_iff, ←image_comp], convert hA'A,
-    convert image_eq_image_of_eq_on _, symmetry, apply image_id,
-    intros s hs, dsimp only [function.comp],
-    rw [preimage_image_eq], apply image_preimage_eq_of_subset, apply h2β hs, exact f.2 },
-  { rw [mk_image_eq_of_inj_on], exact h2B,
-    apply inj_on_comp_of_injective_left (injective_image subtype.val_injective),
-    apply inj_on_preimage,
-    intros s hs, rcases hA₁ (h1B hs) with ⟨t, ht, rfl⟩, apply image_subset_range },
-  rw [image_comp], apply is_delta_system_image subtype.val_injective,
-  apply is_delta_system_preimage h3B
+  have h4t₂ : mk θ = mk ↥t₂,
+  { apply le_antisymm h2t₂, convert mk_le_of_subset ht₂ using 1, rw ht₁, refl },
+  rcases delta_system_lemma_1 hκ θr hκθ hθ θtype_eq hθ_le ρr hρ h4A₁ h4t₂ with ⟨t, h1t, h2t⟩,
+  refine ⟨subtype.val '' t, _, _⟩,
+  { rw [mk_image_eq], exact h1t, exact subtype.val_injective },
+  have : is_delta_system (λ(i : t), A₀ i.1) := h2t,
+  rw [is_delta_system_image, is_delta_system_preimage_iff] at this,
+  rw [is_delta_system_precompose_iff (equiv.set.image subtype.val t subtype.val_injective)],
+  convert this using 1, apply funext, rintro ⟨⟨i, hi⟩, h2i⟩,
+  simp only [function.comp_app, subtype.coe_mk, equiv.set.image_apply, restrict],
+  apply subtype.val_injective, intro i, refine h2β (mem_image_of_mem _ $ ht₂ i.1.2), exact f.2
 end
 
-theorem delta_system_lemma_countable {α} (A : set (set α)) (h : cardinal.omega < mk A)
-  (h2A : ∀(s ∈ A), finite s) : ∃(B ⊆ A), cardinal.omega < mk B ∧ is_delta_system B :=
+theorem delta_system_lemma_countable {α : Type u} {ι : Type v}
+  (A : ι → set α) (h : cardinal.omega < mk ι) (h2A : ∀i, finite (A i)) :
+  ∃(t : set ι), cardinal.omega < mk t ∧ is_delta_system (restrict A t) :=
 begin
   have :  ∀ (c : cardinal), c < succ omega → c ^< omega < succ omega,
   { intros c hc, refine lt_of_le_of_lt (powerlt_omega_le _) _,
     apply max_lt hc (lt_succ_self _) },
   rcases delta_system_lemma (le_refl _) (lt_succ_self _) (succ_is_regular (le_refl _)) this
-    A _ _ with ⟨B, h1B, h2B, h3B⟩,
-  refine ⟨B, h1B, _, h3B⟩,
-  { rw [h2B], apply cardinal.lt_succ_self },
-  { rw [cardinal.succ_le], exact h },
-  rintro s hs, rw [lt_omega_iff_finite], exact h2A s hs
+    (image ulift.up.{v u} ∘ A ∘ ulift.down.{u v}) _ _ with ⟨t, h1t, h2t⟩,
+  refine ⟨ulift.down '' t, _, _⟩,
+  { rw [←cardinal.lift_lt.{_ max u v}, mk_image_eq_lift, h1t, cardinal.lift_succ,
+      cardinal.lift_omega, cardinal.lift_omega], apply cardinal.lt_succ_self,
+      apply equiv.ulift.bijective.1 },
+  { rw [restrict_def, is_delta_system_image] at h2t, swap, exact equiv.ulift.symm.bijective.1,
+    rw [is_delta_system_precompose_iff (equiv.set.image _ _ _)],
+    swap, exact equiv.ulift.bijective.1,
+    convert h2t, apply funext, rintro ⟨x, hx⟩, refl },
+  { rw [←cardinal.lift_lt, cardinal.lift_omega, ←cardinal.succ_le] at h, exact h },
+  rintro ⟨i⟩, rw [lt_omega_iff_finite], apply finite_image, exact h2A i
 end
 
 end delta_system
@@ -1125,6 +1174,16 @@ end
 
 lemma exists_finset_of_finite {s : set α} (h : finite s) : ∃(s' : finset α), s'.to_set = s :=
 by { have := h, cases this, exactI ⟨to_finset s, set.ext $ λ x, mem_to_finset⟩ }
+
+def eq_on' {α} {β : α → Type*} (f g : ∀x, β x) (s : set α) : Prop :=
+∀{{x}}, x ∈ s → f x = g x
+
+lemma eq_on'_iff {α} {β : α → Type*} (f g : ∀x, β x) (s : set α) :
+  eq_on' f g s ↔ restrict f s = restrict g s :=
+begin
+  split, intros h, apply funext, rintro ⟨x, hx⟩, exact h hx,
+  intros h x hx, apply congr_fun h ⟨x, hx⟩
+end
 
 end set
 
@@ -1223,31 +1282,8 @@ range (λ(x : Σ(i : α), opens (β i)), standard_open x.2)
 variable {β}
 /- The set of indices where a set o is constant, i.e. that coordinate doesn't matter for
   deciding whether a point is in o -/
-def constant_on (o : set (Πx, β x)) : set α :=
-{ i : α | ∀{{f g : Πx, β x}}, (∀j, i = j ∨ f j = g j) → f ∈ o → g ∈ o }
-
-local attribute [instance] [priority 0] classical.prop_decidable
-lemma extend {R : set α} (f : Π(x : R), β x) (g : Πx, β x) (x : α) : β x :=
-if h : x ∈ R then f ⟨x, h⟩ else g x
-
-lemma extend_mem {R : set α} {f : Π(x : R), β x} {g : Πx, β x} (o : set (Πx, β x))
-  (hf : f ∈ (λ (f : Π (x : α), β x) (x : R), f x) '' o)
-  (hR : R ⊆ -constant_on o) : extend f g ∈ o :=
-begin
-  sorry
-end
-
-lemma finite_compl_constant_on_of_pi_subbasis {o : set (Πx, β x)} (h : o ∈ pi_subbasis β) :
-  finite (-constant_on o) :=
-begin
-  rcases h with ⟨⟨i, o⟩, rfl⟩, dsimp [pi_subbasis],
-  apply finite_subset (finite_singleton i),
-  intros i' hi', rw [mem_singleton_iff],
-  apply classical.by_contradiction, intro h, apply hi',
-  intros f g hfg hf,
-  rcases hfg i with rfl|hfg', contradiction,
-  dsimp [standard_open] at hf, rw [hfg'] at hf, exact hf
-end
+-- def support (o : set (Πx, β x)) : set α :=
+-- { i : α | ∀{{f g : Πi, β i}}, (∀j, i = j ∨ f j = g j) → f ∈ o → g ∈ o }
 
 variable (β)
 lemma is_subbasis_pi : Pi.topological_space = generate_from (pi_subbasis β) :=
@@ -1257,9 +1293,6 @@ def pi_basis : set (set (Πx, β x)) :=
 (λf, ⋂₀ f) '' {f : set (set (Πx, β x)) | finite f ∧ f ⊆ pi_subbasis β ∧ ⋂₀ f ≠ ∅ }
 
 variable {β}
-lemma finite_compl_constant_on_of_pi_basis {o : set (Πx, β x)} (h : o ∈ pi_basis β) :
-  finite (-constant_on o) :=
-sorry
 
 lemma nonempty_of_mem_pi_basis {o : set (Πx, β x)} (h : o ∈ pi_basis β) : nonempty o :=
 by { rcases h with ⟨o, ho, rfl⟩, rw [coe_nonempty_iff_ne_empty], exact ho.2.2 }
@@ -1271,8 +1304,34 @@ variable (β)
 lemma is_topological_basis_pi : is_topological_basis (pi_basis β) :=
 is_topological_basis_of_subbasis (is_subbasis_pi β)
 
-open delta_system
 variable {β}
+def support (o : set (Πx, β x)) : set α :=
+⋂₀ { s : set α | ∀{{f g : Πi, β i}}, eq_on' f g s → f ∈ o → g ∈ o }
+local attribute [instance] [priority 0] classical.prop_decidable
+
+def extend (g₁ g₂ : Πx, β x) (s : set α) (x : α) : β x :=
+if h : x ∈ s then g₁ x else g₂ x
+
+lemma finite_compl_support_of_pi_subbasis {o : set (Πx, β x)} (h : o ∈ pi_subbasis β) :
+  finite (support o) :=
+begin
+  rcases h with ⟨⟨i, o⟩, rfl⟩,
+  apply finite_subset (finite_singleton i),
+  apply sInter_subset_of_mem, dsimp [standard_open],
+  intros f g hfg hf, rwa [hfg (mem_singleton i)] at hf
+end
+
+lemma finite_compl_support_of_pi_basis {o : set (Πx, β x)} (h : o ∈ pi_basis β) :
+  finite (support o) :=
+sorry
+
+lemma support_elim {o : set (Πx, β x)} {f g : Πx, β x} (ho : o ∈ pi_basis β)
+  (h : eq_on' f g (support o)) (hf : f ∈ o) : g ∈ o :=
+begin
+  sorry
+end
+
+open delta_system
 
 
 lemma countable_chain_condition_pi
@@ -1281,29 +1340,33 @@ lemma countable_chain_condition_pi
 begin
   apply countable_chain_condition_of_topological_basis _ (is_topological_basis_pi β),
   intros C hC h2C, rw [countable_iff], apply le_of_not_gt, intro h3C,
-  let A := (λ s, -constant_on s) '' C,
-  have hA : cardinal.omega < mk A, sorry,
-  have h2A : ∀ (s : set α), s ∈ A → finite s,
-  { rintros _ ⟨s, hs, rfl⟩, apply finite_compl_constant_on_of_pi_basis, exact hC hs },
-  rcases delta_system_lemma_countable A hA h2A with ⟨A', h1A', h2A', ⟨R, hR⟩⟩,
+  let A : C → set α := λ s, support s.1,
+  have h2A : ∀ (s : C), finite (A s),
+  { rintro ⟨s, hs⟩, apply finite_compl_support_of_pi_basis, exact hC hs },
+  rcases delta_system_lemma_countable A h3C h2A with ⟨A', h1A', h2A', ⟨R, hR⟩⟩,
   have h3A' : 2 ≤ mk A',
     { apply le_of_lt, refine lt_trans _ h2A', convert cardinal.nat_lt_omega 2,
       rw [nat.cast_bit0, nat.cast_one] },
   have h2R : finite R,
   { apply finite_root h3A' _ hR, intros s hs, exact h2A _ (h1A' hs) },
-  let C' := { s ∈ C | -constant_on s ∈ A' },
-  let D : set (set (Π(x : R), β x)) := image (λ(f : Πx, β x) (x : R), f x.1) '' C',
+  let C' := { s ∈ C | support s ∈ A' },
+  let D : set (set (Π(x : R), β x)) := image (λ(f : Πx, β x), restrict f R) '' C',
   have hD : ∀ ⦃o : set (Π (x : R), β x)⦄, o ∈ D → is_open o,
   { rintro _ ⟨o, ho, rfl⟩, sorry },
   have h2D : pairwise_disjoint D,
   { rintro _ _ ⟨s, hs, rfl⟩ ⟨t, ht, rfl⟩ hst,
     rw [eq_empty_iff_forall_not_mem],
     rintro f ⟨hfs, hft⟩,
-    have := h2C hs.1 ht.1 _, rw [eq_empty_iff_forall_not_mem] at this,
-    rcases nonempty_of_mem_pi_basis (hC hs.1) with ⟨⟨g, hg⟩⟩,
-    apply this (extend f g),
-    split, exact extend_mem _ hfs (root_subset h3A' hs.2 hR),
-    exact extend_mem _ hft (root_subset h3A' ht.2 hR), intro hst', apply hst, rw [hst'] },
+    have := h2C hs.1 ht.1 (λ h, hst $ by rw h), rw [eq_empty_iff_forall_not_mem] at this,
+    rcases hfs with ⟨g₁, hg₁, rfl⟩,
+    rcases hft with ⟨g₂, hg₂, hg⟩, dsimp only at hg,
+    apply this (extend g₁ g₂ (support s)),
+    split, { apply support_elim (hC hs.1) _ hg₁, intros x hx, rw [extend, dif_pos hx] },
+    apply support_elim (hC ht.1) _ hg₂, intros x hx,
+    by_cases x ∈ support s,
+    { rw [extend, dif_pos h], rw [←eq_on'_iff] at hg, apply hg, rw [←hR hs.2 ht.2], exact ⟨h, hx⟩,
+       },
+    rw [extend, dif_neg h] },
   have h3D : cardinal.omega < mk D,
   { rw [mk_image_eq_of_inj_on, ←cardinal.lift_omega.{u (max u v)}, ←cardinal.lift_id'.{u} (mk C')],
     refine lt_of_lt_of_le (cardinal.lift_lt.{u (max u v)}.mpr h2A') _, dsimp only [C'],
