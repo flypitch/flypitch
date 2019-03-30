@@ -531,9 +531,53 @@ begin
   { rintro ⟨t, ht, rfl⟩, apply image_subset f ht }
 end
 
+lemma subset_range_iff {f : α → β} {t : set β} : t ⊆ range f ↔ ∃t', f '' t' = t :=
+by { rw [←image_univ, subset_image_iff], simp only [true_and, set.subset_univ] }
+
 lemma image_eq_range (f : α → β) (s : set α) : f '' s = range (λ(x : s), f x.1) :=
 by { ext, split, rintro ⟨x, h1, h2⟩, exact ⟨⟨x, h1⟩, h2⟩, rintro ⟨⟨x, h1⟩, h2⟩, exact ⟨x, h1, h2⟩ }
 
+lemma ne_of_disjoint {s t : set α} (hs : nonempty s) (hst : s ∩ t = ∅) : s ≠ t :=
+by { intro h, rw [←h, inter_self] at hst, rw [coe_nonempty_iff_ne_empty] at hs, exact hs hst }
+
+lemma nonempty_image (f : α → β) {s : set α} : nonempty s → nonempty (f '' s)
+| ⟨⟨x, hx⟩⟩ := ⟨⟨f x, mem_image_of_mem f hx⟩⟩
+
+theorem finite_bUnion' {α} {ι : Type*} {s : set ι} (f : ι → set α) :
+  finite s → (∀i ∈ s, finite (f i)) → finite (⋃ i∈s, f i)
+| ⟨hs⟩ h := by rw [bUnion_eq_Union]; exactI finite_Union (λ i, h i.1 i.2)
+
+def change {π : α → Type*} [decidable_eq α] (f : Πa, π a) {x : α} (z : π x) (y : α) : π y :=
+if h : x = y then (@eq.rec _ _ π z _ h) else f y
+
+lemma dif_mem_pi {π : α → Type*} (i : set α) (s : Πa, set (π a)) [decidable_eq α]
+  (f : Πa, π a) (hf : f ∈ pi i s) {x : α} (z : π x) (h : x ∈ i → z ∈ s x) :
+  change f z ∈ pi i s :=
+begin
+  intros y hy, dsimp only,
+  by_cases hxy : x = y,
+  { rw [change, dif_pos hxy], subst hxy, exact h hy },
+  { rw [change, dif_neg hxy], apply hf y hy }
+end
+
+lemma image_pi_pos {π : α → Type*} (i : set α) (s : Πa, set (π a)) [decidable_eq α]
+  (hp : nonempty (pi i s)) (x : α) (hx : x ∈ i) : (λ(f : Πa, π a), f x) '' pi i s = s x :=
+begin
+  apply subset.antisymm,
+  { rintro _ ⟨f, hf, rfl⟩, exact hf x hx },
+  intros z hz, have := hp, rcases this with ⟨f, hf⟩,
+  refine ⟨_, dif_mem_pi i s f hf z (λ _, hz), _⟩,
+  simp only [change, dif_pos rfl]
+end
+
+lemma image_pi_neg {π : α → Type*} (i : set α) (s : Πa, set (π a)) [decidable_eq α]
+  (hp : nonempty (pi i s)) (x : α) (hx : x ∉ i) : (λ(f : Πa, π a), f x) '' pi i s = univ :=
+begin
+  rw [eq_univ_iff_forall], intro z, have := hp, rcases this with ⟨f, hf⟩,
+  refine ⟨_, dif_mem_pi i s f hf z _, _⟩,
+  intro hx', exfalso, exact hx hx',
+  simp only [change, dif_pos rfl]
+end
 
 end set
 open nat

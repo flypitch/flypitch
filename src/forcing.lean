@@ -161,9 +161,7 @@ begin
 end
 
 theorem 𝔹_CCC : CCC 𝔹 :=
-begin
-  apply CCC_regular_opens, apply countable_chain_condition_set
-end
+by { apply CCC_regular_opens, apply cantor_space.countable_chain_condition_set }
 
 local notation `𝒳` := set(ℵ₂.type × ℕ)
 
