@@ -1645,6 +1645,13 @@ begin
   fsplit; intro H; [from this_right ‹_›, from this_left ‹_›]
 end
 
+lemma bv_powerset_congr {Γ : 𝔹} {x y : bSet 𝔹} : Γ ≤ x =ᴮ y → Γ ≤ 𝒫 x =ᴮ 𝒫 y :=
+begin
+  intro H, apply mem_ext; bv_intro z; bv_imp_intro,
+  rw[<-bv_powerset_spec], apply bv_rw' (bv_symm H), simp,
+  rwa[bv_powerset_spec], rw[<-bv_powerset_spec],
+  apply bv_rw' H, simp, rwa[bv_powerset_spec]
+end
 
 section infinity
 local notation `ω` := pSet.omega
