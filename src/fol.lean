@@ -2195,8 +2195,8 @@ def subst_var_bounded_term {n m : ℕ} : ∀ {l : ℕ}, bounded_preterm L n l �
 | _ (&k) v := &(dvector.nth v (k.val) k.is_lt)
 | _ (bd_func f) v := bd_func f
 | _ (bd_app t s) v := bd_app (subst_var_bounded_term t v) (subst_var_bounded_term s v)
+
 /-What are eqn_compiler lemmas and why don't they generate for this defn? Need to fix this to use defn for simp-/
---set_option trace.debug.eqn_compiler true
 set_option eqn_compiler.lemmas false
 def subst_var_bounded_formula: ∀ {l n m: ℕ}, bounded_preformula L n l → dvector (fin (m)) n →
   bounded_preformula L (m) l
@@ -2204,7 +2204,7 @@ def subst_var_bounded_formula: ∀ {l n m: ℕ}, bounded_preformula L n l → dv
 | _ _ _ (t₁ ≃ t₂) v := (subst_var_bounded_term t₁ v) ≃ (subst_var_bounded_term t₁ v)
 | _ _ _ (bd_rel R) _ := bd_rel R
 | _ _ _ (bd_apprel f t) v := bd_apprel (subst_var_bounded_formula f v) (subst_var_bounded_term t v)
-| _ _  _ (f₁ ⟹ f₂) v := (subst_var_bounded_formula f₁ v) ⟹ (subst_var_bounded_formula f₂ v)
+| _ _ _ (f₁ ⟹ f₂) v := (subst_var_bounded_formula f₁ v) ⟹ (subst_var_bounded_formula f₂ v)
 | _ _ _ (∀' f) v := ∀' (subst_var_bounded_formula f (dvector_lift_var v))
 set_option eqn_compiler.lemmas true
 
@@ -2250,14 +2250,10 @@ lemma fst_commutes_with_imp {T : Theory L} (A B : sentence L) : (A ⟹ B).fst = 
 by refl
 
 def sfalsumE {T : Theory L} {A : sentence L} (H : insert ∼A T ⊢ bd_falsum) : T ⊢ A :=
-begin
-  apply falsumE, simp[sprf, Theory.fst, image_insert_eq] at H, assumption
-end
+by { apply falsumE, simp[sprf, Theory.fst, image_insert_eq] at H, assumption }
 
 def snotI {T : Theory L} {A : sentence L} (H : T ⊢ A ⟹ bd_falsum) : T ⊢ ∼A :=
-begin
-  apply notI, simp[sprf, Theory.fst, image_insert_eq] at H, assumption
-end
+by { apply notI, simp[sprf, Theory.fst, image_insert_eq] at H, assumption }
 
 def sandI {T : Theory L} {A B : sentence L} (H1 : T ⊢ A) (H2 : T ⊢ B) : T ⊢ A ⊓ B :=
 by exact andI H1 H2
@@ -2273,7 +2269,7 @@ def snot_and_self {T : Theory L} {A : sentence L} (H : T ⊢ A ⊓ ∼ A) : T �
 by exact not_and_self H
 
 lemma snot_and_self' {T : Theory L} {A : sentence L} (H : T ⊢' A ⊓ ∼A) : T ⊢' bd_falsum :=
-by {apply nonempty.map _ H, apply snot_and_self}
+by { apply nonempty.map _ H, apply snot_and_self }
 
 lemma snot_and_self'' {T : Theory L} {A : sentence L} (H₁ : T ⊢' A) (H₂ : T ⊢' ∼A) :
   T ⊢' bd_falsum := snot_and_self' $ sandI' H₁ H₂
@@ -2344,7 +2340,7 @@ begin
 end
 
 @[simp] lemma all_realize_sentence_singleton {S : Structure L} {f : sentence L} : S ⊨ {f} ↔ S ⊨ f :=
-  ⟨by{intro H, apply H, exact or.inl rfl}, by {intros H g Hg, repeat{cases Hg}, assumption}⟩
+⟨by{intro H, apply H, exact or.inl rfl}, by {intros H g Hg, repeat{cases Hg}, assumption}⟩
 
 def ssatisfied (T : Theory L) (f : sentence L) :=
 ∀{{S : Structure L}}, nonempty S → S ⊨ T → S ⊨ f
@@ -2368,10 +2364,10 @@ begin
 end
 
 def all_satisfied_of_all_ssatisfied {T T' : Theory L} (H : T ⊨ T') : T.fst ⊨ T'.fst :=
-begin intros f hf, rcases hf with ⟨f, ⟨hf, rfl⟩⟩, apply satisfied_of_ssatisfied (H f hf) end
+by { intros f hf, rcases hf with ⟨f, ⟨hf, rfl⟩⟩, apply satisfied_of_ssatisfied (H f hf) }
 
 def all_ssatisfied_of_all_satisfied {T T' : Theory L} (H : T.fst ⊨ T'.fst) : T ⊨ T' :=
-begin intros f hf, apply ssatisfied_of_satisfied, apply H, exact mem_image_of_mem _ hf end
+by { intros f hf, apply ssatisfied_of_satisfied, apply H, exact mem_image_of_mem _ hf }
 
 def satisfied_iff_ssatisfied {T : Theory L} {f : sentence L} : T ⊨ f ↔ T.fst ⊨ f.fst :=
 ⟨satisfied_of_ssatisfied, ssatisfied_of_satisfied⟩
@@ -2463,7 +2459,7 @@ def has_enough_constants (T : Theory L) :=
 ∃(C : Π(f : bounded_formula L 1), L.constants),
 ∀(f : bounded_formula L 1), T ⊢' ∃' f ⟹ f[bd_const (C f)/0]
 
-lemma has_enough_constants.intro {L : Language} (T : Theory L)
+lemma has_enough_constants.intro (T : Theory L)
   (H : ∀(f : bounded_formula L 1), ∃ c : L.constants, T ⊢' ∃' f ⟹ f[bd_const c/0]) :
   has_enough_constants T :=
 classical.axiom_of_choice H
@@ -2486,15 +2482,9 @@ local attribute [instance] term_setoid
 
 def term_model' : Type u :=
 quotient $ term_setoid T
--- set_option pp.all true
--- #print term_setoid
--- set_option trace.class_instances true
 
 def term_model_fun' {l} (t : closed_preterm L l) (ts : dvector (closed_term L) l) : term_model' T :=
 @quotient.mk _ (term_setoid T) $ bd_apps t ts
-
--- def equal_preterms_trans {T : set (formula L)} : ∀{l} {t₁ t₂ t₃ : preterm L l}
---   (h₁₂ : equal_preterms T t₁ t₂) (h₂₃ : equal_preterms T t₂ t₃), equal_preterms T t₁ t₃
 
 variable {T}
 def term_model_fun_eq {l} (t t' : closed_preterm L (l+1)) (x x' : closed_term L)
@@ -2550,15 +2540,6 @@ def term_model : Structure L :=
 @[reducible] def term_mk : closed_term L → term_model T :=
 @quotient.mk _ $ term_setoid T
 
--- lemma realize_bounded_preterm_term_model {l n} (ts : dvector (closed_term L) l)
---   (t : bounded_preterm L l n) (ts' : dvector (closed_term L) n) :
---   realize_bounded_term (ts.map term_mk) t (ts'.map term_mk) =
---   (term_mk _) :=
--- begin
---   induction t with t ht,
---   sorry
--- end
-
 variable {T}
 lemma realize_closed_preterm_term_model {l} (ts : dvector (closed_term L) l)
   (t : closed_preterm L l) :
@@ -2575,19 +2556,6 @@ end
 @[simp] lemma realize_closed_term_term_model (t : closed_term L) :
   realize_closed_term (term_model T) t = term_mk T t :=
 by apply realize_closed_preterm_term_model ([]) t
-/- below we try to do this directly using bounded_term.rec -/
--- begin
---   revert t, refine bounded_term.rec _ _; intros,
---   { apply k.fin_zero_elim },
---   --{ apply dvector.quotient_beta },
---   {
-
---     --exact dvector.quotient_beta _ _ ts,
---     rw [realize_bounded_term_bd_app],
---     have := t_ih_s ([]), dsimp at this, rw this,
---     apply t_ih_t (t_s::ts) }
--- end
-
 
 lemma realize_subst_preterm {S : Structure L} {n l} (t : bounded_preterm L (n+1) l)
   (xs : dvector S l) (s : closed_term L) (v : dvector S n) :
@@ -2636,9 +2604,7 @@ lemma term_model_subst0 (f : bounded_formula L 1) (t : closed_term L) :
 
 include H₂
 instance nonempty_term_model : nonempty $ term_model T :=
-begin
-  induction H₂ with C, exact ⟨term_mk T (bd_const (C (&0 ≃ &0)))⟩
-end
+by { induction H₂ with C, exact ⟨term_mk T (bd_const (C (&0 ≃ &0)))⟩ }
 
 include H₁
 def term_model_ssatisfied_iff {n} : ∀{l} (f : presentence L l)
@@ -2680,9 +2646,7 @@ begin
 end
 
 def term_model_ssatisfied : term_model T ⊨ T :=
-begin
-  intros f hf, apply (term_model_ssatisfied_iff H₁ H₂ f ([]) (lt.base _)).mp, exact ⟨saxm hf⟩
-end
+by { intros f hf, apply (term_model_ssatisfied_iff H₁ H₂ f ([]) (lt.base _)).mp, exact ⟨saxm hf⟩ }
 
 -- completeness for complete theories with enough constants
 lemma completeness' {f : sentence L} (H : T ⊨ f) : T ⊢' f :=
@@ -2712,31 +2676,31 @@ def T_empty (L : Language) : Theory L := ∅
 
 @[reducible] def T_equality : Theory L_empty := T_empty L_empty
 
-@[simp] lemma in_theory_iff_satisfied {L : Language} {S : Structure L} {f : sentence L} : f ∈ Th S ↔ S ⊨ f :=
-  by refl
+@[simp] lemma in_theory_iff_satisfied {S : Structure L} {f : sentence L} : f ∈ Th S ↔ S ⊨ f :=
+by refl
 
 section bd_alls
 
 /-- Given a nat k and a 0-formula ψ, return ψ with ∀' applied k times to it --/
-@[simp] def alls {L : Language}  :  Π n : ℕ, formula L → formula L
---:= nat.iterate all n
+@[simp] def alls :  Π n : ℕ, formula L → formula L
+--:= nat.iterate all
 | 0 f := f
 | (n+1) f := ∀' alls n f
 
 /-- generalization of bd_alls where we can apply less than n ∀'s--/
-@[simp] def bd_alls' {L : Language} : Π k n : ℕ, bounded_formula L (n + k) → bounded_formula L n
+@[simp] def bd_alls' : Π k n : ℕ, bounded_formula L (n + k) → bounded_formula L n
 | 0 n         f := f
 | (k+1) n     f := bd_alls' k n (∀' f)
 
-@[simp] def bd_alls {L : Language}  : Π n : ℕ, bounded_formula L n → sentence L
+@[simp] def bd_alls : Π n : ℕ, bounded_formula L n → sentence L
 | 0     f := f
 | (n+1) f := bd_alls n (∀' f) -- bd_alls' (n+1) 0 (f.cast_eqr (zero_add (n+1)))
 
-@[simp] lemma alls'_alls {L : Language} : Π n (ψ : bounded_formula L n),
+@[simp] lemma alls'_alls : Π n (ψ : bounded_formula L n),
   bd_alls n ψ = bd_alls' n 0 (ψ.cast_eq (zero_add n).symm) :=
 by {intros n ψ, induction n, swap, simp[n_ih (∀' ψ)], tidy}
 
-@[simp] lemma alls'_all_commute {L : Language} {n} {k} {f : bounded_formula L (n+k+1)} :
+@[simp] lemma alls'_all_commute {n} {k} {f : bounded_formula L (n+k+1)} :
   (bd_alls' k n (∀' f)) = ∀' bd_alls' k (n+1) (f.cast_eq (by simp)) :=
 -- by {refine ∀' bd_alls' k (n+1) _, simp, exact f}
 by {induction k; dsimp only [bounded_preformula.cast_eq], swap, simp[@k_ih (∀'f)], tidy}
@@ -2757,13 +2721,13 @@ begin
      {intro H, exact this_mpr (by {intros xs x, exact H (x :: xs)})}}
 end
 
-@[simp] lemma alls_0 {L : Language} (ψ : formula L) : alls 0 ψ = ψ := by refl
+@[simp] lemma alls_0 (ψ : formula L) : alls 0 ψ = ψ := by refl
 
-@[simp] lemma alls_all_commute {L : Language} (f : formula L) {k : ℕ} :
+@[simp] lemma alls_all_commute (f : formula L) {k : ℕ} :
   (alls k ∀' f) = (∀' alls k f) :=
 by {induction k, refl, dunfold alls, rw[k_ih]}
 
-@[simp] lemma alls_succ_k {L : Language} (f : formula L) {k : ℕ} : alls (k + 1) f = ∀' alls k f :=
+@[simp] lemma alls_succ_k (f : formula L) {k : ℕ} : alls (k + 1) f = ∀' alls k f :=
 by constructor
 
 end bd_alls
