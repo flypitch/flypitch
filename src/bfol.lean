@@ -330,7 +330,6 @@ lemma boolean_formula_soundness {Γ : set (formula L)} {A : formula L} (H : Γ �
 begin
   induction H; intros S v,
   { exact bstatisfied_of_mem H_h S v },
-
   { simp [deduction_simp], refine le_trans _ (H_ih S v), rw [inf_comm, infi_insert] },
   { refine le_trans _ (imp_inf_le _ _), swap,
     refine le_trans _ (inf_le_inf (H_ih_h₁ S v) (H_ih_h₂ S v)), rw [inf_idem] },
@@ -522,35 +521,39 @@ by simp [boolean_realize_sentence, bd_not]
   ⟦∀'f⟧[S] = ⨅x : S, boolean_realize_bounded_formula([x]) f([]) :=
 by refl
 
--- @[simp] lemma boolean_realize_bounded_formula_imp {L} : ∀{n} {v : dvector S n} {f g : bounded_formula L n}, boolean_realize_bounded_formula v (f ⟹ g) ([]) = (boolean_realize_bounded_formula v f ([]) ⇒ boolean_realize_bounded_formula v g ([])) :=
--- by finish
+@[simp] lemma boolean_realize_bounded_formula_not {n} {v : dvector S n}
+  {f : bounded_formula.{u} L n} :
+  boolean_realize_bounded_formula v (∼f) ([]) = -boolean_realize_bounded_formula v f ([]) :=
+by { simp [bd_not] }
 
--- @[simp] lemma boolean_realize_bounded_formula_and {L} : ∀{n} {v : dvector S n} {f g : bounded_formula L n}, boolean_realize_bounded_formula v (f ⊓ g) dvector.nil = (boolean_realize_bounded_formula v f dvector.nil ⊓ boolean_realize_bounded_formula v g dvector.nil) :=
--- begin
---     intros, --dsimp [fol.and],
+@[simp] lemma boolean_realize_bounded_formula_or {n} {v : dvector S n}
+  {f g : bounded_formula.{u} L n} :
+  boolean_realize_bounded_formula v (f ⊔ g) ([]) =
+  boolean_realize_bounded_formula v f ([]) ⊔ boolean_realize_bounded_formula v g ([]) :=
+by { simp [bd_or, lattice.imp] }
 
---     have : boolean_realize_bounded_formula v f dvector.nil ⊓ boolean_realize_bounded_formula v g dvector.nil = -(boolean_realize_bounded_formula v f dvector.nil ⇒ -(boolean_realize_bounded_formula v g dvector.nil)),
---     by sorry, rw[this], sorry
--- end
+@[simp] lemma boolean_realize_bounded_formula_and {n} {v : dvector S n}
+  {f g : bounded_formula.{u} L n} :
+  boolean_realize_bounded_formula v (f ⊓ g) ([]) =
+  boolean_realize_bounded_formula v f ([]) ⊓ boolean_realize_bounded_formula v g ([]) :=
+by { simp [bd_and, lattice.imp] }
 
--- @[simp] lemma boolean_realize_bounded_formula_not {L} : ∀{n} {v : dvector S n} {f : bounded_formula L n}, boolean_realize_bounded_formula v ∼f dvector.nil = -(boolean_realize_bounded_formula v f dvector.nil) :=
---   by {intros, sorry}
+@[simp] lemma boolean_realize_bounded_formula_ex {n} {v : dvector S n}
+  {f : bounded_formula.{u} L (n+1)} :
+  boolean_realize_bounded_formula v (∃' f) ([]) =
+  ⨆(x : S), boolean_realize_bounded_formula (x::v) f ([]) :=
+by { simp [bd_ex, neg_infi] }
 
--- @[simp] def boolean_realize_bounded_formula_ex {L} : ∀ {n} {v : dvector S n} {f : bounded_formula L (n+1)}, boolean_realize_bounded_formula v (∃' f) dvector.nil = ⨆ x, boolean_realize_bounded_formula (x::v) f dvector.nil := by {intros, unfold bd_ex, simp [boolean_realize_bounded_formula_not], sorry}
+lemma boolean_realize_bounded_sentence_ex {f : bounded_formula.{u} L 1} :
+  boolean_realize_bounded_formula ([] : dvector S 0) (∃' f) ([]) =
+  ⨆(x : S), boolean_realize_bounded_formula ([x]) f ([]) :=
+boolean_realize_bounded_formula_ex
 
--- @[simp] lemma boolean_realize_sentence_ex {f : bounded_formula L 1} :
---   ⟦∃' f⟧[S] = ⨆ x : S, boolean_realize_bounded_formula ([x]) f([]) :=
--- by {unfold boolean_realize_sentence, apply boolean_realize_bounded_formula_ex}
-
--- @[simp] lemma boolean_realize_sentence_and {f₁ f₂ : sentence L} :
---   ⟦f₁ ⊓ f₂⟧[S] = ((⟦f₁⟧[S]) ⊓ (⟦f₂⟧[S])) :=
---     by apply boolean_realize_bounded_formula_and
-
--- @[simp] lemma boolean_realize_bounded_formula_biimp {L} : ∀{n} {v : dvector S n} {f g : bounded_formula L n}, boolean_realize_bounded_formula v (f ⇔ g) dvector.nil = (boolean_realize_bounded_formula v f dvector.nil ⟷ boolean_realize_bounded_formula v g dvector.nil) := by {unfold bd_biimp, tidy}
-
--- @[simp] lemma boolean_realize_sentence_biimp {f₁ f₂ : sentence L} :
---   ⟦f₁ ⇔ f₂⟧[S] = (⟦f₁⟧[S] ⟷ ⟦f₂⟧[S]) :=
--- by apply boolean_realize_bounded_formula_biimp
+@[simp] lemma boolean_realize_bounded_formula_biimp {n} {v : dvector S n}
+  {f g : bounded_formula.{u} L n} :
+  boolean_realize_bounded_formula v (f ⇔ g) ([]) =
+  (boolean_realize_bounded_formula v f ([]) ⟷ boolean_realize_bounded_formula v g ([])) :=
+by {unfold bd_biimp, tidy}
 
 lemma boolean_realize_bounded_formula_bd_apps_rel
   {n l} (xs : dvector S n) (f : bounded_preformula L n l) (ts : dvector (bounded_term L n) l) :

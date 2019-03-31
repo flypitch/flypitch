@@ -111,11 +111,14 @@ local prefix `&'`:max := bd_var
 -- ∀ x y, (∀ z, (z ∈ x → z ∈ y) ∧ (z ∈ y → z ∈ x) → x = y)
 
 def axiom_of_extensionality : sentence L_ZFC' :=
-  ∀' ∀'  (∀'((&'0  ∈' &'2 ⟹ (&'0 ∈' &'1)) ⊓ ((&'0 ∈' &'1) ⟹ &'0 ∈' &'2)) ⟹ (&2 ≃ &1))
+∀' ∀' (∀'(&'0  ∈' &'2 ⇔  &'0 ∈' &'1) ⟹ (&2 ≃ &1))
 
 lemma bSet_models_extensionality : ⊤ ⊩[V 𝔹] axiom_of_extensionality :=
 begin
-  change ⊤ ≤ _, bv_intro x, bv_intro y, sorry --bv_intro z, simp[boolean_realize_bounded_formula], sorry, -- need to write simp lemmas saying e.g. boolean_realize_bounded_formula commutes with implication, conjunction, disjunction etc
+  dsimp [forced_in],
+  bv_intro x, bv_intro y,
+  simp,
+  sorry --bv_intro z, simp[boolean_realize_bounded_formula], sorry, -- need to write simp lemmas saying e.g. boolean_realize_bounded_formula commutes with implication, conjunction, disjunction etc
 end
 
 -- axiom of replacement

@@ -1067,7 +1067,7 @@ begin
 end
 
 /-- The delta-system lemma. [Kunen 1980, Theorem 1.6, p49] -/
-theorem delta_system_lemma {α ι : Type u} {κ : cardinal} (hκ : cardinal.omega ≤ κ) {θ} (hκθ : κ < θ)
+theorem delta_system_lemma {α ι : Type u} {κ θ : cardinal} (hκ : cardinal.omega ≤ κ) (hκθ : κ < θ)
   (hθ : is_regular θ) (hθ_le : ∀(c < θ), c ^< κ < θ) (A : ι → set α)
   (hA : θ ≤ mk ι) (h2A : ∀i, mk (A i) < κ) :
   ∃(t : set ι), mk t = θ ∧ is_delta_system (restrict A t) :=
@@ -1116,7 +1116,7 @@ begin
   apply subtype.val_injective, intro i, refine h2β (mem_image_of_mem _ $ ht₂ i.1.2), exact f.2
 end
 
-theorem delta_system_lemma_countable {α : Type u} {ι : Type v}
+theorem delta_system_lemma_uncountable {α : Type u} {ι : Type v}
   (A : ι → set α) (h : cardinal.omega < mk ι) (h2A : ∀i, finite (A i)) :
   ∃(t : set ι), cardinal.omega < mk t ∧ is_delta_system (restrict A t) :=
 begin
@@ -1544,7 +1544,7 @@ if h : x ∈ s then g₁ x else g₂ x
 
 open delta_system
 
-lemma countable_chain_condition_pi
+theorem countable_chain_condition_pi
   (h : ∀(s : set α), finite s → countable_chain_condition (Π(x : s), β x)) :
   countable_chain_condition (Πx, β x) :=
 begin
@@ -1553,7 +1553,7 @@ begin
   let A : C → set α := λ s, support s.1,
   have h2A : ∀ (s : C), finite (A s),
   { rintro ⟨s, hs⟩, apply finite_support_of_pi_basis, exact hC hs },
-  rcases delta_system_lemma_countable A h3C h2A with ⟨C', h1C', ⟨R, hR⟩⟩,
+  rcases delta_system_lemma_uncountable A h3C h2A with ⟨C', h1C', ⟨R, hR⟩⟩,
   have h3A' : 2 ≤ mk C',
     { apply le_of_lt, refine lt_trans _ h1C', convert cardinal.nat_lt_omega 2,
       rw [nat.cast_bit0, nat.cast_one] },

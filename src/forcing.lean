@@ -527,4 +527,18 @@ begin
   from ℵ₂_le_𝔠
 end
 
+lemma lt_of_lt_of_le' {x y z : bSet 𝔹} {Γ} (hxy : Γ ≤ x ≺ y) (hyz : Γ ≤ y ≼ z) : Γ ≤ x ≺ z :=
+begin
+  dsimp only at hxy hyz ⊢, sorry
+end
+
+def CH' : 𝔹 := - ⨆ x, (ℵ₀ ≺ x) ⊓ (x ≺ 𝒫(ℵ₀))
+
+theorem neg_CH' : ⊤ ≤ -CH' :=
+begin
+  rw [CH', lattice.neg_neg], apply bv_use (ℵ₁̌ ),
+  simp only [lattice.le_inf_iff],
+  refine ⟨ℵ₀_lt_ℵ₁, lt_of_lt_of_le' ℵ₁_lt_ℵ₂ (bv_use neg_CH_func)⟩, exact ℵ₂_le_𝔠
+end
+
 end neg_CH
