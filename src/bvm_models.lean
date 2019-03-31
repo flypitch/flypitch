@@ -121,12 +121,12 @@ begin
   sorry --bv_intro z, simp[boolean_realize_bounded_formula], sorry, -- need to write simp lemmas saying e.g. boolean_realize_bounded_formula commutes with implication, conjunction, disjunction etc
 end
 
--- axiom of replacement
+-- axiom of collection
 -- For every formula ϕ(x,y),
 -- ∀ u, (∀ x ∈ u, ∃ y, ϕ(x,y)) ⟹ (∃ v, ∀ z ∈ u, ∃ w ∈ v, ϕ(z,w))
 
-def axiom_of_replacement (ϕ' : bounded_formula L_ZFC' 2) : sentence L_ZFC' := sorry
-  -- ∀' ((∀' (&'0 ∈' &'1 ⟹ (∃' ϕ'))) ⟹ (∃' ∀'(&'0 ∈' &'2 ⟹ ∃' ((&'0 ∈' &'2) ⊓ ϕ'))))
+def axiom_of_collection (ϕ' : bounded_formula L_ZFC' 2) : sentence L_ZFC' :=
+  ∀' ((∀' (&'0 ∈' &'1 ⟹ (∃' ϕ'))) ⟹ (∃' ∀'(&'0 ∈' &'2 ⟹ ∃' ((&'0 ∈' &'2) ⊓ ϕ'))))
   -- need to do some lifting
 
 -- axiom of union

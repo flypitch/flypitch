@@ -252,6 +252,9 @@ theorem mem.mk {α : Type*} (A : α → bSet 𝔹) (B : α → 𝔹) (a : α) : 
 theorem mem.mk' (x : bSet 𝔹) (a : x.type) : x.bval a ≤ x.func a ∈ᴮ x :=
 by {cases x, apply le_supr_of_le a, simp}
 
+theorem mem.mk'' {x : bSet 𝔹} {a : x.type} {Γ} : Γ ≤ x.bval a → Γ ≤ x.func a ∈ᴮ x :=
+poset_yoneda_inv Γ (mem.mk' x a)
+
 @[reducible]protected def subset : bSet 𝔹 → bSet 𝔹 → 𝔹
 | (mk α A B) b := ⨅a:α, B a ⟹ (A a ∈ᴮ b)
 
@@ -1392,15 +1395,39 @@ end check_names
     for every set u, ∀ x ∈ u, ∃ y ϕ (x,y) implies there exists a set v
     which contains the image of u under ϕ. With the other axioms,
     this should be equivalent to the usual axiom of replacement. -/
-theorem bSet_axiom_of_collection (ϕ : bSet 𝔹 → bSet 𝔹 → 𝔹) (h_congr : ∀ x y z, x =ᴮ y ⊓ ϕ z x ≤ ϕ z y) (u : bSet 𝔹) :
+theorem bSet_axiom_of_collection (ϕ : bSet 𝔹 → bSet 𝔹 → 𝔹)
+  (h_congr_right : ∀ x y z, x =ᴮ y ⊓ ϕ z x ≤ ϕ z y)
+  (h_congr_left : ∀ x y z, x =ᴮ y ⊓ ϕ x z ≤ ϕ y z) (u : bSet 𝔹) :
   (⨅(i:u.type), (u.bval i ⟹ (⨆(y : bSet 𝔹), ϕ (u.func i) y))) ⟹
-  (⨆(v : bSet 𝔹), (⨅(i : u.type), u.bval i ⟹ (⨆(j:v.type), ϕ (u.func i) (v.func j)))) = ⊤ :=
+  (⨆(v : bSet 𝔹), (⨅(i : u.type), u.bval i ⟹ (⨆(j:v.type), (v.bval j) ⊓ ϕ (u.func i) (v.func j)))) = ⊤ :=
 begin
   simp only [bSet.bval, lattice.imp_top_iff_le, bSet.func, bSet.type],
-  rcases (classical.axiom_of_choice (AE_convert u.func u.bval ϕ h_congr)) with ⟨wit, wit_property⟩, dsimp at wit wit_property,
+  rcases (classical.axiom_of_choice (AE_convert u.func u.bval ϕ h_congr_right)) with ⟨wit, wit_property⟩, dsimp at wit wit_property,
   fapply le_supr_of_le, exact ⟨u.type, wit, λ _, ⊤⟩,
     {simp, intro i, apply le_trans (wit_property i),
      apply imp_le_of_right_le, exact le_supr (λ x, ϕ (func u i) (wit x)) i}
+end
+
+/-- Same statement, global quantifiers -/
+theorem bSet_axiom_of_collection' (ϕ : bSet 𝔹 → bSet 𝔹 → 𝔹)
+  (h_congr_right : ∀ x y z, x =ᴮ y ⊓ ϕ z x ≤ ϕ z y)
+  (h_congr_left : ∀ x y z, x =ᴮ y ⊓ ϕ x z ≤ ϕ y z)
+  (u : bSet 𝔹) :
+⊤ ≤ ⨅u, ((⨅x, x ∈ᴮ u ⟹ ⨆y, ϕ x y) ⟹ (⨆v, ⨅w, w ∈ᴮ u ⟹ (⨆w', w' ∈ᴮ v ⊓ ϕ w w'))) :=
+begin
+  bv_intro u, bv_imp_intro,
+  have := bSet_axiom_of_collection ϕ ‹_› ‹_› u,
+  rw[eq_top_iff] at this, specialize_context_at this Γ,
+  replace this := this _,
+  bv_cases_at this v, apply bv_use v,
+  bv_intro w, bv_imp_intro, rename H_1 H_w,
+  rw[mem_unfold] at H_w, bv_cases_at H_w i,
+  bv_split, replace this_1 := this_1 i ‹_›,
+  bv_cases_at this_1 j, apply bv_use (func v j), bv_split,
+  apply le_inf, from mem.mk'' ‹_›, apply bv_rw' H_w_1_right,
+  unfold B_ext, intros x y, apply h_congr_left x y,
+  from ‹_›, bv_intro i, bv_imp_intro, rename H_1 H_i,
+  from H (u.func i) (mem.mk'' ‹_›)
 end
 
 /-- The boolean-valued unionset operator -/
