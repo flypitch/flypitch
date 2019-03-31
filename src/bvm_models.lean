@@ -126,8 +126,8 @@ end
 -- ∀ u, (∀ x ∈ u, ∃ y, ϕ(x,y)) ⟹ (∃ v, ∀ z ∈ u, ∃ w ∈ v, ϕ(z,w))
 
 def axiom_of_collection (ϕ' : bounded_formula L_ZFC' 2) : sentence L_ZFC' :=
-  ∀' ((∀' (&'0 ∈' &'1 ⟹ (∃' ϕ'))) ⟹ (∃' ∀'(&'0 ∈' &'2 ⟹ ∃' ((&'0 ∈' &'2) ⊓ ϕ'))))
-  -- need to do some lifting
+  ∀' ((∀' (&'0 ∈' &'1 ⟹ (∃' ϕ'.cast1))) ⟹ (∃' ∀'(&'0 ∈' &'2 ⟹ ∃' ((&'0 ∈' &'2) ⊓ (ϕ'.cast dec_trivial : bounded_formula L_ZFC' 4)))))
+
 
 -- axiom of union
 -- ∀ u, ∃ v, ∀ x, x ∈ v ↔ ∃ y ∈ u, x ∈ y
