@@ -1,4 +1,4 @@
-import .to_mathlib tactic.tidy tactic.linarith
+import .to_mathlib
 
 /- The proper generality to do this is with directed categories as the indexing objects -/
 
@@ -101,7 +101,7 @@ def canonical_map {D : directed_type} {F : directed_diagram D} (i : D.carrier) :
 lemma canonical_map_inj_of_transition_maps_inj {D : directed_type} {F : directed_diagram D} (i : D.carrier) (H : ∀ {i} {j}, ∀ h : D.rel i j, function.injective (F.mor h)) : function.injective (@canonical_map D F i) :=
 begin
     unfold function.injective canonical_map canonical_inclusion_coproduct, intros x y,
-    simp only [function.comp_app, quotient.eq], simp only [(≈)], 
+    simp only [function.comp_app, quotient.eq], simp only [(≈)],
     unfold germ_relation, intro H_eqv, rcases H_eqv with ⟨j,z,edge,_, ⟨H1, H2⟩⟩,
     exact H edge (by cc)
 end

@@ -1,4 +1,4 @@
-import .fol set_theory.zfc tactic.tidy
+import .fol set_theory.zfc
 
 open fol
 
@@ -7,7 +7,7 @@ namespace zfc
 inductive ZFC_rel : ℕ → Type 1
 | ϵ : ZFC_rel 2
 
-def L_ZFC : Language.{1} := 
+def L_ZFC : Language.{1} :=
 ⟨λ_, ulift empty, ZFC_rel⟩
 
 /- Note from Mario: should try using L_ZFC' -/
@@ -53,11 +53,11 @@ local notation `lift_cast` := by {repeat{apply nat.succ_le_succ}, apply nat.zero
 ----------------------------------------------------------------------------
 
 def Class : Type 1 := bounded_formula L_ZFC 1
-def small {n} (c : bounded_formula L_ZFC (n+1)) : bounded_formula L_ZFC n := 
+def small {n} (c : bounded_formula L_ZFC (n+1)) : bounded_formula L_ZFC n :=
 ∃' ∀' (&0 ∈' &1 ⇔ (c ↑' 1 # 1))
 
 def subclass (c₁ c₂ : Class) : sentence L_ZFC := ∀' (c₁ ⟹ c₂)
-def functional {n} (c : bounded_formula L_ZFC (n+2)) : bounded_formula L_ZFC n := 
+def functional {n} (c : bounded_formula L_ZFC (n+2)) : bounded_formula L_ZFC n :=
 -- ∀x ∃y ∀z, c z x ↔ z = y
 ∀' ∃' ∀' (c ↑' 1 # 1 ⇔ &0 ≃ &1)
 def subset : bounded_formula L_ZFC 2 := ∀' (&0 ∈' &1 ⟹ &0 ∈' &2)
@@ -66,7 +66,7 @@ def is_emptyset : bounded_formula L_ZFC 1 := ∼ ∃' (&0 ∈' &1)
 def pair : bounded_formula L_ZFC 3 := (&0 ≃ &1 : bounded_formula L_ZFC 3) ⊔ (&0 ≃ &2 : bounded_formula L_ZFC 3)
 def singl : bounded_formula L_ZFC 2 := &0 ≃ &1
 def binary_union : bounded_formula L_ZFC 3 := &0 ∈' &1 ⊔ &0 ∈' &2
-def succ : bounded_formula L_ZFC 2 := (&0 ≃ &1 : bounded_formula L_ZFC 2) ⊔ &0 ∈' &1 
+def succ : bounded_formula L_ZFC 2 := (&0 ≃ &1 : bounded_formula L_ZFC 2) ⊔ &0 ∈' &1
 
 def ordered_pair : bounded_formula L_ZFC 3 := ∀'(&0 ∈' &1 ⇔ (&0 ≃ &3 : bounded_formula L_ZFC 4) ⊔ ∀'(&0 ∈' &1 ⇔ pair ↑' 1 # 1 ↑' 1 # 1))
 
@@ -99,8 +99,8 @@ def function' : bounded_formula L_ZFC 1 := relation ⊓ ∀'∀'∀'∀'∀'(((&
 
 
 def fn_app : bounded_formula L_ZFC 3 := ∃'(&0 ∈' &3 ⊓ ∀'(&0 ∈' &1 ⇔ ((&0 ≃ &3): bounded_formula L_ZFC 5) ⊔ (pair ↑' 1 # 1).cast(lift_cast)))
--- ⟨&1, &0⟩ ∈ &2 
--- &0 = &2(&1) 
+-- ⟨&1, &0⟩ ∈ &2
+-- &0 = &2(&1)
 
 def fn_domain : bounded_formula L_ZFC 2 := ∀'(&0 ∈' &2 ⇔ ∃'∃'(ordered_pair ↑' 1 # 1 ↑' 1 # 1 ⊓ &0 ∈' &3))
 -- &1 is the domain of &0
@@ -116,10 +116,10 @@ def function_one_one : bounded_formula L_ZFC 1 := function ⊓ ∀' (inverse_rel
 def irreflexive_relation : bounded_formula L_ZFC 2 :=  (∀'(&0 ∈' &2 ⟹ (∀'(∀'(&0 ∈' &1) ⇔ ((&0 ≃ &2 : bounded_formula L_ZFC 4) ⊔ ∀'(&0 ∈' &1 ⇔ (&0 ≃ &3 : bounded_formula L_ZFC 5))) ⟹ ∼(&0 ∈' &3))))) ⊓ relation.cast(lift_cast)
 -- &0 is an irreflexive relation on &1
 
-def transitive_relation : bounded_formula L_ZFC 2 := ((∀'∀'∀'((((&2 ∈' &4 : bounded_formula L_ZFC 5) ⊓ (&1 ∈' &4)) ⊓ (&0 ∈' &4)) ⊓ ∃'((ordered_pair ↑' 1 # 1).cast(lift_cast) ⊓ (&0 ∈' &4 : bounded_formula L_ZFC 6)) ⊓ ∃'(ordered_pair.cast(lift_cast) ⊓ &0 ∈' &4 : bounded_formula L_ZFC 6) ⟹ ∃'((ordered_pair ↑' 1 # 2).cast(lift_cast) ⊓ &0 ∈' &4 : bounded_formula L_ZFC 6)))) ⊓ relation.cast(lift_cast) 
+def transitive_relation : bounded_formula L_ZFC 2 := ((∀'∀'∀'((((&2 ∈' &4 : bounded_formula L_ZFC 5) ⊓ (&1 ∈' &4)) ⊓ (&0 ∈' &4)) ⊓ ∃'((ordered_pair ↑' 1 # 1).cast(lift_cast) ⊓ (&0 ∈' &4 : bounded_formula L_ZFC 6)) ⊓ ∃'(ordered_pair.cast(lift_cast) ⊓ &0 ∈' &4 : bounded_formula L_ZFC 6) ⟹ ∃'((ordered_pair ↑' 1 # 2).cast(lift_cast) ⊓ &0 ∈' &4 : bounded_formula L_ZFC 6)))) ⊓ relation.cast(lift_cast)
 --&0 is a transitive relation on &1
 -- X Tr Y iff X is a relation and the following holds:
--- ∀u ∀v ∀w, (u ∈ Y ∧ v ∈ Y ∧ w ∈ Y ∧ ⟨u, v⟩ ∈ X ∧ ⟨v,w⟩ ∈ X) → ⟨u,w⟩ ∈ X 
+-- ∀u ∀v ∀w, (u ∈ Y ∧ v ∈ Y ∧ w ∈ Y ∧ ⟨u, v⟩ ∈ X ∧ ⟨v,w⟩ ∈ X) → ⟨u,w⟩ ∈ X
 
 def partial_order_zfc : bounded_formula L_ZFC 2 := irreflexive_relation ⊓ transitive_relation
 
@@ -175,13 +175,13 @@ def continuum_hypothesis : sentence L_ZFC := ∀' ∀'  ((∃'((is_first_infinit
 def axiom_of_extensionality : sentence L_ZFC := ∀' ∀' (∀' (&0 ∈' &1 ⇔ &0 ∈' &2) ⟹ &0 ≃ &1)
 def axiom_of_union : sentence L_ZFC := ∀' (small ∃' (&1 ∈' &0 ⊓ &0 ∈' &2))
 -- todo: c can have free variables. Note that c y x is interpreted as y is the image of x
-def axiom_of_replacement (c : bounded_formula L_ZFC 2) : sentence L_ZFC := 
+def axiom_of_replacement (c : bounded_formula L_ZFC 2) : sentence L_ZFC :=
 -- ∀α small (λy, ∃x, x ∈ α ∧ c y x)
 functional c ⟹ ∀' (small ∃' (&0 ∈' &2 ⊓ c.cast1))
-def axiom_of_powerset : sentence L_ZFC := 
+def axiom_of_powerset : sentence L_ZFC :=
 -- the class of all subsets of x is small
 ∀' small subset
-def axiom_of_infinity : sentence L_ZFC := 
+def axiom_of_infinity : sentence L_ZFC :=
 --∃ y ((∃ y', y = ∅ ∧ y' ∈ y) ∧ ∀ z (z ∈ y → ∃w(z ∈ w ∧ w ∈ y)))
 ∃' ((∃' (bd_and (is_emptyset ↑' 1 # 1) (&0 ∈' &1) : bounded_formula L_ZFC 2)) ⊓ ∀'(&0 ∈' &1 ⟹ ∃' (bd_and (&1 ∈' &0) (&0 ∈' &2))))
 
@@ -203,7 +203,7 @@ def ZF : Theory L_ZFC := {axiom_of_extensionality, axiom_of_union, axiom_of_powe
 def ZFC : Theory L_ZFC := ZF ∪ {axiom_of_choice}
 
 
-/- ZFC formulae in terms of Mario's Set type. 
+/- ZFC formulae in terms of Mario's Set type.
 Many of these are a lot shorter than the formulae above, largely because things like {x} and {{x},{x,y}} don't have to be existentially instantiated. It might be advantageous to refactor these to moatch the FOL formulae more precisely.
 (e.g. ({x} ∈ y) vs (∃ w, w = {x} ∧ w ∈ y) -/
 
@@ -224,7 +224,7 @@ def Set_relation : Set → Prop := λ x, ∀w, w ∈ x ↔ Set_is_ordered_pair w
 
 def Set_function : Set → Prop := λ x, Set_relation x ∧ ∀ a b c, ((({{a},{a,b}} ∈ x) ∧ ({{a},{a,c}} ∈ x)) → (b = c))
 
-def Set_fn_app : Set → Set → Set → Prop := λ x y z, {{x},{x,y}} ∈ z 
+def Set_fn_app : Set → Set → Set → Prop := λ x y z, {{x},{x,y}} ∈ z
 
 def Set_fn_domain : Set → Set → Prop := λ x y, ∀ w, w ∈ x ↔ ∃ a b, w = {{a},{a,b}} ∧ a ∈ y
 
@@ -240,17 +240,17 @@ def Set_transitive_relation : Set → Set → Prop := λ x y, ∀ u v w, ((u ∈
 
 def Set_partial_order : Set → Set → Prop := λ x y, Set_irreflexive_relation x y ⊓ Set_transitive_relation x y
 
-def Set_connected_relation: Set → Set → Prop := λ x y, Set_relation x ∧ ∀ u v, (u ∈ y ∧ v ∈ y ∧ u ≠ v) → ({{u},{u,v}} ∈ x ∨ {{v},{v,u}} ∈ x) 
+def Set_connected_relation: Set → Set → Prop := λ x y, Set_relation x ∧ ∀ u v, (u ∈ y ∧ v ∈ y ∧ u ≠ v) → ({{u},{u,v}} ∈ x ∨ {{v},{v,u}} ∈ x)
 
 def Set_total_order : Set → Set → Prop := λ X Y, (Set_irreflexive_relation X Y) ∧ (Set_transitive_relation X Y) ∧ (Set_connected_relation X Y)
 
-def Set_well_order : Set → Set → Prop := λ x y, Set_irreflexive_relation x y ∧ ∀ z, (z ⊆ y ∧ (z ≠ ∅) → ∃w, (w ∈ z ∧ ∀ v, ((v ∈ z ∧ v ≠ w) → {{w},{w,v}} ∈ x ∧ {{v},{v,w}} ∉ x))) 
+def Set_well_order : Set → Set → Prop := λ x y, Set_irreflexive_relation x y ∧ ∀ z, (z ⊆ y ∧ (z ≠ ∅) → ∃w, (w ∈ z ∧ ∀ v, ((v ∈ z ∧ v ≠ w) → {{w},{w,v}} ∈ x ∧ {{v},{v,w}} ∉ x)))
 
 def Set_membership_relation : Set → Prop := λ x, Set_relation x ∧ ∀ w ∈ x, ∃ u v, {{u},{u,v}} = w ∧ u ∈ v
 
 def Set_transitive : Set → Prop := λ x, ∀ w, w ∈ x → w ⊆ x
 
-def Set_fn_equiv : Set → Set → Set → Prop := λ x y z, Set_function_one_one x ∧ Set_fn_domain x y ∧ Set_fn_range x z  
+def Set_fn_equiv : Set → Set → Set → Prop := λ x y z, Set_function_one_one x ∧ Set_fn_domain x y ∧ Set_fn_range x z
 
 def Set_zfc_equiv : Set → Set → Prop := λ x y, ∃ f, Set_fn_equiv f x y
 
@@ -270,7 +270,7 @@ def Set_is_uncountable_ordinal : Set → Prop := λ x, ∀ w, (Set_is_first_infi
 
 def Set_is_first_uncountable_ordinal : Set → Prop := λ x, Set_is_uncountable_ordinal x ∧ ∀ w, (Set_is_uncountable_ordinal w → Set_ordinal_le x w)
 
-def Set_continuum_hypothesis : Prop := ∀ x y, ((∃ w, (Set_is_first_infinite_ordinal w ∧ Set_is_powerset x w)) ∧ Set_is_first_uncountable_ordinal y) → Set_zfc_equiv x y 
+def Set_continuum_hypothesis : Prop := ∀ x y, ((∃ w, (Set_is_first_infinite_ordinal w ∧ Set_is_powerset x w)) ∧ Set_is_first_uncountable_ordinal y) → Set_zfc_equiv x y
 
 --- shallow ZFC axioms
 

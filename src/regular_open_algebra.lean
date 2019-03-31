@@ -1,5 +1,4 @@
-import topology.basic tactic.tidy to_mathlib .set_theory
-order.complete_boolean_algebra data.set.basic
+import .set_theory order.complete_boolean_algebra
 
 local attribute [instance] classical.prop_decidable
 

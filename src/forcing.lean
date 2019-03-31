@@ -1,4 +1,4 @@
-import .bvm_extras .pSet_ordinal .set_theory .regular_open_algebra .cantor_space logic.function
+import .bvm_extras .cantor_space
 
 open ordinal cardinal lattice bSet
 

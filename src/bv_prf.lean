@@ -1,4 +1,4 @@
-import fol set_theory.zfc set_theory.ordinal order.boolean_algebra order.complete_boolean_algebra .to_mathlib
+import fol set_theory.zfc set_theory.ordinal order.complete_boolean_algebra
 
 open lattice
 universes u v
@@ -13,7 +13,7 @@ variables {β : Type u} [complete_boolean_algebra β]
 
 infix ` ⊢ᴮ `:50 := bv_provable
 
-lemma bv_prf {a b : β} {l : list β} {h_l : inf_context l = a} {h_p : l ⊢ᴮ b} : a ≤ b := 
+lemma bv_prf {a b : β} {l : list β} {h_l : inf_context l = a} {h_p : l ⊢ᴮ b} : a ≤ b :=
 by finish
 
 -- TODO(jesse): write a tactic so that l can be replaced by an auto_param
@@ -63,7 +63,7 @@ end
 
 
 
--- include β 
+-- include β
 -- example : true :=
 -- begin
 --   let this : β := ⊥,

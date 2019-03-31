@@ -1,4 +1,4 @@
-import .completion .language_extension .colimit tactic.linarith
+import .completion .language_extension .colimit
 
 -- local attribute [instance, priority 0] classical.prop_decidable
 
@@ -80,7 +80,7 @@ begin
   all_goals{fapply funext, intro n,
   simp only [quotient.eq,(≈),canonical_map_language,function.comp], have h_refl : D.rel j j,
   by apply D.h_reflexive, -- refine ⟨j,F.mor H x, H, h_refl, rfl, _⟩,
-  fapply funext, intro x, simp only [quotient.eq,(≈),canonical_map_language,function.comp], 
+  fapply funext, intro x, simp only [quotient.eq,(≈),canonical_map_language,function.comp],
   },
   {refine ⟨j,(F.mor H).on_function x, H, h_refl, rfl, _⟩,
   change (function.comp ((diagram_functions n).mor h_refl) begin fapply Lhom.on_function, exact @mor D F i j H, end) x = (F.mor H).on_function x,
@@ -207,28 +207,28 @@ end
 /- The basic step of the Henkin construction on theories.
    Given an L-theory T, return an L'-theory T' which is T expanded by
    sentences saying that the new witnesses are witnesses. -/
-@[reducible]def wit_property {L : Language} (f : bounded_formula L 1) (c : L.constants) : 
+@[reducible]def wit_property {L : Language} (f : bounded_formula L 1) (c : L.constants) :
   sentence L :=
 (∃'f) ⟹ f[bd_const c/0]
 
 open fol.Lhom
 def henkin_theory_step {L} (T : Theory L) : Theory $ henkin_language_step L :=
-Theory_induced henkin_language_inclusion T ∪ 
-(λ f : bounded_formula L 1, 
+Theory_induced henkin_language_inclusion T ∪
+(λ f : bounded_formula L 1,
   wit_property (henkin_language_inclusion.on_bounded_formula f) (wit' f)) '' (set.univ : set $ bounded_formula L 1)
 
 def is_consistent_henkin_theory_step {L} {T : Theory L} (hT : is_consistent T) :
   is_consistent (henkin_theory_step T) :=
 begin
-  refine eq.mp _ (is_consistent_extend hT henkin_language_inclusion_inj 
-    (λf, (∃' f).cast1 ⟹ f) _ wit _ _), 
+  refine eq.mp _ (is_consistent_extend hT henkin_language_inclusion_inj
+    (λf, (∃' f).cast1 ⟹ f) _ wit _ _),
   { congr1, congr1, apply set.image_congr', intro f, ext,
     simp [wit_property, wit'], rw [←on_bounded_formula_fst, subst_sentence_irrel], refl },
   { intro f, apply falsumE, apply impE (∃' f.fst),
-    { apply impI, apply impE _ axm2, apply exE axm1, 
+    { apply impI, apply impE _ axm2, apply exE axm1,
       apply exI &0, rw [lift_subst_formula_cancel], apply impI axm2 },
-    { apply falsumE, apply impE _ axm2, apply exI &0, 
-      apply impI, apply exfalso, apply impE _ axm2, 
+    { apply falsumE, apply impE _ axm2, apply exI &0,
+      apply impI, apply exfalso, apply impE _ axm2,
       rw [bounded_preformula.cast1_fst, subst_sentence_irrel], exact axm1 }},
   { intros f f' h, cases h, refl },
   { intro f, intro h, rcases h with ⟨f', hf'⟩, cases hf' }
@@ -239,7 +239,7 @@ end
   | (n+1) := henkin_language_step (henkin_language_chain_objects n)
 
 @[simp]lemma obvious {L : Language} {i : ℕ} : henkin_language_functions (@henkin_language_chain_objects L i) 0 = (@henkin_language_chain_objects L (i+1)).constants :=
-by refl 
+by refl
 
 local infix ` ∘ `:60 := Lhom.comp
 
@@ -284,7 +284,7 @@ end
 
 /- Given a language, iterate henkin_language_step, returning this data in the form
    of a directed diagram of types indexed by ℕ' -/
-def henkin_language_chain {L : Language} : (directed_diagram_language directed_type_of_nat) := 
+def henkin_language_chain {L : Language} : (directed_diagram_language directed_type_of_nat) :=
 begin
   refine ⟨_, _, _⟩,
   {exact @henkin_language_chain_objects L},
@@ -339,7 +339,7 @@ def henkin_language_canonical_map {L : Language} (m : ℕ) : (@henkin_language_c
 @[simp]lemma henkin_language_canonical_map_inj {L : Language} (m : ℕ) : Lhom.is_injective $ @henkin_language_canonical_map L m :=
 begin
   split,
-  
+
   {intro n, unfold henkin_language_canonical_map canonical_map_language Lhom.on_function,
   have := @canonical_map_inj_of_transition_maps_inj directed_type_of_nat (@diagram_functions directed_type_of_nat (@henkin_language_chain L) n), unfold canonical_map at this, apply this,intros i j H, dsimp[diagram_functions, henkin_language_chain],
   fapply ((henkin_language_chain_maps_inj) L i j H).on_function},
@@ -508,7 +508,7 @@ begin
   fapply Lhom.on_term_inj (@henkin_language_canonical_map_inj L m)},},
   {intro f, induction f,
     {refine ⟨(by {fapply canonical_map, by {change ℕ, exact 0}, exact var f}), by split⟩},
-    {have W := germ_rep f_f, rcases W with ⟨⟨i,x⟩, Hx⟩, fapply exists.intro, 
+    {have W := germ_rep f_f, rcases W with ⟨⟨i,x⟩, Hx⟩, fapply exists.intro,
      fapply canonical_map i, fapply func, exact x, rw[<-Hx], refl},
     {rcases f_ih_t with ⟨t, Ht⟩, rcases f_ih_s with ⟨s,Hs⟩, have Wt := germ_rep t,
     have Ws := germ_rep s, rcases Wt with ⟨⟨i,x_t⟩, Hxt⟩, rcases Ws with ⟨⟨j, x_s⟩, Hxs⟩,
@@ -529,7 +529,7 @@ begin
     {{rw[<-Hxs], simp[(≈), germ_relation], refine ⟨(i+j),x_s',⟨by simp,_⟩,_⟩,
        dsimp[henkin_term_chain, henkin_language_chain_maps], let k := i + j,
        simp only [id_of_self_map], apply Lhom.id_term,
-       fapply exists.intro, simp only [zero_le, le_add_iff_nonneg_left]},},   
+       fapply exists.intro, simp only [zero_le, le_add_iff_nonneg_left]},},
     fapply exists.intro, fapply canonical_map, change ℕ, exact (i + j),
     fapply app, exact x_t', exact x_s', rw[<-Ht, <-Hs, <-Hxt', <-Hxs'], refl},}
 end
@@ -582,7 +582,7 @@ refine ⟨_,_⟩,
   fapply Lhom.on_bounded_term_inj (@henkin_language_canonical_map_inj L m)},},
    {intro f, induction f,
     {refine ⟨(by {fapply canonical_map, by {change ℕ, exact 0}, exact bd_var f}), by split⟩},
-    {have W := germ_rep f_f, rcases W with ⟨⟨i,x⟩, Hx⟩, fapply exists.intro, 
+    {have W := germ_rep f_f, rcases W with ⟨⟨i,x⟩, Hx⟩, fapply exists.intro,
      fapply canonical_map i, fapply bd_func, exact x, rw[<-Hx], refl,},
     {rcases f_ih_t with ⟨t, Ht⟩, rcases f_ih_s with ⟨s,Hs⟩, have Wt := germ_rep t,
     have Ws := germ_rep s, rcases Wt with ⟨⟨i,x_t⟩, Hxt⟩, rcases Ws with ⟨⟨j, x_s⟩, Hxs⟩,
@@ -603,7 +603,7 @@ refine ⟨_,_⟩,
     {{rw[<-Hxs], simp[(≈), germ_relation], refine ⟨(i+j),x_s',⟨by simp,_⟩,_⟩,
        dsimp[henkin_bounded_term_chain, henkin_language_chain_maps], let k := i + j,
        simp only [id_of_self_map], apply Lhom.id_bounded_term,
-       fapply exists.intro, simp only [zero_le, le_add_iff_nonneg_left]},},   
+       fapply exists.intro, simp only [zero_le, le_add_iff_nonneg_left]},},
     fapply exists.intro, fapply canonical_map, change ℕ, exact (i + j),
     fapply bd_app, exact x_t', exact x_s', rw[<-Ht, <-Hs, <-Hxt', <-Hxs'], refl},}
 end
@@ -617,12 +617,12 @@ refine ⟨_,_⟩,
   fapply Lhom.on_bounded_formula_inj (@henkin_language_canonical_map_inj L m)},},
   {intro f, induction f,
   {refine ⟨(by {fapply canonical_map, by {change ℕ, exact 0}, exact bd_falsum}), by split⟩},
-  { 
+  {
     rcases (bounded_term_comparison_bijective f_n 0).right f_t₁ with ⟨t₁, H₁⟩, rcases (bounded_term_comparison_bijective f_n 0).right f_t₂ with ⟨t₂, H₂⟩,
     rcases germ_rep t₁ with ⟨⟨i,x⟩,Hx⟩, rcases germ_rep t₂ with ⟨⟨j,y⟩,Hy⟩,
     fapply exists.intro, fapply canonical_map, exact i+j, fapply bd_equal,
     exact push_to_sum_r x j, exact push_to_sum_l y i,
-    simp[H₁, H₂], 
+    simp[H₁, H₂],
     rw[<-H₁, <-H₂,<-Hx, <-Hy, <-canonical_map_quotient, same_fiber_as_push_to_r x j ,<-canonical_map_quotient, same_fiber_as_push_to_l y i],
     simpa only},
   {have x := germ_rep f_R, rcases x with ⟨⟨i,x⟩,H⟩, fapply exists.intro, have R' := bd_rel x,
@@ -646,7 +646,7 @@ refine ⟨_,_⟩,
 end
 
 @[simp]lemma bounded_formula'_comparison_bijective {L : Language} : function.bijective (@bounded_formula'_comparison L) :=
-by apply bounded_formula_comparison_bijective 
+by apply bounded_formula_comparison_bijective
 
 noncomputable def equiv_bounded_formula_comparison {L : Language} : equiv (colimit (@henkin_bounded_formula_chain' L)) (bounded_formula (L_infty L) 1) :=
 begin fapply equiv.of_bijective, exacts [bounded_formula'_comparison, bounded_formula'_comparison_bijective] end
@@ -687,12 +687,12 @@ by {have := nat.succ_ne_self i, tidy}
 lemma henkin_theory_chain_inclusion_step {L} {T : Theory L} {i : ℕ} {f ∈ henkin_theory_chain T i} : (henkin_bounded_formula_chain 0 0).mor (by simp) f ∈ henkin_theory_chain T (i + 1) :=
 begin
 dsimp[henkin_bounded_formula_chain, henkin_theory_chain],
-apply or.inl, 
+apply or.inl,
 unfold Theory_induced, fapply exists.intro, tidy,
 end
 
 lemma henkin_theory_chain_inclusion {L} {T : Theory L} {i j : ℕ} (h_leq : i ≤ j + 1) {f ∈ henkin_theory_chain T i} : (henkin_bounded_formula_chain 0 0).mor (by exact h_leq) f ∈ henkin_theory_chain T (j + 1) :=
-begin 
+begin
   dsimp[henkin_bounded_formula_chain],
   by_cases i = j +1,
     subst h, simp[id_bounded_formula 0 0 f], exact H,
@@ -709,11 +709,11 @@ begin
     have := ih this,
     by_cases i = j+1,
        subst h, apply henkin_theory_chain_inclusion_step, assumption,
-  unfold on_sentence henkin_language_chain_maps, 
+  unfold on_sentence henkin_language_chain_maps,
   simp*, apply or.inl, unfold Theory_induced,
-  fapply exists.intro, 
+  fapply exists.intro,
   exact on_bounded_formula (henkin_language_chain_maps L i (j+1) (by assumption)) f,
-  split, apply ih, assumption, dedup, 
+  split, apply ih, assumption, dedup,
   dsimp[on_sentence], unfold henkin_language_chain_maps, simp*,
   change  on_bounded_formula
       (henkin_language_chain_maps L (j+1) (j+2) _)
@@ -796,10 +796,10 @@ begin
           (bd_const ((henkin_language_canonical_map (i + 1)).on_function (wit' f''))) //
         0] = bounded_preformula.fst ((∃' f) ⟹ f[c_infty/0]), by simp, rw[this1],
   suffices : (Lhom.on_bounded_formula (henkin_language_canonical_map (i + 1))
-         (wit_property (Lhom.on_bounded_formula henkin_language_inclusion f'') (wit' f''))) = (∃' f ⟹ f[c_infty /0]), by rw[this], 
+         (wit_property (Lhom.on_bounded_formula henkin_language_inclusion f'') (wit' f''))) = (∃' f ⟹ f[c_infty /0]), by rw[this],
   unfold wit_property at *, dsimp[c_infty], rw[<-canonical_map_quotient] at H, dsimp at H,
   rw[<-Hf',<-H.left],
-  unfold bounded_formula'_comparison bounded_formula_comparison id, 
+  unfold bounded_formula'_comparison bounded_formula_comparison id,
   rw[(@universal_map_property ℕ' (henkin_bounded_formula_chain') (cocone_of_bounded_formula'_L_infty) i f'')],
   dsimp[cocone_of_bounded_formula'_L_infty],
   have : henkin_language_canonical_map i = henkin_language_canonical_map (i+1) ∘ henkin_language_inclusion,
@@ -814,10 +814,10 @@ begin
   rw[this],
   have : (Lhom.on_bounded_formula (henkin_language_canonical_map (i + 1))
            (Lhom.on_bounded_formula henkin_language_inclusion f''))[bd_const
-          ((henkin_language_canonical_map (i + 1)).on_function (wit' f'')) /0] = 
+          ((henkin_language_canonical_map (i + 1)).on_function (wit' f'')) /0] =
           (Lhom.on_bounded_formula (henkin_language_canonical_map (i + 1))
            ((Lhom.on_bounded_formula henkin_language_inclusion f'')[bd_const
-           (wit' f'') /0])), 
+           (wit' f'') /0])),
   by tidy, rw[this],
   have : ∃' Lhom.on_bounded_formula (henkin_language_canonical_map (i + 1))
           (Lhom.on_bounded_formula henkin_language_inclusion f'')
@@ -843,13 +843,13 @@ def henkin_theory_schain {L} (T : Theory L) (hT : is_consistent T): set (Theory_
 /- (T ∪ set.sUnion (subtype.val '' Ts)) actually is (henkinization hT) -/
 lemma iota_union_rw {L} (T : Theory L) (hT : is_consistent T) : (@ι _ T 0) ∪ ⋃₀(subtype.val '' henkin_theory_schain T hT) = henkinization hT :=
 begin
-  ext, split, all_goals{intro, auto_cases}, 
+  ext, split, all_goals{intro, auto_cases},
 --`tidy` alone suffices to close both these goals, but it's giving me that "type mismatch at application" bug afterwards...
   {simp[henkinization, set.mem_image], refine ⟨0,_⟩,
   unfold ι, tidy}, {repeat {auto_cases}, simp[henkinization, set.mem_image], refine ⟨a_h_w_h_left_w,_⟩, simp*},
   simp only [*, exists_prop, set.mem_Union, set.sUnion_image, exists_and_distrib_right, subtype.exists, set.mem_union_eq],
   auto_cases, auto_cases, auto_cases,
-  apply or.inr, refine ⟨ι a_h_w_w,⟨⟨_,_⟩,_⟩, a_h_h⟩, 
+  apply or.inr, refine ⟨ι a_h_w_w,⟨⟨_,_⟩,_⟩, a_h_h⟩,
   {simp only [*, iota_inclusion_of_le, zero_le]}, {simp only [*, is_consistent_iota]},
   simp only [*, henkin_theory_schain], tidy
 end
@@ -879,8 +879,8 @@ end
   --          -- on the induced colimit of formulas
   --          -- remark(Floris): we need a lemma that if a directed union of theories proves f, then an element of it proves f.
   -- cases this with k P', unfold ι at P',
-  -- apply is_consistent_henkin_theory_chain hT k, 
-  -- apply nonempty.map (Lhom.reflect_prf (henkin_language_canonical_map_inj k)), 
+  -- apply is_consistent_henkin_theory_chain hT k,
+  -- apply nonempty.map (Lhom.reflect_prf (henkin_language_canonical_map_inj k)),
   -- simp only [on_formula, bounded_preformula.fst, Theory.fst, set.image_image, sprovable,
   --   on_sentence_fst] at P' ⊢, exact P'
 -- end
@@ -917,5 +917,5 @@ begin
 end
 
 /- Given ψ ∈ T, the term model of the complete henkinization of T satisfies ψ -/
-@[simp]lemma reduct_of_complete_henkinization_satisfies {L} {T : Theory L} (hT : is_consistent T) (ψ : sentence L) (hψ : ψ ∈ T) : Lhom.reduct (@henkin_language_canonical_map L 0) (term_model (completion_of_henkinization hT)) ⊨ ψ := 
+@[simp]lemma reduct_of_complete_henkinization_satisfies {L} {T : Theory L} (hT : is_consistent T) (ψ : sentence L) (hψ : ψ ∈ T) : Lhom.reduct (@henkin_language_canonical_map L 0) (term_model (completion_of_henkinization hT)) ⊨ ψ :=
   reduct_of_complete_henkinization_models_T _ hψ

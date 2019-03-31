@@ -1,8 +1,8 @@
 /- theorems which we should (maybe) backport to mathlib -/
 
-import data.finset algebra.ordered_group tactic.squeeze tactic.tidy order.bounded_lattice
+import data.finset algebra.ordered_group order.bounded_lattice
        topology.basic data.set.disjointed data.set.countable set_theory.cofinality
-       tactic.find
+       tactic.find tactic.squeeze tactic.tidy tactic.linarith
 
 universe variables u v w
 

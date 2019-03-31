@@ -1,4 +1,4 @@
-import .bvm .bfol .to_mathlib .fol .bvm_extras
+import .bvm .bfol .bvm_extras
 
 open lattice
 
@@ -25,7 +25,7 @@ inductive ZFC'_func : ℕ → Type 1
 | P_ω : ZFC'_func 0
 | Union : ZFC'_func 1
 
-def L_ZFC' : Language.{1} := 
+def L_ZFC' : Language.{1} :=
 { functions := ZFC'_func,
   relations := ZFC'_rel }
 
@@ -75,7 +75,7 @@ def V : bStructure L_ZFC' (𝔹) :=
         cases x_xs_xs, cases y_xs_xs, simp,
         tidy_context, simp[*,pair_congr]}
   end,
-  rel_congr := 
+  rel_congr :=
   begin
     intros n R, cases R, intros x y,
     cases x, cases y, cases x_xs, cases y_xs,

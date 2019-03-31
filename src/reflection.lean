@@ -1,4 +1,4 @@
-import .fol tactic.tidy .abel tactic.ring .completeness .zfc
+import .fol .abel tactic.ring .completeness .zfc
 
 open fol
 

@@ -1,4 +1,4 @@
-import data.pfun data.set tactic.tidy data.set.countable data.set.basic .to_mathlib .pSet_ordinal
+import .to_mathlib .pSet_ordinal data.pfun
 -- local attribute [instance] classical.prop_decidable
 
 /- The Cohen poset of finite partial functions (2^(2^ω)) × ω → 2 -/
@@ -133,7 +133,7 @@ lemma equiv_set_set_univ {α : Type*} (s : set α) : equiv s (@set.univ s) :=
 by {refine ⟨λ x, ⟨x, (by trivial)⟩, λ x, x.val, _, _⟩, tidy}
 
 /- an (s : set α) is countable if (set.univ : set s) is countable -/
-lemma countable_of_countable_univ {α : Type*} (s : set α) : set.countable s ↔ set.countable (set.univ : set s) := 
+lemma countable_of_countable_univ {α : Type*} (s : set α) : set.countable s ↔ set.countable (set.univ : set s) :=
 begin
   split; apply countable_of_equiv_with_countable, symmetry,
   all_goals{apply equiv_set_set_univ}
@@ -211,7 +211,7 @@ lemma nonempty_of_size_of_domain_ne_zero {p : (@cohen_poset η)} (h : size_of_do
 begin
   have : set.finite.to_finset p.property ≠ ∅, by {intro h, suffices : (set.finite.to_finset p.property).card = 0,
     by {apply (_root_.not_and_self ((set.finite.to_finset p.property).card = 0)).mp,refine ⟨(by assumption), this⟩},
-    exact finset.card_eq_zero.mpr h}, 
+    exact finset.card_eq_zero.mpr h},
   have := finset.exists_mem_of_ne_empty this, cases this, apply nonempty.intro,
   refine ⟨this_w,_⟩, cases this_w, cases p, simp at this_h, assumption
 end
@@ -307,7 +307,7 @@ end one_point_restriction
 
 -- -- lemma one_point_restriction_graph' {p : (@cohen_poset η)} {x} : (one_point_restriction' p x).val.graph = {y ∈ p.val.graph | y.fst ∈ not_x x} :=
 -- -- begin
--- --   ext, split; intros, 
+-- --   ext, split; intros,
 -- -- end
 
 -- @[simp]lemma in_one_point_restriction_of_in_dom_and_not_x {p : (@cohen_poset η)} {x} {h : x ∈ p.val.dom} {y} : y ∈ (one_point_restriction p x h).val.dom ↔ (y ∈ p.val.dom) ∧ y ≠ x :=
@@ -359,7 +359,7 @@ end one_point_restriction
 -- lemma aux_c''_dom {p₁ p₂ : (@cohen_poset η)} {t₁ t₂ : (set $ set ℕ) × ℕ} {h_t₁ : t₁ ∈ p₁.val.dom} {h_t₂ : t₂ ∈ p₂.val.dom} {q : Prop} {h_val₁ : pfun.fn p₁.val t₁ h_t₁ = q} {h_val₂ : pfun.fn p₂.val t₂ h_t₂ = q} {c : (@cohen_poset η)} : ∀ (x), x ∈ (aux_c'' h_t₁ h_t₂ q h_val₁ h_val₂ c).val.dom → x ≠ t₁ ∧ x ≠ t₂ :=
 -- λ x Hx, ⟨by {apply ((in_one_point_restriction'_of_in_dom_and_not_x).mp _).right, exact c,
 --             apply one_point_restriction_domain'_subset, swap, exact t₂, exact Hx},
---          by {apply ((in_one_point_restriction'_of_in_dom_and_not_x).mp _).right, exact (one_point_restriction' c t₁), exact Hx}⟩  
+--          by {apply ((in_one_point_restriction'_of_in_dom_and_not_x).mp _).right, exact (one_point_restriction' c t₁), exact Hx}⟩
 
 -- lemma aux_c''_dom_of {p₁ p₂ : (@cohen_poset η)} {t₁ t₂ : (set $ set ℕ) × ℕ} {h_t₁ : t₁ ∈ p₁.val.dom} {h_t₂ : t₂ ∈ p₂.val.dom} {q : Prop} {h_val₁ : pfun.fn p₁.val t₁ h_t₁ = q} {h_val₂ : pfun.fn p₂.val t₂ h_t₂ = q} {c : (@cohen_poset η)} : ∀ (x), x ≠ t₁ ∧ x ≠ t₂ → x ∈ c.val.dom → x ∈ (aux_c'' h_t₁ h_t₂ q h_val₁ h_val₂ c).val.dom :=
 -- begin
@@ -422,7 +422,7 @@ end one_point_restriction
 --                       exact λ A, or.inr $ or.inr $ A},
 --     {-- dsimp[H] at h, rw[not_or_distrib] at h, apply or.inl,
 --     repeat{sorry}
-  
+
 --     -- apply (aux_c''_graph_of (x,q')).mp,
 --      -- refine ⟨_, _⟩,
 
@@ -447,7 +447,7 @@ end one_point_restriction
 --   --    cases H₁, have : (x,q') = (t₁, q), from set.eq_of_mem_singleton (by assumption), finish,
 --   --    have : (x,q') = (t₂, q), from set.eq_of_mem_singleton (by assumption), finish},
 --   repeat{sorry}
-  
+
 -- end
 
 -- /-- the extension of c by (b₁, m) and (b₂,m) has finite domain -/
@@ -508,7 +508,7 @@ end one_point_restriction
 -- --              λ (p : ↥A_n_m), pfun.fn ((p.val).val) (wit p, m) (by apply wit_spec),
 -- --        apply countable_of_countable_fibers'' _ eval, intro q,
 -- --        let A_n_m_q, swap, change set.countable A_n_m_q,
-     
+
 -- --          let red : A_n_m → (@cohen_poset η) :=
 -- --            λ X, one_point_restriction X.val (wit X, m) (by apply wit_spec),
 
@@ -545,7 +545,7 @@ end one_point_restriction
 -- --            by {intros x' y' H_x' H_y',
 -- --               haveI : decidable_eq ↥A_n_m := λ _ _, classical.prop_decidable _,
 -- --               by_cases x' = y', exact λ _, ‹x' = y'›, rename h h_neq,
--- --               intro H, exfalso, 
+-- --               intro H, exfalso,
 -- --                refine Ha x' (x'.property.left.right) y' (y'.property.left.right)
 -- --                            (by {intro, apply h_neq, exact coe_subtype_injective a_1}) _,
 -- --               apply one_point_restriction_refinement_extension_spec (↑x') (↑y'),

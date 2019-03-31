@@ -1,9 +1,9 @@
 /- Show that every theory can be extended to a complete theory -/
 
-import .fol .compactness order.zorn tactic.tidy
+import .compactness order.zorn
 
 local attribute [instance, priority 0] classical.prop_decidable
-open fol set 
+open fol set
 
 universe variables u v
 section
@@ -29,7 +29,7 @@ exact classical.by_contradiction (by tidy)
 end
 
 /-- Given a theory T and a sentence ψ, either T ∪ {ψ} or T ∪ {∼ ψ} is consistent.--/
-lemma can_extend {L : Language} (T : Theory L) (ψ : sentence L) (h : is_consistent T) : 
+lemma can_extend {L : Language} (T : Theory L) (ψ : sentence L) (h : is_consistent T) :
   is_consistent (T ∪ {ψ}) ∨ is_consistent (T ∪ {∼ ψ}) :=
 begin
   simp only [is_consistent, set.union_singleton], by_contra,
@@ -57,7 +57,7 @@ lemma nonempty_of_not_empty {α : Type u} (s : set α) (h : ¬ s = ∅) : nonemp
 by { by_contra, simp[not_exists_not] at a, apply h, ext, exact ⟨a x, false.elim⟩ }
 
 /-- Theory_over T is the subtype of Theory L consisting of consistent theories T' such that T' ⊇ T--/
-def Theory_over {L : Language.{u}} (T : Theory L) (hT : is_consistent T): Type u := 
+def Theory_over {L : Language.{u}} (T : Theory L) (hT : is_consistent T): Type u :=
 {T' : Theory L // T ⊆ T' ∧ is_consistent T'}
 
 /-- Every theory T is trivially a theory over itself --/
@@ -71,7 +71,7 @@ def Theory_over_subset {L : Language.{u}} {T : Theory L} {hT : is_consistent T} 
 instance {T : Theory L} {hT : is_consistent T} : has_subset (Theory_over T hT) := ⟨Theory_over_subset⟩
 
 instance {T : Theory L} {hT : is_consistent T} : nonempty (Theory_over T hT) := ⟨over_self T hT⟩
-  
+
 
 /- Given a sentence and the hypothesis that ψ is provable from a theory T, return a list of sentences from T and a proof that this list proves ψ -/
 -- TODO: refactor this away, use theory_proof_compactness
@@ -84,13 +84,13 @@ begin
 end
 
 /- Given a chain of sets with nonempty union, conclude that the chain is nonempty-/
-def nonempty_chain_of_nonempty_union {α : Type u} {A_i : set $ set α} {h_chain : chain (⊆) A_i} 
+def nonempty_chain_of_nonempty_union {α : Type u} {A_i : set $ set α} {h_chain : chain (⊆) A_i}
   (h : nonempty $ set.sUnion A_i) : nonempty A_i :=
 by { unfreezeI, rcases h with ⟨a, s, hs, ha⟩, exact ⟨⟨s, hs⟩⟩ }
 
 /- Given two elements in a chain of sets over T, their union over T is in the chain -/
-lemma in_chain_of_union {α : Type u} (T : set α) (A_i : set $ set α) 
-  (h_chain : chain set.subset A_i) (as : list A_i) (h_over_T : ∀ A ∈ A_i, T ⊆ A) (A1 A2 ∈ A_i) : 
+lemma in_chain_of_union {α : Type u} (T : set α) (A_i : set $ set α)
+  (h_chain : chain set.subset A_i) (as : list A_i) (h_over_T : ∀ A ∈ A_i, T ⊆ A) (A1 A2 ∈ A_i) :
   A1 ∪ A2 = A1 ∨ A1 ∪ A2 = A2 :=
 begin
 dedup,
@@ -100,19 +100,19 @@ by_cases A1 = A2,
   simp*, finish,
   have := h_chain A1 H A2 H_1 h, cases this,
   {fapply or.inr, apply funext, intro x, apply propext, split,
-  intro h1, have : A1 x ∨ A2 x, by assumption, fapply or.elim, exact A1 x, exact A2 x, assumption, 
+  intro h1, have : A1 x ∨ A2 x, by assumption, fapply or.elim, exact A1 x, exact A2 x, assumption,
   intro hx, dedup, unfold set.subset at this, exact this hx, finish,
   intro hx, apply or.inr, assumption},
 
   {fapply or.inl, apply funext, intro x, apply propext, split,
-  intro hx, have : A1 x ∨ A2 x, by assumption, fapply or.elim, exact A2 x, exact A1 x, finish, 
+  intro hx, have : A1 x ∨ A2 x, by assumption, fapply or.elim, exact A2 x, exact A1 x, finish,
   intro h2x, dedup, unfold set.subset at this, exact this h2x, finish,
 intro h3x, apply or.inl, assumption}
 end
 
 /--Given a chain and two elements from this chain, return their maximum. --/
-noncomputable def max_in_chain {α : Type u} {R : α → α → Prop} {Ts : set α} 
-  {nonempty_Ts : nonempty Ts} (h_chain : chain R Ts) (S1 S2 : α) (h_S1 : S1 ∈ Ts) (h_S2 : S2 ∈ Ts) : 
+noncomputable def max_in_chain {α : Type u} {R : α → α → Prop} {Ts : set α}
+  {nonempty_Ts : nonempty Ts} (h_chain : chain R Ts) (S1 S2 : α) (h_S1 : S1 ∈ Ts) (h_S2 : S2 ∈ Ts) :
   Σ' (S : α), (S = S1 ∧ (R S2 S1 ∨ S1 = S2)) ∨ (S = S2 ∧ (R S1 S2 ∨ S1 = S2)) :=
 begin
   unfold chain set.pairwise_on at h_chain,
@@ -120,7 +120,7 @@ begin
   by_cases S1 = S2,
 
     refine ⟨S1, _ ⟩, fapply or.inl, fapply and.intro, exact rfl, exact or.inr h,
-    
+
     have H := this h,
     by_cases R S1 S2,
       refine ⟨S2, _⟩, fapply or.inr, refine and.intro rfl _, exact or.inl h,
@@ -134,7 +134,7 @@ noncomputable def max_of_list_in_chain {α : Type u} {R : α → α → Prop} {t
 (h_fs : ∀ S ∈ Ss, S ∈ Ts) : Σ' (S : α), S ∈ Ts ∧ (∀ S' ∈ Ss, S' = S ∨ R S' S) :=
 begin
   tactic.unfreeze_local_instances,
-  induction Ss, have := classical.choice nonempty_Ts, split, simp, swap, exact this.val, exact this.property, 
+  induction Ss, have := classical.choice nonempty_Ts, split, simp, swap, exact this.val, exact this.property,
 
     by_cases nonempty {S | S ∈ Ss_tl},
       swap, simp[*,-h] at h, refine ⟨Ss_hd, _⟩, simp*, --  fapply and.intro, constructor, refl,
@@ -145,10 +145,10 @@ begin
         begin refine actual_ih _, intros S hS, fapply h_fs, fapply or.inr, assumption end,
       have pairwise_max := max_in_chain h_chain Ss_hd tl_max.fst
 begin fapply h_fs, constructor, refl end begin have := tl_max.snd, exact this.left  end,
-      
+
       split, swap, exact pairwise_max.fst, fapply and.intro,
       have h_max := pairwise_max.snd, cases h_max with h_max1 h_max2,
-      simp*, rw[h_max2.left], exact tl_max.snd.left, 
+      simp*, rw[h_max2.left], exact tl_max.snd.left,
       swap, assumption,
       intros S' hS', cases hS' with h_left h_right,
       have h_max := pairwise_max.snd, cases h_max with h_max1 h_max2,
@@ -169,7 +169,7 @@ begin fapply h_fs, constructor, refl end begin have := tl_max.snd, exact this.le
         begin
           intros S hS, fapply h_fs, exact or.inr hS
         end,
-      
+
       have almost_there := (actual_ih this).snd.right S' h_right,
       cases almost_there with almost_there_1 almost_there_2,
       simp*, cases h_max1 with H1 H2, simp[*, -H2] at H2,
@@ -180,7 +180,7 @@ begin fapply h_fs, constructor, refl end begin have := tl_max.snd, exact this.le
       cases H2 with A1 A2,
         exact trans H_ab A1,
         rw[A2], exact H_ab
-end 
+end
 
 /-- Given a xs : list α, it is naturally a list {x ∈ α | x ∈ xs} --/
 def list_is_list_of_subtype : Π(α : Type u), Π (fs : list α),  Σ' xs : list ↥{f : α | f ∈ fs}, ∀ f, ∀ h : f ∈ fs, (⟨f,h⟩ : ↥{f : α | f ∈ fs}) ∈ xs
@@ -209,7 +209,7 @@ begin -- so _here_ is where we need that proofs are finitely supported
   have Γpair := theory_proof_compactness' (T ∪ ⋃₀(subtype.val '' Ts)) ⊥ h_inconsis,
   have h_bad : ∃ T' : (Theory L), (T' ∈ (subtype.val '' Ts)) ∧ {ψ | ψ ∈ Γpair.fst} ⊆ T',
 
- 
+
  {cases Γpair with fs Hfs, rename h hTs,
   have dSs : Π f ∈ fs, Σ' S_f : (Theory_over T hT), set.mem S_f Ts ∧ (set.mem (f) (S_f.val)), -- to each f in fs, associate an S_f containing f from the chain
     {  intros f hf, have H := Hfs.right,
@@ -219,7 +219,7 @@ begin -- so _here_ is where we need that proofs are finitely supported
   {fapply and.intro, exact (choice hTs).property,
     have H := (choice hTs).val.property.left,
     exact H h},
- 
+
     simp[*, -H'] at H',
     have witness := instantiate_existential H', simp* at witness,
     split, swap, split, swap, exact witness.val, cases witness.property with case1 case2, cases case1 with case1' case1'', exact case1',
@@ -239,7 +239,7 @@ have witness_property := witness.property, cases witness_property with case1 cas
   have max_of_list := max_of_list_in_chain h_chain T_list T_list_subset_Ts,
   split, swap,
     {exact max_of_list.fst},
-    {split, exact max_of_list.snd.left, 
+    {split, exact max_of_list.snd.left,
       {intros f hf,
         have almost_there : f ∈ (F ⟨f, begin simpa end⟩).val, simp*, exact (dSs f hf).snd.right,
         have nearly_there : (F ⟨f, begin simpa end⟩) ⊆ max_of_list.fst,
@@ -259,7 +259,7 @@ have witness_property := witness.property, cases witness_property with case1 cas
       },
     {intros a b c, unfold Theory_over_subset, fapply subset.trans},
     {assumption}},
-  
+
   fapply exists.intro, exact T_max.fst.val,
   fapply and.intro, fapply set.mem_image_of_mem, exact T_max.snd.left,
   have := T_max.snd.right, intros ψ hψ, exact this ψ hψ},
@@ -274,7 +274,7 @@ have witness_property := witness.property, cases witness_property with case1 cas
     simp[set.image] at almost_done,
     cases almost_done,
     exact almost_done_w.right},
-    exact T_bad_consis T_bad_inconsis, 
+    exact T_bad_consis T_bad_inconsis,
 end
 
 /-- Given a chain of consistent extensions of a theory T, return the union of those theories and a proof that this is a consistent extension of T --/
@@ -296,7 +296,7 @@ begin
 end
 
 /-- Given a consistent theory T, return a maximal extension of it given by Zorn's lemma, along with the proof that it is consistent and maximal --/
-noncomputable def maximal_extension (L : Language.{u}) (T : Theory L) (hT : is_consistent T) : 
+noncomputable def maximal_extension (L : Language.{u}) (T : Theory L) (hT : is_consistent T) :
   Σ' (T_max : Theory_over T hT), ∀ T' : Theory_over T hT, T_max ⊆ T' → T' ⊆ T_max :=
 begin
   let X := strong_indefinite_description (λ T_max : Theory_over T hT, ∀ T' : Theory_over T hT, T_max ⊆ T' → T' ⊆ T_max ) begin apply_instance end,

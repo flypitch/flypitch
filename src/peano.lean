@@ -1,4 +1,4 @@
-import .fol tactic.tidy tactic.linarith .realization
+import .realization
 
 -- local attribute [instance, priority 0] classical.prop_decidable
 --local attribute [instance] classical.prop_decidable
@@ -21,15 +21,15 @@ inductive peano_functions : ℕ → Type -- thanks Floris!
 
 def L_peano : Language := ⟨peano_functions, λ n, empty⟩
 
-def L_peano_plus {n} (t₁ t₂ : bounded_term L_peano n) : bounded_term L_peano n := 
+def L_peano_plus {n} (t₁ t₂ : bounded_term L_peano n) : bounded_term L_peano n :=
 @bounded_term_of_function L_peano 2 n peano_functions.plus t₁ t₂
-def L_peano_mult {n} (t₁ t₂ : bounded_term L_peano n) : bounded_term L_peano n := 
+def L_peano_mult {n} (t₁ t₂ : bounded_term L_peano n) : bounded_term L_peano n :=
 @bounded_term_of_function L_peano 2 n peano_functions.mult t₁ t₂
 
 local infix ` +' `:100 := L_peano_plus
 local infix ` ×' `:150 := L_peano_mult
 
-def succ {n} : bounded_term L_peano n → bounded_term L_peano n := 
+def succ {n} : bounded_term L_peano n → bounded_term L_peano n :=
 @bounded_term_of_function L_peano 1 n peano_functions.succ
 def zero {n} : bounded_term L_peano n := bd_const peano_functions.zero
 def one {n} : bounded_term L_peano n := succ zero
@@ -62,7 +62,7 @@ def p_succ_plus : sentence L_peano := ∀' ∀'(&1 +' succ &0 ≃ succ (&1 +' &0
 /- ∀ x, x ⬝ 0 = 0 -/
 def p_zero_of_times_zero : sentence L_peano := ∀'(&0 ×' zero ≃ zero)
 
-@[reducible]def shallow_zero_of_times_zero : Prop := ∀ x : ℕ, x * 0 = 0 
+@[reducible]def shallow_zero_of_times_zero : Prop := ∀ x : ℕ, x * 0 = 0
 
 /- ∀ x y, (x ⬝ succ y = (x ⬝ y) + x -/
 def p_times_succ  : sentence L_peano := ∀' ∀' (&1 ×' succ &0 ≃ &1 ×' &0 +' &1)
@@ -144,7 +144,7 @@ section notation_test
 
 -- #reduce (L_peano_structure_of_nat)[(p_zero_not_succ)]
 
--- #reduce (L_peano_structure_of_nat)[(&0 ≃ zero : bounded_formula L_peano 1) ;; ([(1 : ℕ)] : dvector (ℕ') 1)] 
+-- #reduce (L_peano_structure_of_nat)[(&0 ≃ zero : bounded_formula L_peano 1) ;; ([(1 : ℕ)] : dvector (ℕ') 1)]
 
 -- #reduce (&0 : bounded_term L_peano 1)[zero // 0] -- elaborator fails, don't know why
 -- need to fix subst_bounded_term notation, something's not type-checking
@@ -160,7 +160,7 @@ end notation_test
 -- end
 
 -- @[simp]lemma subst_term'_cancel {n} {k} : Π ψ : bounded_formula L_peano (k + 1), (ψ ↑' 1 # 1)[succ &0 /0][formal_nat n /0] = ψ[formal_nat (nat.succ n) /0] := by simp
-  
+
 -- begin
 
 --   -- intros n ψ, unfold subst0_bounded_formula, tidy, -- simp[lift_subst_formula_cancel ψ.fst 0],
@@ -172,7 +172,7 @@ end notation_test
 -- def val_of_dvector {α : Type*} [has_zero α] {n} (xs : dvector α n): ℕ' → α :=
 -- begin
 --   intro k,
---   by_cases nat.lt k n, 
+--   by_cases nat.lt k n,
 --     exact xs.nth k h,
 --     exact 0
 -- end

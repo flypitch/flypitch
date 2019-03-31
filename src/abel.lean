@@ -1,4 +1,4 @@
-import .fol tactic.tidy
+import .fol
 
 open fol
 
@@ -16,7 +16,7 @@ inductive abel_functions : ℕ → Type
 
 def L_abel : Language := ⟨abel_functions, λn, empty⟩
 
-def L_abel_plus {n} (t₁ t₂ : bounded_term L_abel n) : bounded_term L_abel n := 
+def L_abel_plus {n} (t₁ t₂ : bounded_term L_abel n) : bounded_term L_abel n :=
 @bounded_term_of_function L_abel 2 n abel_functions.plus t₁ t₂
 
 def zero {n} : bounded_term L_abel n := bd_const abel_functions.zero

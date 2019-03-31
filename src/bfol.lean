@@ -1,7 +1,7 @@
 /- A development of boolean-valued first-order logic in Lean.
 -/
 
-import tactic.tidy .fol order.complete_boolean_algebra
+import .fol order.complete_boolean_algebra
 
 open nat set fol lattice
 universe variables u v w

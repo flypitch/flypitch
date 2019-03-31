@@ -1,9 +1,9 @@
 * Flypitch
-* Goals
+** Goals
 The Flypitch project aims to produce a formal proof of the [[https://en.wikipedia.org/wiki/Continuum_hypothesis#Independence_from_ZFC][independence of the continuum hypothesis]].
-* Documentation 
+** Documentation
 A conventional human-readable account of the proof written in type-theoretic foundations, upon which some parts of the formalization will be based, is [[https://www.github.com/flypitch/flypitch-notes/][located here]].
-* Compilation
+** Compilation
 To compile the Flypitch project, you will need [[https://leanprover.github.io/][Lean 3.4.2]]. The ~leanpkg.toml~ file points to a certain commit of ~mathlib~, which will be cloned into the project directory. After cloning the repository to ~flypitch~, navigate to ~flypitch~ and run
 #+BEGIN_SRC
 leanpkg configure
@@ -12,7 +12,19 @@ leanpkg build
 
 Installation instructions for Lean (using ~elan~) can be found [[https://github.com/leanprover-community/mathlib/blob/master/docs/elan.md][here]].
 
-* Contributors
+** Contributors
  - [[https://www.pitt.edu/~jmh288][Jesse Han]]
  - [[http://florisvandoorn.com/][Floris van Doorn]]
  - [[https://github.com/AlmostNever][Andrew Tindall]]
+
+** Manual dependency graph
+Files only depend on files on lines above it
+```
+to_mathlib pSet_ordinal
+bvm fol cohen_poset colimit set_theory
+abel bfol bv_prf bvm_extras compactness normal realization regular_open_algebra zfc zfc' zfc_expanded
+bvm_models cantor_space completion language_extension peano zfc_consistent
+henkin forcing
+completeness
+conservative_extension independence reflection
+```

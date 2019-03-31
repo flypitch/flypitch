@@ -1,4 +1,4 @@
-import .fol tactic.tidy
+import .fol
 
 open fol
 
@@ -30,7 +30,7 @@ def and_rewrite {L} : ∀{l}, preformula L l → preformula L l
 | l (f ⟹ g)         := (and_rewrite f) ⟹ (and_rewrite g)
 | l (∀' f)           := ∀' and_rewrite f
 
-def or_rewrite {L} : ∀{l}, preformula L l → preformula L l 
+def or_rewrite {L} : ∀{l}, preformula L l → preformula L l
 | l falsum          := falsum
 | l (t₁ ≃ t₂)       := t₁ ≃ t₂
 | l (rel R)          := rel R
@@ -39,7 +39,7 @@ def or_rewrite {L} : ∀{l}, preformula L l → preformula L l
 | l (f ⟹ g)         := (or_rewrite f) ⟹ (or_rewrite g)
 | l (∀' f)           := ∀' or_rewrite f
 
-def imp_rewrite {L} : ∀{l}, preformula L l → preformula L l 
+def imp_rewrite {L} : ∀{l}, preformula L l → preformula L l
 | l falsum          := falsum
 | l (t₁ ≃ t₂)       := t₁ ≃ t₂
 | l (rel R)          := rel R

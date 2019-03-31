@@ -1,4 +1,4 @@
-import tactic.tidy .compactness
+import .compactness
 
 open set function nat
 universe variable u
@@ -35,7 +35,7 @@ variable {L : Language}
 | _ (f₁ ⟹ f₂)   := symbols_in_formula f₁ ∪ symbols_in_formula f₂
 | _ (∀' f)       := symbols_in_formula f
 
-@[simp] lemma symbols_in_term_lift_at (n m) : ∀{l} (t : preterm L l), 
+@[simp] lemma symbols_in_term_lift_at (n m) : ∀{l} (t : preterm L l),
   symbols_in_term (t ↑' n # m) = symbols_in_term t
 | _ &k          := by by_cases h : m ≤ k; simp [h]
 | l (func f)    := by refl
@@ -45,22 +45,22 @@ variable {L : Language}
   symbols_in_term (t ↑ n) = symbols_in_term t :=
 symbols_in_term_lift_at n 0 t
 
-lemma symbols_in_term_subst (s : term L) (n) : ∀{l} (t : preterm L l), 
+lemma symbols_in_term_subst (s : term L) (n) : ∀{l} (t : preterm L l),
   symbols_in_term (t[s // n]) ⊆ symbols_in_term t ∪ symbols_in_term s
 | _ &k          := by apply lt_by_cases n k; intro h; simp [h]
 | _ (func f)    := subset_union_left _ _
-| _ (app t₁ t₂) := 
-  by { simp; split; refine subset.trans (symbols_in_term_subst _) _; 
+| _ (app t₁ t₂) :=
+  by { simp; split; refine subset.trans (symbols_in_term_subst _) _;
        simp [subset_union2_left, subset_union2_middle] }
 
-lemma symbols_in_formula_subst : ∀{l} (f : preformula L l) (s : term L) (n), 
+lemma symbols_in_formula_subst : ∀{l} (f : preformula L l) (s : term L) (n),
   symbols_in_formula (f[s // n]) ⊆ symbols_in_formula f ∪ symbols_in_term s
 | _ falsum       s n := empty_subset _
-| _ (t₁ ≃ t₂)    s n := 
-  by { simp; split; refine subset.trans (symbols_in_term_subst _ _ _) _; 
+| _ (t₁ ≃ t₂)    s n :=
+  by { simp; split; refine subset.trans (symbols_in_term_subst _ _ _) _;
        simp [subset_union2_left, subset_union2_middle] }
 | _ (rel R)      s n := subset_union_left _ _
-| _ (apprel f t) s n := 
+| _ (apprel f t) s n :=
   by { simp; split; [refine subset.trans (symbols_in_formula_subst _ _ _) _,
          refine subset.trans (symbols_in_term_subst _ _ _) _];
        simp [subset_union2_left, subset_union2_middle] }
@@ -81,18 +81,18 @@ end
 -- | Γ (_ ≃ t) (ref _ _)     := symbols_in_term t
 -- | Γ _ (subst₂ s t f P₁ P₂) := symbols_in_prf P₁ ∪ symbols_in_prf P₂
 
--- def interpolation : ∀{Γ : set $ formula L} {f : formula L} (P : Γ ⊢ f), 
---   Σ' (f' : formula L) (P₁ : Γ ⊢ f') (P₂ : {f'} ⊢ f), 
---     symbols_in_prf P₁ ⊆ ⋃₀ (symbols_in_formula '' Γ) ∧ 
---     symbols_in_prf P₂ ⊆ symbols_in_formula f ∧ 
---     symbols_in_formula f' ⊆ ⋃₀ (symbols_in_formula '' Γ) ∩ symbols_in_formula f := 
+-- def interpolation : ∀{Γ : set $ formula L} {f : formula L} (P : Γ ⊢ f),
+--   Σ' (f' : formula L) (P₁ : Γ ⊢ f') (P₂ : {f'} ⊢ f),
+--     symbols_in_prf P₁ ⊆ ⋃₀ (symbols_in_formula '' Γ) ∧
+--     symbols_in_prf P₂ ⊆ symbols_in_formula f ∧
+--     symbols_in_formula f' ⊆ ⋃₀ (symbols_in_formula '' Γ) ∩ symbols_in_formula f :=
 -- sorry -- probably the last property follows automatically
-  
+
 
 
 
 structure Lhom (L L' : Language) :=
-(on_function : ∀{n}, L.functions n → L'.functions n) 
+(on_function : ∀{n}, L.functions n → L'.functions n)
 (on_relation : ∀{n}, L.relations n → L'.relations n)
 
 infix ` →ᴸ `:10 := Lhom -- \^L
@@ -114,7 +114,7 @@ protected def sum_inr {L L' : Language} : L' →ᴸ L.sum L' :=
 begin
 --  rcases g with ⟨g1, g2⟩, rcases f with ⟨f1,f2⟩,
 --  exact ⟨λn, g1 ∘ f1, λn, g2 ∘ f2⟩
-split, 
+split,
   all_goals{intro n},
   let g1 := g.on_function, let f1 := f.on_function,-- Lean's not letting me "@" g.on_function etc
     exact (@g1 n) ∘ (@f1 n),
@@ -131,11 +131,11 @@ local infix ` ∘ `:60 := Lhom.comp
 
 @[simp]lemma id_is_right_identity {L1 L2} {F : L1 →ᴸ L2} : F ∘ (Lhom.id L1) = F := by {cases F, refl}
 
-structure is_injective : Prop := 
+structure is_injective : Prop :=
 (on_function {n} : injective (on_function ϕ : L.functions n → L'.functions n))
 (on_relation {n} : injective (on_relation ϕ : L.relations n → L'.relations n))
 
-class has_decidable_range : Type u := 
+class has_decidable_range : Type u :=
 (on_function {n} : decidable_pred (range (on_function ϕ : L.functions n → L'.functions n)))
 (on_relation {n} : decidable_pred (range (on_relation ϕ : L.relations n → L'.relations n)))
 
@@ -150,7 +150,7 @@ attribute [instance] has_decidable_range.on_function has_decidable_range.on_rela
 | _ (func f)    := func $ ϕ.on_function f
 | _ (app t₁ t₂) := app (on_term t₁) (on_term t₂)
 
-@[simp] lemma on_term_lift_at : ∀{l} (t : preterm L l) (n m : ℕ), 
+@[simp] lemma on_term_lift_at : ∀{l} (t : preterm L l) (n m : ℕ),
   ϕ.on_term (t ↑' n # m) = ϕ.on_term t ↑' n # m
 | _ &k          n m := by simp
 | _ (func f)    n m := by refl
@@ -159,7 +159,7 @@ attribute [instance] has_decidable_range.on_function has_decidable_range.on_rela
 @[simp] lemma on_term_lift {l} (n : ℕ) (t : preterm L l) : ϕ.on_term (t ↑ n) = ϕ.on_term t ↑ n :=
 ϕ.on_term_lift_at t n 0
 
-@[simp] lemma on_term_subst : ∀{l} (t : preterm L l) (s : term L) (n : ℕ), 
+@[simp] lemma on_term_subst : ∀{l} (t : preterm L l) (s : term L) (n : ℕ),
   ϕ.on_term (t[s // n]) = ϕ.on_term t[ϕ.on_term s // n]
 | _ &k          s n := by apply lt_by_cases k n; intro h; simp [h]
 | _ (func f)    s n := by refl
@@ -174,7 +174,7 @@ lemma not_mem_symbols_in_term_on_term {s : L'.symbols} (h : s ∉ range (ϕ.on_s
   ∀{l} (t : preterm L l), s ∉ symbols_in_term (ϕ.on_term t)
 | _ &k          h' := not_mem_empty _ h'
 | l (func f)    h' := h ⟨sum.inl ⟨l, f⟩, (eq_of_mem_singleton h').symm⟩
-| _ (app t₁ t₂) h' := 
+| _ (app t₁ t₂) h' :=
   or.elim h' (not_mem_symbols_in_term_on_term t₁) (not_mem_symbols_in_term_on_term t₂)
 
 @[simp] def on_formula : ∀{l}, preformula L l → preformula L' l
@@ -185,7 +185,7 @@ lemma not_mem_symbols_in_term_on_term {s : L'.symbols} (h : s ∉ range (ϕ.on_s
 | _ (f₁ ⟹ f₂)   := on_formula f₁ ⟹ on_formula f₂
 | _ (∀' f)       := ∀' on_formula f
 
-@[simp] lemma on_formula_lift_at : ∀{l} (n m : ℕ) (f : preformula L l), 
+@[simp] lemma on_formula_lift_at : ∀{l} (n m : ℕ) (f : preformula L l),
   ϕ.on_formula (f ↑' n # m) = ϕ.on_formula f ↑' n # m
 | _ n m falsum       := by refl
 | _ n m (t₁ ≃ t₂)    := by simp
@@ -194,11 +194,11 @@ lemma not_mem_symbols_in_term_on_term {s : L'.symbols} (h : s ∉ range (ϕ.on_s
 | _ n m (f₁ ⟹ f₂)   := by simp*
 | _ n m (∀' f)       := by simp*
 
-@[simp] lemma on_formula_lift {l} (n : ℕ) (f : preformula L l) : 
+@[simp] lemma on_formula_lift {l} (n : ℕ) (f : preformula L l) :
   ϕ.on_formula (f ↑ n) = ϕ.on_formula f ↑ n :=
 ϕ.on_formula_lift_at n 0 f
 
-@[simp] lemma on_formula_subst : ∀{l} (f : preformula L l) (s : term L) (n : ℕ), 
+@[simp] lemma on_formula_subst : ∀{l} (f : preformula L l) (s : term L) (n : ℕ),
   ϕ.on_formula (f[s // n]) = (ϕ.on_formula f)[ϕ.on_term s // n]
 | _ falsum       s n := by refl
 | _ (t₁ ≃ t₂)    s n := by simp
@@ -217,18 +217,18 @@ lemma not_mem_symbols_in_formula_on_formula {s : L'.symbols} (h : s ∉ range (�
 | _ falsum       h' := not_mem_empty _ h'
 | _ (t₁ ≃ t₂)    h' := by cases h'; apply not_mem_symbols_in_term_on_term ϕ h _ h'
 | l (rel R)      h' := h ⟨sum.inr ⟨l, R⟩, (eq_of_mem_singleton h').symm⟩
-| _ (apprel f t) h' := 
-  by { cases h', apply not_mem_symbols_in_formula_on_formula _ h', 
+| _ (apprel f t) h' :=
+  by { cases h', apply not_mem_symbols_in_formula_on_formula _ h',
        apply not_mem_symbols_in_term_on_term ϕ h _ h' }
 | _ (f₁ ⟹ f₂)   h' := by cases h'; apply not_mem_symbols_in_formula_on_formula _ h'
 | _ (∀' f)       h' := not_mem_symbols_in_formula_on_formula f h'
 
-lemma not_mem_function_in_formula_on_formula {l'} {f' : L'.functions l'} 
+lemma not_mem_function_in_formula_on_formula {l'} {f' : L'.functions l'}
   (h : f' ∉ range (@on_function _ _ ϕ l')) {l} (f : preformula L l) :
   (sum.inl ⟨l', f'⟩ : L'.symbols) ∉ symbols_in_formula (ϕ.on_formula f) :=
 begin
   apply not_mem_symbols_in_formula_on_formula,
-  intro h', apply h, 
+  intro h', apply h,
   rcases h' with ⟨⟨n, f⟩ | ⟨n, R⟩, hf₂⟩; dsimp at hf₂; cases hf₂ with hf₂',
   apply mem_range_self
 end
@@ -238,7 +238,7 @@ end
 | _ (bd_func f)  := bd_func $ ϕ.on_function f
 | _ (bd_app t s) := bd_app (on_bounded_term t) (on_bounded_term s)
 
-@[simp] def on_bounded_term_fst {n} : ∀{l} (t : bounded_preterm L n l), 
+@[simp] def on_bounded_term_fst {n} : ∀{l} (t : bounded_preterm L n l),
   (ϕ.on_bounded_term t).fst = ϕ.on_term t.fst
 | _ &k           := by refl
 | _ (bd_func f)  := by refl
@@ -252,7 +252,7 @@ end
 | _ _ (f₁ ⟹ f₂)      := on_bounded_formula f₁ ⟹ on_bounded_formula f₂
 | _ _ (∀' f)          := ∀' on_bounded_formula f
 
-@[simp] def on_bounded_formula_fst : ∀{n l} (f : bounded_preformula L n l), 
+@[simp] def on_bounded_formula_fst : ∀{n l} (f : bounded_preformula L n l),
   (ϕ.on_bounded_formula f).fst = ϕ.on_formula f.fst
 | _ _ bd_falsum       := by refl
 | _ _ (t₁ ≃ t₂)       := by simp
@@ -343,60 +343,60 @@ begin
   { apply impI, rw [←image_insert_eq], exact h_ih },
   { exact impE _ h_ih_h₁ h_ih_h₂, },
   { apply falsumE, rw [image_insert_eq] at h_ih, exact h_ih },
-  { apply allI, rw [image_image] at h_ih ⊢, simp [image_congr' (on_formula_lift ϕ 1)] at h_ih, 
+  { apply allI, rw [image_image] at h_ih ⊢, simp [image_congr' (on_formula_lift ϕ 1)] at h_ih,
     exact h_ih },
   { apply allE _ _ h_ih, symmetry, apply on_formula_subst },
   { apply prf.ref },
   { simp at h_ih_h₂, apply subst _ h_ih_h₁ h_ih_h₂, simp }
 end
 
-def on_sprf {Γ : set $ sentence L} {f : sentence L} (h : Γ ⊢ f) : 
+def on_sprf {Γ : set $ sentence L} {f : sentence L} (h : Γ ⊢ f) :
   ϕ.on_sentence '' Γ ⊢ ϕ.on_sentence f :=
 by have := ϕ.on_prf h; simp only [sprf, Theory.fst, image_image, function.comp,
   on_bounded_formula_fst, on_sentence] at this ⊢; exact this
-  
+
 
 /- replace all symbols not in the image of ϕ by a new variable -/
 noncomputable def reflect_term [has_decidable_range ϕ] (t : term L') (m : ℕ) : term L :=
-term.elim (λk, &k ↑' 1 # m) 
+term.elim (λk, &k ↑' 1 # m)
      (λl f' ts' ts, if hf' : f' ∈ range (@on_function _ _ ϕ l)
        then apps (func (classical.some hf')) ts else &m) t
 
 variable {ϕ}
 lemma reflect_term_apps_pos [has_decidable_range ϕ] {l} {f : L'.functions l}
-  (hf : f ∈ range (@on_function _ _ ϕ l)) (ts : dvector (term L') l) (m : ℕ) : 
-  ϕ.reflect_term (apps (func f) ts) m = 
+  (hf : f ∈ range (@on_function _ _ ϕ l)) (ts : dvector (term L') l) (m : ℕ) :
+  ϕ.reflect_term (apps (func f) ts) m =
   apps (func (classical.some hf)) (ts.map (λt, ϕ.reflect_term t m)) :=
 begin
   refine (term.elim_apps _ _ f ts).trans _, rw [dif_pos hf], refl
 end
 
-lemma reflect_term_apps_neg [has_decidable_range ϕ] {l} {f : L'.functions l} 
-  (hf : f ∉ range (@on_function _ _ ϕ l)) (ts : dvector (term L') l) (m : ℕ) : 
+lemma reflect_term_apps_neg [has_decidable_range ϕ] {l} {f : L'.functions l}
+  (hf : f ∉ range (@on_function _ _ ϕ l)) (ts : dvector (term L') l) (m : ℕ) :
   ϕ.reflect_term (apps (func f) ts) m = &m :=
 begin
   refine (term.elim_apps _ _ f ts).trans _, rw [dif_neg hf]
 end
 
 lemma reflect_term_const_pos [has_decidable_range ϕ] {c : L'.constants}
-  (hf : c ∈ range (@on_function _ _ ϕ 0)) (m : ℕ) : 
+  (hf : c ∈ range (@on_function _ _ ϕ 0)) (m : ℕ) :
   ϕ.reflect_term (func c) m = func (classical.some hf) :=
 by apply reflect_term_apps_pos hf ([]) m
 
 lemma reflect_term_const_neg [has_decidable_range ϕ] {c : L'.constants}
-  (hf : c ∉ range (@on_function _ _ ϕ 0)) (m : ℕ) : 
+  (hf : c ∉ range (@on_function _ _ ϕ 0)) (m : ℕ) :
   ϕ.reflect_term (func c) m = &m :=
 by apply reflect_term_apps_neg hf ([]) m
 
-@[simp] lemma reflect_term_var [has_decidable_range ϕ] (k : ℕ) (m : ℕ) : 
+@[simp] lemma reflect_term_var [has_decidable_range ϕ] (k : ℕ) (m : ℕ) :
   ϕ.reflect_term &k m = &k ↑' 1 # m := by refl
 
-@[simp] lemma reflect_term_on_term [has_decidable_range ϕ] (hϕ : is_injective ϕ) (t : term L) 
+@[simp] lemma reflect_term_on_term [has_decidable_range ϕ] (hϕ : is_injective ϕ) (t : term L)
   (m : ℕ) : ϕ.reflect_term (ϕ.on_term t) m = t ↑' 1 # m :=
 begin
   refine term.rec _ _ t; clear t; intros,
   { refl },
-  { simp [reflect_term_apps_pos (mem_range_self f)], 
+  { simp [reflect_term_apps_pos (mem_range_self f)],
     rw [classical.some_eq f (λy hy, hϕ.on_function hy), dvector.map_congr_pmem ih_ts] }
 end
 
@@ -405,7 +405,7 @@ lemma reflect_term_lift_at [has_decidable_range ϕ] (hϕ : is_injective ϕ) {n m
 begin
   refine term.rec _ _ t; clear t; intros,
   { simp [-lift_term_at], rw[lift_term_at2_small _ _ _ h], simp },
-  { by_cases h' : f ∈ range (@on_function _ _ ϕ l); simp [reflect_term_apps_pos, 
+  { by_cases h' : f ∈ range (@on_function _ _ ϕ l); simp [reflect_term_apps_pos,
       reflect_term_apps_neg, h', h, dvector.map_congr_pmem ih_ts, -add_comm] }
 end
 
@@ -413,36 +413,36 @@ lemma reflect_term_lift [has_decidable_range ϕ] (hϕ : is_injective ϕ) {n m : 
   (t : term L') : ϕ.reflect_term (t ↑ n) (m+n) = ϕ.reflect_term t m ↑ n :=
 reflect_term_lift_at hϕ m.zero_le t
 
-lemma reflect_term_subst [has_decidable_range ϕ] (hϕ : is_injective ϕ) (n m : ℕ) 
-  (s t : term L') : 
+lemma reflect_term_subst [has_decidable_range ϕ] (hϕ : is_injective ϕ) (n m : ℕ)
+  (s t : term L') :
   ϕ.reflect_term (t[s // n]) (m+n) = (ϕ.reflect_term t (m+n+1))[ϕ.reflect_term s m // n] :=
 begin
   refine term.rec _ _ t; clear t; intros,
-  { simp [-lift_term_at, -add_comm, -add_assoc], 
+  { simp [-lift_term_at, -add_comm, -add_assoc],
     apply lt_by_cases k n; intro h,
     { have h₂ : ¬(m + n ≤ k), from λh', not_le_of_gt h (le_trans (le_add_left n m) h'),
       have h₃ : ¬(m + n + 1 ≤ k), from λh', h₂ $ le_trans (le_succ _) h',
       simp [h, h₂, h₃, -add_comm, -add_assoc] },
     { have h₂ : ¬(m + n + 1 ≤ n), from not_le_of_gt (lt_of_le_of_lt (le_add_left n m) (lt.base _)) ,
       simp [h, h₂, reflect_term_lift hϕ, -add_comm, -add_assoc] },
-    { have hk := one_le_of_lt h, 
+    { have hk := one_le_of_lt h,
       have h₄ : n < k + 1, from lt.trans h (lt.base k),
       by_cases h₂' : m + n + 1 ≤ k,
       { have h₂ : m + n + 1 ≤ k, from h₂',
         have h₃ : m + n ≤ k - 1, from (nat.le_sub_right_iff_add_le hk).mpr h₂,
-        simp [h, h₂, h₃, h₄, -add_comm, -add_assoc], 
+        simp [h, h₂, h₃, h₄, -add_comm, -add_assoc],
         rw [sub_add_eq_max, max_eq_left hk] },
       { have h₂ : ¬(m + n + 1 ≤ k), from h₂',
         have h₃ : ¬(m + n ≤ k - 1), from λh', h₂ $ (nat.le_sub_right_iff_add_le hk).mp h',
         simp [h, h₂, h₃, -add_comm, -add_assoc] }}},
   { have h : n < m + n + 1, from nat.lt_succ_of_le (nat.le_add_left n m),
-    by_cases h' : f ∈ range (@on_function _ _ ϕ l); simp [reflect_term_apps_pos, 
+    by_cases h' : f ∈ range (@on_function _ _ ϕ l); simp [reflect_term_apps_pos,
       reflect_term_apps_neg, h, h', dvector.map_congr_pmem ih_ts, -add_comm, -add_assoc] }
 end
 
 variable (ϕ)
 
-noncomputable def reflect_formula [has_decidable_range ϕ] (f : formula L') : 
+noncomputable def reflect_formula [has_decidable_range ϕ] (f : formula L') :
   ∀(m : ℕ), formula L :=
 formula.rec (λm, ⊥) (λt₁ t₂ m, ϕ.reflect_term t₁ m ≃ ϕ.reflect_term t₂ m)
   (λl R' xs' m, if hR' : R' ∈ range (@on_relation _ _ ϕ l)
@@ -451,21 +451,21 @@ formula.rec (λm, ⊥) (λt₁ t₂ m, ϕ.reflect_term t₁ m ≃ ϕ.reflect_ter
 
 variable {ϕ}
 lemma reflect_formula_apps_rel_pos [has_decidable_range ϕ] {l} {R : L'.relations l}
-  (hR : R ∈ range (@on_relation _ _ ϕ l)) (ts : dvector (term L') l) (m : ℕ) : 
-  ϕ.reflect_formula (apps_rel (rel R) ts) m = 
+  (hR : R ∈ range (@on_relation _ _ ϕ l)) (ts : dvector (term L') l) (m : ℕ) :
+  ϕ.reflect_formula (apps_rel (rel R) ts) m =
   apps_rel (rel (classical.some hR)) (ts.map (λt, ϕ.reflect_term t m)) :=
 by simp [reflect_formula, formula.rec_apps_rel, dif_pos hR]
 
-lemma reflect_formula_apps_rel_neg [has_decidable_range ϕ] {l} {R : L'.relations l} 
-  (hR : R ∉ range (@on_relation _ _ ϕ l)) (ts : dvector (term L') l) (m : ℕ) : 
+lemma reflect_formula_apps_rel_neg [has_decidable_range ϕ] {l} {R : L'.relations l}
+  (hR : R ∉ range (@on_relation _ _ ϕ l)) (ts : dvector (term L') l) (m : ℕ) :
   ϕ.reflect_formula (apps_rel (rel R) ts) m = ⊥ :=
 by simp [reflect_formula, formula.rec_apps_rel, dif_neg hR]
 
-@[simp] lemma reflect_formula_equal [has_decidable_range ϕ] (t₁ t₂ : term L') (m : ℕ) : 
+@[simp] lemma reflect_formula_equal [has_decidable_range ϕ] (t₁ t₂ : term L') (m : ℕ) :
   ϕ.reflect_formula (t₁ ≃ t₂) m = ϕ.reflect_term t₁ m ≃ ϕ.reflect_term t₂ m := by refl
-@[simp] lemma reflect_formula_imp [has_decidable_range ϕ] (f₁ f₂ : formula L') (m : ℕ) : 
+@[simp] lemma reflect_formula_imp [has_decidable_range ϕ] (f₁ f₂ : formula L') (m : ℕ) :
   ϕ.reflect_formula (f₁ ⟹ f₂) m = ϕ.reflect_formula f₁ m ⟹ ϕ.reflect_formula f₂ m := by refl
-@[simp] lemma reflect_formula_all [has_decidable_range ϕ] (f : formula L') (m : ℕ) : 
+@[simp] lemma reflect_formula_all [has_decidable_range ϕ] (f : formula L') (m : ℕ) :
   ϕ.reflect_formula (∀' f) m = ∀' (ϕ.reflect_formula f (m+1)) := by refl
 
 @[simp] lemma reflect_formula_on_formula [has_decidable_range ϕ] (hϕ : is_injective ϕ) (m : ℕ)
@@ -474,20 +474,20 @@ begin
   revert m, refine formula.rec _ _ _ _ _ f; clear f; intros,
   { refl },
   { simp [hϕ] },
-  { simp [reflect_formula_apps_rel_pos (mem_range_self R), hϕ], 
+  { simp [reflect_formula_apps_rel_pos (mem_range_self R), hϕ],
     rw [classical.some_eq R (λy hy, hϕ.on_relation hy)] },
   { simp* },
   { simp* }
 end
 
-lemma reflect_formula_lift_at [has_decidable_range ϕ] (hϕ : is_injective ϕ) {n m m' : ℕ} 
-  (h : m ≤ m') (f : formula L') : 
+lemma reflect_formula_lift_at [has_decidable_range ϕ] (hϕ : is_injective ϕ) {n m m' : ℕ}
+  (h : m ≤ m') (f : formula L') :
   ϕ.reflect_formula (f ↑' n # m) (m'+n) = ϕ.reflect_formula f m' ↑' n # m :=
 begin
   revert m m', refine formula.rec _ _ _ _ _ f; clear f; intros,
   { refl },
   { simp [reflect_term_lift_at hϕ h, -add_comm] },
-  { by_cases h' : R ∈ range (@on_relation _ _ ϕ l); simp [reflect_formula_apps_rel_pos, 
+  { by_cases h' : R ∈ range (@on_relation _ _ ϕ l); simp [reflect_formula_apps_rel_pos,
       reflect_formula_apps_rel_neg, h', h, ts.map_congr (reflect_term_lift_at hϕ h), -add_comm] },
   { simp [ih₁ h, ih₂ h, -add_comm] },
   { simp [-add_comm, -add_assoc], rw [←ih], simp, exact add_le_add_right h 1 },
@@ -501,25 +501,25 @@ lemma reflect_formula_lift1 [has_decidable_range ϕ] (hϕ : is_injective ϕ) (m 
   (f : formula L') : ϕ.reflect_formula (f ↑ 1) (m+1) = ϕ.reflect_formula f m ↑ 1 :=
 reflect_formula_lift hϕ 1 m f
 
-lemma reflect_formula_subst [has_decidable_range ϕ] (hϕ : is_injective ϕ) (f : formula L') 
-  (n m : ℕ) (s : term L') : 
+lemma reflect_formula_subst [has_decidable_range ϕ] (hϕ : is_injective ϕ) (f : formula L')
+  (n m : ℕ) (s : term L') :
   ϕ.reflect_formula (f[s // n]) (m+n) = (ϕ.reflect_formula f (m+n+1))[ϕ.reflect_term s m // n] :=
 begin
   revert n, refine formula.rec _ _ _ _ _ f; clear f; intros,
   { refl },
   { simp [reflect_term_subst hϕ, -add_comm] },
-  { by_cases h' : R ∈ range (@on_relation _ _ ϕ l); simp [reflect_formula_apps_rel_pos, 
+  { by_cases h' : R ∈ range (@on_relation _ _ ϕ l); simp [reflect_formula_apps_rel_pos,
       reflect_formula_apps_rel_neg, h', ts.map_congr (reflect_term_subst hϕ n m s), -add_comm] },
   { simp [ih₁, ih₂, -add_comm] },
   { simp [-add_comm, ih] },
 end
 
 @[simp] lemma reflect_formula_subst0 [has_decidable_range ϕ] (hϕ : is_injective ϕ) (m : ℕ)
-  (f : formula L') (s : term L') : 
+  (f : formula L') (s : term L') :
   ϕ.reflect_formula (f[s // 0]) m = (ϕ.reflect_formula f (m+1))[ϕ.reflect_term s m // 0] :=
 reflect_formula_subst hϕ f 0 m s
 
-noncomputable def reflect_prf_gen [has_decidable_range ϕ] (hϕ : is_injective ϕ) {Γ} 
+noncomputable def reflect_prf_gen [has_decidable_range ϕ] (hϕ : is_injective ϕ) {Γ}
   {f : formula L'} (m) (H : Γ ⊢ f) : (λf, ϕ.reflect_formula f m) '' Γ ⊢ ϕ.reflect_formula f m :=
 begin
   induction H generalizing m,
@@ -527,7 +527,7 @@ begin
   { apply impI, have h := @H_ih m, rw [image_insert_eq] at h, exact h },
   { apply impE, apply H_ih_h₁, apply H_ih_h₂ },
   { apply falsumE, have h := @H_ih m, rw [image_insert_eq] at h, exact h },
-  { apply allI, rw [image_image], have h := @H_ih (m+1), rw [image_image] at h, 
+  { apply allI, rw [image_image], have h := @H_ih (m+1), rw [image_image] at h,
     apply cast _ h, congr1, apply image_congr' (reflect_formula_lift1 hϕ m) },
   { apply allE, have h := @H_ih m, simp at h, exact h, symmetry,
     apply reflect_formula_subst0 hϕ },
@@ -536,7 +536,7 @@ begin
     have h := @H_ih_h₂ m, simp [hϕ] at h, exact h, simp [hϕ] },
 end
 
-section 
+section
 
 /- maybe generalize to filter_symbol? -/
 @[reducible] def filter_symbols (p : L.symbols → Prop) : Language :=
@@ -545,24 +545,24 @@ section
 def filter_symbols_Lhom (p : L.symbols → Prop) : filter_symbols p →ᴸ L :=
 ⟨λl, subtype.val, λl, subtype.val⟩
 
-def is_injective_filter_symbols_Lhom (p : L.symbols → Prop) : 
+def is_injective_filter_symbols_Lhom (p : L.symbols → Prop) :
   is_injective (filter_symbols_Lhom p) :=
 ⟨λl, subtype.val_injective, λl, subtype.val_injective⟩
 
-lemma find_term_filter_symbols (p : L.symbols → Prop) : 
-  ∀{l} (t : preterm L l) (h : symbols_in_term t ⊆ { s | p s }), 
+lemma find_term_filter_symbols (p : L.symbols → Prop) :
+  ∀{l} (t : preterm L l) (h : symbols_in_term t ⊆ { s | p s }),
   { t' : preterm (filter_symbols p) l // (filter_symbols_Lhom p).on_term t' = t }
 | _ &k          h := ⟨&k, rfl⟩
-| _ (func f)    h := ⟨func ⟨f, h $ mem_singleton _⟩, rfl⟩ 
-| _ (app t₁ t₂) h := 
+| _ (func f)    h := ⟨func ⟨f, h $ mem_singleton _⟩, rfl⟩
+| _ (app t₁ t₂) h :=
   begin
     let ih₁ := find_term_filter_symbols t₁ (subset.trans (subset_union_left _ _) h),
     let ih₂ := find_term_filter_symbols t₂ (subset.trans (subset_union_right _ _) h),
     refine ⟨app ih₁.1 ih₂.1, _⟩, dsimp, rw [ih₁.2, ih₂.2]
   end
 
-lemma find_formula_filter_symbols (p : L.symbols → Prop) : 
-  ∀{l} (f : preformula L l) (h : symbols_in_formula f ⊆ { s | p s }), 
+lemma find_formula_filter_symbols (p : L.symbols → Prop) :
+  ∀{l} (f : preformula L l) (h : symbols_in_formula f ⊆ { s | p s }),
   { f' : preformula (filter_symbols p) l // (filter_symbols_Lhom p).on_formula f' = f }
 | _ falsum       h := ⟨⊥, rfl⟩
 | _ (t₁ ≃ t₂)    h :=
@@ -571,7 +571,7 @@ lemma find_formula_filter_symbols (p : L.symbols → Prop) :
     let ih₂ := find_term_filter_symbols p t₂ (subset.trans (subset_union_right _ _) h),
     refine ⟨ih₁.1 ≃ ih₂.1, _⟩, dsimp, rw [ih₁.2, ih₂.2]
   end
-| _ (rel R)      h := ⟨rel ⟨R, h $ mem_singleton _⟩, rfl⟩ 
+| _ (rel R)      h := ⟨rel ⟨R, h $ mem_singleton _⟩, rfl⟩
 | _ (apprel f t) h :=
   begin
     let ih₁ := find_formula_filter_symbols f (subset.trans (subset_union_left _ _) h),
@@ -584,7 +584,7 @@ lemma find_formula_filter_symbols (p : L.symbols → Prop) :
     let ih₂ := find_formula_filter_symbols f₂ (subset.trans (subset_union_right _ _) h),
     refine ⟨ih₁.1 ⟹ ih₂.1, _⟩, dsimp, rw [ih₁.2, ih₂.2]
   end
-| _ (∀' f)       h := 
+| _ (∀' f)       h :=
   begin
     let ih := find_formula_filter_symbols f h,
     refine ⟨∀' ih.1, _⟩, dsimp, rw [ih.2]
@@ -602,7 +602,7 @@ begin
   let ϕ := filter_symbols_Lhom p,
   have hϕ : is_injective ϕ := is_injective_filter_symbols_Lhom p,
   have hc : c ∉ range (on_function ϕ),
-  { intro hc, rw [mem_range] at hc, rcases hc with ⟨c', hc'⟩, 
+  { intro hc, rw [mem_range] at hc, rcases hc with ⟨c', hc'⟩,
     apply c'.2, rw [←hc'], refl },
   have hf' : symbols_in_formula f ⊆ {s : Language.symbols L | p s},
   { intros s hs hps, subst hps, exact hf hs },
@@ -612,18 +612,18 @@ begin
     apply image_preimage_eq_of_subset, intros f' hf',
     have : symbols_in_formula f' ⊆ {s : Language.symbols L | p s},
     { intros s hs hps, subst hps, exact hΓ ⟨_, mem_image_of_mem _ hf', hs⟩ },
-    rcases find_formula_filter_symbols p f' this with ⟨f, rfl⟩, 
+    rcases find_formula_filter_symbols p f' this with ⟨f, rfl⟩,
     apply mem_range_self },
   rcases this with ⟨Γ, rfl⟩,
-  rw [image_image, ←image_congr' (ϕ.on_formula_lift 1), 
-    ←image_image ϕ.on_formula], 
+  rw [image_image, ←image_congr' (ϕ.on_formula_lift 1),
+    ←image_image ϕ.on_formula],
   apply ϕ.on_prf,
-  haveI : has_decidable_range (filter_symbols_Lhom p) := 
+  haveI : has_decidable_range (filter_symbols_Lhom p) :=
     ⟨λn f, classical.prop_decidable _, λn R, classical.prop_decidable _⟩,
   have := reflect_prf_gen hϕ 0 H,
   rwa [reflect_formula_subst0 hϕ, reflect_term_const_neg hc, image_image,
-    image_congr' (reflect_formula_on_formula hϕ 0), 
-    reflect_formula_on_formula hϕ, lift_subst_formula_cancel] at this  
+    image_congr' (reflect_formula_on_formula hϕ 0),
+    reflect_formula_on_formula hϕ, lift_subst_formula_cancel] at this
 end
 
 noncomputable def sgeneralize_constant {T : Theory L} (c : L.constants)
@@ -642,7 +642,7 @@ begin
   have := reflect_prf_gen hϕ 0 h, simp [image_image, hϕ] at this, exact this
 end
 
-noncomputable def reflect_sprf {Γ : set $ sentence L} {f : sentence L} (hϕ : ϕ.is_injective) 
+noncomputable def reflect_sprf {Γ : set $ sentence L} {f : sentence L} (hϕ : ϕ.is_injective)
   (h : ϕ.on_sentence '' Γ ⊢ ϕ.on_sentence f) : Γ ⊢ f :=
 by { apply reflect_prf hϕ, simp only [sprf, Theory.fst, image_image, function.comp,
      on_bounded_formula_fst, on_sentence] at h ⊢, exact h }
@@ -655,7 +655,7 @@ begin
   { congr1, exact x_ih_t hxy', exact x_ih_s hxy'' }
 end
 
-lemma on_formula_inj (h : ϕ.is_injective) {l} : 
+lemma on_formula_inj (h : ϕ.is_injective) {l} :
   injective (ϕ.on_formula : preformula L l → preformula L' l) :=
 begin
   intros x y hxy, induction x generalizing y; cases y; try {injection hxy with hxy' hxy''},
@@ -692,24 +692,24 @@ variable (ϕ)
 /-- Given L → L' and an L'-structure S, the reduct of S to L is the L-structure given by
 restricting interpretations from L' to L --/
 def reduct (S : Structure L') : Structure L :=
-⟨ S.carrier, λn f, S.fun_map $ ϕ.on_function f, λn R, S.rel_map $ ϕ.on_relation R⟩ 
+⟨ S.carrier, λn f, S.fun_map $ ϕ.on_function f, λn R, S.rel_map $ ϕ.on_relation R⟩
 
 notation S`[[`:95 ϕ`]]`:90 := reduct ϕ S
 
 variable {ϕ}
 
-@[simp] def reduct_coe (S : Structure L') : ↥(reduct ϕ S) = S := 
+@[simp] def reduct_coe (S : Structure L') : ↥(reduct ϕ S) = S :=
 by refl
 
 def reduct_id {S : Structure L'} : S → S[[ϕ]] := id
 
-@[simp] lemma reduct_term_eq {S : Structure L'} (hϕ : ϕ.is_injective) {n} : 
+@[simp] lemma reduct_term_eq {S : Structure L'} (hϕ : ϕ.is_injective) {n} :
   Π(xs : dvector S n) {l} (t : bounded_preterm L n l) (xs' : dvector S l), realize_bounded_term xs (on_bounded_term ϕ t) xs' = @realize_bounded_term L (reduct ϕ S) n xs l t xs'
 | xs _ (bd_var k)   xs' := by refl
 | xs _ (bd_func f)  xs' := by refl
 | xs l (bd_app t s) xs' := by simp*
 
-lemma reduct_bounded_formula_iff {S : Structure L'} (hϕ : ϕ.is_injective) : Π{n l} (xs : dvector S n) (xs' : dvector S l) (f : bounded_preformula L n l), 
+lemma reduct_bounded_formula_iff {S : Structure L'} (hϕ : ϕ.is_injective) : Π{n l} (xs : dvector S n) (xs' : dvector S l) (f : bounded_preformula L n l),
   realize_bounded_formula xs (on_bounded_formula ϕ f) xs' ↔ @realize_bounded_formula L (reduct ϕ S) n l xs f xs'
 | _ _ xs xs' (bd_falsum)      := by refl
 | _ _ xs xs' (bd_equal t₁ t₂) := by simp [hϕ]
@@ -718,15 +718,15 @@ lemma reduct_bounded_formula_iff {S : Structure L'} (hϕ : ϕ.is_injective) : Π
 | _ _ xs xs' (f₁ ⟹ f₂)       := by simp*
 | _ _ xs xs' (∀' f)           := by apply forall_congr; intro x;simp*
 
-lemma reduct_ssatisfied {S : Structure L'} {f : sentence L} (hϕ : ϕ.is_injective) 
+lemma reduct_ssatisfied {S : Structure L'} {f : sentence L} (hϕ : ϕ.is_injective)
  (h : S ⊨ ϕ.on_sentence f) : ϕ.reduct S ⊨ f :=
 (reduct_bounded_formula_iff hϕ ([]) ([]) f).mp h
 
-lemma reduct_ssatisfied' {S : Structure L'} {f : sentence L} (hϕ : ϕ.is_injective) 
+lemma reduct_ssatisfied' {S : Structure L'} {f : sentence L} (hϕ : ϕ.is_injective)
  (h : S ⊨ ϕ.on_bounded_formula f) : ϕ.reduct S ⊨ f :=
 (reduct_bounded_formula_iff hϕ ([]) ([]) f).mp h
 
-def reduct_all_ssatisfied {S : Structure L'} {T : Theory L} (hϕ : ϕ.is_injective) 
+def reduct_all_ssatisfied {S : Structure L'} {T : Theory L} (hϕ : ϕ.is_injective)
   (h : S ⊨ ϕ.on_sentence '' T) : S[[ϕ]] ⊨ T :=
 λf hf, reduct_ssatisfied hϕ $ h $ mem_image_of_mem _ hf
 
@@ -737,7 +737,7 @@ variable (ϕ)
 @[reducible]def Theory_induced (T : Theory L) : Theory L' := ϕ.on_sentence '' T
 
 variable {ϕ}
-lemma is_consistent_Theory_induced (hϕ : ϕ.is_injective) {T : Theory L} (hT : is_consistent T) : 
+lemma is_consistent_Theory_induced (hϕ : ϕ.is_injective) {T : Theory L} (hT : is_consistent T) :
   is_consistent (ϕ.Theory_induced T) :=
 λH, hT $ H.map $ λh, reflect_sprf hϕ (by apply h)
 
@@ -746,15 +746,15 @@ lemma is_consistent_Theory_induced (hϕ : ϕ.is_injective) {T : Theory L} (hT : 
 def is_consistent_extend {T : Theory L} (hT : is_consistent T) (hϕ : ϕ.is_injective)
   (h : bounded_formula L 1 → bounded_formula L 1)
   (hT' : ∀(f : bounded_formula L 1), T ⊢ ∃' (h f))
-  (g : bounded_formula L 1 → L'.constants) (hg : injective g) 
-  (hg' : ∀x, g x ∉ range (@on_function L L' ϕ 0)) : 
-  is_consistent (ϕ.Theory_induced T ∪ 
+  (g : bounded_formula L 1 → L'.constants) (hg : injective g)
+  (hg' : ∀x, g x ∉ range (@on_function L L' ϕ 0)) :
+  is_consistent (ϕ.Theory_induced T ∪
   (λf, (ϕ.on_bounded_formula (h f))[bd_const (g f)/0]) '' set.univ) :=
 begin
   haveI : decidable_eq (bounded_formula L 1) := λx y, classical.prop_decidable _,
   haveI : decidable_eq (sentence L') := λx y, classical.prop_decidable _,
-  have lem : ∀(s₀ : finset (bounded_formula L 1)), 
-    is_consistent (ϕ.Theory_induced T ∪ 
+  have lem : ∀(s₀ : finset (bounded_formula L 1)),
+    is_consistent (ϕ.Theory_induced T ∪
       (λf, (ϕ.on_bounded_formula (h f))[bd_const (g f)/0]) '' ↑s₀),
   { refine finset.induction _ _,
     { simp, exact is_consistent_Theory_induced hϕ hT },
@@ -763,13 +763,13 @@ begin
       have : _ ⊢ (ϕ.on_bounded_formula $ ∼(h ψ))[bd_const (g ψ)/0] := simpI hs,
       have := sgeneralize_constant (g ψ) _ _ this,
       { refine simpE _ _ this, apply sweakening (subset_union_left _ _) (ϕ.on_sprf $ hT' ψ) },
-      { intro h', rcases h' with ⟨s', ⟨ψ', ⟨ψ', ⟨ψ', hψ₂, rfl⟩ | ⟨ψ', hψ₂, rfl⟩, rfl⟩, rfl⟩, hψ₃⟩, 
-        { rw [ϕ.on_sentence_fst] at hψ₃, 
+      { intro h', rcases h' with ⟨s', ⟨ψ', ⟨ψ', ⟨ψ', hψ₂, rfl⟩ | ⟨ψ', hψ₂, rfl⟩, rfl⟩, rfl⟩, hψ₃⟩,
+        { rw [ϕ.on_sentence_fst] at hψ₃,
           exact ϕ.not_mem_function_in_formula_on_formula (hg' _) _ hψ₃ },
-        { simp at hψ₃, 
+        { simp at hψ₃,
           cases symbols_in_formula_subst _ _ _ hψ₃ with hψ₄ hψ₄,
           { exact ϕ.not_mem_function_in_formula_on_formula (hg' _) _ hψ₄ },
-          { injection eq_of_mem_singleton hψ₄ with hψ₅, injection hψ₅ with x hψ₆, 
+          { injection eq_of_mem_singleton hψ₄ with hψ₅, injection hψ₅ with x hψ₆,
             cases hg (eq_of_heq hψ₆), exact hψ hψ₂ }}},
       { rw [on_bounded_formula_fst], apply not_mem_function_in_formula_on_formula, apply hg' }}},
   intro H, rcases theory_proof_compactness H with ⟨T₀, h₀, hT⟩,

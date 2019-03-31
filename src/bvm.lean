@@ -1,5 +1,4 @@
-import set_theory.zfc set_theory.ordinal
-       order.boolean_algebra order.complete_boolean_algebra
+import set_theory.zfc order.complete_boolean_algebra
        .to_mathlib order.zorn
 
 local infix ` ⟹ `:65 := lattice.imp
@@ -80,7 +79,7 @@ lemma bv_specialize_right_twice {ι : Type*} {s : ι → 𝔹} {c b : 𝔹} (i j
 begin
   rw[inf_comm], apply bv_specialize_left_twice i j, rwa[<-inf_comm]
 end
-  
+
 lemma bv_imp_elim {a b : 𝔹} : (a ⟹ b) ⊓ a ≤ b :=
 by simp[imp, inf_sup_right]
 
@@ -398,7 +397,7 @@ begin
          = A i =ᴮ A' a' ⊓ A' a' =ᴮ A'' a'' ⊓ B'' a'',
          by {rw[this], clear this, apply le_trans, exact (H1 i a' a''),
          apply le_supr_of_le a'', rw[inf_comm]},
-       ac_refl}, 
+       ac_refl},
       {bv_intro i'', apply deduction.mp,
         conv {to_rhs, congr, funext, rw[bv_eq_symm]}, change _ ≤ (A'' i'') ∈ᴮ ⟨α, A, B⟩,
         have this1 : ⟨α'', A'', B''⟩ =ᴮ ⟨α', A', B'⟩ ⊓ B'' i'' ≤ A'' i'' ∈ᴮ ⟨α', A', B'⟩,
@@ -712,13 +711,13 @@ def mixture {ι : Type u} (a : ι → 𝔹) (u : ι → bSet 𝔹) : bSet 𝔹 :
 
 /-- Given a₁ a₂ : 𝔹, return the canonical map from ulift bool to 𝔹 given by ff ↦ a₁ and tt ↦ a₂-/
 @[reducible]def bool.map {α : Type*} (a₁ a₂ : α) : (ulift bool) → α :=
-  λ x, bool.rec_on (x.down) a₁ a₂ 
+  λ x, bool.rec_on (x.down) a₁ a₂
 
 def two_term_mixture (a₁ a₂ : 𝔹) (h_anti : a₁ ⊓ a₂ = ⊥) (u₁ u₂ : bSet 𝔹) : bSet 𝔹 :=
 @mixture 𝔹 _ (ulift bool) (bool.map a₁ a₂) (bool.map u₁ u₂)
 
 -- @[simp]lemma two_term_mixture_type (a₁ a₂ : 𝔹) (h_anti : a₁ ⊓ a₂ = ⊥) (u₁ u₂ : bSet 𝔹) :
---   (two_term_mixture a₁ a₂ h_anti u₁ u₂).type = (Σ(i : ulift bool), ((bool.map u₁ u₂) i).type) := sorry 
+--   (two_term_mixture a₁ a₂ h_anti u₁ u₂).type = (Σ(i : ulift bool), ((bool.map u₁ u₂) i).type) := sorry
 
 lemma two_term_mixture_h_star (a₁ a₂ : 𝔹) (h_anti : a₁ ⊓ a₂ = ⊥) (u₁ u₂ : bSet 𝔹) :
   ∀ i j : (ulift bool), (bool.map a₁ a₂) i ⊓ (bool.map a₁ a₂) j ≤ (bool.map u₁ u₂) i =ᴮ (bool.map u₁ u₂) j :=
@@ -891,14 +890,14 @@ end
 def witness_antichain_index : ∀ {i j}, i ≠ j → (@witness_antichain _ _ ϕ r _) i ⊓ (@witness_antichain _ _ ϕ r _) j = ⊥ :=
 λ x y h_neq,
 begin
-  dsimp[witness_antichain], simp[sub_eq, neg_supr], 
+  dsimp[witness_antichain], simp[sub_eq, neg_supr],
   apply bot_unique, cases dichotomy_of_neq r _ _ h_neq,
   {ac_change (y.val ⊓ ⨅ (i : {x_1 // x_1 ∈ down_set r x}), -(i.val).val) ⊓
     (x.val ⊓ ⨅ (i : {x // x ∈ down_set r y}), -(i.val).val) ≤ ⊥,
     apply inf_le_right_of_le,
   rw[inf_comm, deduction], apply infi_le_of_le,
   swap, use x, exact h, simp},
-  
+
   {ac_change (⨅ (i : {x_1 // x_1 ∈ down_set r x}), -(i.val).val) ⊓ y.val ⊓
       (x.val ⊓ ⨅ (i : {x // x ∈ down_set r y}), -(i.val).val) ≤ ⊥,
       apply inf_le_left_of_le, rw[deduction], apply infi_le_of_le, swap, exact ⟨y, h⟩, simp}
@@ -926,7 +925,7 @@ begin
   -- simp[neg_supr, sub_eq],
   apply le_trans (@le_top _ _ this_x.val),
      let A := _, change ⊤ ≤ (A ⊔ _ : 𝔹), apply le_trans (by simp : ⊤ ≤ A ⊔ -A), apply sup_le_sup, refl, dsimp[A],
-   rw[lattice.neg_neg], 
+   rw[lattice.neg_neg],
    apply supr_le, intro j,
    apply le_trans (this_ih j j.property), unfold witness_antichain,
    apply supr_le_supr, intro i', apply supr_le, intro H',
@@ -988,7 +987,7 @@ lemma AE_convert {α 𝔹 : Type*} [nontrivial_complete_boolean_algebra 𝔹] (A
   by {have := maximum_principle (λ y, ϕ (A i) y)
                 (by {intros x y, apply h_congr}),
       rcases this with ⟨u', H'⟩, use u', apply infi_le_of_le i,
-      apply imp_le_of_right_le, from le_of_eq H'}  
+      apply imp_le_of_right_le, from le_of_eq H'}
 
 section mixing_corollaries
 -- The lemmas in this section are corollaries of the mixing lemma
@@ -1096,7 +1095,7 @@ begin
   have this_right₂:= h_core_right (S y) h_left₂,
   rcases this_right₁ with ⟨w₁, ⟨H₁, H₂⟩⟩, rcases this_right₂ with ⟨w₂, ⟨H₁', H₂'⟩⟩,
   have Q₂ := H₂ y H, have Q₂ := H₂ x (by apply bv_eq_refl), cc
-end  
+end
 
 /-- This is the "f_x" in the notes. We are free to use function types since universes are inaccessible. -/
 def core.mk_ϕ (u : bSet 𝔹) : bSet 𝔹 → (u.type → 𝔹) :=
@@ -1111,7 +1110,7 @@ begin
     iterate 2 {apply inf_le_left_of_le}, apply inf_le_right_of_le, refl, swap, apply bv_eq_trans,
     repeat{apply inf_le_right_of_le}, refl}, dsimp at H,
     simp[show ∀ a, y =ᴮ func u a = func u a =ᴮ y, by {intro, apply bv_eq_symm}] at H,
-  have this' :  (∀ (i_z : type u), bval u i_z ⊓ x =ᴮ func u i_z ⊓ bval u i_z ⊓ func u i_z =ᴮ y ≤ x =ᴮ y) ↔ 
+  have this' :  (∀ (i_z : type u), bval u i_z ⊓ x =ᴮ func u i_z ⊓ bval u i_z ⊓ func u i_z =ᴮ y ≤ x =ᴮ y) ↔
           ∀ (i_z : type u), ((bval u i_z ⊓ x =ᴮ func u i_z) ⊓ (bval u i_z ⊓ func u i_z =ᴮ y) ≤ x =ᴮ y),
     by {apply forall_congr, intro a, apply iff_of_eq, ac_refl},
   rw[this'] at this, simp[H] at this, rw[<-supr_le_iff] at this, apply le_trans _ this, rw[eq_top_iff] at h₂,
@@ -1290,7 +1289,7 @@ by refl
 @[simp, cleanup]lemma pSet.type_mk {α : Type u} {A : α → pSet} : pSet.type (pSet.mk α A) = α
 := rfl
 
-@[simp, cleanup]lemma check_type' {x : pSet.{u}} : bSet.type (x̌ : bSet 𝔹) = x.type := 
+@[simp, cleanup]lemma check_type' {x : pSet.{u}} : bSet.type (x̌ : bSet 𝔹) = x.type :=
 by {induction x, simp}
 
 @[simp, cleanup]lemma check_type'_set {x : pSet} : set (bSet.type (x̌ : bSet 𝔹)) = set (x.type) :=
@@ -1355,7 +1354,7 @@ begin
   [apply check_bv_eq_top_of_equiv, apply check_bv_eq_bot_of_not_equiv]; assumption
 end
 
-lemma check_bv_eq_iff {x y : pSet} 
+lemma check_bv_eq_iff {x y : pSet}
 : pSet.equiv x y ↔ x̌ =ᴮ y̌ = (⊤ : 𝔹) :=
 begin
   induction x generalizing y, cases y,
@@ -1387,7 +1386,7 @@ begin
   cases this, swap, contradiction, rw[this] at H, apply H, from le_top
 end
 
-end check_names 
+end check_names
 
 /-- The axiom of weak replacement says that for every ϕ(x,y),
     for every set u, ∀ x ∈ u, ∃ y ϕ (x,y) implies there exists a set v
@@ -1515,7 +1514,7 @@ end
   (@set_of_indicator 𝔹 _ u f).type = u.type := rfl
 
 @[simp, cleanup]lemma set_of_indicator.func {u} {f} {i}:
-  (@set_of_indicator 𝔹 _ u f).func i = u.func i := rfl 
+  (@set_of_indicator 𝔹 _ u f).func i = u.func i := rfl
 
 @[simp, cleanup]lemma set_of_indicator.bval {u} {f} {i} :
   (@set_of_indicator 𝔹 _ u f).bval i = f i := rfl
@@ -1561,7 +1560,7 @@ lemma bSet_axiom_of_powerset' {Γ : 𝔹} (u : bSet 𝔹) : Γ ≤ ⨅(x : bSet 
 begin
   bv_intro x, apply le_inf,
   {apply le_trans le_top,
-   rw[<-deduction, top_inf_eq], 
+   rw[<-deduction, top_inf_eq],
    unfold bv_powerset, apply supr_le, intro χ,
    suffices : ((set_of_indicator χ) ⊆ᴮ u ⊓ (x =ᴮ (set_of_indicator χ)) : 𝔹) ≤ x ⊆ᴮ u,
      by {convert this, simp[subset_unfold]},
@@ -1577,7 +1576,7 @@ begin
   apply le_inf, bv_intro a', apply infi_le_of_le a', rw[supr_imp_eq],
   bv_intro i_y, apply imp_le_of_left_right_le, swap, refl,
   rw[inf_comm, bv_eq_symm], apply subst_congr_mem_left,
-  
+
   rw[bv_eq_unfold], apply le_inf,
   {conv {to_rhs, dsimp}, have := @bounded_forall _ _ x (λ y, ⨆ (a' :    type u), func u a' ∈ᴮ x ⊓ y =ᴮ func u a'), rw[this], swap,
   intros a₁ a₂, dsimp, rw[inf_supr_eq], apply supr_le, intro i,
@@ -1585,9 +1584,9 @@ begin
   apply le_supr_of_le i,
   ac_change (a₂ =ᴮ a₁ ⊓  a₁ =ᴮ func u i) ⊓ func u i ∈ᴮ x ≤ func u i ∈ᴮ x ⊓ a₂ =ᴮ func u i,
     rw[bv_eq_symm], ac_refl,
-  
+
   apply le_trans, apply inf_le_inf, apply bv_eq_trans, refl, rw[inf_comm],
-  
+
   {bv_intro a₁, dsimp, apply infi_le_of_le a₁, rw[<-deduction],
    apply le_trans, apply bv_imp_elim', rw[inf_comm, deduction],
    rw[mem_unfold], apply supr_le, intro i, rw[<-deduction],
@@ -1702,7 +1701,7 @@ lemma epsilon_induction {Γ} (ϕ : bSet 𝔹 → 𝔹) (h_congr : B_ext ϕ) (H_i
 ∀ z, Γ ≤ ϕ z  :=
 begin
   have := bSet_epsilon_induction ϕ h_congr, rw[eq_top_iff] at this,
-  intro z, 
+  intro z,
   have H_a : Γ ≤ (⨅ (x : bSet 𝔹), (⨅ (y : bSet 𝔹), y ∈ᴮ x ⟹ ϕ y) ⟹ ϕ x),
   bv_intro x, specialize H_ih x, from ‹_›,
   have := le_trans (le_top) this,
@@ -1776,7 +1775,7 @@ begin
   intros C C_chain, let C' := bSet_of_core_set h_core C,
   /- First, we show that C' is internally a chain -/
   have H_internal_chain : ⊤ ≤ ⨅ i₁ : C'.type, C'.bval i₁ ⟹ ⨅ i₂ : C'.type, C'.bval i₂ ⟹ (C'.func i₁ ⊆ᴮ C'.func i₂ ⊔ C'.func i₂ ⊆ᴮ C'.func i₁),
-  by {simp[subset_unfold], intros i₁ i₂, 
+  by {simp[subset_unfold], intros i₁ i₂,
   simp[chain, set.pairwise_on] at C_chain,
   cases i₁ with i₁ H₁, cases i₂ with i₂ H₂,
   specialize C_chain i₁ H₁ i₂ H₂,
@@ -1853,8 +1852,8 @@ begin
   change v =ᴮ _ ≤ _, rw[bv_eq_symm], apply le_trans', show 𝔹, from v =ᴮ S z, rw[H_z],
   apply le_top, apply le_trans, apply bv_eq_trans, apply bv_have (le_top : y =ᴮ _ ≤ _),
   rw[bv_eq_symm] at claim_5, simp[claim_5.symm, bv_eq_trans]
-end      
-    
+end
+
 end zorns_lemma
 
 -- /-- This is the abbreviated version of AC found at http://us.metamath.org/mpeuni/ac3.html

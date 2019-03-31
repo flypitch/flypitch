@@ -39,7 +39,7 @@ begin
       have : Γ_1 ≤ pair v₂ x₂ =ᴮ pair v₁ x₂,
         by {apply subst_congr_pair_left', rwa[bv_eq_symm]},
       from bv_context_trans this a_right,},
-  apply bv_rw' H₂,  
+  apply bv_rw' H₂,
     {intros v₁ v₂, tidy_context,
        have : Γ_1 ≤ pair y₁ v₂ =ᴮ pair y₁ v₁,
          by {apply subst_congr_pair_right', rwa[bv_eq_symm]},
@@ -119,7 +119,7 @@ begin
     {apply inf_le_left_of_le, apply inserted_eq_of_insert_eq},
     {apply inf_le_right_of_le, rw[bv_eq_symm], apply inserted_eq_of_insert_eq},
     {apply le_trans, apply inf_le_inf; apply eq_of_mem_singleton',
-     apply le_trans, apply inf_le_inf; apply eq_inserted_of_eq_singleton, rw[bv_eq_symm], apply bv_eq_trans} 
+     apply le_trans, apply inf_le_inf; apply eq_inserted_of_eq_singleton, rw[bv_eq_symm], apply bv_eq_trans}
 end
 
 
@@ -175,7 +175,7 @@ begin
        by {apply subst_congr_insert1_left'', have this₁ : a ⊓ b ≤ {x,y} =ᴮ {func v i, y}, by simp*,
        have this₂ : a ⊓ b ≤ {func v i, y} =ᴮ {func v i, func w j}, by simp*,
        apply bv_context_trans; from ‹_›},
-    
+
      apply le_trans, show 𝔹, from a ⊓ b,
        by {ac_change (bval v i ⊓ bval w j) ⊓ (a ⊓ b) ≤ a ⊓ b, apply inf_le_right},
      apply bv_context_trans; from ‹_›}
@@ -197,7 +197,7 @@ end
 
 @[reducible]def is_functional (f : bSet 𝔹) : 𝔹 :=
 ⨅z, (⨆w, pair z w ∈ᴮ f) ⟹ (⨆w', ⨅w'', pair z w'' ∈ᴮ f ⟹ w' =ᴮ w'')
-  
+
 -- f is a function if it is a subset of prod x y and it satisfies the following two conditions:
 -- 1. it is =ᴮ-extensional
 -- 2. it is a functional relation
@@ -498,7 +498,7 @@ end
 lemma is_ewo_of_mem_Ord (y x : bSet 𝔹) : Ord x ⊓ y ∈ᴮ x ≤ (epsilon_well_orders y) :=
 begin
   bv_split_goal, rename i z, apply bv_imp_intro, bv_split_goal; rename i w, apply bv_imp_intro,
-  
+
   all_goals{unfold Ord},
   {unfold epsilon_well_orders, tidy_context,
   bv_to_pi', specialize a_left_left_left_left_left w, dsimp at a_left_left_left_left_left,
@@ -515,11 +515,11 @@ begin
   apply le_sup_left_of_le, apply le_sup_left_of_le, bv_split_goal,
   apply le_sup_right_of_le, assumption,
   apply le_sup_left_of_le, apply le_sup_right_of_le, assumption},
-  
-  
+
+
   {repeat{apply bv_imp_intro}, tidy_context,
   rename a_left_left_left_left H, rename i w,
-  bv_split, 
+  bv_split,
  have : Γ ≤ w ⊆ᴮ x,
    by {rw[subset_unfold'], bv_intro w', bv_imp_intro,
        have := mem_of_mem_subset a_left_right H,
@@ -560,7 +560,7 @@ by simp[*, ordinal.mk]
 def lift_nat_Well_order : Well_order.{u} :=
 { α := ulift ℕ,
   r := (λ x y, x.down < y.down),
-  wo := 
+  wo :=
 by {haveI this : (is_well_order ℕ (λ x y, x < y)) := by apply_instance, from { trichotomous := by {change ∀ a b : ulift ℕ, a.down < b.down ∨ a = b ∨ b.down < a.down, intros a b, have := this.trichotomous, specialize this a.down b.down, tidy, left, from ‹_›,
       right, right, from ‹_›},
     irrefl := by {intro a, apply this.irrefl},
@@ -571,7 +571,7 @@ by {haveI this : (is_well_order ℕ (λ x y, x < y)) := by apply_instance, from 
               specialize a_ih H_h,
               split, intros y H', by_cases y.down = a_n,
               subst h, split, intros y' H'', cases a_ih, exact a_ih_h y' H'',
-              
+
               have h' : y.down < a_n,
                 by {have := this.trichotomous, specialize this y.down a_n, simp[*, -this] at this, suffices this' : ¬ a_n < y.down, by {simp[*,-this] at this; assumption}, intro H,
              from nat.lt_irrefl _ (lt_of_lt_of_le H (nat.le_of_lt_succ H'))},
@@ -616,7 +616,7 @@ lemma order_iso_symm {α β} {X : α → α → Prop} {Y : β → β → Prop} (
 --   have this₁ := order_isomorphism_of_equiv (@quotient.mk_out (Well_order) _ lift_nat_Well_order),
 --   have this₂ := (lift_nat_Well_order_iso_nat),
 --   apply order_iso_trans _ this₂, apply order_iso_trans _ this₁,
-  
+
 --   sorry
 -- end
 
@@ -624,7 +624,7 @@ lemma order_iso_symm {α β} {X : α → α → Prop} {Y : β → β → Prop} (
 -- begin
 --   rw[ordinal.mk_limit ordinal.omega omega_is_limit], apply le_inf, swap,
 
---   {simp[-top_le_iff], intro k, induction k, induction k, simp, 
+--   {simp[-top_le_iff], intro k, induction k, induction k, simp,
 --    repeat{sorry}},
 --   {sorry}
 -- end
@@ -646,7 +646,7 @@ begin
   bv_cases_at H_2 i_z, bv_cases_at H_1 i_y, bv_split,
   specialize H_left (x_A i_y) (by apply pSet.mem.mk) (x_A i_z) (by apply pSet.mem.mk),
   rename H_left this, repeat{cases this},
-  apply le_sup_left_of_le, apply le_sup_left_of_le, 
+  apply le_sup_left_of_le, apply le_sup_left_of_le,
   apply bv_rw' H_2_1_right, simp, apply bv_rw' H_1_1_right, simp, from check_bv_eq ‹_›,
 
   apply le_sup_left_of_le, apply le_sup_right_of_le, apply bv_rw' H_2_1_right,
