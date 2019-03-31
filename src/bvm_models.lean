@@ -134,6 +134,11 @@ def axiom_of_replacement (ϕ' : bounded_formula L_ZFC' 2) : sentence L_ZFC' := s
 def axiom_of_union : sentence L_ZFC' :=
 ∀' ∃' ∀' (&'0 ∈' &'1 ⇔ (∃' (&'0 ∈' &'3) ⊓ &'1 ∈' &'0))
 
+lemma bSet_models_union : ⊤ ⊩[V 𝔹] axiom_of_union :=
+begin
+  change ⊤ ≤ _, bv_intro x, 
+end
+
 -- axiom of powerset
 -- ∀ u, ∃ v, ∀ x, x ∈ v ↔ ∀ y ∈ x, y ∈ u
 

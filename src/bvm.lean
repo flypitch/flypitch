@@ -1388,11 +1388,11 @@ end
 
 end check_names
 
-/-- The axiom of weak replacement says that for every ϕ(x,y),
+/-- The axiom of collection says that for every ϕ(x,y),
     for every set u, ∀ x ∈ u, ∃ y ϕ (x,y) implies there exists a set v
     which contains the image of u under ϕ. With the other axioms,
     this should be equivalent to the usual axiom of replacement. -/
-theorem bSet_axiom_of_weak_replacement (ϕ : bSet 𝔹 → bSet 𝔹 → 𝔹) (h_congr : ∀ x y z, x =ᴮ y ⊓ ϕ z x ≤ ϕ z y) (u : bSet 𝔹) :
+theorem bSet_axiom_of_collection (ϕ : bSet 𝔹 → bSet 𝔹 → 𝔹) (h_congr : ∀ x y z, x =ᴮ y ⊓ ϕ z x ≤ ϕ z y) (u : bSet 𝔹) :
   (⨅(i:u.type), (u.bval i ⟹ (⨆(y : bSet 𝔹), ϕ (u.func i) y))) ⟹
   (⨆(v : bSet 𝔹), (⨅(i : u.type), u.bval i ⟹ (⨆(j:v.type), ϕ (u.func i) (v.func j)))) = ⊤ :=
 begin
