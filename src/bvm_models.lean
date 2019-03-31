@@ -115,7 +115,7 @@ def axiom_of_extensionality : sentence L_ZFC' :=
 
 lemma bSet_models_extensionality : ⊤ ⊩[V 𝔹] axiom_of_extensionality :=
 begin
-  change ⊤ ≤ _, bv_intro x, bv_intro y, bv_intro z, simp[boolean_realize_bounded_formula], sorry, -- need to write simp lemmas saying e.g. boolean_realize_bounded_formula commutes with implication, conjunction, disjunction etc
+  change ⊤ ≤ _, bv_intro x, bv_intro y, sorry --bv_intro z, simp[boolean_realize_bounded_formula], sorry, -- need to write simp lemmas saying e.g. boolean_realize_bounded_formula commutes with implication, conjunction, disjunction etc
 end
 
 -- axiom of replacement
