@@ -469,7 +469,7 @@ by {intros x y, unfold is_transitive, revert x y, change B_ext _, simp}
 def Ord (x : bSet 𝔹) : 𝔹 := epsilon_well_orders x ⊓ is_transitive x
 
 /-- x is larger than y if there exists a function f such that for every v ∈ y, there exists a w ∈ x such that (w,v) ∈ f -/
-def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func f) ⊓ ⨅v, v ∈ᴮ y ⟹ ⨆w, w ∈ᴮ x ⊓ pair w v ∈ᴮ f
+def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func f) ⊓ ⨅v, v ∈ᴮ y ⟹ (⨆w, w ∈ᴮ x ⊓ pair w v ∈ᴮ f)
 
 def injects_into (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ is_inj f
 

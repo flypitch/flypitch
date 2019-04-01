@@ -164,14 +164,6 @@ by refl
   pair (boolean_realize_bounded_term v t₁ ([])) (boolean_realize_bounded_term v t₂ ([])) :=
 by refl
 
- -- todo do this for pairing
-
--- @[simp] lemma boolean_realize_bounded_formula_biimp_mem_var {n} {v : dvector (V β) n}
---   (n₁ n₂ : fin n) :
---   boolean_realize_bounded_formula v (&'n₁ ∈' &'n₂) ([]) =
---   v.nth n₁.1 n₁.2 ∈ᴮ v.nth n₂.1 n₂.2 :=
--- by refl
-
 @[simp] lemma fin_0 {n : ℕ} : (0 : fin (n+1)).1 = 0 := by refl
 @[simp] lemma fin_1 {n : ℕ} : (1 : fin (n+2)).1 = 1 := by refl
 @[simp] lemma fin_2 {n : ℕ} : (2 : fin (n+3)).1 = 2 := by refl
@@ -411,38 +403,32 @@ by {simp[injects_into_f, injects_into]}
 def CH_f : sentence L_ZFC' :=
 (∀' (∀' (∼((∼(substmax_bounded_formula (larger_than_f) ω' ↑ 1) ⊓' ∼larger_than_f ⊓' (injects_into_f[(Powerset omega) /0].cast1))))))
 
+lemma subst_unfold₁ : ((substmax_bounded_formula (larger_than_f) ω' ↑ 1)) =
+  ∃' ((is_func_f.cast (dec_trivial)) ⊓
+    ∀' (&0 ∈' &3 ⟹ (∃' (&'0 ∈' (ω') ⊓' pair' &'0 &'1 ∈' &'2)))) := rfl
+
+lemma subst_unfold₂ : (injects_into_f[P' omega /0]) = ∃'(((is_func_f.cast (dec_trivial) ⊓'
+  (∀' (&'0 ∈' &'2 ⟹ (∃' (&'0 ∈' (Powerset omega) ⊓' (pair' &'1 &'0 ∈' &'2))))))
+  ⊓' is_inj_f.cast (dec_trivial))) := rfl
+
+
 end ZFC'
 
 open pSet cardinal
 
 section CH_unprovable
--- variables (β' : Type*) [nontrivial_complete_boolean_algebra β']
-
--- @[reducible]noncomputable def aleph_1 : pSet := ordinal.mk (aleph 1).ord
-
--- @[reducible]noncomputable def aleph_2 : pSet := ordinal.mk (aleph 2).ord
-
--- local notation `ℵ₀` := (omega : bSet β')
--- local notation `𝔠` := (bv_powerset (bSet.omega) : bSet β')
--- local infix `≺`:70 := (λ x y, -(larger_than x y))
-
--- local infix `≼`:70 := (λ x y, ⨆f, is_func' (x) y f ⊓ (is_inj f : β'))
-
--- variables (H₁ : ⊤ ≤ (bSet.omega : bSet β') ≺ (aleph_1̌  ))
---           (H₂ : ⊤ ≤ ((aleph_1̌    : bSet β') ≺ (aleph_2̌  )))
---           (H₃ : ⊤ ≤ (aleph_2̌  ) ≼ (bv_powerset (bSet.omega : bSet β') : bSet β' ))
-
-
--- include H₁ H₂ H₃
 
 lemma neg_CH_f : ⊤ ⊩[V 𝔹] ∼CH_f :=
 begin
   change ⊤ ≤ _, simp[-top_le_iff, CH_f], simp only [neg_infi],
   apply bv_use (ℵ₁̌ ), apply bv_use (ℵ₂ ̌), simp[-top_le_iff],
-  repeat{split},
-  {sorry},
-  {from ℵ₁_lt_ℵ₂},
-  {convert ℵ₂_le_𝔠, sorry}
+  refine ⟨_,ℵ₁_lt_ℵ₂,_⟩,
+  {have := ℵ₀_lt_ℵ₁, unfold larger_than at this, have := subst_unfold₁,
+  unfold substmax_bounded_formula at this, rw[this],
+  simp[-top_le_iff], simp only [neg_supr] at *, bv_intro f,
+  bv_specialize_at this (f), from this_1},
+  {have := ℵ₂_le_𝔠, rw[subst_unfold₂], simp[-top_le_iff],
+    apply bv_use (neg_CH_func), from this}
 end
 
 instance V_𝔹_nonempty : nonempty (V 𝔹) := ⟨bSet.empty⟩
@@ -459,17 +445,4 @@ begin
     simpa[inf_axioms_top_of_models (bSet_models_ZFC' _)] using CH_f_true
 end
 
--- c.f. the end of `forcing.lean`
-
--- where "larger_than" means
-
--- ∃ f, is_func f ∧ ∀ v ∈ y, ∃ w ∈ x, (w,v) ∈ f
-
--- also need a definition of the pairing function
--- i.e. define the pairing operation and show it satisfies the axiom
--- ∀ a ∀ b ∃ c ∀ d, (d ∈ c ↔ d = a ∨ d = b)
-
--- need to characterize 𝒫(ω) and (ω) (powerset is an easy extensionality argument).
-
--- for ω, need to say that it is a subset of any other ordinal which contains all the natural numbers, which is easy
 end CH_unprovable
