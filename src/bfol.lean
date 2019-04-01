@@ -226,19 +226,6 @@ lemma boolean_realize_formula_congr_gen : ∀(v v' : ℕ → S) {l} (f : preform
     apply inf_le_inf, apply inf_le_inf, apply subst_realize_congr1, refl, apply infi_le
   end
 
--- | _ &k          xs xs' := le_trans inf_le_right (infi_le _ k)
--- | _ (func f)    xs xs' := by { dsimp, apply le_trans inf_le_left, apply S.fun_congr }
--- | _ (app t₁ t₂) xs xs' :=
---   begin
---     dsimp,
---     refine le_trans _ (boolean_realize_formula_congr_gen t₁ _ _),
---     have := boolean_realize_formula_congr_gen t₂ ([]) ([]),
---     simp only [lattice.le_inf_iff, lattice.inf_le_right, lattice.inf_le_left,
---       fol.boolean_realize_formula, and_true, lattice.top_inf_eq, dvector.map2, dvector.fInf_nil,
---       dvector.fInf_cons] at this ⊢,
---     exact le_trans inf_le_right this
---   end
-
 lemma boolean_realize_formula_congr (v v' : ℕ → S) {l} (f : preformula L l) (xs : dvector S l) :
   (⨅(n : ℕ), S.eq (v n) (v' n)) ⊓ boolean_realize_formula v f xs ≤
   boolean_realize_formula v' f xs :=
@@ -417,8 +404,23 @@ begin
 end
 
 /- When realizing a closed term, we can replace the realizing dvector with [] -/
-@[simp] lemma boolean_realize_closed_term_v_irrel {n} {v : dvector S n} {t : bounded_term L 0} : boolean_realize_bounded_term v (t.cast (by {simp})) ([]) = boolean_realize_closed_term S t :=
+@[simp] lemma boolean_realize_closed_term_v_irrel {n} {v : dvector S n} {t : bounded_term L 0} : boolean_realize_bounded_term v (t.cast (nat.zero_le n)) ([]) = boolean_realize_closed_term S t :=
   by simp[boolean_realize_cast_bounded_term]
+
+lemma boolean_realize_bounded_term_subst_lift' {n} (v : dvector S n) (x : S) :
+  ∀{l} (t : bounded_preterm L n l) (xs : dvector S l),
+  boolean_realize_bounded_term (x::v) (t ↑' 1 # 0) xs = boolean_realize_bounded_term v t xs
+| _ &k          [] :=
+  begin
+    have : 0 < k.val + 1, from lt_succ_of_le (nat.zero_le _), simp*, refl
+  end
+| _ (bd_func f)    xs := by refl
+| _ (bd_app t₁ t₂) xs := by { dsimp, simp* }
+
+@[simp] lemma boolean_realize_bounded_term_subst_lift {n} (v : dvector S n) (x : S)
+  {l} (t : bounded_preterm L n l) (xs : dvector S l) :
+  boolean_realize_bounded_term (x::v) (t ↑ 1) xs = boolean_realize_bounded_term v t xs :=
+boolean_realize_bounded_term_subst_lift' v x t xs
 
 /- this is the same as boolean_realize_bounded_term, we should probably have a common generalization of this definition -/
 -- @[simp] def substitute_bounded_term {n n'} (v : dvector (bounded_term n') n) :
@@ -573,6 +575,12 @@ begin
     {intros, simp},
     {simp}
 end
+
+@[simp] lemma boolean_realize_cast1_bounded_formula {n} {f : bounded_formula L n}
+  {v : dvector S (n+1)} :
+  boolean_realize_bounded_formula v f.cast1 dvector.nil =
+  boolean_realize_bounded_formula (v.trunc n $ n.le_add_right 1) f dvector.nil :=
+boolean_realize_cast_bounded_formula
 
 lemma boolean_realize_sentence_bd_apps_rel'
   {l} (f : presentence L l) (ts : dvector (closed_term L) l) :

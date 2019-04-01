@@ -8,9 +8,11 @@ open fol
 local notation h :: t  := dvector.cons h t
 local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`:0) := l
 
-local infix ` ⟹' `:65 := lattice.imp
+local infixr ` ⟹' `:65 := lattice.imp
 local prefix `∃'` := bd_ex
+local prefix `∼` := bd_not
 local infixr ` ⊓' `:70 := bd_and
+local infixr ` ⊔' `:70 := bd_or
 
 -- local infix ` ⟹ `:62 := bd_imp
 
@@ -200,16 +202,43 @@ by { simp [forced_in, axiom_of_extensionality], exact bSet_axiom_of_extensionali
 -- ∀ u, (∀ x ∈ u, ∃ y, ϕ(x,y)) ⟹ (∃ v, ∀ z ∈ u, ∃ w ∈ v, ϕ(z,w))
 
 def axiom_of_collection (ϕ' : bounded_formula L_ZFC' 2) : sentence L_ZFC' :=
-  ∀' ((∀' (&'0 ∈' &'1 ⟹ (∃' ϕ'.cast1))) ⟹ (∃' ∀'(&'0 ∈' &'2 ⟹ ∃' ((&'0 ∈' &'2) ⊓ (ϕ'.cast dec_trivial : bounded_formula L_ZFC' 4)))))
+∀' ((∀' (&'0 ∈' &'1 ⟹ ∃' ϕ'.cast1)) ⟹
+(∃' ∀'(&'0 ∈' &'2 ⟹ ∃' (&'0 ∈' &'2 ⊓ ϕ'.cast dec_trivial))))
 
 -- note: should write a lemma which says given the full congr lemma for a 2-ary formula, can extract left and right congr lemmas
 lemma bSet_models_collection (ϕ : bounded_formula L_ZFC' 2) : ⊤ ⊩[V 𝔹] axiom_of_collection ϕ :=
 begin
   change ⊤ ≤ _, bv_intro u, simp, have := bSet_axiom_of_collection' _ _ _ u,
-  simp at this, specialize this u, convert this, ext, convert rfl, ext, convert rfl, ext, -- try to apply the actual extensionality lemma here, unification is slowing this down
-  congr' 1, sorry, -- this is the trunc simp lemma
-  intros, rw[<-boolean_realize_bounded_formula_eq, <-boolean_realize_bounded_formula_eq],
-  sorry, sorry
+  simp only [lattice.top_le_iff, bSet.mem, lattice.imp_top_iff_le, lattice.le_infi_iff] at this,
+  exact this u,
+  { intros,
+    let v₁ : ℕ → V 𝔹 := λ n, nat.rec_on n x (λ _ _, z),
+    let v₂ : ℕ → V 𝔹 := λ n, nat.rec_on n y (λ _ _, z),
+    have h₁ : ∀(k : ℕ) (hk : k < 2), v₁ k = dvector.nth ([x, z]) k hk,
+    { intros, cases k, refl, cases k, refl, exfalso, apply not_le_of_gt hk,
+      apply nat.succ_le_succ, apply nat.succ_le_succ, apply nat.zero_le },
+    have h₂ : ∀(k : ℕ) (hk : k < 2), v₂ k = dvector.nth ([y, z]) k hk,
+    { intros, cases k, refl, cases k, refl, exfalso, apply not_le_of_gt hk,
+      apply nat.succ_le_succ, apply nat.succ_le_succ, apply nat.zero_le },
+    rw [←boolean_realize_bounded_formula_eq h₁, ←boolean_realize_bounded_formula_eq h₂],
+    convert boolean_realize_formula_congr _ _ _ _,
+    apply le_antisymm, apply le_infi, intro n, cases n,
+    refl, simp only [v₁, v₂, bStructure.eq_refl, le_top],
+    apply infi_le _ 0 },
+  { intros,
+    let v₁ : ℕ → V 𝔹 := λ n, nat.rec_on n z (λ _ _, x),
+    let v₂ : ℕ → V 𝔹 := λ n, nat.rec_on n z (λ _ _, y),
+    have h₁ : ∀(k : ℕ) (hk : k < 2), v₁ k = dvector.nth ([z, x]) k hk,
+    { intros, cases k, refl, cases k, refl, exfalso, apply not_le_of_gt hk,
+      apply nat.succ_le_succ, apply nat.succ_le_succ, apply nat.zero_le },
+    have h₂ : ∀(k : ℕ) (hk : k < 2), v₂ k = dvector.nth ([z, y]) k hk,
+    { intros, cases k, refl, cases k, refl, exfalso, apply not_le_of_gt hk,
+      apply nat.succ_le_succ, apply nat.succ_le_succ, apply nat.zero_le },
+    rw [←boolean_realize_bounded_formula_eq h₁, ←boolean_realize_bounded_formula_eq h₂],
+    convert boolean_realize_formula_congr _ _ _ _,
+    apply le_antisymm, apply le_infi, intro n, cases n,
+    simp only [v₁, v₂, bStructure.eq_refl, le_top], refl,
+    apply infi_le _ 1 },
 end
 
 -- axiom of union
@@ -267,19 +296,29 @@ begin
 end
 
 /-- &1 ⊆ &0 ↔ ∀ z, (z ∈ &1 ⟹ z ∈ &0)-/
-def subset' {n} (t₁ t₂ : bounded_term L_ZFC' n) : bounded_formula L_ZFC' n := 
--- ∀' ((&'0 ∈' t₁)) ⟹ (&'0 ∈' t₂))  -- trouble getting this to type-check
+def subset'' {n} (t₁ t₂ : bounded_term L_ZFC' n): bounded_formula L_ZFC' n :=
+∀' (&'0 ∈' (t₁ ↑ 1) ⟹ &'0 ∈' (t₂ ↑ 1))
 
--- local infix ` ⊆'`:100 := subset'
+local infix ` ⊆'`:100 := subset''
 
--- zorns lemma
--- ∀ x, x ≠ ∅ ∧ ((∀ y, y ⊆ x ∧ ∀ w₁ w₂ ∈ y, w₁ ⊆ w₂ ∨ w₂ ⊆ w₁) → (⋃y) ∈ x)
---       → ∃ c ∈ x, ∀ z ∈ x, c ⊆ z → c = z
+@[simp] lemma boolean_realize_bounded_formula_subset {n} {v : dvector (V 𝔹) n}
+  (t₁ t₂ : bounded_term L_ZFC' n) :
+  boolean_realize_bounded_formula v (t₁ ⊆' t₂) ([]) =
+  boolean_realize_bounded_term v t₁ ([]) ⊆ᴮ boolean_realize_bounded_term v t₂ ([]) :=
+by { simp [subset'', subset_unfold'] }
 
-def zorns_lemma : sentence L_ZFC' := sorry -- need to do some casts/type ascriptions to make this type-check
-  -- ∀' (∼ (&'0 ≃ ∅')
-  --       ⊓ (∀' ((&'0 ⊆' &'1) ⊓ (∀' ∀' (((&'1 ∈' &'2) ⊓ (&'0 ∈' &'2)) ⟹ ((&'0 ⊆' &'2) ⊔ (&'2 ⊆' &'0)))) ⟹ (sorry/- ⋃y -/ ∈' &'2)))
-  --         ⟹  (∃' (&'0 ∈' &'1) ⊓ ∀' (&'0 ∈' &'2) ⟹ &'1 ⊆' &'0 ⟹ &'1 ≃ &'0 )
+def zorns_lemma : sentence L_ZFC' :=
+∀' (∼ (&'0 ≃ ∅')
+  ⟹ (∀' (&'0 ⊆' &'1 ⊓' (∀' ∀' ((&'1 ∈' &'2 ⊓' &'0 ∈' &'2) ⟹ (&'1 ⊆' &'0 ⊔' &'0 ⊆' &'1)))
+    ⟹ (⋃' &' 0 ∈' &'1)))
+    ⟹  (∃' (&'0 ∈' &'1 ⊓ ∀' (&'0 ∈' &'2 ⟹ &'1 ⊆' &'0 ⟹ &'1 ≃ &'0 ))))
+
+lemma bSet_models_Zorn : ⊤ ⊩[V 𝔹] zorns_lemma :=
+begin
+  simp [forced_in, zorns_lemma, boolean_realize_sentence, -lattice.le_inf_iff, -top_le_iff],
+  intro X, bv_imp_intro, bv_imp_intro,
+  convert bSet_zorns_lemma' X H H_1
+end
 
 
 -- continuum hypothesis
@@ -294,7 +333,7 @@ def zorns_lemma : sentence L_ZFC' := sorry -- need to do some casts/type ascript
 def is_extensional_f : bounded_formula L_ZFC' 1 :=
 ∀' ∀' ∀' ∀' ((pair' &'3 &'1 ∈' &'4 ⊓' pair' &'2 &'0 ∈' &'4
   ⟹ (&'3 ≃ &'2 ⟹ &'1 ≃ &'0)))
-  
+
 def is_functional_f : bounded_formula L_ZFC' 1 :=
 ∀' ((∃' (pair' &'1 &'0 ∈' &'2)) ⟹ (∃' ∀' (pair' &'2 &'0 ∈' &'3 ⟹ &'1 ≃ &'0)))
 
@@ -302,7 +341,7 @@ def is_func_f : bounded_formula L_ZFC' 1 :=
   is_extensional_f ⊓' is_functional_f
 
 def is_func'_f : bounded_formula L_ZFC' 3 :=
-  is_func_f ⊓' subset' &'0 
+  is_func_f ⊓' subset' &'0
   -- sorry
 
 def larger_than : bounded_formula L_ZFC' 2 :=

@@ -112,6 +112,10 @@ variables {α : Type u} {β : Type v} {γ : Type w} {n : ℕ}
 | _ (x::xs) 0     h := x
 | _ (x::xs) (m+1) h := nth xs m (lt_of_add_lt_add_right h)
 
+protected def nth_cons {n : ℕ} (x : α) (xs : dvector α n) (m : ℕ) (h : m < n) :
+  dvector.nth (x::xs) (m+1) (nat.succ_lt_succ h) = dvector.nth xs m h :=
+by refl
+
 @[reducible, simp] protected def last {n : ℕ} (xs : dvector α (n+1)) : α :=
   xs.nth n (by {repeat{constructor}})
 

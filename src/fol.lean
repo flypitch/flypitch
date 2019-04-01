@@ -513,7 +513,7 @@ variable {L}
 
 notation `⊥` := fol.preformula.falsum -- input: \bot
 infix ` ≃ `:88 := fol.preformula.equal -- input \~- or \simeq
-infix ` ⟹ `:62 := fol.preformula.imp -- input \==>
+infixr ` ⟹ `:62 := fol.preformula.imp -- input \==>
 prefix `∀'`:110 := fol.preformula.all
 def not   (f : formula L)     : formula L := f ⟹ ⊥
 prefix `∼`:max := fol.not -- input \~, the ASCII character ~ has too low precedence
@@ -1669,6 +1669,7 @@ variable {L}
 instance nonempty_bounded_formula (n : ℕ) : nonempty $ bounded_formula L n :=
   nonempty.intro (by constructor)
 
+
 -- @[reducible, simp] def bd_falsum' {n} : bounded_formula L n := bd_falsum
 -- @[reducible, simp] def bd_equal' {n} (t₁ t₂ : bounded_term L n) : bounded_formula L n :=
 -- bd_equal t₁ t₂
@@ -1676,7 +1677,7 @@ instance nonempty_bounded_formula (n : ℕ) : nonempty $ bounded_formula L n :=
 -- bd_imp f₁ f₂
 notation `⊥` := fol.bounded_preformula.bd_falsum -- input: \bot
 infix ` ≃ `:88 := fol.bounded_preformula.bd_equal -- input \~- or \simeq
-infix ` ⟹ `:62 := fol.bounded_preformula.bd_imp -- input \==>
+infixr ` ⟹ `:62 := fol.bounded_preformula.bd_imp -- input \==>
 def bd_not {n} (f : bounded_formula L n) : bounded_formula L n := f ⟹ ⊥
 prefix `∼`:max := fol.bd_not -- input \~, the ASCII character ~ has too low precedence
 def bd_and {n} (f₁ f₂ : bounded_formula L n) : bounded_formula L n := ∼(f₁ ⟹ ∼f₂)
@@ -1688,6 +1689,8 @@ infix ` ⇔ `:61 := fol.bd_biimp -- input \<=>
 prefix `∀'`:110 := fol.bounded_preformula.bd_all
 def bd_ex {n} (f : bounded_formula L (n+1)) : bounded_formula L n := ∼ (∀' (∼ f))
 prefix `∃'`:110 := fol.bd_ex
+
+
 
 def bd_apps_rel : ∀{n l} (f : bounded_preformula L n l) (ts : dvector (bounded_term L n) l),
   bounded_formula L n

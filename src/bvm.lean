@@ -1909,6 +1909,11 @@ begin
   rw[bv_eq_symm] at claim_5, simp[claim_5.symm, bv_eq_trans]
 end
 
+theorem bSet_zorns_lemma' (X : bSet 𝔹) {Γ} (H_nonempty : Γ ≤ -(X =ᴮ ∅)) (H : Γ ≤ (⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
+  w₁ ∈ᴮ y ⊓ w₂ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X))) :
+  Γ ≤ (⨆c, c ∈ᴮ X ⊓ (⨅z, z ∈ᴮ X ⟹ (c ⊆ᴮ z ⟹ c =ᴮ z))) :=
+sorry
+
 end zorns_lemma
 
 -- /-- This is the abbreviated version of AC found at http://us.metamath.org/mpeuni/ac3.html
