@@ -5,6 +5,8 @@ open lattice
 open bSet
 
 open fol
+local notation h :: t  := dvector.cons h t
+local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`:0) := l
 
 local infix ` ⟹' `:65 := lattice.imp
 
@@ -22,7 +24,7 @@ inductive ZFC'_func : ℕ → Type 1
 | emptyset : ZFC'_func 0
 | pr : ZFC'_func 2
 | ω : ZFC'_func 0
-| P_ω : ZFC'_func 0
+| P : ZFC'_func 1
 | Union : ZFC'_func 1
 
 def L_ZFC' : Language.{1} :=
@@ -40,7 +42,7 @@ begin
   from λ _, bSet.empty,
   from λ x, by {cases x, refine bSet.pair x_x _, cases x_xs, from x_xs_x},
   from λ _, bSet.omega,
-  from λ _, bv_powerset(omega),
+  from λ x, by {cases x, exact bv_powerset x_x},
   from λ x, by {cases x, from bv_union ‹_›}
 end
 
@@ -66,7 +68,9 @@ def V : bStructure L_ZFC' (𝔹) :=
       {intros x y, cases x, cases y, simp},
       tactic.rotate 1,
       {intros x y, cases x, cases y, simp},
-      {intros x y, cases x, cases y, simp},
+      {intros x y, cases x, cases y, cases x_xs, cases y_xs,
+        change (_ ⊓ _ : 𝔹) ≤ (bv_powerset _) =ᴮ (bv_powerset _), simp,
+        tidy_context, sorry },
       {intros x y, cases x, cases y, cases x_xs, cases y_xs,
         change (_ ⊓ _ : 𝔹) ≤ (bv_union _) =ᴮ (bv_union _), simp,
         tidy_context, from bv_union_congr ‹_›},
@@ -84,6 +88,7 @@ def V : bStructure L_ZFC' (𝔹) :=
     tidy_context, apply mem_congr; from ‹_›
   end}
 
+@[simp] lemma carrier_V : ↥(V 𝔹) = bSet 𝔹 := by refl
 
 def emptyset {n} : bounded_term L_ZFC' n := bd_const ZFC'_func.emptyset
 
@@ -93,33 +98,61 @@ def omega {n} : bounded_term L_ZFC' n := bd_const ZFC'_func.ω
 
 notation `ω'` := omega
 
-def P_omega {n} : bounded_term L_ZFC' n := bd_const ZFC'_func.P_ω
+def Powerset {n} : bounded_term L_ZFC' n → bounded_term L_ZFC' n := bd_app (bd_func ZFC'_func.P)
 
-notation `P_ω'` := P_omega
+notation `P'` := Powerset
 
 def mem {n} (t₁ t₂ : bounded_term L_ZFC' n) : bounded_formula L_ZFC' n :=
 @bounded_formula_of_relation L_ZFC' 2 n ZFC'_rel.ε t₁ t₂
 
-local infix ` ∈'`:100 := mem
+local infix ` ∈'`:100 := _root_.mem
 
 def pair' {n} (t₁ t₂ : bounded_term L_ZFC' n) : bounded_term L_ZFC' n :=
 @bounded_term_of_function L_ZFC' 2 n ZFC'_func.pr t₁ t₂
 
+def union' {n} : bounded_term L_ZFC' n → bounded_term L_ZFC' n := bd_app (bd_func ZFC'_func.Union)
+
+notation `⋃'` := union'
+
 local prefix `&'`:max := bd_var
+
+
+@[simp] lemma boolean_realize_bounded_formula_mem {n} {v : dvector (V 𝔹) n}
+  (t₁ t₂ : bounded_term L_ZFC' n) :
+  boolean_realize_bounded_formula v (t₁ ∈' t₂) ([]) =
+  boolean_realize_bounded_term v t₁ ([]) ∈ᴮ boolean_realize_bounded_term v t₂ ([]) :=
+by refl
+
+@[simp] lemma boolean_realize_bounded_term_Union {n} {v : dvector (V 𝔹) n}
+  (t : bounded_term L_ZFC' n) :
+  boolean_realize_bounded_term v (⋃' t) ([]) =
+  bv_union (boolean_realize_bounded_term v t ([])) :=
+by refl
+
+@[simp] lemma boolean_realize_bounded_term_Powerset {n} {v : dvector (V 𝔹) n}
+  (t : bounded_term L_ZFC' n) :
+  boolean_realize_bounded_term v (P' t) ([]) =
+  bv_powerset (boolean_realize_bounded_term v t ([])) :=
+by refl
+
+-- @[simp] lemma boolean_realize_bounded_formula_biimp_mem_var {n} {v : dvector (V 𝔹) n}
+--   (n₁ n₂ : fin n) :
+--   boolean_realize_bounded_formula v (&'n₁ ∈' &'n₂) ([]) =
+--   v.nth n₁.1 n₁.2 ∈ᴮ v.nth n₂.1 n₂.2 :=
+-- by refl
+
+@[simp] lemma fin_0 {n : ℕ} : (0 : fin (n+1)).1 = 0 := by refl
+@[simp] lemma fin_1 {n : ℕ} : (1 : fin (n+2)).1 = 1 := by refl
+@[simp] lemma fin_2 {n : ℕ} : (2 : fin (n+3)).1 = 2 := by refl
+@[simp] lemma fin_3 {n : ℕ} : (3 : fin (n+4)).1 = 3 := by refl
 
 -- axiom of extensionality
 -- ∀ x y, (∀ z, (z ∈ x → z ∈ y) ∧ (z ∈ y → z ∈ x) → x = y)
-
 def axiom_of_extensionality : sentence L_ZFC' :=
-∀' ∀' (∀'(&'0  ∈' &'2 ⇔  &'0 ∈' &'1) ⟹ (&2 ≃ &1))
+∀' ∀' (∀'(&'0  ∈' &'2 ⇔  &'0 ∈' &'1) ⟹ (&1 ≃ &0))
 
 lemma bSet_models_extensionality : ⊤ ⊩[V 𝔹] axiom_of_extensionality :=
-begin
-  dsimp [forced_in],
-  bv_intro x, bv_intro y,
-  simp,
-  sorry --bv_intro z, simp[boolean_realize_bounded_formula], sorry, -- need to write simp lemmas saying e.g. boolean_realize_bounded_formula commutes with implication, conjunction, disjunction etc
-end
+by { simp [forced_in, axiom_of_extensionality], exact bSet_axiom_of_extensionality }
 
 -- axiom of collection
 -- For every formula ϕ(x,y),
@@ -130,20 +163,32 @@ def axiom_of_collection (ϕ' : bounded_formula L_ZFC' 2) : sentence L_ZFC' :=
 
 
 -- axiom of union
--- ∀ u, ∃ v, ∀ x, x ∈ v ↔ ∃ y ∈ u, x ∈ y
+-- ∀ u, ∀ x, x ∈ ⋃ u ↔ ∃ y ∈ u, x ∈ y
 def axiom_of_union : sentence L_ZFC' :=
-∀' ∃' ∀' (&'0 ∈' &'1 ⇔ (∃' (&'0 ∈' &'3) ⊓ &'1 ∈' &'0))
+∀' ∀' (&'0 ∈' ⋃' &'1 ⇔ (∃' (&'0 ∈' &'2) ⊓ &'1 ∈' &'0))
 
 lemma bSet_models_union : ⊤ ⊩[V 𝔹] axiom_of_union :=
 begin
-  change ⊤ ≤ _, bv_intro x, 
+  simp [-lattice.biimp, -top_le_iff, forced_in, axiom_of_union, -lattice.le_inf_iff],
+  intros x z,
+  have := @bv_union_spec' _ _ x ⊤,
+  rw [le_infi_iff] at this, sorry
 end
 
 -- axiom of powerset
 -- ∀ u, ∃ v, ∀ x, x ∈ v ↔ ∀ y ∈ x, y ∈ u
 
 def axiom_of_powerset : sentence L_ZFC' :=
-  ∀' ∃' ∀' (&'0 ∈' &'1 ⇔ (∀' (&'0 ∈' &'1 ⟹ &'0 ∈' &'3)))
+  ∀' ∀' (&'0 ∈' P' &'1 ⇔ (∀' (&'0 ∈' &'1 ⟹ &'0 ∈' &'2)))
+
+-- set_option pp.all true
+lemma bSet_models_powerset : ⊤ ⊩[V 𝔹] axiom_of_powerset :=
+begin
+  simp [forced_in, axiom_of_powerset, -lattice.le_inf_iff, -top_le_iff],
+  intros x z, apply le_inf, bv_imp_intro, sorry,
+  sorry --apply (@bv_powerset_spec _ _ x z Γ).mpr,
+  --rw [←subset_unfold'],
+end
 
 -- axiom of infinity
 -- ∃ u, ∅ ∈ u ∧ ∀ x ∈ u, ∃ y ∈ u, x ∈ y
