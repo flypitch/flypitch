@@ -9,6 +9,8 @@ local notation h :: t  := dvector.cons h t
 local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`:0) := l
 
 local infix ` ⟹' `:65 := lattice.imp
+local prefix `∃'` := bd_ex
+local infixr ` ⊓' `:70 := bd_and
 
 -- local infix ` ⟹ `:62 := bd_imp
 
@@ -70,7 +72,7 @@ def V : bStructure L_ZFC' (𝔹) :=
       {intros x y, cases x, cases y, simp},
       {intros x y, cases x, cases y, cases x_xs, cases y_xs,
         change (_ ⊓ _ : 𝔹) ≤ (bv_powerset _) =ᴮ (bv_powerset _), simp,
-        tidy_context, from bv_powerset_congr ‹_›},
+        tidy_context, apply bv_powerset_congr ‹_› },
       {intros x y, cases x, cases y, cases x_xs, cases y_xs,
         change (_ ⊓ _ : 𝔹) ≤ (bv_union _) =ᴮ (bv_union _), simp,
         tidy_context, from bv_union_congr ‹_›},
@@ -142,6 +144,14 @@ by refl
   bv_powerset (boolean_realize_bounded_term v t ([])) :=
 by refl
 
+@[simp] lemma boolean_realize_bounded_term_omega {n} {v : dvector (V 𝔹) n} :
+  boolean_realize_bounded_term v ω' ([]) = bSet.omega :=
+by refl
+
+@[simp] lemma boolean_realize_bounded_term_emptyset {n} {v : dvector (V 𝔹) n} :
+  boolean_realize_bounded_term v ∅' ([]) = bSet.empty :=
+by refl
+
 -- @[simp] lemma boolean_realize_bounded_formula_biimp_mem_var {n} {v : dvector (V 𝔹) n}
 --   (n₁ n₂ : fin n) :
 --   boolean_realize_bounded_formula v (&'n₁ ∈' &'n₂) ([]) =
@@ -154,7 +164,7 @@ by refl
 @[simp] lemma fin_3 {n : ℕ} : (3 : fin (n+4)).1 = 3 := by refl
 
 -- axiom of extensionality
--- ∀ x y, (∀ z, (z ∈ x → z ∈ y) ∧ (z ∈ y → z ∈ x) → x = y)
+-- ∀ x y, (∀ z, (z ∈ x ↔ z ∈ y)) → x = y
 def axiom_of_extensionality : sentence L_ZFC' :=
 ∀' ∀' (∀'(&'0  ∈' &'2 ⇔  &'0 ∈' &'1) ⟹ (&1 ≃ &0))
 
@@ -179,40 +189,45 @@ begin
 end
 
 -- axiom of union
--- ∀ u, ∀ x, x ∈ ⋃ u ↔ ∃ y ∈ u, x ∈ y
+-- ∀ u x, x ∈ ⋃ u ↔ ∃ y ∈ u, x ∈ y
 def axiom_of_union : sentence L_ZFC' :=
 ∀' ∀' (&'0 ∈' ⋃' &'1 ⇔ (∃' (&'0 ∈' &'2 ⊓ &'1 ∈' &'0)))
 
 lemma bSet_models_union : ⊤ ⊩[V 𝔹] axiom_of_union :=
 begin
-  simp [-lattice.biimp, -top_le_iff, forced_in, axiom_of_union, -lattice.le_inf_iff],
+  simp [-top_le_iff, forced_in, axiom_of_union, -lattice.le_inf_iff],
   intros x z,
   have := @bv_union_spec' _ _ x ⊤,
   replace this := this z, dsimp at this,
   simp only [bSet.mem, lattice.imp_top_iff_le, lattice.biimp],
-  bv_split, bv_split_goal 
+  bv_split, bv_split_goal
 end
 
 -- axiom of powerset
--- ∀ u, ∃ v, ∀ x, x ∈ v ↔ ∀ y ∈ x, y ∈ u
+-- ∀ u x, x ∈ P(x) ↔ ∀ y ∈ x, y ∈ u
 
 def axiom_of_powerset : sentence L_ZFC' :=
   ∀' ∀' (&'0 ∈' P' &'1 ⇔ (∀' (&'0 ∈' &'1 ⟹ &'0 ∈' &'2)))
 
--- set_option pp.all true
 lemma bSet_models_powerset : ⊤ ⊩[V 𝔹] axiom_of_powerset :=
 begin
   simp [forced_in, axiom_of_powerset, -lattice.le_inf_iff, -top_le_iff],
-  intros x z, apply le_inf, bv_imp_intro, sorry,
-  sorry --apply (@bv_powerset_spec _ _ x z Γ).mpr,
-  --rw [←subset_unfold'],
+  intros x z, have := @bv_powerset_spec _ _ x z,
+  rw [subset_unfold'] at this,
+  apply le_inf, bv_imp_intro, exact this.mpr H, bv_imp_intro, exact this.mp H
 end
 
 -- axiom of infinity
--- ∃ u, ∅ ∈ u ∧ ∀ x ∈ u, ∃ y ∈ u, x ∈ y
+-- ∅ ∈ ω ∧ ∀ x ∈ ω, ∃ y ∈ ω, x ∈ y
 
 def axiom_of_infinity : sentence L_ZFC' :=
-  ∃' ((∅' ∈' &'0) ⊓ ∀'(&'0 ∈' &'1 ⟹ ∃' ((&'0 ∈' &'2) ⊓ (&'1 ∈' &'0) : bounded_formula L_ZFC' 3)))
+  ∅' ∈' ω' ⊓ ∀'(&'0 ∈' ω' ⟹ ∃' (&'0 ∈' ω' ⊓' &'1 ∈' &'0))
+
+lemma bSet_models_infinity : ⊤ ⊩[V 𝔹] axiom_of_infinity :=
+begin
+  simp [forced_in, axiom_of_infinity, boolean_realize_sentence, -lattice.le_inf_iff, -top_le_iff],
+  exact bSet_axiom_of_infinity'
+end
 
 -- axiom of regularity
 -- ∀ x, ∃ y ∈ x, ∀ z' ∈ x, ¬ (z' ∈ y)

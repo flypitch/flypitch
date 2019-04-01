@@ -1017,6 +1017,10 @@ lemma infi_congr {ι β : Type*} {s₁ s₂ : ι → β} [complete_lattice β] {
   (⨅(i:ι), s₁ i) = ⨅(i:ι), s₂ i :=
 by simp*
 
+lemma supr_congr {ι β : Type*} {s₁ s₂ : ι → β} [complete_lattice β] {h : ∀ i : ι, s₁ i = s₂ i} :
+  (⨆(i:ι), s₁ i) = ⨆(i:ι), s₂ i :=
+by simp*
+
 lemma imp_iff {β : Type*} {a b : β} [complete_boolean_algebra β] : a ⟹ b = -a ⊔ b := by refl
 
 lemma sup_inf_left_right_eq {β} [distrib_lattice β] {a b c d : β} :

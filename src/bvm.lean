@@ -1713,6 +1713,23 @@ instance has_one_bSet : has_one (bSet 𝔹) := ⟨of_nat 1⟩
 
 example : 0 ∈ᴮ 1 = (⊤ : 𝔹) := by {apply top_unique, unfold has_zero.zero, apply bv_use none, simp}
 
+@[simp, cleanup]lemma omega_bval {k} : (omega : bSet 𝔹).bval k = ⊤ :=
+by refl
+
+theorem bSet_axiom_of_infinity' :
+  (⊤ : 𝔹) ≤ (∅ ∈ᴮ omega) ⊓ (⨅x, x ∈ᴮ omega ⟹ ⨆y, y ∈ᴮ omega ⊓ x ∈ᴮ y) :=
+begin
+  apply le_inf, apply contains_empty_check_omega,
+  rw [←bounded_forall],
+  rw [infi_congr], swap,
+  intro n, rw [←bounded_exists, omega_bval, top_imp, @supr_congr _ _ _ (λ m, func omega n ∈ᴮ func omega m)],
+  intro m, rw [omega_bval, top_inf_eq],
+  swap, have := contains_succ_check_omega, dsimp [contains_succ] at this,
+  exact this,
+  { intros, apply subst_congr_mem_right },
+  { change B_ext _, simp }
+end
+
 end infinity
 
 theorem bSet_epsilon_induction (ϕ : bSet 𝔹 → 𝔹) (h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y) :
