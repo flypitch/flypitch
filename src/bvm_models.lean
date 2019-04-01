@@ -94,6 +94,9 @@ def V : bStructure L_ZFC' (𝔹) :=
 
 @[simp]lemma V_exists {C : (V 𝔹) → 𝔹} : (⨆(x : V 𝔹), C x) = (⨆(x : bSet 𝔹), C x) := rfl
 
+lemma alpha_equiv₁ {C : (bSet 𝔹) → 𝔹} : (⨅(x : bSet 𝔹), C x) = ⨅(y : bSet 𝔹), C y := rfl
+lemma alpha_equiv₂ {C : (bSet 𝔹) → 𝔹} : (⨆(x : bSet 𝔹), C x) = ⨆(y : bSet 𝔹), C y := rfl
+
 def emptyset {n} : bounded_term L_ZFC' n := bd_const ZFC'_func.emptyset
 
 notation `∅'` := emptyset
@@ -178,15 +181,17 @@ end
 -- axiom of union
 -- ∀ u, ∀ x, x ∈ ⋃ u ↔ ∃ y ∈ u, x ∈ y
 def axiom_of_union : sentence L_ZFC' :=
-∀' ∀' (&'0 ∈' ⋃' &'1 ⇔ (∃' (&'0 ∈' &'2) ⊓ &'1 ∈' &'0))
+∀' ∀' (&'0 ∈' ⋃' &'1 ⇔ (∃' (&'0 ∈' &'2 ⊓ &'1 ∈' &'0)))
 
-lemma bSet_models_union : ⊤ ⊩[V 𝔹] axiom_of_union := sorry
--- begin
---   simp [-lattice.biimp, -top_le_iff, forced_in, axiom_of_union, -lattice.le_inf_iff],
---   intros x z,
---   have := @bv_union_spec' _ _ x ⊤,
---   rw [le_infi_iff] at this, sorry
--- end
+lemma bSet_models_union : ⊤ ⊩[V 𝔹] axiom_of_union :=
+begin
+  simp [-lattice.biimp, -top_le_iff, forced_in, axiom_of_union, -lattice.le_inf_iff],
+  intros x z,
+  have := @bv_union_spec' _ _ x ⊤,
+  replace this := this z, dsimp at this,
+  simp only [bSet.mem, lattice.imp_top_iff_le, lattice.biimp],
+  bv_split, bv_split_goal 
+end
 
 -- axiom of powerset
 -- ∀ u, ∃ v, ∀ x, x ∈ v ↔ ∀ y ∈ x, y ∈ u
