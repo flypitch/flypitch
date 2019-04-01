@@ -1459,13 +1459,15 @@ begin
        {rw[<-inf_assoc], apply inf_le_right_of_le, refl}},
 end
 
-lemma bv_union_spec' (u : bSet 𝔹) {Γ} : Γ ≤ ⨅ (x : bSet 𝔹), (x ∈ᴮ bv_union u ⟹ ⨆ (y : type u), u.bval y ⊓ x ∈ᴮ func u y) ⊓
+lemma bv_union_spec' (u : bSet 𝔹) {Γ} : Γ ≤ ⨅ (x : bSet 𝔹), (x ∈ᴮ bv_union u ⟹ ⨆ y, y ∈ᴮ u ⊓ x ∈ᴮ y) ⊓
         ((⨆ y, y ∈ᴮ u ⊓ x ∈ᴮ y) ⟹ x ∈ᴮ bv_union u) :=
 begin
   have := bv_union_spec u,
   bv_intro x, apply le_inf,
     replace this := this x, bv_split_at this,
-    from le_trans (le_top) ‹_›,
+    from le_trans (le_top) (by {bv_imp_intro, replace this_1 := this_1 ‹_›,
+    bv_cases_at this_1 i_y, apply bv_use (u.func i_y), bv_split,
+    from le_inf (mem.mk'' ‹_›) ‹_›}),
   replace this := this x, bv_split_at this,
   bv_imp_intro, specialize_context_at this_1_1 Γ_1,
   replace this_1_1 := this_1_1 _, from ‹_›,

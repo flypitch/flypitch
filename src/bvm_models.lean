@@ -88,7 +88,11 @@ def V : bStructure L_ZFC' (𝔹) :=
     tidy_context, apply mem_congr; from ‹_›
   end}
 
-@[simp] lemma carrier_V : ↥(V 𝔹) = bSet 𝔹 := by refl
+@[simp] lemma carrier_V : ↥(V 𝔹) = bSet 𝔹 := rfl
+
+@[simp]lemma V_forall {C : (V 𝔹) → 𝔹} : (⨅(x : V 𝔹), C x) = (⨅(x : bSet 𝔹), C x) := rfl
+
+@[simp]lemma V_exists {C : (V 𝔹) → 𝔹} : (⨆(x : V 𝔹), C x) = (⨆(x : bSet 𝔹), C x) := rfl
 
 def emptyset {n} : bounded_term L_ZFC' n := bd_const ZFC'_func.emptyset
 
@@ -161,10 +165,14 @@ by { simp [forced_in, axiom_of_extensionality], exact bSet_axiom_of_extensionali
 def axiom_of_collection (ϕ' : bounded_formula L_ZFC' 2) : sentence L_ZFC' :=
   ∀' ((∀' (&'0 ∈' &'1 ⟹ (∃' ϕ'.cast1))) ⟹ (∃' ∀'(&'0 ∈' &'2 ⟹ ∃' ((&'0 ∈' &'2) ⊓ (ϕ'.cast dec_trivial : bounded_formula L_ZFC' 4)))))
 
+-- note: should write a lemma which says given the full congr lemma for a 2-ary formula, can extract left and right congr lemmas
 lemma bSet_models_collection (ϕ : bounded_formula L_ZFC' 2) : ⊤ ⊩[V 𝔹] axiom_of_collection ϕ :=
 begin
   change ⊤ ≤ _, bv_intro u, simp, have := bSet_axiom_of_collection' _ _ _ u,
-  simp at this, specialize this u, convert this, ext,
+  simp at this, specialize this u, convert this, ext, convert rfl, ext, convert rfl, ext, -- try to apply the actual extensionality lemma here, unification is slowing this down
+  congr' 1, sorry, -- this is the trunc simp lemma
+  intros, rw[<-boolean_realize_bounded_formula_eq, <-boolean_realize_bounded_formula_eq],
+  sorry, sorry
 end
 
 -- axiom of union
@@ -172,13 +180,13 @@ end
 def axiom_of_union : sentence L_ZFC' :=
 ∀' ∀' (&'0 ∈' ⋃' &'1 ⇔ (∃' (&'0 ∈' &'2) ⊓ &'1 ∈' &'0))
 
-lemma bSet_models_union : ⊤ ⊩[V 𝔹] axiom_of_union :=
-begin
-  simp [-lattice.biimp, -top_le_iff, forced_in, axiom_of_union, -lattice.le_inf_iff],
-  intros x z,
-  have := @bv_union_spec' _ _ x ⊤,
-  rw [le_infi_iff] at this, sorry
-end
+lemma bSet_models_union : ⊤ ⊩[V 𝔹] axiom_of_union := sorry
+-- begin
+--   simp [-lattice.biimp, -top_le_iff, forced_in, axiom_of_union, -lattice.le_inf_iff],
+--   intros x z,
+--   have := @bv_union_spec' _ _ x ⊤,
+--   rw [le_infi_iff] at this, sorry
+-- end
 
 -- axiom of powerset
 -- ∀ u, ∃ v, ∀ x, x ∈ v ↔ ∀ y ∈ x, y ∈ u
