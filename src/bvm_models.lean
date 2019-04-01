@@ -70,7 +70,7 @@ def V : bStructure L_ZFC' (𝔹) :=
       {intros x y, cases x, cases y, simp},
       {intros x y, cases x, cases y, cases x_xs, cases y_xs,
         change (_ ⊓ _ : 𝔹) ≤ (bv_powerset _) =ᴮ (bv_powerset _), simp,
-        tidy_context, sorry },
+        tidy_context, from bv_powerset_congr ‹_›},
       {intros x y, cases x, cases y, cases x_xs, cases y_xs,
         change (_ ⊓ _ : 𝔹) ≤ (bv_union _) =ᴮ (bv_union _), simp,
         tidy_context, from bv_union_congr ‹_›},
@@ -163,7 +163,8 @@ def axiom_of_collection (ϕ' : bounded_formula L_ZFC' 2) : sentence L_ZFC' :=
 
 lemma bSet_models_collection (ϕ : bounded_formula L_ZFC' 2) : ⊤ ⊩[V 𝔹] axiom_of_collection ϕ :=
 begin
-  change ⊤ ≤ _, bv_intro u, simp, tidy_context, sorry
+  change ⊤ ≤ _, bv_intro u, simp, have := bSet_axiom_of_collection' _ _ _ u,
+  simp at this, specialize this u, convert this, ext,
 end
 
 -- axiom of union
