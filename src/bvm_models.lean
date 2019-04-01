@@ -401,7 +401,8 @@ by {simp[injects_into_f, injects_into]}
 --⨆ x, ⨆y, (ℵ₀ ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(ℵ₀))
 
 def CH_f : sentence L_ZFC' :=
-(∀' (∀' (∼((∼(substmax_bounded_formula (larger_than_f) ω' ↑ 1) ⊓' ∼larger_than_f ⊓' (injects_into_f[(Powerset omega) /0].cast1))))))
+(∀' (∀' (∼((∼(substmax_bounded_formula (larger_than_f) ω' ↑ 1) ⊓'
+  ∼larger_than_f ⊓' (injects_into_f[(Powerset omega) /0].cast1))))))
 
 lemma subst_unfold₁ : ((substmax_bounded_formula (larger_than_f) ω' ↑ 1)) =
   ∃' ((is_func_f.cast (dec_trivial)) ⊓
