@@ -96,6 +96,8 @@ def V : bStructure L_ZFC' (𝔹) :=
 
 @[simp]lemma V_exists {C : (V 𝔹) → 𝔹} : (⨆(x : V 𝔹), C x) = (⨆(x : bSet 𝔹), C x) := rfl
 
+@[simp]lemma V_eq {a b} : (V 𝔹).eq a b = a =ᴮ b := rfl
+
 lemma alpha_equiv₁ {C : (bSet 𝔹) → 𝔹} : (⨅(x : bSet 𝔹), C x) = ⨅(y : bSet 𝔹), C y := rfl
 lemma alpha_equiv₂ {C : (bSet 𝔹) → 𝔹} : (⨆(x : bSet 𝔹), C x) = ⨆(y : bSet 𝔹), C y := rfl
 
@@ -152,6 +154,13 @@ by refl
   boolean_realize_bounded_term v ∅' ([]) = bSet.empty :=
 by refl
 
+@[simp]lemma boolean_realize_bounded_term_pair {n} {v : dvector (V 𝔹) n}
+  (t₁ t₂ : bounded_term L_ZFC' n) :  boolean_realize_bounded_term v (pair' t₁ t₂) ([]) =
+  pair (boolean_realize_bounded_term v t₁ ([])) (boolean_realize_bounded_term v t₂ ([])) :=
+by refl
+
+ -- todo do this for pairing
+
 -- @[simp] lemma boolean_realize_bounded_formula_biimp_mem_var {n} {v : dvector (V 𝔹) n}
 --   (n₁ n₂ : fin n) :
 --   boolean_realize_bounded_formula v (&'n₁ ∈' &'n₂) ([]) =
@@ -162,6 +171,21 @@ by refl
 @[simp] lemma fin_1 {n : ℕ} : (1 : fin (n+2)).1 = 1 := by refl
 @[simp] lemma fin_2 {n : ℕ} : (2 : fin (n+3)).1 = 2 := by refl
 @[simp] lemma fin_3 {n : ℕ} : (3 : fin (n+4)).1 = 3 := by refl
+
+def axiom_of_emptyset : sentence L_ZFC' := ∀' (∼(&0 ∈' ∅'))
+
+lemma bSet_models_emptyset : ⊤ ⊩[V 𝔹] axiom_of_emptyset :=
+by {change ⊤ ≤ _, simp[axiom_of_emptyset, -top_le_iff], intro x, from empty_spec}
+
+def axiom_of_pairing : sentence L_ZFC' :=
+ ∀' ∀' ∀' ∀'(((pair' &'3 &'2 ≃pair' &'1 &'0)) ⇔ (&'3 ≃ &'1 ⊓ &'2 ≃ &'0))
+
+lemma bSet_models_pairing : ⊤ ⊩[V 𝔹] axiom_of_pairing :=
+begin
+  change ⊤ ≤ _, simp[axiom_of_pairing], intros a b x y, tidy,
+  from eq_of_eq_pair_left, from eq_of_eq_pair_right,
+  simp[pair_congr]
+end
 
 -- axiom of extensionality
 -- ∀ x y, (∀ z, (z ∈ x ↔ z ∈ y)) → x = y
@@ -199,7 +223,6 @@ begin
   intros x z,
   have := @bv_union_spec' _ _ x ⊤,
   replace this := this z, dsimp at this,
-  simp only [bSet.mem, lattice.imp_top_iff_le, lattice.biimp],
   bv_split, bv_split_goal
 end
 
@@ -230,16 +253,24 @@ begin
 end
 
 -- axiom of regularity
--- ∀ x, ∃ y ∈ x, ∀ z' ∈ x, ¬ (z' ∈ y)
+-- ∀ x, x ≠ ∅ ⟹ ∃ y ∈ x, ∀ z' ∈ x, ¬ (z' ∈ y)
 
 def axiom_of_regularity : sentence L_ZFC' :=
-  ∀' ∃' (&'0 ∈' &'1 ⊓ ∀' (&'0 ∈' &'2 ⟹ ∼(&'0 ∈' &'1)))
+  ∀' (∼(&0 ≃ ∅') ⟹ (∃' (&'0 ∈' &'1 ⊓ ∀' (&'0 ∈' &'2 ⟹ ∼(&'0 ∈' &'1)))))
+
+lemma bSet_models_regularity : ⊤ ⊩[V 𝔹] axiom_of_regularity :=
+begin
+  change ⊤ ≤ _, unfold axiom_of_regularity,
+  simp[-top_le_iff], intro x,
+  bv_imp_intro,
+  apply bSet_axiom_of_regularity, convert H
+end
 
 /-- &1 ⊆ &0 ↔ ∀ z, (z ∈ &1 ⟹ z ∈ &0)-/
-def subset' {n} (t₁ t₂ : bounded_term L_ZFC' n): bounded_formula L_ZFC' n := sorry
-  -- ∀' ((&'0 ∈' t₁)) ⟹ (&'0 ∈' t₂))  -- trouble getting this to type-check
+def subset' {n} (t₁ t₂ : bounded_term L_ZFC' n) : bounded_formula L_ZFC' n := 
+-- ∀' ((&'0 ∈' t₁)) ⟹ (&'0 ∈' t₂))  -- trouble getting this to type-check
 
-local infix ` ⊆'`:100 := subset'
+-- local infix ` ⊆'`:100 := subset'
 
 -- zorns lemma
 -- ∀ x, x ≠ ∅ ∧ ((∀ y, y ⊆ x ∧ ∀ w₁ w₂ ∈ y, w₁ ⊆ w₂ ∨ w₂ ⊆ w₁) → (⋃y) ∈ x)
@@ -256,6 +287,30 @@ def zorns_lemma : sentence L_ZFC' := sorry -- need to do some casts/type ascript
 -- ¬ (∃ z z', ω ≺ z ≺ z' ≼ 𝒫(ω))
 
 -- where ≺ means (¬ larger_than) and ≼ means "exists an injection into"
+
+
+/-- f is =ᴮ-extensional if for every w₁ w₂ v₁ v₂, if pair (w₁ v₁) and pair (w₂ v₂) ∈ f and
+    w₁ =ᴮ w₂, then v₁ =ᴮ v₂ -/
+def is_extensional_f : bounded_formula L_ZFC' 1 :=
+∀' ∀' ∀' ∀' ((pair' &'3 &'1 ∈' &'4 ⊓' pair' &'2 &'0 ∈' &'4
+  ⟹ (&'3 ≃ &'2 ⟹ &'1 ≃ &'0)))
+  
+def is_functional_f : bounded_formula L_ZFC' 1 :=
+∀' ((∃' (pair' &'1 &'0 ∈' &'2)) ⟹ (∃' ∀' (pair' &'2 &'0 ∈' &'3 ⟹ &'1 ≃ &'0)))
+
+def is_func_f : bounded_formula L_ZFC' 1 :=
+  is_extensional_f ⊓' is_functional_f
+
+def is_func'_f : bounded_formula L_ZFC' 3 :=
+  is_func_f ⊓' subset' &'0 
+  -- sorry
+
+def larger_than : bounded_formula L_ZFC' 2 :=
+∃' (is_func_f.cast (dec_trivial) ⊓
+   ∀' ( &0 ∈' &2 ⟹ (∃' (&'0 ∈' &'4 ⊓' pair' &'0 &'1 ∈' &'2))))
+
+def injects_into : bounded_formula L_ZFC' 2 :=
+ ∃' is_func_f
 
 -- c.f. the end of `forcing.lean`
 

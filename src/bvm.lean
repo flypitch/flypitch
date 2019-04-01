@@ -641,6 +641,8 @@ begin
   simp only [inf_top_eq, bSet.forall_over_empty, bSet.exists_over_empty,imp_bot, neg_supr]
 end
 
+lemma empty_spec {x : bSet 𝔹} {Γ : 𝔹} : Γ ≤ -(x ∈ᴮ ∅) := by simp[mem_unfold]
+
 @[simp]lemma subst_congr_insert1_left {u w v : bSet 𝔹} : u =ᴮ w ≤ bSet.insert1 u v =ᴮ bSet.insert1 w v :=
 begin
   rcases v with ⟨α,A,B⟩, simp[bSet.insert1], split; intro i; apply bv_imp_intro;

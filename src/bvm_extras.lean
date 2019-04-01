@@ -203,9 +203,9 @@ end
 -- 2. it is a functional relation
 def is_func (f : bSet 𝔹) : 𝔹 := (is_extensional f) ⊓ (is_functional f)
 
-/-- f is a function from x to y if it is a subset of prod x y such that for every element of x, there exists an element of y such that the pair is in f, and f is a function -/
+/-- f is a function from x to y if for every element of x, there exists an element of y such that the pair is in f, and f is a function -/
 def is_func' (x y f : bSet 𝔹) : 𝔹 :=
-  is_func f ⊓ f ⊆ᴮ prod x y ⊓ ⨅w₁, w₁ ∈ᴮ x ⟹ ⨆w₂, pair w₁ w₂ ∈ᴮ f
+  is_func f ⊓ (f ⊆ᴮ prod x y ) ⊓ (⨅w₁, w₁ ∈ᴮ x ⟹ ⨆w₂, pair w₁ w₂ ∈ᴮ f)
 
 /-- f is an injective function on x if it is a function and for every w₁ and w₂ ∈ x, if there exist v₁ and v₂ such that (w₁, v₁) ∈ f and (w₂, v₂) ∈ f,
   then v₁ = v₂ implies  w₁ = w₂ -/
