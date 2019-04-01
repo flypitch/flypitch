@@ -1,5 +1,5 @@
 import set_theory.zfc order.complete_boolean_algebra
-       .to_mathlib order.zorn
+       .to_mathlib order.zorn .pSet_ordinal
 
 local infix ` ⟹ `:65 := lattice.imp
 
@@ -641,7 +641,15 @@ begin
   simp only [inf_top_eq, bSet.forall_over_empty, bSet.exists_over_empty,imp_bot, neg_supr]
 end
 
+@[simp]lemma empty_subset {x : bSet 𝔹} {Γ : 𝔹} : Γ ≤ ∅ ⊆ᴮ x :=
+begin
+  rw[subset_unfold], bv_intro, repeat{cases i}
+end
+
 lemma empty_spec {x : bSet 𝔹} {Γ : 𝔹} : Γ ≤ -(x ∈ᴮ ∅) := by simp[mem_unfold]
+
+lemma bot_of_mem_empty {x : bSet 𝔹} {Γ : 𝔹} (H : Γ ≤ x ∈ᴮ ∅) : Γ ≤ ⊥ :=
+by {have := @empty_spec 𝔹 _ x Γ, rw[<-imp_bot] at this, from this H}
 
 @[simp]lemma subst_congr_insert1_left {u w v : bSet 𝔹} : u =ᴮ w ≤ bSet.insert1 u v =ᴮ bSet.insert1 w v :=
 begin
@@ -1908,12 +1916,6 @@ begin
   apply le_top, apply le_trans, apply bv_eq_trans, apply bv_have (le_top : y =ᴮ _ ≤ _),
   rw[bv_eq_symm] at claim_5, simp[claim_5.symm, bv_eq_trans]
 end
-
-theorem bSet_zorns_lemma' (X : bSet 𝔹) {Γ} (H_nonempty : Γ ≤ -(X =ᴮ ∅)) (H : Γ ≤ (⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
-  w₁ ∈ᴮ y ⊓ w₂ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X))) :
-  Γ ≤ (⨆c, c ∈ᴮ X ⊓ (⨅z, z ∈ᴮ X ⟹ (c ⊆ᴮ z ⟹ c =ᴮ z))) :=
-sorry
-
 end zorns_lemma
 
 -- /-- This is the abbreviated version of AC found at http://us.metamath.org/mpeuni/ac3.html

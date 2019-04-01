@@ -658,6 +658,17 @@ begin
   refine le_trans (infi_le _ f') (infi_le _ hf')
 end
 
+@[simp]lemma inf_axioms_top_of_models {S : bStructure L β} {T : Theory L} (H : ⊤ ⊩[S] T) :
+  (⨅(f ∈ T), boolean_realize_sentence S f) = ⊤ :=
+by {apply top_unique, from le_trans H (by refl)}
+
+lemma forced_absurd {S : bStructure L β} {T : Theory L} {f : sentence L} {Γ : β} (H₁ : Γ ⊩[S] f) (H₂ : Γ ⊩[S] ∼f) : Γ ⊩[S] bd_falsum :=
+begin
+  change Γ ≤ _, apply le_trans' H₁, apply le_trans,
+  apply inf_le_inf, from H₂, refl, simp
+end
+  
+
 --infix ` ⊨ᵇ `:51 := fol.forced -- input using \|= or \vDash, but not using \bModels
 
 -- def all_forced (T T' : Theory L) := ∀(f ∈ T'), T ⊨ᵇ f
@@ -680,6 +691,50 @@ variable {β}
 
 lemma boolean_soundness {T : Theory L} {A : sentence L} (H : T ⊢ A) : T ⊨[β] A :=
 forced_of_bsatisfied $ boolean_formula_soundness H
+
+lemma boolean_realize_subst_preterm {n l} (t : bounded_preterm L (n+1) l)
+  (xs : dvector S l) (s : closed_term L) (v : dvector S n) :
+  boolean_realize_bounded_term v (substmax_bounded_term t s) xs =
+  boolean_realize_bounded_term (v.concat (boolean_realize_closed_term S s)) t xs :=
+begin
+  induction t,
+  { by_cases h : t.1 < n,
+    { rw [substmax_var_lt t s h], dsimp,
+      simp only [dvector.map_nth, dvector.concat_nth _ _ _ _ h, dvector.nth'],  },
+    { have h' := le_antisymm (le_of_lt_succ t.2) (le_of_not_gt h), simp [h', dvector.nth'],
+      rw [substmax_var_eq t s h'],
+      apply boolean_realize_bounded_term_irrel, simp }},
+  { refl },
+  { dsimp, rw [substmax_bounded_term_bd_app], dsimp, rw [t_ih_s ([]), t_ih_t] }
+end
+
+lemma boolean_realize_subst_term {n} (v : dvector S n) (s : closed_term L)
+  (t : bounded_term L (n+1))  :
+  boolean_realize_bounded_term v (substmax_bounded_term t s) ([]) =
+  boolean_realize_bounded_term (v.concat (boolean_realize_closed_term S s)) t ([]) :=
+by apply boolean_realize_subst_preterm t ([]) s v
+
+lemma boolean_realize_subst_formula (S : bStructure L β) {n} (f : bounded_formula L (n+1))
+  (t : closed_term L) (v : dvector S n) :
+  boolean_realize_bounded_formula v (substmax_bounded_formula f t) ([]) =
+  boolean_realize_bounded_formula (v.concat (boolean_realize_closed_term S t)) f ([]) :=
+begin
+  revert n f v, refine bounded_formula.rec1 _ _ _ _ _; intros,
+  { simp },
+  {sorry -- apply eq.congr, exact realize_subst_term v t t₁, exact realize_subst_term v t t₂
+  },
+  { rw [substmax_bounded_formula_bd_apps_rel, boolean_realize_bounded_formula_bd_apps_rel,
+        boolean_realize_bounded_formula_bd_apps_rel],
+    simp [ts.map_congr (realize_subst_term _ _)], sorry },
+  {sorry
+ -- apply imp_congr, apply ih₁ v, apply ih₂ v
+  },
+  { simp, apply congr_arg infi; apply funext, intro x, apply ih (x::v) }
+end
+
+-- lemma boolean_realize_subst_formula0 (S : bStructure L β) (f : bounded_formula L 1) (t : closed_term L) :
+--   S ⊨ᵇ f[t/0] = boolean_realize_bounded_formula ([boolean_realize_closed_term S t]) f ([]) :=
+-- iff.trans (by rw [substmax_eq_subst0_formula]) (by apply boolean_realize_subst_formula S f t ([]))
 
 #exit
 /-- Given a bModel M ⊨ᵇ T with M ⊨ᵇ ¬ ψ, ¬ T ⊨ᵇ ψ--/
@@ -874,7 +929,7 @@ by apply realize_closed_preterm_term_bModel ([]) t
 -- end
 
 
-lemma realize_subst_preterm {n l} (t : bounded_preterm L (n+1) l)
+lemma boolean_realize_subst_preterm {n l} (t : bounded_preterm L (n+1) l)
   (xs : dvector S l) (s : closed_term L) (v : dvector S n) :
   boolean_realize_bounded_term v (substmax_bounded_term t s) xs =
   boolean_realize_bounded_term (v.concat (boolean_realize_closed_term S s)) t xs :=
@@ -890,13 +945,13 @@ begin
   { dsimp, rw [substmax_bounded_term_bd_app], dsimp, rw [t_ih_s ([]), t_ih_t] }
 end
 
-lemma realize_subst_term {n} (v : dvector S n) (s : closed_term L)
+lemma boolean_realize_subst_term {n} (v : dvector S n) (s : closed_term L)
   (t : bounded_term L (n+1))  :
   boolean_realize_bounded_term v (substmax_bounded_term t s) ([]) =
   boolean_realize_bounded_term (v.concat (boolean_realize_closed_term S s)) t ([]) :=
-by apply realize_subst_preterm t ([]) s v
+by apply boolean_realize_subst_preterm t ([]) s v
 
-lemma realize_subst_formula (S : bStructure L β) {n} (f : bounded_formula L (n+1))
+lemma boolean_realize_subst_formula (S : bStructure L β) {n} (f : bounded_formula L (n+1))
   (t : closed_term L) (v : dvector S n) :
   boolean_realize_bounded_formula v (substmax_bounded_formula f t) ([]) =
   boolean_realize_bounded_formula (v.concat (boolean_realize_closed_term S t)) f ([]) :=
@@ -911,13 +966,13 @@ begin
   { simp, apply congr_arg infi; apply funext, intro x, apply ih (x::v) }
 end
 
-lemma realize_subst_formula0 (S : bStructure L β) (f : bounded_formula L 1) (t : closed_term L) :
+lemma boolean_realize_subst_formula0 (S : bStructure L β) (f : bounded_formula L 1) (t : closed_term L) :
   S ⊨ᵇ f[t/0] = boolean_realize_bounded_formula ([boolean_realize_closed_term S t]) f ([]) :=
-iff.trans (by rw [substmax_eq_subst0_formula]) (by apply realize_subst_formula S f t ([]))
+iff.trans (by rw [substmax_eq_subst0_formula]) (by apply boolean_realize_subst_formula S f t ([]))
 
 lemma term_bModel_subst0 (f : bounded_formula L 1) (t : closed_term L) :
   term_bModel β T ⊨ᵇ f[t/0] = boolean_realize_bounded_formula ([term_mk T t]) f ([]) :=
-(realize_subst_formula0 (term_bModel β T) f t).trans (by simp)
+(boolean_realize_subst_formula0 (term_bModel β T) f t).trans (by simp)
 
 include H₂
 instance nonempty_term_bModel : nonempty $ term_bModel β T :=

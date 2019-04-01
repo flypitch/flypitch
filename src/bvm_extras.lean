@@ -68,6 +68,12 @@ by {rw[mem_unfold], apply bv_Or_elim, intro i, cases i, simp[bv_eq_symm], repeat
 lemma eq_of_mem_singleton {x y : bSet 𝔹} {c : 𝔹} {h : c ≤ y ∈ᴮ {x}} : c ≤ x =ᴮ y :=
 le_trans h (by apply eq_of_mem_singleton')
 
+lemma mem_singleton_of_eq {x y : bSet 𝔹} {c : 𝔹} {h : c ≤ x =ᴮ y} : c ≤ y ∈ᴮ {x} :=
+begin
+  unfold singleton, unfold has_insert.insert,
+  rw[mem_insert], simp, apply le_sup_left_of_le, rwa[bv_eq_symm]
+end
+
 lemma eq_inserted_of_eq_singleton {x y z : bSet 𝔹} : {x} =ᴮ bSet.insert1 y {z} ≤ x =ᴮ y :=
 begin
   rw[bv_eq_unfold], apply bv_specialize_left none, apply bv_specialize_right none,
@@ -205,7 +211,7 @@ def is_func (f : bSet 𝔹) : 𝔹 := (is_extensional f) ⊓ (is_functional f)
 
 /-- f is a function from x to y if for every element of x, there exists an element of y such that the pair is in f, and f is a function -/
 def is_func' (x y f : bSet 𝔹) : 𝔹 :=
-  is_func f ⊓ (f ⊆ᴮ prod x y ) ⊓ (⨅w₁, w₁ ∈ᴮ x ⟹ ⨆w₂, pair w₁ w₂ ∈ᴮ f)
+  is_func f ⊓ (⨅w₁, w₁ ∈ᴮ x ⟹ ⨆w₂, w₂ ∈ᴮ y ⊓ pair w₁ w₂ ∈ᴮ f)
 
 /-- f is an injective function on x if it is a function and for every w₁ and w₂ ∈ x, if there exist v₁ and v₂ such that (w₁, v₁) ∈ f and (w₂, v₂) ∈ f,
   then v₁ = v₂ implies  w₁ = w₂ -/
@@ -214,7 +220,7 @@ def is_func' (x y f : bSet 𝔹) : 𝔹 :=
 --     (⨆v₁ v₂, (pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⊓ v₁ =ᴮ v₂ ⟹ w₁ =ᴮ w₂)))
 
 def is_inj (f : bSet 𝔹) : 𝔹 :=
-  ⨅w₁, ⨅ w₂, ⨅v₁, ⨅ v₂, pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⊓ v₁ =ᴮ v₂ ⟹ w₁ =ᴮ w₂
+  ⨅w₁, ⨅ w₂, ⨅v₁, ⨅ v₂, (pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⊓ v₁ =ᴮ v₂) ⟹ w₁ =ᴮ w₂
 
 lemma funext (f x y z : bSet 𝔹) {Γ : 𝔹} (H_func : Γ ≤ is_func f) (H : Γ ≤ (pair x y) ∈ᴮ f)
   (H' : Γ ≤ (pair x z) ∈ᴮ f) : Γ ≤ y =ᴮ z :=
@@ -372,6 +378,12 @@ begin
   exact context_imp_elim x_ih2 ‹_›
 end
 
+lemma bot_of_mem_self' {x : bSet 𝔹} {Γ} (H : Γ ≤ (x ∈ᴮ x)) : Γ ≤ ⊥ :=
+begin
+  have := @bot_of_mem_self 𝔹 _ x, rw[<-deduction, top_inf_eq] at this,
+  from le_trans H this
+end
+
 -- lemma bot_of_mem_mem_aux {x : bSet 𝔹} {i : x.type} : ⊤ ≤ ( x ∈ᴮ x.func i ⟹ ⊥) :=
 -- begin
 --   induction x, apply bv_imp_intro, rw[top_inf_eq], rw[mem_unfold],
@@ -458,6 +470,8 @@ def Ord (x : bSet 𝔹) : 𝔹 := epsilon_well_orders x ⊓ is_transitive x
 
 /-- x is larger than y if there exists a function f such that for every v ∈ y, there exists a w ∈ x such that (w,v) ∈ f -/
 def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func f) ⊓ ⨅v, v ∈ᴮ y ⟹ ⨆w, w ∈ᴮ x ⊓ pair w v ∈ᴮ f
+
+def injects_into (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ is_inj f
 
 def Card (y : bSet 𝔹) : 𝔹 := Ord(y) ⊓ ⨅x, x ∈ᴮ y ⟹ (- larger_than y x)
 
@@ -669,5 +683,41 @@ lemma check_Ord {x : pSet} (H : pSet.Ord x) : ⊤ ≤ Ord (x̌ : bSet 𝔹) :=
 le_inf (check_ewo H.left) (check_is_transitive H.right)
 
 end ordinals
+
+theorem bSet_zorns_lemma' : ⊤ ≤ ⨅(X : bSet 𝔹), -(X =ᴮ ∅) ⟹ ((⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
+  w₁ ∈ᴮ y ⊓ w₂ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X)) ⟹ (⨆c, c ∈ᴮ X ⊓ (⨅z, z ∈ᴮ X ⟹ (c ⊆ᴮ z ⟹ c =ᴮ z)))) :=
+begin
+  bv_intro X, rw[<-curry_uncurry],
+  have := core_aux_lemma2 (λ x, (-(x =ᴮ ∅) ⊓
+         ⨅ (y : bSet 𝔹),
+           (y ⊆ᴮ x ⊓
+                ⨅ (w₁ w₂ : bSet 𝔹),
+                  w₁ ∈ᴮ y ⊓ w₂ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁)) ⟹
+             bv_union y ∈ᴮ x)) (λ x, ⨆ (c : bSet 𝔹), c ∈ᴮ x ⊓ ⨅ (z : bSet 𝔹), z ∈ᴮ x ⟹ (c ⊆ᴮ z ⟹ c =ᴮ z))
+             (by change B_ext _; simp) (by change B_ext _; simp) _ _,
+
+  rw[eq_top_iff] at this, from this X,
+    dsimp, intros u Hu, rw[eq_top_iff] at Hu ⊢, bv_split,
+    apply bSet_zorns_lemma, from (top_unique ‹_›),
+    from ‹_›, apply top_unique, dsimp, apply bv_use ({∅} : bSet 𝔹),
+    simp, split,
+      {apply top_unique, rw[<-imp_bot], bv_imp_intro,
+        rw[bv_eq_unfold] at H, bv_split,
+        replace H_left := H_left none,
+        dsimp at H_left, replace H_left := H_left (le_top),
+        from bot_of_mem_self' ‹_›},
+    intros x, tidy_context, apply mem_singleton_of_eq,
+    apply subset_ext, simp, 
+    rw[subset_unfold'], bv_intro w, bv_imp_intro,
+    have := bv_union_spec' x, show 𝔹, from Γ_1,
+    replace this := this w, bv_split,
+    replace this_left := this_left ‹_›,
+    bv_cases_at this_left w',
+    rw[subset_unfold'] at a_left,
+    bv_split, replace a_left := a_left w' ‹_›,
+    have : Γ_2 ≤ ∅ =ᴮ w', by {apply eq_of_mem_singleton, from ‹_›},
+    apply bv_exfalso, apply bot_of_mem_empty, show bSet 𝔹, from w,
+    apply bv_rw' this, simp, from ‹_›
+end
 
 end bSet

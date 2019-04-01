@@ -438,7 +438,7 @@ local notation `ℵ₀` := (omega : bSet 𝔹)
 local notation `𝔠` := (bv_powerset ℵ₀ : bSet 𝔹)
 local infix `≺`:70 := (λ x y, -(larger_than x y))
 
-local infix `≼`:70 := (λ x y, ⨆f, is_func' (x) y f ⊓ is_inj f)
+local infix `≼`:70 := (λ x y, injects_into x y)
 
 lemma ℵ₀_lt_ℵ₁ : (⊤ : 𝔹)  ≤ ℵ₀ ≺ ℵ₁̌  :=
 begin
@@ -501,16 +501,10 @@ theorem ℵ₂_le_𝔠 : ⊤ ≤ is_func' (ℵ₂̌ ) 𝔠 (neg_CH_func) ⊓ is_
 begin
 refine le_inf _ _,
 
-  {unfold neg_CH_func, refine le_inf (le_inf _ _) _, refine mk_is_func _ _,
-    simp only [subset_unfold] with cleanup,
-    bv_intro ν, bv_imp_intro,
-    have : Γ ≤ (ℵ₂̌ ).func ν ∈ᴮ ℵ₂̌  ⊓ (cohen_real.mk ν ∈ᴮ bv_powerset ℵ₀),
-      by {refine le_inf _ _, from le_trans H (by refine mem.mk' _ _),
-          from cohen_real.definite'},
-    from le_trans this (prod_mem),
-
+  {unfold neg_CH_func, refine le_inf _ _, refine mk_is_func _ _,
     bv_intro w₁, bv_imp_intro, rw[mem_unfold] at H,
     bv_cases_at' H ν, apply bv_use (cohen_real.mk ν),
+    refine le_inf cohen_real.definite' _, swap,
     rw[mem_unfold], apply bv_use ν, bv_split,
     from le_inf ‹_› (by apply le_trans H_1_right; from subst_congr_pair_left)},
 
