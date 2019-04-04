@@ -19,12 +19,12 @@ Installation instructions for Lean (using ~elan~) can be found [[https://github.
 
 ** Manual dependency graph
 Files only depend on files on lines above it
-```
+#+BEGIN_SRC
 to_mathlib pSet_ordinal
 bvm fol cohen_poset colimit set_theory
-abel bfol bv_prf bvm_extras compactness normal realization regular_open_algebra zfc zfc' zfc_expanded
-bvm_models cantor_space completion language_extension peano zfc_consistent
+abel bfol bv_prf bvm_extras compactness normal realization regular_open_algebra zfc zfc_expanded
+zfc' cantor_space completion language_extension peano zfc_consistent
 henkin forcing
 completeness
 conservative_extension independence reflection
-```
+#+END_SRC
