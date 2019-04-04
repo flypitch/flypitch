@@ -216,7 +216,7 @@ is_regular_of_clopen
          have := cantor_space.is_clopen_principal_open_finset p.ins,
          convert this, from eq₀.symm, from eq₀.symm, from eq₀.symm,
            {apply function.hfunext, from eq₂.symm, intros a a' H_heq,
-             apply heq_of_eq, convert rfl, cc},
+             apply heq_of_eq, convert rfl, convert (cast_eq _ _).symm, from eq₀.symm, refl},
 
          have := cantor_space.is_clopen_co_principal_open_finset p.out,
          convert this, from eq₀.symm, from eq₀.symm, from eq₀.symm,
@@ -386,7 +386,8 @@ rw[mem_unfold, neg_supr], bv_intro k, rw[neg_inf], simp,
        refine le_sup_left_of_le _, rw[<-h],
        rw[le_iff_subset'], unfold ι χ, rintros S ⟨H_S₁, H_S₂⟩,
        apply mem_neg_principal_open_of_not_mem, have := H_S₂ H, convert this,
-       from eq₀.symm, from eq₀.symm, from eq₀.symm, cc, cc
+       from eq₀.symm, from eq₀.symm, from eq₀.symm,
+       from cast_heq _ _, from (cast_heq _ _).symm
 end
 
 private lemma inj_cast_lemma (ν' : type (ℵ₂̌  : bSet 𝔹)) (n' : ℕ) :
@@ -517,7 +518,7 @@ theorem neg_CH : ⊤ ≤ -CH :=
 begin
   dsimp [CH], rw[lattice.neg_neg], apply bv_use (ℵ₁̌ ),
   apply bv_use (ℵ₂̌ ), simp only [lattice.le_inf_iff],
-  refine ⟨⟨ℵ₀_lt_ℵ₁ ,ℵ₁_lt_ℵ₂⟩, bv_use neg_CH_func⟩,
+  refine ⟨⟨ℵ₀_lt_ℵ₁, ℵ₁_lt_ℵ₂⟩, bv_use neg_CH_func⟩,
   from ℵ₂_le_𝔠
 end
 
