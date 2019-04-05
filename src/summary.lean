@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 Authors: Jesse Han, Floris van Doorn
 -/
-import .zfc'
+import .zfc' .completeness
 
 open fol bSet pSet lattice
 
@@ -34,6 +34,8 @@ This file summarizes:
 
 #print boolean_soundness
 
+#print completeness
+
 #print prf
 
 #print provable
@@ -50,7 +52,23 @@ This file summarizes:
 
 #print 𝔹
 
-def CH_sentence := CH_f
+theorem godel_completeness_theorem {L} (T) (ψ : sentence L) : T ⊢' ψ ↔ T ⊨ ψ :=
+begin
+  suffices : T ⊨ ψ → T ⊢' ψ, by exact ⟨(by apply satisfied_of_provable), this⟩,
+  intro hψ, haveI : decidable (T ⊢' ψ) := classical.prop_decidable _, by_contra,
+  suffices : ¬ T ⊨ ψ, by contradiction,
+  have := nonempty_model_of_consis (consis_not_of_not_provable a),
+  rcases this with ⟨⟨M,hM⟩, nonempty_M⟩;
+  fapply not_satisfied_of_model_not,
+  refine ⟨M,_⟩,
+  intros f hf, apply hM, simp[hf],
+  unfold Model_ssatisfied, dsimp, apply hM _,
+  simpa only [set.mem_insert_iff, true_or, eq_self_iff_true, set.union_singleton]
+end
+
+theorem boolean_valued_soundness_theorem {L} {β} [complete_boolean_algebra β] {T : Theory L}
+  {A : sentence L} (H : T ⊢ A) : T ⊨[β] A :=
+forced_of_bsatisfied $ boolean_formula_soundness H
 
 theorem fundamental_theorem_of_forcing {β} [nontrivial_complete_boolean_algebra β] :
   ⊤ ⊩[V β] ZFC' :=
@@ -67,6 +85,8 @@ begin
   from bSet_models_emptyset _,
   from bSet_models_collection _ ‹_›
 end
+
+def CH_sentence := CH_f
 
 theorem CH_unprovable_from_ZFC : ¬ (ZFC' ⊢' CH_sentence) :=
 begin

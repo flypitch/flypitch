@@ -211,7 +211,7 @@ structure 𝒞 : Type :=
 
 -- lemma nat_supp_finite {X} : set.finite $ nat_supp X := sorry
 
-def ι : 𝒞 → 𝔹 :=
+private def ι : 𝒞 → 𝔹 :=
 λ p, ⟨{S | (p.ins.to_set) ⊆ (cast eq₂.symm S) ∧
            (p.out.to_set) ⊆ (cast eq₂.symm (- S))},
 is_regular_of_clopen
