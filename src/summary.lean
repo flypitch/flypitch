@@ -2,6 +2,16 @@ import .zfc'
 
 open fol bSet pSet lattice
 
+/-
+This file summarizes:
+ - important definitions with #print statements, and
+ - important theorems with duplicated proofs
+
+ The user is encouraged to use their editor's jump-to-definition
+ feature to inspect the source code of any expressions which are
+ printed or which occur in the proofs below.
+-/
+
 #print Language
 
 #print preterm
@@ -13,6 +23,10 @@ open fol bSet pSet lattice
 #print formula
 
 #print sentence
+
+#print soundness
+
+#print boolean_soundness
 
 #print prf
 
@@ -27,6 +41,8 @@ open fol bSet pSet lattice
 #print ZFC'
 
 #print CH_f
+
+#print 𝔹
 
 def CH_sentence := CH_f
 
