@@ -1,3 +1,9 @@
+/-
+Copyright (c) 2019 The Flypitch Project. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+
+Authors: Jesse Han, Floris van Doorn
+-/
 import set_theory.zfc order.complete_boolean_algebra
        .to_mathlib order.zorn .pSet_ordinal
 
@@ -308,18 +314,6 @@ begin
 end
 
 def bv_symm {Γ} {x y : bSet 𝔹} (H : Γ ≤ x =ᴮ y) : Γ ≤ y =ᴮ x := by rwa[bv_eq_symm]
-
--- @[symm]lemma symm {Γ : 𝔹} {x y : bSet 𝔹} (H : Γ ≤ x =ᴮ y) : Γ ≤ y =ᴮ x :=
--- by rwa[bv_eq_symm]
-
--- example {x y : bSet 𝔹} : x =ᴮ y = y =ᴮ x :=
--- begin
---   fapply le_antisymm; fapply bv_prf,
---   exact [x=ᴮy], simp, tactic.rotate 1, exact [y=ᴮx], simp,
---   induction x with α A B generalizing y, induction y with α' A' B',
---   rw[bv_eq], apply bv_cases_head,
---   apply bv_prf_and_intro, sorry
--- end
 
 theorem bv_eq_unfold (x y : bSet 𝔹) :
   x =ᴮ y = (⨅(a : x.type), x.bval a ⟹ (x.func a ∈ᴮ y))

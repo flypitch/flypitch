@@ -1,3 +1,9 @@
+/-
+Copyright (c) 2019 The Flypitch Project. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+
+Authors: Jesse Han, Floris van Doorn
+-/
 /- theorems which we should (maybe) backport to mathlib -/
 
 import data.finset algebra.ordered_group order.bounded_lattice

@@ -12,6 +12,11 @@ leanpkg build
 
 Installation instructions for Lean (using ~elan~) can be found [[https://github.com/leanprover-community/mathlib/blob/master/docs/elan.md][here]].
 
+** Viewing and navigating the project
+To view the project, we recommend the use of a Lean-aware editor like [[https://github.com/leanprover/lean-mode][Emacs]] or [[https://github.com/leanprover/vscode-lean][VSCode]]. Among other things, like type information, such editors can display the /proof state/ inside a tactic block, making it easier to understand how theorems are being proved.
+
+A summary of the main results can be found in ~/src/summary.lean~, containing ~#print~ statements of important definitions and duplicated proofs of the main theorems. From there, one may use their editor's jump-to-definition feature to trace the dependencies of the definitions and proofs.
+
 ** Contributors
  - [[https://www.pitt.edu/~jmh288][Jesse Han]]
  - [[http://florisvandoorn.com/][Floris van Doorn]]

@@ -1,3 +1,9 @@
+/-
+Copyright (c) 2019 The Flypitch Project. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+
+Authors: Jesse Han, Floris van Doorn
+-/
 /- A development of first-order logic in Lean.
 
 * The object theory uses classical logic
