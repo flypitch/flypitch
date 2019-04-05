@@ -688,6 +688,22 @@ le_inf (check_ewo_left ‹_›) (check_ewo_right ‹_›)
 lemma check_Ord {x : pSet} (H : pSet.Ord x) : ⊤ ≤ Ord (x̌ : bSet 𝔹) :=
 le_inf (check_ewo H.left) (check_is_transitive H.right)
 
+def closed_under_successor (Γ) (x : bSet 𝔹) := Γ ≤ ⨅y, y ∈ᴮ x ⟹ succ y ∈ᴮ x
+
+def omega_spec (ω : bSet 𝔹) := ∀ (x : bSet 𝔹) {Γ} (H₁ : Γ ≤ ∅ ∈ᴮ x) (H₂ : closed_under_successor Γ x), Γ ≤ bSet.omega ⊆ᴮ x
+
+lemma check_succ_eq_succ_check {n : ℕ} : (of_nat (n.succ) : bSet 𝔹) = bSet.succ (of_nat n) :=
+by {simp[of_nat, succ, pSet.of_nat]}
+
+lemma omega_is_omega : omega_spec (bSet.omega : bSet 𝔹) :=
+begin
+  intros x Γ H₁ H₂, unfold closed_under_successor at H₂, rw[subset_unfold],
+  simp, intro k, cases k, induction k, convert H₁,
+  {change (∅̌) = _, simp},
+  {let A := _, change Γ ≤ A ∈ᴮ x at k_ih,
+   convert H₂ A ‹_›, from check_succ_eq_succ_check}
+end
+
 end ordinals
 
 theorem bSet_zorns_lemma' : ⊤ ≤ ⨅(X : bSet 𝔹), -(X =ᴮ ∅) ⟹ ((⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
