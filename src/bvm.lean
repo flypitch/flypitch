@@ -250,7 +250,7 @@ by cases v; simp
     vote of membership. This demonstrates why the inequality in the following theorem is
     necessary. -/
 example : ∅ ∈ᴮ empty'' = (⊤ : 𝔹) :=
-  by {apply top_unique, apply le_supr_of_le ⊤, swap, exact ⟨⟨(tt)⟩⟩, finish}
+  by {apply top_unique, apply le_supr_of_le ⊤, swap, exact ⟨⟨(tt)⟩⟩, simp}
 
 theorem mem.mk {α : Type*} (A : α → bSet 𝔹) (B : α → 𝔹) (a : α) : B a ≤ A a ∈ᴮ mk α A B :=
   le_supr_of_le a $ by simp
@@ -1477,6 +1477,13 @@ begin
   replace this_1_1 := this_1_1 _, from ‹_›,
   rw[@bounded_exists 𝔹 _ u (λ z, x ∈ᴮ z)], from ‹_›,
   change B_ext _, simp
+end
+
+lemma bv_union_spec_split (u : bSet 𝔹) {Γ} (x : bSet 𝔹) : (Γ ≤ x ∈ᴮ bv_union u) ↔ (Γ ≤ ⨆ y, y ∈ᴮ u ⊓ x ∈ᴮ y) :=
+begin
+  have := bv_union_spec' u, show 𝔹, from Γ, replace this := this x,
+  dsimp at this, bv_split_at this, split; intro, from this_1 ‹_›,
+  from this_1_1 ‹_›
 end
 
 /-- For every x ∈ u, x ⊆ᴮ ⋃ u.-/

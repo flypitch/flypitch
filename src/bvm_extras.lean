@@ -17,41 +17,6 @@ local infix ` ⇔ `:50 := lattice.biimp
 namespace bSet
 variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 section extras
-@[reducible]def pair (x y : bSet 𝔹) : bSet 𝔹 := {{x}, {x,y}}
-
--- lemma pair_type (x y : bSet 𝔹) : (pair x y).type = begin end := sorry
-
---TODO(jesse) write a tactic to automate this type of argument
-@[simp]lemma subst_congr_pair_left {x z y : bSet 𝔹} : x =ᴮ z ≤ pair x y =ᴮ pair z y :=
-begin
-  unfold pair, have this₁ : x =ᴮ z ≤ {{x},{x,y}} =ᴮ {{z},{x,y}} := by simp*,
-  have this₂ : x =ᴮ z ≤ {{z},{x,y}} =ᴮ {{z},{z,y}} := by simp*,
-  apply bv_context_trans; from ‹_›
-end
-
-@[simp]lemma subst_congr_pair_left' {x z y : bSet 𝔹} {Γ : 𝔹} :
-  Γ ≤ x=ᴮ z → Γ ≤ pair x y =ᴮ pair z y := poset_yoneda_inv Γ (@subst_congr_pair_left _ _ x z y)
-
-lemma subst_congr_pair_right {x y z : bSet 𝔹} : y =ᴮ z ≤ pair x y =ᴮ pair x z :=
-by unfold pair; simp*
-
-lemma subst_congr_pair_right' {Γ} {x y z : bSet 𝔹} (H : Γ ≤ y =ᴮ z) : Γ ≤ pair x y =ᴮ pair x z :=
-poset_yoneda_inv Γ (@subst_congr_pair_right _ _ x y z) ‹_›
-
-lemma pair_congr {x₁ x₂ y₁ y₂ : bSet 𝔹} {Γ : 𝔹} {H₁ : Γ ≤ x₁ =ᴮ y₁} {H₂ : Γ ≤ x₂ =ᴮ y₂} : Γ ≤ pair x₁ x₂ =ᴮ pair y₁ y₂ :=
-begin
-  apply bv_rw' H₁,
-    {intros v₁ v₂, tidy_context,
-      have : Γ_1 ≤ pair v₂ x₂ =ᴮ pair v₁ x₂,
-        by {apply subst_congr_pair_left', rwa[bv_eq_symm]},
-      from bv_context_trans this a_right,},
-  apply bv_rw' H₂,
-    {intros v₁ v₂, tidy_context,
-       have : Γ_1 ≤ pair y₁ v₂ =ᴮ pair y₁ v₁,
-         by {apply subst_congr_pair_right', rwa[bv_eq_symm]},
-       from bv_context_trans this a_right},
-  from bv_eq_refl'
-end
 
 @[simp, cleanup]lemma insert1_bval_none {u v : bSet 𝔹} : (bSet.insert1 u ({v})).bval none  = ⊤ :=
 by refl
@@ -98,6 +63,91 @@ end
 
 lemma eq_inserted_of_eq_singleton' {x y z : bSet 𝔹} : {x} =ᴮ bSet.insert1 y {z} ≤ x =ᴮ z :=
 by {apply bv_have_true (insert1_symm y z), apply le_trans, apply bv_eq_trans, apply eq_inserted_of_eq_singleton}
+
+def binary_union (x y : bSet 𝔹) : bSet 𝔹 := bv_union {x,y}
+
+lemma unordered_pair_symm (x y : bSet 𝔹) {Γ : 𝔹} : Γ ≤ {x,y} =ᴮ {y,x} :=
+begin
+  apply mem_ext; unfold has_insert.insert bSet.insert1; bv_intro; bv_imp_intro;
+  {simp at *, bv_or_elim_at H, apply le_sup_right_of_le, apply mem_singleton_of_eq,
+  from bv_symm H_left, apply le_sup_left_of_le, rw[bv_eq_symm], apply eq_of_mem_singleton,
+  from ‹_›}
+end
+
+lemma binary_union_symm {x y : bSet 𝔹} {Γ} : Γ ≤ binary_union x y =ᴮ binary_union y x :=
+begin
+  simp[binary_union], apply mem_ext; bv_intro z; bv_imp_intro,
+  have := (bv_union_spec_split {x, y}z).mp ‹_›, rw[bv_union_spec_split],
+  bv_cases_at this w, bv_split_at this_1, apply bv_use w,
+  refine le_inf _ ‹_›, apply bv_rw' (unordered_pair_symm _ _), simp, from ‹_›,
+  have := unordered_pair_symm x y, show 𝔹, from Γ_1,
+  have := @bv_rw' 𝔹 _ {x,y} {y,x} Γ_1 this (λ w, z ∈ᴮ bv_union w) (by {simp[B_ext],
+  intros x y, tidy_context, have := bv_union_congr a_left,
+  change Γ_2 ≤ (λ w, z ∈ᴮ w) (bv_union y),
+  convert bv_rw' (bv_symm this) using 1, simp, from ‹_›}),
+  apply this, from ‹_›
+end
+
+/-- The successor operation on sets (in particular von Neumman ordinals) -/
+@[reducible]def succ (x : bSet 𝔹) := bSet.insert1 x x
+
+lemma succ_eq_binary_union {x : bSet 𝔹} {Γ} : Γ ≤ succ x =ᴮ binary_union {x} x :=
+begin
+  simp[succ, binary_union], apply mem_ext,
+  {bv_intro z, simp, bv_imp_intro, bv_or_elim_at H, apply bv_rw' H_left, simp,
+   apply (bv_union_spec_split _ x).mpr, apply bv_use ({x} : bSet 𝔹), 
+   refine le_inf _ (le_trans (le_top) mem_singleton), change _ ≤ _ ∈ᴮ insert _ _,
+   simp, apply le_sup_right_of_le, from le_trans (le_top) mem_singleton,
+   apply (bv_union_spec_split _ z).mpr, apply bv_use x, refine le_inf _ ‹_›,
+   change _ ≤ _ ∈ᴮ insert _ _, simp},
+  {bv_intro z, simp, bv_imp_intro, rw[bv_union_spec_split] at H, bv_cases_at H y,
+   bv_split, change Γ_2 ≤ _ ∈ᴮ insert _ _ at H_1_left,
+   simp at H_1_left, bv_or_elim_at H_1_left, apply le_sup_right_of_le,
+   apply bv_rw' (bv_symm H_left), simp, from ‹_›,
+   apply le_sup_left_of_le,
+   have : Γ_3 ≤ {x} =ᴮ y, apply eq_of_mem_singleton, from ‹_›,
+   suffices : Γ_3 ≤ z ∈ᴮ {x}, rw[bv_eq_symm], apply eq_of_mem_singleton,
+   from ‹_›, apply bv_rw' this, simp, from ‹_›}
+end
+
+lemma succ_eq_binary_union' {x : bSet 𝔹} {Γ} : Γ ≤ succ x =ᴮ binary_union x {x} :=
+by {apply bv_rw' (@binary_union_symm 𝔹 _ x {x} Γ), simp, from succ_eq_binary_union}
+
+@[reducible]def pair (x y : bSet 𝔹) : bSet 𝔹 := {{x}, {x,y}}
+
+-- lemma pair_type (x y : bSet 𝔹) : (pair x y).type = begin end := sorry
+
+--TODO(jesse) write a tactic to automate this type of argument
+@[simp]lemma subst_congr_pair_left {x z y : bSet 𝔹} : x =ᴮ z ≤ pair x y =ᴮ pair z y :=
+begin
+  unfold pair, have this₁ : x =ᴮ z ≤ {{x},{x,y}} =ᴮ {{z},{x,y}} := by simp*,
+  have this₂ : x =ᴮ z ≤ {{z},{x,y}} =ᴮ {{z},{z,y}} := by simp*,
+  apply bv_context_trans; from ‹_›
+end
+
+@[simp]lemma subst_congr_pair_left' {x z y : bSet 𝔹} {Γ : 𝔹} :
+  Γ ≤ x=ᴮ z → Γ ≤ pair x y =ᴮ pair z y := poset_yoneda_inv Γ (@subst_congr_pair_left _ _ x z y)
+
+lemma subst_congr_pair_right {x y z : bSet 𝔹} : y =ᴮ z ≤ pair x y =ᴮ pair x z :=
+by unfold pair; simp*
+
+lemma subst_congr_pair_right' {Γ} {x y z : bSet 𝔹} (H : Γ ≤ y =ᴮ z) : Γ ≤ pair x y =ᴮ pair x z :=
+poset_yoneda_inv Γ (@subst_congr_pair_right _ _ x y z) ‹_›
+
+lemma pair_congr {x₁ x₂ y₁ y₂ : bSet 𝔹} {Γ : 𝔹} {H₁ : Γ ≤ x₁ =ᴮ y₁} {H₂ : Γ ≤ x₂ =ᴮ y₂} : Γ ≤ pair x₁ x₂ =ᴮ pair y₁ y₂ :=
+begin
+  apply bv_rw' H₁,
+    {intros v₁ v₂, tidy_context,
+      have : Γ_1 ≤ pair v₂ x₂ =ᴮ pair v₁ x₂,
+        by {apply subst_congr_pair_left', rwa[bv_eq_symm]},
+      from bv_context_trans this a_right,},
+  apply bv_rw' H₂,
+    {intros v₁ v₂, tidy_context,
+       have : Γ_1 ≤ pair y₁ v₂ =ᴮ pair y₁ v₁,
+         by {apply subst_congr_pair_right', rwa[bv_eq_symm]},
+       from bv_context_trans this a_right},
+  from bv_eq_refl'
+end
 
 example {y z : bSet 𝔹} : ⊤ ≤ ({y,z} : bSet 𝔹) =ᴮ ({z,y}) := insert1_symm _ _
 
@@ -554,9 +604,6 @@ theorem Ord_of_mem_Ord (y x : bSet 𝔹) : Ord x ⊓ y ∈ᴮ x ≤ Ord y :=
 open ordinal
 open cardinal
 
-/-- The successor operation on sets (in particular von Neumman ordinals) -/
-@[reducible]def succ (x : bSet 𝔹) := bSet.insert1 x x
-
 noncomputable def ordinal.mk : ordinal.{u} → bSet 𝔹 := λ η,
 limit_rec_on η ∅ (λ ξ mk_ξ, succ mk_ξ)
 begin
@@ -693,7 +740,7 @@ def closed_under_successor (Γ) (x : bSet 𝔹) := Γ ≤ ⨅y, y ∈ᴮ x ⟹ s
 def omega_spec (ω : bSet 𝔹) := ∀ (x : bSet 𝔹) {Γ} (H₁ : Γ ≤ ∅ ∈ᴮ x) (H₂ : closed_under_successor Γ x), Γ ≤ bSet.omega ⊆ᴮ x
 
 lemma check_succ_eq_succ_check {n : ℕ} : (of_nat (n.succ) : bSet 𝔹) = bSet.succ (of_nat n) :=
-by {simp[of_nat, succ, pSet.of_nat]}
+by simp[of_nat, succ, pSet.of_nat]
 
 lemma omega_is_omega : omega_spec (bSet.omega : bSet 𝔹) :=
 begin
