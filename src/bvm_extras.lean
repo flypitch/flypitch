@@ -206,6 +206,9 @@ begin
    refl, apply eq_of_eq_singleton, refl}
 end
 
+lemma eq_of_eq_pair_left' {x y v w : bSet 𝔹} {Γ} : Γ ≤ pair x y =ᴮ pair v w → Γ ≤ x =ᴮ v :=
+poset_yoneda_inv Γ eq_of_eq_pair_left
+
 theorem eq_of_eq_pair_right {x y v w: bSet 𝔹} : pair x y =ᴮ pair v w ≤ y =ᴮ w :=
 begin
   apply bv_have, apply eq_of_eq_pair_left,
@@ -214,6 +217,9 @@ begin
   apply subst_congr_pair_left, exact y, rw[bv_eq_symm],
   apply bv_eq_trans, apply eq_of_eq_pair'_right
 end
+
+lemma eq_of_eq_pair_right' {x y v w : bSet 𝔹} {Γ} : Γ ≤ pair x y =ᴮ pair v w → Γ ≤ y =ᴮ w :=
+poset_yoneda_inv Γ eq_of_eq_pair_right
 
 @[reducible]def prod (v w : bSet 𝔹) : bSet 𝔹 := ⟨v.type × w.type, λ a, pair (v.func a.1) (w.func a.2), λ a, (v.bval a.1) ⊓ (w.bval a.2)⟩
 
@@ -585,7 +591,6 @@ begin
   apply le_sup_left_of_le, apply le_sup_left_of_le, bv_split_goal,
   apply le_sup_right_of_le, assumption,
   apply le_sup_left_of_le, apply le_sup_right_of_le, assumption},
-
 
   {repeat{apply bv_imp_intro}, tidy_context,
   rename a_left_left_left_left H, rename i w,
