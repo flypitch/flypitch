@@ -245,7 +245,7 @@ begin
        apply bv_context_trans; from ‹_›},
 
      apply le_trans, show 𝔹, from a ⊓ b,
-       by {ac_change (bval v i ⊓ bval w j) ⊓ (a ⊓ b) ≤ a ⊓ b, apply inf_le_right},
+       by {ac_change' (bval v i ⊓ bval w j) ⊓ (a ⊓ b) ≤ a ⊓ b, from inf_le_right},
      apply bv_context_trans; from ‹_›}
 end
 
