@@ -6,88 +6,11 @@ Authors: Jesse Han, Floris van Doorn
 -/
 /- theorems which we should (maybe) backport to mathlib -/
 
-import data.finset algebra.ordered_group order.bounded_lattice
-       topology.basic data.set.disjointed data.set.countable set_theory.cofinality
+import algebra.ordered_group data.set.disjointed data.set.countable set_theory.cofinality
+       topology.opens --topology.maps
        tactic.find tactic.squeeze tactic.tidy tactic.linarith
 
-universe variables u v w
-
-namespace tactic
-namespace interactive
-/- maybe we should use congr' 1 instead? -/
-meta def congr1 : tactic unit :=
-do focus1 (congr_core >> all_goals (try reflexivity >> try assumption))
-
-open interactive interactive.types
-
-/-- a variant of `exact` which elaborates its argument before unifying it with the target. This variant might succeed if `exact` fails because a lot of definitional reduction is needed to verify that the term has the correct type. Metavariables which are not synthesized become new subgoals -/
-meta def rexact (q : parse texpr) : tactic unit :=
-do n ← mk_fresh_name,
-p ← i_to_expr q,
-e ← note n none p,
-tactic.exact e
-
-end interactive
-end tactic
-
-/- logic -/
-namespace classical
-noncomputable def psigma_of_exists {α : Type u} {p : α → Prop} (h : ∃x, p x) : Σ' x, p x :=
-begin
-  haveI : nonempty α := nonempty_of_exists h,
-  exact ⟨epsilon p, epsilon_spec h⟩
-end
-
-lemma some_eq {α : Type u} {p : α → Prop} {h : ∃ (a : α), p a} (x : α)
-  (hx : ∀y, p y → y = x) : classical.some h = x :=
-classical.some_spec2 _ hx
-
-noncomputable def instantiate_existential {α : Type*} {P : α → Prop} (h : ∃ x, P x) : {x // P x} :=
-begin
-  haveI : nonempty α := nonempty_of_exists h,
-  exact ⟨classical.epsilon P, classical.epsilon_spec h⟩
-end
-
-lemma or_not_iff_true (p : Prop) : (p ∨ ¬ p) ↔ true :=
-⟨λ_, trivial, λ_, or_not⟩
-
-lemma nonempty_of_not_empty {α : Type u} (s : set α) (h : ¬ s = ∅) : nonempty s :=
-by {haveI : decidable (nonempty s) := prop_decidable _, by_contra, simp[not_exists_not] at a, apply h, ext, exact ⟨a x, false.elim⟩ }
-
-lemma nonempty_of_not_empty_finset {α : Type u} (s : finset α) (h : ¬ s = ∅) : nonempty s.to_set :=
-by {haveI : decidable (nonempty s.to_set) := prop_decidable _, by_contra, simp[not_exists_not] at a, apply h, ext, tidy}
-
-end classical
-
-
-namespace eq
-protected lemma congr {α : Type u} {x₁ x₂ y₁ y₂ : α} (h₁ : x₁ = y₁) (h₂ : x₂ = y₂) :
-  (x₁ = x₂) ↔ (y₁ = y₂) :=
-by subst h₁; subst h₂
-end eq
-
-lemma congr_arg2 {α : Type u} {β : Type v} {γ : Type w} (f : α → β → γ)
-  {x x' : α} {y y' : β} (hx : x = x') (hy : y = y') : f x y = f x' y' :=
-by subst hx; subst hy
-
-namespace list
-@[simp] protected def to_set {α : Type u} (l : list α) : set α := { x | x ∈ l }
-
-lemma to_set_map {α : Type u} {β : Type v} (f : α → β) (l : list α) :
-  (l.map f).to_set = f '' l.to_set :=
-by apply set.ext; intro b; simp [list.to_set]
-
-lemma exists_of_to_set_subset_image {α : Type u} {β : Type v} {f : α → β} {l : list β}
-  {t : set α} (h : l.to_set ⊆ f '' t) : ∃(l' : list α), l'.to_set ⊆ t ∧ map f l' = l :=
-begin
-  induction l,
-  { exact ⟨[], set.empty_subset t, rfl⟩ },
-  { rcases h (mem_cons_self _ _) with ⟨x, hx, rfl⟩,
-    rcases l_ih (λx hx, h $ mem_cons_of_mem _ hx) with ⟨xs, hxs, hxs'⟩,
-    exact ⟨x::xs, set.union_subset (λy hy, by induction hy; exact hx) hxs, by simp*⟩ }
-end
-
-end list
+universe variables u v w w'
 
 inductive dvector (α : Type u) : ℕ → Type u
 | nil {} : dvector 0
@@ -114,7 +37,7 @@ variables {α : Type u} {β : Type v} {γ : Type w} {n : ℕ}
 | _ (x::xs) x' := x::concat xs x'
 
 @[simp] protected def nth : ∀{n : ℕ} (xs : dvector α n) (m : ℕ) (h : m < n), α
-| _ []      m     h := by exfalso; exact nat.not_lt_zero m h
+| _ []      m     h := by { exfalso, exact nat.not_lt_zero m h }
 | _ (x::xs) 0     h := x
 | _ (x::xs) (m+1) h := nth xs m (lt_of_add_lt_add_right h)
 
@@ -155,14 +78,14 @@ protected def mem_of_pmem : ∀{n : ℕ} {x : α} {xs : dvector α n} (hx : xs.p
 
 @[simp] protected lemma map_id : ∀{n : ℕ} (xs : dvector α n), xs.map (λx, x) = xs
 | _ []      := rfl
-| _ (x::xs) := by dsimp; simp*
+| _ (x::xs) := by { dsimp, simp* }
 
 @[simp] protected lemma map_congr_pmem {f g : α → β} :
   ∀{n : ℕ} {xs : dvector α n} (h : ∀x, xs.pmem x → f x = g x), xs.map f = xs.map g
 | _ []      h := rfl
 | _ (x::xs) h :=
   begin
-    dsimp, congr1, exact h x (psum.inl rfl), apply map_congr_pmem,
+    dsimp, congr' 1, exact h x (psum.inl rfl), apply map_congr_pmem,
     intros x hx, apply h, right, exact hx
   end
 
@@ -173,12 +96,12 @@ dvector.map_congr_pmem $ λx hx, h x $ dvector.mem_of_pmem hx
 @[simp] protected lemma map_congr {f g : α → β} (h : ∀x, f x = g x) :
   ∀{n : ℕ} (xs : dvector α n), xs.map f = xs.map g
 | _ []      := rfl
-| _ (x::xs) := by dsimp; simp*
+| _ (x::xs) := by { dsimp, simp* }
 
 @[simp] protected lemma map_map (g : β → γ) (f : α → β): ∀{n : ℕ} (xs : dvector α n),
   (xs.map f).map g = xs.map (λx, g (f x))
   | _ []      := rfl
-  | _ (x::xs) := by dsimp; simp*
+  | _ (x::xs) := by { dsimp, simp* }
 
 protected lemma map_inj {f : α → β} (hf : ∀{{x x'}}, f x = f x' → x = x') {n : ℕ}
   {xs xs' : dvector α n} (h : xs.map f = xs'.map f) : xs = xs' :=
@@ -189,24 +112,24 @@ end
 @[simp] protected lemma map_concat (f : α → β) : ∀{n : ℕ} (xs : dvector α n) (x : α),
   (xs.concat x).map f = (xs.map f).concat (f x)
 | _ []      x' := by refl
-| _ (x::xs) x' := by dsimp; congr1; exact map_concat xs x'
+| _ (x::xs) x' := by { dsimp, congr' 1, exact map_concat xs x' }
 
 @[simp] protected lemma map_nth (f : α → β) : ∀{n : ℕ} (xs : dvector α n) (m : ℕ) (h : m < n),
   (xs.map f).nth m h = f (xs.nth m h)
-| _ []      m     h := by exfalso; exact nat.not_lt_zero m h
+| _ []      m     h := by { exfalso, exact nat.not_lt_zero m h }
 | _ (x::xs) 0     h := by refl
 | _ (x::xs) (m+1) h := by exact map_nth xs m _
 
 protected lemma concat_nth : ∀{n : ℕ} (xs : dvector α n) (x : α) (m : ℕ) (h' : m < n+1)
   (h : m < n), (xs.concat x).nth m h' = xs.nth m h
-| _ []      x' m     h' h := by exfalso; exact nat.not_lt_zero m h
+| _ []      x' m     h' h := by { exfalso, exact nat.not_lt_zero m h }
 | _ (x::xs) x' 0     h' h := by refl
-| _ (x::xs) x' (m+1) h' h := by dsimp; exact concat_nth xs x' m _ _
+| _ (x::xs) x' (m+1) h' h := by { dsimp, exact concat_nth xs x' m _ _ }
 
 @[simp] protected lemma concat_nth_last : ∀{n : ℕ} (xs : dvector α n) (x : α) (h : n < n+1),
   (xs.concat x).nth n h = x
 | _ []      x' h := by refl
-| _ (x::xs) x' h := by dsimp; exact concat_nth_last xs x' _
+| _ (x::xs) x' h := by { dsimp, exact concat_nth_last xs x' _ }
 
 @[simp] protected lemma concat_nth_last' : ∀{n : ℕ} (xs : dvector α n) (x : α) (h : n < n+1),
   (xs.concat x).last = x
@@ -236,7 +159,7 @@ by {induction v, refl, simp*}
 | 0 0 _ xs := []
 | 0 (m+1) _ xs := []
 | (n+1) 0 _ xs := by {exfalso, cases _x}
-| (n+1) (m+1) h (x::xs) := (x::@trunc n m (by simp at h; exact h) xs)
+| (n+1) (m+1) h (x::xs) := (x::@trunc n m (by { simp at h, exact h }) xs)
 
 @[simp]protected lemma trunc_n_n {n : ℕ} {h : n ≤ n} {v : dvector α n} : dvector.trunc n h v = v :=
   by {induction v, refl, solve_by_elim}
@@ -256,16 +179,17 @@ protected lemma nth_irrel1 : ∀{n k : ℕ} {h : k < n + 1} {h' : k < n + 1 + 1}
 by {intros, apply @dvector.trunc_nth _ _ _ _ (by {simp, exact dec_trivial}) h (x::v)}
 
 protected def cast {n m} (p : n = m) : dvector α n → dvector α m :=
-  by subst p; exact id
+by { subst p, exact id }
 
 @[simp] protected lemma cast_irrel {n m} {p p' : n = m} {v : dvector α n} : v.cast p = v.cast p' := by refl
 
 @[simp] protected lemma cast_rfl {n m} {p : n = m} {q : m = n} {v : dvector α n} : (v.cast p).cast q = v := by {subst p, refl}
 
 protected lemma cast_hrfl {n m} {p : n = m} {v : dvector α n} : v.cast p == v :=
-  by subst p; refl
+by { subst p, refl }
 
-@[simp] protected lemma cast_trans {n m o} {p : n = m} {q : m = o} {v : dvector α n} : (v.cast p).cast q = v.cast (trans p q) := by subst p; subst q; refl
+@[simp] protected lemma cast_trans {n m o} {p : n = m} {q : m = o} {v : dvector α n} : (v.cast p).cast q = v.cast (trans p q) :=
+by { subst p, subst q, refl }
 
 @[simp] protected def remove_mth : ∀ {n : ℕ} (m : ℕ) (xs : dvector α (n+1)) , dvector α (n)
   | 0 _ _  := dvector.nil
@@ -302,15 +226,14 @@ inductive rel [setoid α] : ∀{n}, dvector α n → dvector α n → Prop
 | rnil : rel [] []
 | rcons {n} {x x' : α} {xs xs' : dvector α n} (hx : x ≈ x') (hxs : rel xs xs') :
     rel (x::xs) (x'::xs')
-
-open rel
+open dvector.rel
 
 protected def rel_refl [setoid α] : ∀{n} (xs : dvector α n), xs.rel xs
 | _ []      := rnil
 | _ (x::xs) := rcons (setoid.refl _) (rel_refl xs)
 
 protected def rel_symm [setoid α] {n} {{xs xs' : dvector α n}} (h : xs.rel xs') : xs'.rel xs :=
-begin induction h; constructor, exact setoid.symm h_hx, exact h_ih end
+by { induction h; constructor, exact setoid.symm h_hx, exact h_ih }
 
 protected def rel_trans [setoid α] {n} {{xs₁ xs₂ xs₃ : dvector α n}}
   (h₁ : xs₁.rel xs₂) (h₂ : xs₂.rel xs₃) : xs₁.rel xs₃ :=
@@ -359,28 +282,136 @@ end dvectors
 end dvector
 
 
+section topological_space
+open lattice filter topological_space set
+variables {α : Type u} {β : Type v} {ι : Type w} {π : ι → Type w'} [∀x, topological_space (π x)]
+
+variables [t : topological_space α] [topological_space β]
+
+include t
+
+lemma mem_opens {x : α} {o : opens α} : x ∈ o ↔ x ∈ o.1 := by refl
+
+lemma is_open_map_of_is_topological_basis {s : set (set α)}
+  (hs : is_topological_basis s) (f : α → β) (hf : ∀x ∈ s, is_open (f '' x)) :
+  is_open_map f :=
+begin
+  intros o ho,
+  rcases Union_basis_of_is_open hs ho with ⟨γ, g, rfl, hg⟩,
+  rw [image_Union], apply is_open_Union, intro i, apply hf, apply hg
+end
+
+lemma subbasis_subset_basis {s : set (set α)} (hs : t = generate_from s) :
+  s \ {∅} ⊆ ((λf, ⋂₀ f) '' {f:set (set α) | finite f ∧ f ⊆ s ∧ ⋂₀ f ≠ ∅}) :=
+begin
+  intros o ho, refine ⟨{o}, ⟨finite_singleton o, _, _⟩, _⟩,
+  { rw [singleton_subset_iff], exact ho.1 },
+  { rw [sInter_singleton], refine mt mem_singleton_iff.mpr ho.2 },
+  dsimp only, rw [sInter_singleton]
+end
+
+end topological_space
+
+namespace ordinal
+
+theorem enum_typein' {α : Type u} (r : α → α → Prop) [is_well_order α r] (a : α) :
+  enum r (typein r a) (typein_lt_type r a) = a :=
+enum_typein r a
+
+end ordinal
+
+namespace set
+lemma disjoint_iff_eq_empty {α} {s t : set α} : disjoint s t ↔ s ∩ t = ∅ := disjoint_iff
+
+@[simp] lemma not_nonempty_iff {α} {s : set α} : ¬nonempty s ↔ s = ∅ :=
+by rw [coe_nonempty_iff_ne_empty, classical.not_not]
+
+end set
+
+------------------------------------------------------- maybe not move to mathlib ------------------
+
+/- theorems which we should not backport to mathlib, because they are duplicates or which need to
+  be cleaned up first -/
+
 namespace nat
+protected lemma pred_lt_iff_lt_succ {m n : ℕ} (H : 1 ≤ m) : pred m < n ↔ m < succ n :=
+nat.sub_lt_right_iff_lt_add H
+end nat
+
+namespace tactic
+namespace interactive
+/- maybe we should use congr' 1 instead? -/
+meta def congr1 : tactic unit :=
+do focus1 (congr_core >> all_goals (try reflexivity >> try assumption))
+
+open interactive interactive.types
+
+/-- a variant of `exact` which elaborates its argument before unifying it with the target. This variant might succeed if `exact` fails because a lot of definitional reduction is needed to verify that the term has the correct type. Metavariables which are not synthesized become new subgoals. This is similar to have := q, exact this. Another approach to obtain (rougly) the same is `apply q` -/
+meta def rexact (q : parse texpr) : tactic unit :=
+do n ← mk_fresh_name,
+p ← i_to_expr q,
+e ← note n none p,
+tactic.exact e
+
+end interactive
+end tactic
+
+/- logic -/
+namespace classical
+
+noncomputable def psigma_of_exists {α : Type u} {p : α → Prop} (h : ∃x, p x) : Σ' x, p x :=
+begin
+  haveI : nonempty α := nonempty_of_exists h,
+  exact ⟨epsilon p, epsilon_spec h⟩
+end
+
+/- this is a special case of `some_spec2` -/
+lemma some_eq {α : Type u} {p : α → Prop} {h : ∃ (a : α), p a} (x : α)
+  (hx : ∀y, p y → y = x) : classical.some h = x :=
+classical.some_spec2 _ hx
+
+noncomputable def instantiate_existential {α : Type*} {P : α → Prop} (h : ∃ x, P x) : {x // P x} :=
+begin
+  haveI : nonempty α := nonempty_of_exists h,
+  exact ⟨classical.epsilon P, classical.epsilon_spec h⟩
+end
+
+lemma or_not_iff_true (p : Prop) : (p ∨ ¬ p) ↔ true :=
+⟨λ_, trivial, λ_, or_not⟩
+
+lemma nonempty_of_not_empty {α : Type u} (s : set α) (h : ¬ s = ∅) : nonempty s :=
+set.coe_nonempty_iff_ne_empty.mpr h
+
+lemma nonempty_of_not_empty_finset {α : Type u} (s : finset α) (h : ¬ s = ∅) : nonempty s.to_set :=
+(finset.nonempty_iff_ne_empty s).mpr h
+
+end classical
+
+namespace list
+@[simp] protected def to_set {α : Type u} (l : list α) : set α := { x | x ∈ l }
+
+lemma to_set_map {α : Type u} {β : Type v} (f : α → β) (l : list α) :
+  (l.map f).to_set = f '' l.to_set :=
+by apply set.ext; intro b; simp [list.to_set]
+
+lemma exists_of_to_set_subset_image {α : Type u} {β : Type v} {f : α → β} {l : list β}
+  {t : set α} (h : l.to_set ⊆ f '' t) : ∃(l' : list α), l'.to_set ⊆ t ∧ map f l' = l :=
+begin
+  induction l,
+  { exact ⟨[], set.empty_subset t, rfl⟩ },
+  { rcases h (mem_cons_self _ _) with ⟨x, hx, rfl⟩,
+    rcases l_ih (λx hx, h $ mem_cons_of_mem _ hx) with ⟨xs, hxs, hxs'⟩,
+    exact ⟨x::xs, set.union_subset (λy hy, by induction hy; exact hx) hxs, by simp*⟩ }
+end
+
+end list
+
+namespace nat
+/- nat.sub_add_comm -/
 lemma add_sub_swap {n k : ℕ} (h : k ≤ n) (m : ℕ) : n + m - k = n - k + m :=
 by rw [add_comm, nat.add_sub_assoc h, add_comm]
 
-lemma one_le_of_lt {n k : ℕ} (H : n < k) : 1 ≤ k :=
-succ_le_of_lt (lt_of_le_of_lt n.zero_le H)
-
-lemma add_sub_cancel_right (n m k : ℕ) : n + (m + k) - k = n + m :=
-by rw [nat.add_sub_assoc, nat.add_sub_cancel]; apply k.le_add_left
-
-protected lemma pred_lt_iff_lt_succ {m n : ℕ} (H : 1 ≤ m) : pred m < n ↔ m < succ n :=
-nat.sub_lt_right_iff_lt_add H
-
 end nat
-
-def lt_by_cases {α : Type u} [decidable_linear_order α] (x y : α) {P : Sort v}
-  (h₁ : x < y → P) (h₂ : x = y → P) (h₃ : y < x → P) : P :=
-begin
-  by_cases h : x < y, { exact h₁ h },
-  by_cases h' : y < x, { exact h₃ h' },
-  apply h₂, apply le_antisymm; apply le_of_not_gt; assumption
-end
 
 lemma imp_eq_congr {a b c d : Prop} (h₁ : a = b) (h₂ : c = d) : (a → c) = (b → d) :=
 by subst h₁; subst h₂; refl
@@ -394,31 +425,11 @@ namespace set
 
 variables {α : Type u} {β : Type v} {γ : Type w}
 
+/-set.ne_empty_iff_exists_mem.mpr-/
 lemma ne_empty_of_exists_mem {s : set α} : ∀(h : ∃x, x ∈ s), s ≠ ∅
 | ⟨x, hx⟩ := ne_empty_of_mem hx
 
-lemma subset_insert_diff (s t : set α) [decidable_pred (∈ t)] : s ⊆ (s \ t) ∪ t :=
-begin
-  intros x hxs, by_cases hxt : x ∈ t, { right, exact hxt }, {left, exact ⟨hxs, hxt⟩ }
-end
-
-lemma subset_insert_diff_singleton [h : decidable_eq α] (x : α) (s : set α) :
-  s ⊆ insert x (s \ {x}) :=
-begin
-haveI : decidable_pred (∈ ({x} : set α)) := λy, by simp; apply_instance,
- rw [←union_singleton], apply subset_insert_diff
-end
-
-@[simp] lemma diff_singleton_subset_iff {x : α} {s t : set α} :
-  s \ {x} ⊆ t ↔ s ⊆ insert x t :=
-by rw [←union_singleton, union_comm]; apply diff_subset_iff
-
-@[simp] lemma Union_of_singleton (α : Type u) :
-  (⋃(x : α), {x}) = @set.univ α :=
-ext $ λ x, ⟨λ h, ⟨⟩, λ h, ⟨{x}, ⟨⟨x, rfl⟩, mem_singleton x⟩⟩⟩
-
--- generalizes set.image_preimage_eq
--- todo: remove, and only use image_preimage_eq_of_subset
+-- todo: only use image_preimage_eq_of_subset
 lemma image_preimage_eq_of_subset_image {f : α → β} {s : set β}
   {t : set α} (h : s ⊆ f '' t) : f '' (f ⁻¹' s) = s :=
 subset.antisymm
@@ -431,44 +442,9 @@ subset.trans h (subset_union_left t u)
 lemma subset_union_right_of_subset {s u : set α} (h : s ⊆ u) (t : set α) : s ⊆ t ∪ u :=
 subset.trans h (subset_union_right t u)
 
+/- subset_sUnion_of_mem -/
 lemma subset_sUnion {s : set α} {t : set (set α)} (h : s ∈ t) : s ⊆ ⋃₀ t :=
 λx hx, ⟨s, ⟨h, hx⟩⟩
-
-lemma subset_sUnion_of_subset {s : set α} (t : set (set α)) (u : set α) (h₁ : s ⊆ u)
-  (h₂ : u ∈ t) : s ⊆ ⋃₀ t :=
-subset.trans h₁ (subset_sUnion h₂)
-
-lemma image_congr' {f g : α → β} {s : set α} (h : ∀ (x : α), f x = g x) : f '' s = g '' s :=
-image_congr (λx _, h x)
-
-lemma image_image (g : β → γ) (f : α → β) (s : set α) : g '' (f '' s) = (λ x, g (f x)) '' s :=
-(image_comp g f s).symm
-
-@[simp] lemma image_id' (s : set α) : (λx, x) '' s = s := image_id s
-
-lemma image_preimage_eq_of_subset {f : α → β} {s : set β} (h : s ⊆ range f) :
-  f '' (f ⁻¹' s) = s :=
-begin
-  ext, refine ⟨λhx, image_preimage_subset f s hx, _⟩,
-  intro hx, rcases h hx with ⟨x, rfl⟩, apply mem_image_of_mem, exact hx
-end
-
-lemma preimage_subset_preimage_iff {s t : set α} {f : β → α} (hs : s ⊆ range f) :
-  f ⁻¹' s ⊆ f ⁻¹' t ↔ s ⊆ t :=
-begin
-  split,
-  { intros h x hx, rcases hs hx with ⟨y, rfl⟩, exact h hx },
-  intros h x, apply h
-end
-
-lemma preimage_eq_preimage' {s t : set α} {f : β → α} (hs : s ⊆ range f) (ht : t ⊆ range f) :
-  f ⁻¹' s = f ⁻¹' t ↔ s = t :=
-begin
-  split,
-  { intro h, apply subset.antisymm, rw [←preimage_subset_preimage_iff hs, h],
-    rw [←preimage_subset_preimage_iff ht, h] },
-  rintro rfl, refl
-end
 
 lemma subset_union2_left {s t u : set α} : s ⊆ s ∪ t ∪ u :=
 subset.trans (subset_union_left _ _) (subset_union_left _ _)
@@ -476,86 +452,6 @@ subset.trans (subset_union_left _ _) (subset_union_left _ _)
 lemma subset_union2_middle {s t u : set α} : t ⊆ s ∪ t ∪ u :=
 subset.trans (subset_union_right _ _) (subset_union_left _ _)
 
-open function
-lemma Union_range_eq_sUnion {α β : Type*} (C : set (set α))
-  {f : ∀(s : C), β → s} (hf : ∀(s : C), surjective (f s)) :
-  (⋃(y : β), range (λ(s : C), (f s y).val)) = ⋃₀ C :=
-begin
-  ext x, split,
-  { rintro ⟨s, ⟨y, rfl⟩, ⟨⟨s, hs⟩, rfl⟩⟩, refine ⟨_, hs, _⟩, exact (f ⟨s, hs⟩ y).2 },
-  { rintro ⟨s, hs, hx⟩, cases hf ⟨s, hs⟩ ⟨x, hx⟩ with y hy, refine ⟨_, ⟨y, rfl⟩, ⟨⟨s, hs⟩, _⟩⟩,
-    exact congr_arg subtype.val hy }
-end
-
-lemma Union_range_eq_Union {ι α β : Type*} (C : ι → set α)
-  {f : ∀(x : ι), β → C x} (hf : ∀(x : ι), surjective (f x)) :
-  (⋃(y : β), range (λ(x : ι), (f x y).val)) = ⋃x, C x :=
-begin
-  ext x, rw [mem_Union, mem_Union], split,
-  { rintro ⟨y, ⟨i, rfl⟩⟩, exact ⟨i, (f i y).2⟩ },
-  { rintro ⟨i, hx⟩, cases hf i ⟨x, hx⟩ with y hy, refine ⟨y, ⟨i, congr_arg subtype.val hy⟩⟩ }
-end
-
-lemma range_val (s : set α) : range (subtype.val : s → α) = s :=
-begin
-  ext, split, rintro ⟨⟨x, h⟩, rfl⟩, exact h,
-  intro h, exact ⟨⟨x, h⟩, rfl⟩
-end
-
-lemma inj_on_comp_of_injective_left {g : β → γ} {f : α → β} {a : set α} (hg : injective g)
-  (hf : inj_on f a) : inj_on (g ∘ f) a :=
-inj_on_comp (maps_to_univ _ _) (injective_iff_inj_on_univ.mp hg) hf
-
-lemma inj_on_preimage {f : α → β} {B : set (set β)} (hB : B ⊆ powerset (range f)) :
-  inj_on (preimage f) B :=
-begin
-  intros s t hs ht hst,
-  rw [←image_preimage_eq_of_subset (hB hs), ←image_preimage_eq_of_subset (hB ht), hst]
-end
-
-lemma exists_set_subtype {t : set α} (p : set α → Prop) :
-(∃(s : set t), p (subtype.val '' s)) ↔ ∃(s : set α), s ⊆ t ∧ p s :=
-begin
-  split,
-  { rintro ⟨s, hs⟩, refine ⟨subtype.val '' s, _, hs⟩,
-    convert image_subset_range _ _, rw [range_val] },
-  rintro ⟨s, hs₁, hs₂⟩, refine ⟨subtype.val ⁻¹' s, _⟩,
-  rw [image_preimage_eq_of_subset], exact hs₂, rw [range_val], exact hs₁
-end
-
-lemma subset_image_iff {f : α → β} {s : set α} {t : set β} :
-  t ⊆ f '' s ↔ ∃t', t' ⊆ s ∧ f '' t' = t :=
-begin
-  split,
-  { intro h,
-    have : ∀(y : t), ∃x ∈ s, f x = y,
-    { rintros ⟨y, hy⟩, rcases h hy with ⟨x, hx, hx'⟩, exact ⟨x, hx, hx'⟩ },
-    let g : t → α := λy, classical.some (this y),
-    have : ∀(y : t), g y ∈ s ∧ f (g y) = y,
-    { intro y, cases classical.some_spec (this y) with h h', exact ⟨h,h'⟩ },
-    refine ⟨range g, _, _⟩,
-    { rintro _ ⟨y, rfl⟩, exact (this y).1 },
-    apply subset.antisymm,
-    { rintro _ ⟨_, ⟨y, rfl⟩, rfl⟩, rw [(this y).2], exact y.2 },
-    { rintro y hy, refine ⟨g ⟨y, hy⟩, mem_range_self _, _⟩, rw [(this ⟨y, hy⟩).2], refl }},
-  { rintro ⟨t, ht, rfl⟩, apply image_subset f ht }
-end
-
-lemma subset_range_iff {f : α → β} {t : set β} : t ⊆ range f ↔ ∃t', f '' t' = t :=
-by { rw [←image_univ, subset_image_iff], simp only [true_and, set.subset_univ] }
-
-lemma image_eq_range (f : α → β) (s : set α) : f '' s = range (λ(x : s), f x.1) :=
-by { ext, split, rintro ⟨x, h1, h2⟩, exact ⟨⟨x, h1⟩, h2⟩, rintro ⟨⟨x, h1⟩, h2⟩, exact ⟨x, h1, h2⟩ }
-
-lemma ne_of_disjoint {s t : set α} (hs : nonempty s) (hst : s ∩ t = ∅) : s ≠ t :=
-by { intro h, rw [←h, inter_self] at hst, rw [coe_nonempty_iff_ne_empty] at hs, exact hs hst }
-
-lemma nonempty_image (f : α → β) {s : set α} : nonempty s → nonempty (f '' s)
-| ⟨⟨x, hx⟩⟩ := ⟨⟨f x, mem_image_of_mem f hx⟩⟩
-
-theorem finite_bUnion' {α} {ι : Type*} {s : set ι} (f : ι → set α) :
-  finite s → (∀i ∈ s, finite (f i)) → finite (⋃ i∈s, f i)
-| ⟨hs⟩ h := by rw [bUnion_eq_Union]; exactI finite_Union (λ i, h i.1 i.2)
 
 def change {π : α → Type*} [decidable_eq α] (f : Πa, π a) {x : α} (z : π x) (y : α) : π y :=
 if h : x = y then (@eq.rec _ _ π z _ h) else f y
@@ -592,61 +488,14 @@ end
 end set
 open nat
 
-namespace finset
-open function
-variables {α : Type u} {β : Type v} [decidable_eq α] [decidable_eq β]
-
-def to_set_sdiff (s t : finset α) : (s \ t).to_set = s.to_set \ t.to_set :=
-by apply finset.coe_sdiff
-
-lemma exists_of_subset_image {f : α → β} {s : finset β} {t : set α} (h : ↑s ⊆ f '' t) :
-  ∃s' : finset α, ↑s' ⊆ t ∧ s'.image f = s :=
-begin
-  induction s using finset.induction with a s has ih h,
-  { exact ⟨∅, set.empty_subset _, finset.image_empty _⟩ },
-  rw [finset.coe_insert, set.insert_subset] at h,
-  rcases ih h.2 with ⟨s', hst, hsi⟩,
-  rcases h.1 with ⟨x, hxt, rfl⟩,
-  refine ⟨insert x s', _, _⟩,
-  { rw [finset.coe_insert, set.insert_subset], exact ⟨hxt, hst⟩ },
-  rw [finset.image_insert, hsi]
-end
-
-theorem filter_union_right (p q : α → Prop) [decidable_pred p] [decidable_pred q] (s : finset α) :
-  s.filter p ∪ s.filter q = s.filter (λx, p x ∨ q x) :=
-ext.2 $ λ x, by simp only [mem_filter, mem_union, and_or_distrib_left.symm]
-
-lemma subset_union_elim {s : finset α} {t₁ t₂ : set α} [decidable_pred (∈ t₁)] (h : ↑s ⊆ t₁ ∪ t₂) :
-  ∃s₁ s₂ : finset α, s₁ ∪ s₂ = s ∧ ↑s₁ ⊆ t₁ ∧ ↑s₂ ⊆ t₂ \ t₁ :=
-begin
-  refine ⟨s.filter (∈ t₁), s.filter (∉ t₁), _, _ , _⟩,
-  { simp [filter_union_right, classical.or_not_iff_true] },
-  { intro x, simp },
-  { intro x, simp, intros hx hx₂, refine ⟨or.resolve_left (h hx) hx₂, hx₂⟩ }
-end
-
-lemma to_set_injective {α} : injective (finset.to_set : finset α → set α) :=
-λ s t, coe_inj.1
-
-end finset
 
 namespace nonempty
 variables {α : Type u} {β : Type v} {γ : Type w}
-
-protected def map2 (f : α → β → γ) : nonempty α → nonempty β → nonempty γ
-| ⟨x⟩ ⟨y⟩ := ⟨f x y⟩
 
 protected def iff (mp : α → β) (mpr : β → α) : nonempty α ↔ nonempty β :=
 ⟨nonempty.map mp, nonempty.map mpr⟩
 
 end nonempty
-
-namespace fin
-
-  def fin_zero_elim {α : fin 0 → Sort u} : ∀(x : fin 0), α x
-  | ⟨n, hn⟩ := false.elim (nat.not_lt_zero n hn)
-
-end fin
 
 /-- The type α → (α → ... (α → β)...) with n α's. We require that α and β live in the same universe, otherwise we have to use ulift. -/
 def arity' (α β : Type u) : ℕ → Type u
@@ -1394,7 +1243,7 @@ do
   using `congr' n` to resolve discrepancies
 -/
 meta def change' (k : parse (with_desc "n" small_nat)?) (r : parse texpr) : tactic unit :=
-do 
+do
   tgt <- target,
   h <- to_expr ``(_ : %%tgt = %%r),
   rewrite_target h, swap,
@@ -1444,7 +1293,7 @@ meta def tidy_split_goals_tactics : list (tactic string) :=
 ]
 
 meta def bv_split_goal (trace : parse $ optional (tk "?")) : tactic unit :=
-  tidy {trace_result := trace.is_some, tactics := tidy_split_goals_tactics}
+  tactic.tidy {trace_result := trace.is_some, tactics := tidy_split_goals_tactics}
 
 meta structure context_cfg :=
 (trace_result : bool := ff)
@@ -1457,7 +1306,7 @@ meta def cfg_of_context_cfg : context_cfg → cfg :=
   tactics := X.tactics}
 
 meta def tidy_context (cfg : context_cfg := {}) : tactic unit :=
-`[apply poset_yoneda] >> tidy (cfg_of_context_cfg cfg)
+`[apply poset_yoneda] >> tactic.tidy (cfg_of_context_cfg cfg)
 
 def with_h_asms {𝔹} [lattice.lattice 𝔹] (Γ : 𝔹) : Π (xs : list (𝔹)) (g : 𝔹), Prop
  | [] x := Γ ≤ x

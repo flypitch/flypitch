@@ -53,7 +53,7 @@ symbols_in_term_lift_at n 0 t
 
 lemma symbols_in_term_subst (s : term L) (n) : ∀{l} (t : preterm L l),
   symbols_in_term (t[s // n]) ⊆ symbols_in_term t ∪ symbols_in_term s
-| _ &k          := by apply lt_by_cases n k; intro h; simp [h]
+| _ &k          := by apply decidable.lt_by_cases n k; intro h; simp [h]
 | _ (func f)    := subset_union_left _ _
 | _ (app t₁ t₂) :=
   by { simp; split; refine subset.trans (symbols_in_term_subst _) _;
@@ -167,7 +167,7 @@ attribute [instance] has_decidable_range.on_function has_decidable_range.on_rela
 
 @[simp] lemma on_term_subst : ∀{l} (t : preterm L l) (s : term L) (n : ℕ),
   ϕ.on_term (t[s // n]) = ϕ.on_term t[ϕ.on_term s // n]
-| _ &k          s n := by apply lt_by_cases k n; intro h; simp [h]
+| _ &k          s n := by apply decidable.lt_by_cases k n; intro h; simp [h]
 | _ (func f)    s n := by refl
 | _ (app t₁ t₂) s n := by simp*
 
@@ -425,7 +425,7 @@ lemma reflect_term_subst [has_decidable_range ϕ] (hϕ : is_injective ϕ) (n m :
 begin
   refine term.rec _ _ t; clear t; intros,
   { simp [-lift_term_at, -add_comm, -add_assoc],
-    apply lt_by_cases k n; intro h,
+    apply decidable.lt_by_cases k n; intro h,
     { have h₂ : ¬(m + n ≤ k), from λh', not_le_of_gt h (le_trans (le_add_left n m) h'),
       have h₃ : ¬(m + n + 1 ≤ k), from λh', h₂ $ le_trans (le_succ _) h',
       simp [h, h₂, h₃, -add_comm, -add_assoc] },
@@ -782,7 +782,7 @@ begin
   have : decidable_pred (∈ ϕ.Theory_induced T) := λx, classical.prop_decidable _,
   rcases finset.subset_union_elim hT with ⟨t₀, s₀, rfl, ht₀, hs₀⟩,
   have hs₀' := subset.trans hs₀ (diff_subset _ _),
-  rcases finset.exists_of_subset_image hs₀' with ⟨s₀, hs₀x, rfl⟩,
+  rcases finset.subset_image_iff.mp hs₀' with ⟨s₀, hs₀x, rfl⟩,
   apply lem s₀, refine h₀.map _, apply sweakening,
   simp, refine subset.trans ht₀ _, simp
 end

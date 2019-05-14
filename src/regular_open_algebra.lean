@@ -565,9 +565,9 @@ begin
   rw [countable_iff] at this, convert this using 1,
   { rw [mk_range_eq], exact O_inj },
   { rintro _ ⟨x, rfl⟩, exact is_open_of_is_regular (O x).2 },
-  { rintro _ _ ⟨x, rfl⟩ ⟨y, rfl⟩ hxy,
+  { rintro _ ⟨x, rfl⟩ _ ⟨y, rfl⟩ hxy,
     have : x ≠ y, { intro h, apply hxy, exact congr_arg (subtype.val ∘ O) h },
-    refine subset.antisymm _ (empty_subset _), exact h2O _ _ this }
+    rw [disjoint_iff_eq_empty], refine subset.antisymm _ (empty_subset _), exact h2O _ _ this }
 end
 
 

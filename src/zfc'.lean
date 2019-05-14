@@ -393,7 +393,7 @@ def is_inj_f : bounded_formula L_ZFC' 1 :=
 by {simp[is_inj_f, is_inj], refl}
 
 def injects_into_f : bounded_formula L_ZFC' 2 :=
- ∃' (is_func'_f ⊓' is_inj_f.cast (dec_trivial)) 
+ ∃' (is_func'_f ⊓' is_inj_f.cast (dec_trivial))
 
 @[simp]lemma realize_injects_into {x y : V β} :
   boolean_realize_bounded_formula (by exact [y,x]) injects_into_f dvector.nil = injects_into x y :=
@@ -450,5 +450,4 @@ begin
   have CH_f_true := boolean_soundness prf_of_CH_f (V_𝔹_nonempty),
   convert CH_f_true, rw[inf_axioms_top_of_models (bSet_models_ZFC' _)]
 end
-
 end CH_unprovable

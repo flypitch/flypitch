@@ -908,12 +908,14 @@ begin
   apply bot_unique, cases dichotomy_of_neq r _ _ h_neq,
   {ac_change' (y.val ⊓ ⨅ (i : {x_1 // x_1 ∈ down_set r x}), -(i.val).val) ⊓
     (x.val ⊓ ⨅ (i : {x // x ∈ down_set r y}), -(i.val).val) ≤ ⊥,
+    sorry,
     apply inf_le_right_of_le,
   rw[inf_comm, deduction], apply infi_le_of_le,
   swap, use x, exact h, simp},
 
   {ac_change' (⨅ (i : {x_1 // x_1 ∈ down_set r x}), -(i.val).val) ⊓ y.val ⊓
       (x.val ⊓ ⨅ (i : {x // x ∈ down_set r y}), -(i.val).val) ≤ ⊥,
+      sorry,
       apply inf_le_left_of_le, rw[deduction], apply infi_le_of_le, swap, exact ⟨y, h⟩, simp}
 end
 

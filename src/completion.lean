@@ -60,7 +60,7 @@ Now, we have to show that given an arbitrary chain in this poset, we can obtain 
 -/
 
 lemma nonempty_of_not_empty {α : Type u} (s : set α) (h : ¬ s = ∅) : nonempty s :=
-by { by_contra, simp[not_exists_not] at a, apply h, ext, exact ⟨a x, false.elim⟩ }
+by rwa [coe_nonempty_iff_ne_empty]
 
 /-- Theory_over T is the subtype of Theory L consisting of consistent theories T' such that T' ⊇ T--/
 def Theory_over {L : Language.{u}} (T : Theory L) (hT : is_consistent T): Type u :=
@@ -143,8 +143,9 @@ begin
   induction Ss, have := classical.choice nonempty_Ts, split, simp, swap, exact this.val, exact this.property,
 
     by_cases nonempty {S | S ∈ Ss_tl},
-      swap, simp[*,-h] at h, refine ⟨Ss_hd, _⟩, simp*, --  fapply and.intro, constructor, refl,
-      -- intros S' hS', cases hS', fapply or.inl, assumption, exfalso, have := h S', contradiction,
+      swap, simp[*,-h] at h, refine ⟨Ss_hd, _⟩, simp*,
+      /- fixing the nonterminal simp error (May 4, 2019) -/
+      intros x hx, exfalso, rw [eq_empty_iff_forall_not_mem] at h, exact h x hx,
 
       have actual_ih := Ss_ih,
       let tl_max :=
@@ -204,13 +205,14 @@ def list_is_list_of_subtype : Π(α : Type u), Π (fs : list α),  Σ' xs : list
     cases hf, exact or.inl hf,
     fapply or.inr, fapply exists.intro, exact hf, exact (list_is_list_of_subtype L tl).snd f hf
   end
-
+#print bUnion_empty
 /-- The limit theory of a chain of consistent theories over T is consistent --/
 lemma consis_limit {L : Language} {T : Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : is_consistent (T ∪ set.sUnion (subtype.val '' Ts)) :=
 begin -- so _here_ is where we need that proofs are finitely supported
   intro h_inconsis,
   by_cases nonempty Ts, swap,
-    { simp* at h, simp[*, -h_inconsis] at h_inconsis, unfold is_consistent at hT, exact hT h_inconsis},
+  { simp at h, simp[*, -h_inconsis] at h_inconsis, unfold is_consistent at hT, apply hT,
+    rw [←union_empty T], convert h_inconsis, symmetry, apply bUnion_empty },
 
   have Γpair := theory_proof_compactness' (T ∪ ⋃₀(subtype.val '' Ts)) ⊥ h_inconsis,
   have h_bad : ∃ T' : (Theory L), (T' ∈ (subtype.val '' Ts)) ∧ {ψ | ψ ∈ Γpair.fst} ⊆ T',

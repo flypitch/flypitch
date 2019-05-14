@@ -18,8 +18,8 @@ local attribute [instance, priority 0] classical.prop_decidable
 
 universe u
 
-@[simp]lemma type_out {η : ordinal} : @ordinal.type _ (η.out.r) (η.out.wo) = η :=
-by {simp[ordinal.type], convert quotient.out_eq η, cases (quotient.out η), refl}
+@[simp] lemma type_out {η : ordinal} : @ordinal.type _ (η.out.r) (η.out.wo) = η :=
+type_out η
 
 namespace pSet
 
@@ -67,7 +67,7 @@ by {simp[ordinal.mk]}
 @[simp]lemma succ_type {x : pSet} : (succ x).type = option (x.type) :=
 by {induction x, refl}
 
-@[simp]lemma option_succ_type {x : pSet} : option (succ x).type = option (option (x.type)) := 
+@[simp]lemma option_succ_type {x : pSet} : option (succ x).type = option (option (x.type)) :=
 by simp
 
 def succ_type_cast {x : pSet} : (succ x).type → option(x.type) := cast succ_type
@@ -169,7 +169,7 @@ lemma Ord_empty : Ord (∅ : pSet.{u}) :=
 begin
   unfold has_emptyc.emptyc pSet.empty,
   unfold Ord epsilon_well_orders is_transitive, split,
-  swap, {tidy}, split, {tidy}, 
+  swap, {tidy}, split, {tidy},
   intros u H₁ H₂,  exfalso, apply H₂,
   apply mem.ext, intro w; split; intro H,
   swap, cases H, repeat{cases H_w},
@@ -186,7 +186,7 @@ begin
   have Hz''2 : ⟦z'⟧ ∈ y := by {change ⟦z'⟧ ∈ ⟦quotient.out y⟧ at Hz'', rw[quotient.out_eq] at Hz'', from ‹_›},
   have := (@Set.mem_inter ⟦u⟧ y ⟦z'⟧).mpr (and.intro ‹_› ‹_›),
   apply Set.mem_empty ⟦z'⟧, apply (mem.congr_right _).mp,
-  rw[mem_iff],  show pSet, 
+  rw[mem_iff],  show pSet,
   refine quotient.out (_), change Set, exact ⟦u⟧ ∩ y,
   simp, change ⟦z'⟧ ∈ ⟦_⟧, rw[quotient.out_eq], exact this,
   apply equiv_of_eq, simp, change ⟦_⟧ = ⟦_⟧,
@@ -297,7 +297,7 @@ begin
     cases H_tri,
   have H_bad : w ∈ z,
     by {apply (mem.congr_right _).mp, from Hw, from ‹_›},
-   apply mem_mem_false H_bad ‹_›, 
+   apply mem_mem_false H_bad ‹_›,
    apply mem_mem_mem_false H_tri Hz ‹_›
 end
 
@@ -513,7 +513,7 @@ begin
   suffices : of_nat k₁ ⊆ of_nat k₂,
     by {apply subset_trans this, unfold of_nat, apply subset_of_all_mem, intros w Hw,
         from mem_insert' (or.inr ‹_›)},
-  from ih ‹_› 
+  from ih ‹_›
 end
 
 lemma false_of_subset_of_nat_ge {k₁ k₂ : ℕ} (H : k₁ < k₂) : ¬ (of_nat k₂ ⊆ of_nat k₁) :=

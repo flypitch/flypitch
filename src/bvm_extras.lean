@@ -663,25 +663,10 @@ begin
 end
 
 lemma order_iso_trans {α β γ} {X : α → α → Prop} {Y : β → β → Prop} {Z : γ → γ → Prop} (H₁ : X ≃o Y) (H₂ : Y ≃o Z) : X ≃o Z :=
-{ to_fun := H₂.to_fun ∘ H₁.to_fun,
-  inv_fun := H₁.inv_fun ∘ H₂.inv_fun,
-  left_inv := by {unfold function.left_inverse, intro x, have := H₂.left_inv, specialize this ((H₁.to_equiv).to_fun x), simp[this], apply H₁.left_inv},
-  right_inv := by {unfold function.right_inverse function.left_inverse, intro x,
-                   have := H₁.right_inv ((H₂.to_equiv).inv_fun x), simp[this], apply H₂.right_inv},
-  ord :=
-    by { intros a b, have this₁ := H₁.ord, specialize @this₁ a b,
-         have this₂ := H₂.ord, specialize @this₂ (H₁.to_equiv a) (H₁.to_equiv b),
-         split; intro H, exact (this₂.mp ∘ this₁.mp) H, exact (this₁.mpr ∘ this₂.mpr) H}}
+H₁.trans H₂
 
 lemma order_iso_symm {α β} {X : α → α → Prop} {Y : β → β → Prop} (H : X ≃o Y) : Y ≃o X :=
-{ to_fun := H.inv_fun,
-  inv_fun := H.to_fun,
-  left_inv := by apply H.right_inv,
-  right_inv := by apply H.left_inv,
-  ord := by {intros a b,  have := H.ord, split; intro H', apply this.mpr, convert H';
-             [exact (H.right_inv a), exact (H.right_inv b)],
-             specialize @this (H.inv_fun a) (H.inv_fun b), convert this.mp H';
-             [from (H.right_inv a).symm, from (H.right_inv b).symm] }}
+H.symm
 
 -- noncomputable lemma omega_out_iso_nat : ordinal.omega.out.r ≃o ((λ x y : ℕ, x < y)) :=
 -- begin
@@ -781,7 +766,7 @@ begin
         dsimp at H_left, replace H_left := H_left (le_top),
         from bot_of_mem_self' ‹_›},
     intros x, tidy_context, apply mem_singleton_of_eq,
-    apply subset_ext, simp, 
+    apply subset_ext, simp,
     rw[subset_unfold'], bv_intro w, bv_imp_intro,
     have := bv_union_spec' x, show 𝔹, from Γ_1,
     replace this := this w, bv_split,

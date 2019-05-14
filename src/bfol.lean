@@ -63,11 +63,11 @@ lemma eq_dtrans : ∀{n} {x : dvector S n} (y : dvector S n) {z : dvector S n},
 
 @[simp] def subst_realize_congr1 (v v' : ℕ → S) (x : S) (n : ℕ) :
   (⨅ (n : ℕ), S.eq (v n) (v' n)) ≤ ⨅(k : ℕ), S.eq (v[x // n] k) (v'[x // n] k) :=
-by { rw [le_infi_iff], intro k, apply lt_by_cases k n; intro h; simp [h]; apply infi_le }
+by { rw [le_infi_iff], intro k, apply decidable.lt_by_cases k n; intro h; simp [h]; apply infi_le }
 
 @[simp] def subst_realize_congr2 (v : ℕ → S) (x y : S) :
   S.eq x y ≤ ⨅(k : ℕ), S.eq (v[x // n] k) (v[y // n] k) :=
-by { rw [le_infi_iff], intro k, apply lt_by_cases k n; intro h; simp [h] }
+by { rw [le_infi_iff], intro k, apply decidable.lt_by_cases k n; intro h; simp [h] }
 
 
 /- realization of terms -/
@@ -86,7 +86,7 @@ lemma boolean_realize_term_congr' {v v' : ℕ → S} (h : ∀n, v n = v' n) :
 lemma boolean_realize_term_subst (v : ℕ → S) : ∀{l} (n : ℕ) (t : preterm L l)
   (s : term L) (xs : dvector S l), boolean_realize_term (v[boolean_realize_term v (s ↑ n) ([]) // n]) t xs = boolean_realize_term v (t[s // n]) xs
 | _ n &k          s [] :=
-  by apply lt_by_cases k n; intro h;[simp [h], {subst h; simp}, simp [h]]
+  by apply decidable.lt_by_cases k n; intro h;[simp [h], {subst h; simp}, simp [h]]
 | _ n (func f)    s xs := by refl
 | _ n (app t₁ t₂) s xs := by dsimp; simp*
 
@@ -250,7 +250,7 @@ intros,
   refine le_trans _
     (boolean_realize_formula_congr (v[boolean_realize_term v (s ↑ n) ([]) // n]) _ _ _),
   simp, intro k,
-  apply lt_by_cases k n; intro h; simp [h]
+  apply decidable.lt_by_cases k n; intro h; simp [h]
 end
 
 lemma boolean_realize_formula_subst_congr0 (v : ℕ → S) (s s' : term L) {l} (f : preformula L l)
@@ -673,7 +673,7 @@ begin
   change Γ ≤ _, apply le_trans' H₁, apply le_trans,
   apply inf_le_inf, from H₂, refl, simp
 end
-  
+
 
 --infix ` ⊨ᵇ `:51 := fol.forced -- input using \|= or \vDash, but not using \bModels
 
