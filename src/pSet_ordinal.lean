@@ -18,9 +18,6 @@ local attribute [instance, priority 0] classical.prop_decidable
 
 universe u
 
-@[simp] lemma type_out {η : ordinal} : @ordinal.type _ (η.out.r) (η.out.wo) = η :=
-type_out η
-
 namespace pSet
 
 @[reducible]def succ (x : pSet) : pSet := insert x x
@@ -441,22 +438,23 @@ begin
     {from ordinal.mk_inj_limit}
 end
 
-@[simp]lemma mk_type_mk_eq {k} : #(ordinal.mk (aleph k).ord).type = (aleph k) :=
-begin
-  rw[ordinal.mk_limit_type (aleph_is_limit (k))], convert card_ord (aleph k),
-  rw[<-(@card_type _ (aleph k).ord.out.r (aleph k).ord.out.wo)], simp
-end
+-- @[simp]lemma mk_type_mk_eq' {k} : #(ordinal.mk (aleph k).ord).type = (aleph k) :=
+-- begin
+--   rw[ordinal.mk_limit_type (aleph_is_limit (k))], convert card_ord (aleph k),
+--   rw[<-(@card_type _ (aleph k).ord.out.r (aleph k).ord.out.wo)], simp
+-- end
 
-@[simp]lemma mk_type_mk_eq' (κ : cardinal) (H_inf : cardinal.omega ≤ κ) : #(ordinal.mk (ord κ)).type = κ :=
+@[simp]lemma mk_type_mk_eq (κ : cardinal) (H_inf : cardinal.omega ≤ κ) : #(ordinal.mk (ord κ)).type = κ :=
 begin
   cases (@exists_aleph κ).mp ‹_› with k H_k,
-  subst H_k, from mk_type_mk_eq
+  subst H_k, rw[ordinal.mk_limit_type (aleph_is_limit (k))], convert card_ord (aleph k),
+  rw[<-(@card_type _ (aleph k).ord.out.r (aleph k).ord.out.wo)], simp
 end
 
 lemma zero_aleph : cardinal.omega = (aleph 0) := by simp
 
 @[simp]lemma mk_type_omega_eq : #(ordinal.mk (cardinal.omega).ord).type = cardinal.omega :=
-by {rw[<-aleph_zero], apply mk_type_mk_eq}
+mk_type_mk_eq _ (by refl)
 
 @[simp]lemma mk_omega_eq_mk_omega : #(pSet.type omega) = cardinal.omega :=
 begin

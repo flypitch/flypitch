@@ -139,54 +139,21 @@ end
 noncomputable def max_of_list_in_chain {α : Type u} {R : α → α → Prop} {trans : ∀{a b c}, R a b → R b c → R a c} {Ts : set α} {nonempty_Ts : nonempty Ts} (h_chain : chain R Ts) (Ss : list α) -- {nonempty_Ss : nonempty {S | S ∈ Ss}}
 (h_fs : ∀ S ∈ Ss, S ∈ Ts) : Σ' (S : α), S ∈ Ts ∧ (∀ S' ∈ Ss, S' = S ∨ R S' S) :=
 begin
-  tactic.unfreeze_local_instances,
-  induction Ss, have := classical.choice nonempty_Ts, split, simp, swap, exact this.val, exact this.property,
-
-    by_cases nonempty {S | S ∈ Ss_tl},
-      swap, simp[*,-h] at h, refine ⟨Ss_hd, _⟩, simp*,
-      /- fixing the nonterminal simp error (May 4, 2019) -/
-      intros x hx, exfalso, rw [eq_empty_iff_forall_not_mem] at h, exact h x hx,
-
-      have actual_ih := Ss_ih,
-      let tl_max :=
-        begin refine actual_ih _, intros S hS, fapply h_fs, fapply or.inr, assumption end,
-      have pairwise_max := max_in_chain h_chain Ss_hd tl_max.fst
-begin fapply h_fs, constructor, refl end begin have := tl_max.snd, exact this.left  end,
-
-      split, swap, exact pairwise_max.fst, fapply and.intro,
-      have h_max := pairwise_max.snd, cases h_max with h_max1 h_max2,
-      simp*, rw[h_max2.left], exact tl_max.snd.left,
-      swap, assumption,
-      intros S' hS', cases hS' with h_left h_right,
-      have h_max := pairwise_max.snd, cases h_max with h_max1 h_max2,
-      fapply or.inl, have := h_max1.left, cc,
-      have := h_max2.right, cases this with h1 h2,
-      repeat{simp*},
-      have h_max := pairwise_max.snd, cases h_max with h_max1 h_max2,
-      all_goals{simp*},
-      swap,
-      have this1 : S' = tl_max.fst ∨ R S' tl_max.fst,
-        have this2 := tl_max.snd.right S' h_right,
-        cases this2 with this2_left this2_right,
-        exact or.inl this2_left,
-        exact or.inr this2_right,
-      exact this1,
-
-      have : ∀(S : α), S ∈ Ss_tl → S ∈ Ts,
-        begin
-          intros S hS, fapply h_fs, exact or.inr hS
-        end,
-
-      have almost_there := (actual_ih this).snd.right S' h_right,
-      cases almost_there with almost_there_1 almost_there_2,
-      simp*, cases h_max1 with H1 H2, simp[*, -H2] at H2,
-        cases H2, exact or.inr H2, rw[H2], finish,
-
-      cases h_max1 with H1 H2, simp[*,-H2] at H2, fapply or.inr,
-      have H_ab : R S' tl_max.fst, exact almost_there_2,
-      cases H2 with A1 A2,
-        exact trans H_ab A1,
-        rw[A2], exact H_ab
+  induction Ss,
+  
+  {tactic.unfreeze_local_instances, have := (classical.choice nonempty_Ts),
+   from ⟨this.1, ⟨this.2, by finish⟩⟩},
+  
+  specialize Ss_ih (by simp at h_fs; from h_fs.right),
+  rcases Ss_ih with ⟨S,H_mem,H_s⟩,
+  by_cases (R S Ss_hd),
+    {use Ss_hd, use (by simp*), intros S' HS', cases HS',
+      from or.inl ‹_›, right, by_cases S' = S, rwa[h], finish},
+    {use S, use H_mem, intros S' HS', cases HS',
+      {subst HS', by_cases S' = S, from or.inl ‹_›,
+       unfold chain pairwise_on at h_chain,
+        specialize h_chain S' (by simp at h_fs; from h_fs.left) S ‹_› ‹_›, finish},
+     finish}
 end
 
 /-- Given a xs : list α, it is naturally a list {x ∈ α | x ∈ xs} --/
@@ -208,7 +175,7 @@ def list_is_list_of_subtype : Π(α : Type u), Π (fs : list α),  Σ' xs : list
 
 /-- The limit theory of a chain of consistent theories over T is consistent --/
 lemma consis_limit {L : Language} {T : Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : is_consistent (T ∪ set.sUnion (subtype.val '' Ts)) :=
-begin -- so _here_ is where we need that proofs are finitely supported
+begin
   intro h_inconsis,
   by_cases nonempty Ts, swap,
   { simp at h, simp[*, -h_inconsis] at h_inconsis, unfold is_consistent at hT, apply hT,
@@ -280,8 +247,7 @@ have witness_property := witness.property, cases witness_property with case1 cas
   have T_bad_consis : is_consistent T_bad.val,
     {have almost_done := (T_bad.property h_bad).left,
     simp[set.image] at almost_done,
-    cases almost_done,
-    exact almost_done_w.right},
+    cases almost_done with H _, from H.right},
     exact T_bad_consis T_bad_inconsis,
 end
 
@@ -317,31 +283,12 @@ end
 /-- The maximal extension returned by maximal_extension cannot be extended. --/
 lemma cannot_extend_maximal_extension {L : Language} {T : Theory L} {hT : is_consistent T} (T_max' : Σ' (T_max : Theory_over T hT), ∀ T' : Theory_over T hT, T_max ⊆ T' → T' ⊆ T_max) (ψ : sentence L) (H : is_consistent (T_max'.fst.val ∪ {ψ}))(H1 : ψ ∉ T_max'.fst.val) : false :=
 begin
-  let T_bad : Theory_over T hT,
-  {refine ⟨T_max'.fst.val ∪ {ψ}, _⟩,
-  split,
-  simp[has_subset.subset],
-  intro ψ, intro hψT,
-  dedup,
-  have extension_assumption := T_max'.fst.property.left,
-  simp[has_insert.insert],
-  apply or.inr,
-  apply extension_assumption, assumption,
-  assumption  },
-  have h_max := T_max'.snd,
-  have h_bad := h_max T_bad,
-  have h_bad_ante : T_max'.fst ⊆ T_bad,
-  intros ϕ hϕ,
-  simp*,
-  have h_bad_cons := h_bad h_bad_ante,
-  simp[has_subset.subset, Theory_over_subset] at h_bad_cons,
-  have h_bad_ψ : ψ ∈ (T_max'.fst.val),
-  apply h_bad_cons,
-  simp[has_insert.insert],
-  have uh_oh := and.intro H1 h_bad_ψ,
-  have := (not_and_self_iff (ψ ∈T_max'.fst.val)),
-  cases this,
-  exact this_mp uh_oh,
+  let T_bad : Theory_over T hT :=
+    by {refine ⟨T_max'.fst.val ∪ {ψ}, ⟨_, H⟩⟩, simp[has_subset.subset], intros ψ hψT,
+        dedup, have extension_assumption := T_max'.fst.property.left, simp[has_insert.insert],
+        from or.inr (extension_assumption ‹_›)},
+  have h_bad := T_max'.snd T_bad,
+  from absurd (h_bad (by finish) (by simp[has_insert.insert])) H1
 end
 
 /-- Given a maximal consistent extension of consistent theory T, show it is complete --/
@@ -356,11 +303,11 @@ begin
 
   by_cases is_consistent ((@maximal_extension L T hT).fst.val ∪ {ψ}),
     {rename h h1,
-      apply cannot_extend_maximal_extension, repeat{assumption}},
+      from cannot_extend_maximal_extension _ _ ‹_› ‹_›},
   {rename h h2,
-  have q_of_not_p : ∀ p q : Prop, ∀ h1 : p ∨ q, ∀ h2 : ¬ p, q, by tauto,
+  have q_of_not_p : ∀ p q : Prop, ∀ h1 : p ∨ q, ∀ h2 : ¬ p, q := by tauto,
   have h2' := q_of_not_p _ _ can_extend h2,
-  fapply cannot_extend_maximal_extension, exact L, exact T, exact hT, exact maximal_extension L T hT, exact ∼ψ, repeat{assumption}},
+  from cannot_extend_maximal_extension _ _ ‹_› ‹_›}
 end
 
 

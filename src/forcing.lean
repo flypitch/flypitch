@@ -483,7 +483,7 @@ begin
      apply uncountable_fiber_of_regular' κ₁ κ₂; try{simp*},
      from H_reg₂.right,
      have := (@exists_aleph κ₂).mp (le_of_lt (lt_of_le_of_lt ‹_› ‹_›)), cases this with k₂ h,
-     subst h, simp}    
+     subst h, simp}
 end
 
 lemma ℵ₀_lt_ℵ₁ : (⊤ : 𝔹)  ≤ ℵ₀ ≺ ℵ₁̌  :=
@@ -503,21 +503,10 @@ begin
      from is_regular_aleph_one.right}
 end
 
+
 lemma ℵ₁_lt_ℵ₂ : (⊤ : 𝔹) ≤ ℵ₁̌  ≺ ℵ₂̌  :=
-begin
-  simp[larger_than, -top_le_iff], rw[<-imp_bot],
-  bv_imp_intro, bv_cases_at' H f, by_contra,
-  have := classical.axiom_of_choice
-            (AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
-  cases this with g g_spec,
-  suffices : ¬ CCC 𝔹, from absurd 𝔹_CCC this,
-  apply not_CCC_of_uncountable_fiber; try{assumption},
-    {simp},
-    {simp},
-    {intros i₁ i₂ H_neq, from ordinal.mk_inj _ _ _ ‹_›},
-    {dsimp at g,
-     from uncountable_fiber_of_regular _ _ (by simp) (by simp) (is_regular_aleph_two.right) g}
-end
+cardinal_inequality_of_regular _ _ (is_regular_aleph_one)
+  (is_regular_aleph_two) (by simp) (by simp)
 
 lemma cohen_real.mk_ext : ∀ (i j : type (ℵ₂̌  : bSet 𝔹)), func (ℵ₂̌ ) i =ᴮ func (ℵ₂̌ ) j ≤
   (λ (x : type (ℵ₂̌ )), cohen_real.mk x) i =ᴮ (λ (x : type (ℵ₂̌ )), cohen_real.mk x) j :=
