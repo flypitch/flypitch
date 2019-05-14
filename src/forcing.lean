@@ -447,6 +447,45 @@ local infix `≺`:70 := (λ x y, -(larger_than x y))
 
 local infix `≼`:70 := (λ x y, injects_into x y)
 
+lemma uncountable_fiber_of_regular' (κ₁ κ₂ : cardinal) (H_inf : cardinal.omega ≤ κ₁) (H_lt : κ₁ < κ₂) (H : cof (ord κ₂) = κ₂) (α : Type u) (H_α : #α = κ₁) (β : Type u) (H_β : #β = κ₂) (g : β → α)
+  : ∃ (ξ : α), cardinal.omega < #↥(g⁻¹' {ξ}) :=
+begin
+  have := (@cardinal.exists_aleph κ₂).mp (le_of_lt (lt_of_le_of_lt ‹_› ‹_›)), cases this with k H_k, subst H_k,
+  have := (@cardinal.exists_aleph κ₁).mp ‹_›, cases this with k' H_k', subst H_k',
+  have := infinite_pigeonhole g _ _, cases this with ξ H_ξ, use ξ, rw[H_ξ],
+  all_goals{simp*}, from lt_of_le_of_lt ‹_› ‹_›
+end
+
+lemma uncountable_fiber_of_regular (κ₁ κ₂ : cardinal) (H_inf : cardinal.omega ≤ κ₁) (H_lt : κ₁ < κ₂) (H : cof (ord κ₂) = κ₂) (g : type (pSet.ordinal.mk (ord κ₂)  : pSet.{u}) → type (pSet.ordinal.mk (ord κ₁) : pSet.{u}))
+  : ∃ (ξ : type (pSet.ordinal.mk (ord κ₁))), cardinal.omega < #↥((λ (β : type (pSet.ordinal.mk (ord κ₂))), g β)⁻¹' {ξ}) :=
+begin
+  have := (@exists_aleph κ₁).mp ‹_›, cases this with k₁ h, subst h,
+  have := (@exists_aleph κ₂).mp (le_of_lt (lt_of_le_of_lt ‹_› ‹_›)), cases this with k₂ h,
+  subst h,
+  from uncountable_fiber_of_regular' (aleph k₁) (aleph k₂) ‹_› ‹_› ‹_› _ (by simp) _ (by simp) g
+end
+
+lemma cardinal_inequality_of_regular (κ₁ κ₂ : cardinal) (H_reg₁ : cardinal.is_regular κ₁) (H_reg₂ : cardinal.is_regular κ₂) (H_inf : (omega : cardinal) ≤ κ₁) (H_lt : κ₁ < κ₂) : (⊤ : 𝔹) ≤ (pSet.ordinal.mk (ord κ₁))̌  ≺ (pSet.ordinal.mk (ord κ₂))̌  :=
+begin
+  simp[larger_than, -top_le_iff], rw[<-imp_bot],
+  bv_imp_intro, bv_cases_at' H f, by_contra,
+  have := classical.axiom_of_choice
+            (AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
+  cases this with g g_spec,
+  suffices : ¬ CCC 𝔹, from absurd 𝔹_CCC this,
+  apply not_CCC_of_uncountable_fiber; try{assumption},
+    {have := (@cardinal.exists_aleph κ₁).mp ‹_›, cases this with k' H_k', subst H_k', simp*},
+    {have := (@cardinal.exists_aleph κ₁).mp ‹_›, cases this with k' H_k', subst H_k', simp*,
+     have := (@exists_aleph κ₂).mp (le_of_lt (lt_of_le_of_lt ‹_› ‹_›)), cases this with k₂ h,
+     subst h, simp*},
+    {intros i₁ i₂ H_neq, from ordinal.mk_inj _ _ _ ‹_›},
+    {dsimp at g,
+     apply uncountable_fiber_of_regular' κ₁ κ₂; try{simp*},
+     from H_reg₂.right,
+     have := (@exists_aleph κ₂).mp (le_of_lt (lt_of_le_of_lt ‹_› ‹_›)), cases this with k₂ h,
+     subst h, simp}    
+end
+
 lemma ℵ₀_lt_ℵ₁ : (⊤ : 𝔹)  ≤ ℵ₀ ≺ ℵ₁̌  :=
 begin
   simp[larger_than, -top_le_iff], rw[<-imp_bot],
@@ -459,10 +498,9 @@ begin
     {from le_of_eq (by simp)},
     {simp},
     {intros i₁ i₂ H_neq, from ordinal.mk_inj _ _ _ ‹_›},
-    {dsimp at g, have := is_regular_aleph_one.right,
-     have := infinite_pigeonhole g _ _,
-     cases this with ξ H_ξ₁, use ξ, rw[H_ξ₁],
-     all_goals{simp*}, rw[this], simp}
+    {dsimp at g,
+     apply uncountable_fiber_of_regular' (aleph 0) (aleph 1); try{simp*},
+     from is_regular_aleph_one.right}
 end
 
 lemma ℵ₁_lt_ℵ₂ : (⊤ : 𝔹) ≤ ℵ₁̌  ≺ ℵ₂̌  :=
@@ -477,10 +515,8 @@ begin
     {simp},
     {simp},
     {intros i₁ i₂ H_neq, from ordinal.mk_inj _ _ _ ‹_›},
-    {dsimp at g, have := is_regular_aleph_two.right,
-     have := infinite_pigeonhole g _ _,
-     cases this with ξ H_ξ₁, use ξ, rw[H_ξ₁],
-     all_goals{simp*}, rw[this], simp}
+    {dsimp at g,
+     from uncountable_fiber_of_regular _ _ (by simp) (by simp) (is_regular_aleph_two.right) g}
 end
 
 lemma cohen_real.mk_ext : ∀ (i j : type (ℵ₂̌  : bSet 𝔹)), func (ℵ₂̌ ) i =ᴮ func (ℵ₂̌ ) j ≤

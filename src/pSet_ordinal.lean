@@ -447,6 +447,12 @@ begin
   rw[<-(@card_type _ (aleph k).ord.out.r (aleph k).ord.out.wo)], simp
 end
 
+@[simp]lemma mk_type_mk_eq' (κ : cardinal) (H_inf : cardinal.omega ≤ κ) : #(ordinal.mk (ord κ)).type = κ :=
+begin
+  cases (@exists_aleph κ).mp ‹_› with k H_k,
+  subst H_k, from mk_type_mk_eq
+end
+
 lemma zero_aleph : cardinal.omega = (aleph 0) := by simp
 
 @[simp]lemma mk_type_omega_eq : #(ordinal.mk (cardinal.omega).ord).type = cardinal.omega :=
