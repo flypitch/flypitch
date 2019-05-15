@@ -125,6 +125,9 @@ lemma bv_context_apply {β : Type*} [complete_boolean_algebra β] {Γ a₁ a₂ 
 lemma bv_by_contra {Γ b : 𝔹} {H : Γ ≤ (-b) ⟹ ⊥} : Γ ≤ b :=
 by {simp at H, from ‹_›}
 
+lemma bv_absurd {Γ : 𝔹} (b : 𝔹) (H₁ : Γ ≤ b) (H₂ : Γ ≤ -b) : Γ ≤ ⊥ :=
+@le_trans _ _ _ (b ⊓ -b) _ (le_inf ‹_› ‹_›) (by simp)
+
 end natded
 end lattice
 
@@ -906,17 +909,14 @@ def witness_antichain_index : ∀ {i j}, i ≠ j → (@witness_antichain _ _ ϕ 
 begin
   dsimp[witness_antichain], simp[sub_eq, neg_supr],
   apply bot_unique, cases dichotomy_of_neq r _ _ h_neq,
-  {ac_change' (y.val ⊓ ⨅ (i : {x_1 // x_1 ∈ down_set r x}), -(i.val).val) ⊓
-    (x.val ⊓ ⨅ (i : {x // x ∈ down_set r y}), -(i.val).val) ≤ ⊥,
-    sorry,
-    apply inf_le_right_of_le,
-  rw[inf_comm, deduction], apply infi_le_of_le,
-  swap, use x, exact h, simp},
-
-  {ac_change' (⨅ (i : {x_1 // x_1 ∈ down_set r x}), -(i.val).val) ⊓ y.val ⊓
-      (x.val ⊓ ⨅ (i : {x // x ∈ down_set r y}), -(i.val).val) ≤ ⊥,
-      sorry,
-      apply inf_le_left_of_le, rw[deduction], apply infi_le_of_le, swap, exact ⟨y, h⟩, simp}
+  {/- `tidy_context` says -/ apply poset_yoneda, intros Γ a,
+    simp only [le_inf_iff] at *, cases a, cases a_right, cases a_left,
+     replace a_right_right := a_right_right ⟨x,‹_›⟩, dsimp at a_right_right,
+     from bv_absurd x.val ‹_› ‹_›},
+  { /- `tidy_context` says -/ apply poset_yoneda, intros Γ a,
+    simp only [le_inf_iff] at *, cases a, cases a_right, cases a_left,
+     replace a_left_right := a_left_right ⟨y,‹_›⟩, dsimp at a_left_right,
+     from bv_absurd y.val ‹_› ‹_›}
 end
 
 lemma witness_antichain_antichain : antichain ((@witness_antichain _ _ ϕ r _) '' set.univ) :=

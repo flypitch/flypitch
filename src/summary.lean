@@ -98,3 +98,6 @@ begin
   have CH_f_true := boolean_soundness prf_of_CH_f (V_𝔹_nonempty),
   convert CH_f_true, rw[inf_axioms_top_of_models (bSet_models_ZFC' _)]
 end
+
+#print axioms CH_unprovable_from_ZFC
+/- `propext` (propositional extensionality), `classical.choice` (a type-theoretic choice principle) and `quot.sound` (quotients) are the standard axioms in Lean. -/

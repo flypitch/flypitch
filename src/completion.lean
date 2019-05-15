@@ -205,7 +205,7 @@ def list_is_list_of_subtype : Π(α : Type u), Π (fs : list α),  Σ' xs : list
     cases hf, exact or.inl hf,
     fapply or.inr, fapply exists.intro, exact hf, exact (list_is_list_of_subtype L tl).snd f hf
   end
-#print bUnion_empty
+
 /-- The limit theory of a chain of consistent theories over T is consistent --/
 lemma consis_limit {L : Language} {T : Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : is_consistent (T ∪ set.sUnion (subtype.val '' Ts)) :=
 begin -- so _here_ is where we need that proofs are finitely supported
