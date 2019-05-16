@@ -1,10 +1,4 @@
-/-
-Copyright (c) 2019 The Flypitch Project. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-
-Authors: Jesse Han, Floris van Doorn
--/
-import .bvm_extras .cantor_space
+import pSet_ordinal bvm bvm_extras cantor_space
 
 open ordinal cardinal lattice bSet
 
@@ -92,51 +86,46 @@ end
 end cardinal_preservation
 end bSet
 
-open bSet
 
-namespace pSet
+open bSet pSet
 
-@[reducible]noncomputable def ℵ₁ : pSet.{0} := ordinal.mk (aleph 1).ord
 
-@[reducible]noncomputable def ℵ₂ : pSet.{0} := ordinal.mk (aleph 2).ord
+namespace cohen_algebra
 
-lemma ℵ₂_unfold : ℵ₂ = ⟨ℵ₂.type, ℵ₂.func⟩ := by cases ℵ₂; refl
+section cohen_algebra
+variables (κ : cardinal.{u})
 
-@[simp, cleanup]lemma Union_type {x : pSet} : (type (Union x)) = Σ(a:x.type), (x.func a).type :=
-by induction x; refl
+instance H_nonempty' : nonempty (set $ (card_ex κ).type × ℕ) := ⟨∅⟩
 
-@[simp, cleanup]lemma Union_type' {α : Type u} {A : α → pSet.{u}} :
-  (Union (mk α A)).type = Σa, (A a).type := rfl
+def cohen_algebra := @regular_opens (set ((card_ex κ).type × ℕ)) (Pi.topological_space)
 
-end pSet
+@[instance, priority 1000]def cohen_algebra_boolean_algebra : nontrivial_complete_boolean_algebra (cohen_algebra κ) :=
+regular_open_algebra (by apply_instance)
 
-open pSet
+lemma le_iff_subset'' {x y : (cohen_algebra κ)} : x ≤ y ↔ x.1 ⊆ y.1 := by refl
 
-def 𝔹 : Type := @regular_opens (set(ℵ₂.type × ℕ)) (Pi.topological_space)
+lemma bot_eq_empty : (⊥ : (cohen_algebra κ)) = ⟨∅, is_regular_empty⟩ := rfl
 
-instance H_nonempty : nonempty (set $ ℵ₂.type × ℕ) := ⟨∅⟩
+variable{κ}
+lemma eq₀ : ((card_ex κ)̌  : bSet (cohen_algebra κ)).type = ((card_ex κ)).type := by cases (card_ex κ); refl
 
-@[instance, priority 1000]def 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 :=
-regular_open_algebra (H_nonempty)
 
-lemma le_iff_subset' {x y : 𝔹} : x ≤ y ↔ x.1 ⊆ y.1 := by refl
+lemma eq₁ : ((type ((card_ex κ)̌  : bSet (cohen_algebra κ))) × ℕ) = ((type (card_ex κ)) × ℕ) :=
+by {cases (card_ex κ), refl}
 
-lemma bot_eq_empty : (⊥ : 𝔹) = ⟨∅, is_regular_empty⟩ := rfl
 
-private lemma eq₀ : (ℵ₂̌  : bSet 𝔹).type = (ℵ₂).type := by cases ℵ₂; refl
+lemma eq₂ : set ((type ((card_ex κ)̌  : bSet (cohen_algebra κ))) × ℕ) = set ((type (card_ex κ)) × ℕ) :=
+by {cases (card_ex κ), refl}
 
-private lemma eq₁ : ((type (ℵ₂̌  : bSet 𝔹)) × ℕ) = ((type ℵ₂) × ℕ) :=
-by {cases ℵ₂, refl}
 
-private lemma eq₂ : set ((type (ℵ₂̌  : bSet 𝔹)) × ℕ) = set ((type ℵ₂) × ℕ) :=
-by {cases ℵ₂, refl}
+lemma eq₃ : finset ((type ((card_ex κ)̌  : bSet (cohen_algebra κ))) × ℕ) = finset (type (card_ex κ) × ℕ) :=
+by {cases (card_ex κ), refl}
 
-private lemma eq₃ : finset ((type (ℵ₂̌  : bSet 𝔹)) × ℕ) = finset (type ℵ₂ × ℕ) :=
-by {cases ℵ₂, refl}
 
 lemma pi₂_cast₁ {α β γ : Type*} (H' : α = β) {p : α × γ} {q : β × γ} (H : p == q) :
   p.1 == q.1 :=
 by {subst H', subst H}
+
 
 lemma pi₂_cast₂ {α β γ : Type*} (H' : α = β) {p : α × γ} {q : β × γ} (H : p == q) :
   p.2 = q.2 :=
@@ -147,18 +136,18 @@ begin
   subst H', subst H, apply heq_of_eq, simp
 end
 
-lemma eq₁_cast (p : ((type (ℵ₂̌  : bSet 𝔹)) × ℕ)) {prf : ((type (ℵ₂̌  : bSet 𝔹)) × ℕ) = (((type ℵ₂) × ℕ))} {prf' : (type (ℵ₂̌  : bSet 𝔹)) = (ℵ₂.type)} : cast prf p = (cast prf' p.1, p.2) :=
+lemma eq₁_cast (p : ((type ((card_ex κ)̌  : bSet (cohen_algebra κ))) × ℕ)) {prf : ((type ((card_ex κ)̌  : bSet (cohen_algebra κ))) × ℕ) = (((type (card_ex κ)) × ℕ))} {prf' : (type ((card_ex κ)̌  : bSet (cohen_algebra κ))) = ((card_ex κ).type)} : cast prf p = (cast prf' p.1, p.2) :=
 begin
-  ext, swap, simp, h_generalize H_x : p == x, apply pi₂_cast₂, from eq₀.symm, from H_x.symm,
+  ext, swap, simp, h_generalize H_x : p == x, apply pi₂_cast₂, from (eq₀).symm, from H_x.symm,
   h_generalize H_x : p == x, simp, h_generalize H_y : p.fst == y,
   apply eq_of_heq, suffices : x.fst == p.fst, from heq.trans this H_y,
-  apply pi₂_cast₁, from eq₀.symm, from H_x.symm
+  apply pi₂_cast₁, from (eq₀).symm, from H_x.symm
 end
 
--- lemma eq₁_cast' {ξ : (ℵ₂̌  : bSet 𝔹).type} {n : ℕ} {prf : ((type (ℵ₂̌  : bSet 𝔹)) × ℕ) = (((type ℵ₂) × ℕ))} {prf' : (type (ℵ₂̌  : bSet 𝔹)) = (ℵ₂.type)} : cast prf (ξ, n) = (cast prf' ξ, n) :=
+-- lemma eq₁_cast' {ξ : ((card_ex κ)̌  : bSet (cohen_algebra κ)).type} {n : ℕ} {prf : ((type ((card_ex κ)̌  : bSet (cohen_algebra κ))) × ℕ) = (((type (card_ex κ)) × ℕ))} {prf' : (type ((card_ex κ)̌  : bSet (cohen_algebra κ))) = ((card_ex κ).type)} : cast prf (ξ, n) = (cast prf' ξ, n) :=
 -- by apply eq₁_cast
 
-lemma eq₁_cast' (p : (((type ℵ₂) × ℕ))) {prf : ((type (ℵ₂̌  : bSet 𝔹)) × ℕ) = (((type ℵ₂) × ℕ))} {prf' : (type (ℵ₂̌  : bSet 𝔹)) = (ℵ₂.type)} : cast prf.symm p = (cast prf'.symm p.1, p.2) :=
+lemma eq₁_cast' (p : (((type (card_ex κ)) × ℕ))) {prf : ((type ((card_ex κ)̌  : bSet (cohen_algebra κ))) × ℕ) = (((type (card_ex κ)) × ℕ))} {prf' : (type ((card_ex κ)̌  : bSet (cohen_algebra κ))) = ((card_ex κ).type)} : cast prf.symm p = (cast prf'.symm p.1, p.2) :=
 begin
   ext, swap, simp, h_generalize H_x : p == x, apply pi₂_cast₂, from eq₀, from H_x.symm,
   h_generalize H_x : p == x, simp, h_generalize H_y : p.fst == y,
@@ -166,22 +155,28 @@ begin
   apply pi₂_cast₁, from eq₀, from H_x.symm
 end
 
-theorem 𝔹_CCC : CCC 𝔹 :=
+theorem cohen_algebra_CCC : CCC (cohen_algebra κ):=
 by { apply CCC_regular_opens, apply cantor_space.countable_chain_condition_set }
 
-local notation `𝒳` := set(ℵ₂.type × ℕ)
+
+
+local notation `𝒳` := set((card_ex κ).type × ℕ)
 
 open topological_space
 
+
+
 /-- The principal regular open associated to a pair (ν, n) is the collection of all subsets of
-    ℵ₂ × ℕ which contain (ν, n). -/
-def principal_open (ν : (ℵ₂̌  : bSet 𝔹).type) (n : ℕ) : 𝔹 :=
+    (card_ex κ) × ℕ which contain (ν, n). -/
+variable (κ)
+def principal_open (ν : ((card_ex κ)̌  : bSet (cohen_algebra κ)).type) (n : ℕ) : (cohen_algebra κ) :=
 begin
-  use (cantor_space.principal_open (cast eq₁ (ν, n))),
+  use (cantor_space.principal_open (cast (eq₁) (ν, n))),
   from is_regular_of_clopen (cantor_space.is_clopen_principal_open)
 end
 
-lemma is_clopen_principal_open {ν n} : is_clopen (principal_open ν n).val :=
+variable {κ}
+lemma is_clopen_principal_open {ν n} : is_clopen (principal_open κ ν n).val :=
   cantor_space.is_clopen_principal_open
 
 local postfix `ᵖ`:80 := perp
@@ -193,45 +188,48 @@ local notation `int`:65 := interior
 lemma perp_eq_compl_of_clopen {β : Type*} [topological_space β] {S : set β} (H : is_clopen S) : Sᵖ = (-S) :=
 by {unfold perp, rw[closure_eq_of_is_closed H.right]}
 
-lemma mem_neg_principal_open_of_not_mem {ν n S} : (cast eq₁ (ν,n) ∈ (-S)) → S ∈ (- (principal_open ν n)).val :=
+lemma mem_neg_principal_open_of_not_mem {ν n S} : (cast (eq₁) (ν,n) ∈ (-S)) → S ∈ (- (principal_open κ ν n)).val :=
 begin
   intro H, simp only [neg_unfold], rw[perp_eq_compl_of_clopen],
   swap, from is_clopen_principal_open, from H
 end
 
-structure 𝒞 : Type :=
-(ins : finset ((ℵ₂ ̌ : bSet 𝔹).type × ℕ))
-(out : finset ((ℵ₂ ̌ : bSet 𝔹).type × ℕ))
+variable (κ)
+structure cohen_poset  : Type u :=
+(ins : finset (((card_ex κ) ̌ : bSet (cohen_algebra κ)).type × ℕ))
+(out : finset (((card_ex κ) ̌ : bSet (cohen_algebra κ)).type × ℕ))
 (H : ins ∩ out = ∅)
 
-@[reducible]def π₂ : (ℵ₂̌  : bSet 𝔹).type × ℕ → ℕ := λ x, x.snd
+variable{κ}
 
--- def nat_supp : finset ((ℵ₂ ̌ : bSet 𝔹).type × ℕ) → set ℕ :=
--- λ X, {n | ∃ (ξ : ℵ₂.type), (cast eq₁.symm (ξ,n)) ∈ X}
+@[reducible]def π₂ : ((card_ex κ)̌  : bSet (cohen_algebra κ)).type × ℕ → ℕ := λ x, x.snd
+
+-- def nat_supp : finset (((card_ex κ) ̌ : bSet (cohen_algebra κ)).type × ℕ) → set ℕ :=
+-- λ X, {n | ∃ (ξ : (card_ex κ).type), (cast eq₁.symm (ξ,n)) ∈ X}
 
 -- lemma nat_supp_finite {X} : set.finite $ nat_supp X := sorry
 
-private def ι : 𝒞 → 𝔹 :=
-λ p, ⟨{S | (p.ins.to_set) ⊆ (cast eq₂.symm S) ∧
-           (p.out.to_set) ⊆ (cast eq₂.symm (- S))},
+def cohen_poset_inc : cohen_poset κ → (cohen_algebra κ) :=
+λ p, ⟨{S | (p.ins.to_set) ⊆ (cast (eq₂).symm S) ∧
+           (p.out.to_set) ⊆ (cast (eq₂).symm (- S))},
 is_regular_of_clopen
      begin
        change is_clopen
-         ({S | p.ins.to_set ⊆ cast eq₂.symm S} ∩ {S | p.out.to_set ⊆ (cast eq₂.symm (-S))}),
+         ({S | p.ins.to_set ⊆ cast (eq₂).symm S} ∩ {S | p.out.to_set ⊆ (cast (eq₂).symm (-S))}),
        refine is_clopen_inter _ _,
          have := cantor_space.is_clopen_principal_open_finset p.ins,
-         convert this, from eq₀.symm, from eq₀.symm, from eq₀.symm,
-           {apply function.hfunext, from eq₂.symm, intros a a' H_heq,
-             apply heq_of_eq, convert rfl, convert (cast_eq _ _).symm, from eq₀.symm, refl},
+         convert this, from (eq₀).symm, from (eq₀).symm, from (eq₀).symm,
+           {apply function.hfunext, from (eq₂).symm, intros a a' H_heq,
+             apply heq_of_eq, convert rfl, convert (cast_eq _ _).symm, from (eq₀).symm, refl},
 
          have := cantor_space.is_clopen_co_principal_open_finset p.out,
-         convert this, from eq₀.symm, from eq₀.symm, from eq₀.symm,
-         {apply function.hfunext, from eq₂.symm, intros a a' H_heq,
+         convert this, from (eq₀).symm, from (eq₀).symm, from (eq₀).symm,
+         {apply function.hfunext, from (eq₂).symm, intros a a' H_heq,
           apply heq_of_eq, convert rfl, h_generalize Hx : (-a) == x,
           have := heq.subst H_heq, swap,
           from λ _ y, y == -x,
           suffices : a' = -x, by {rw[this], simp},
-          apply eq_of_heq, apply this, apply compl_cast₂, from eq₁.symm,
+          apply eq_of_heq, apply this, apply compl_cast₂, from (eq₁).symm,
           from Hx}
      end⟩
 
@@ -240,8 +238,8 @@ open cantor_space
 lemma prop_decidable_cast_lemma {α β : Type*} (H : α = β) {a b : α} {a' b' : β} (H_a : a == a') (H_b : b == b') : classical.prop_decidable (a = b) == classical.prop_decidable (a' = b') :=
 by {subst H, subst H_a, subst H_b}
 
-lemma 𝒞_dense_basis : ∀ T ∈ @standard_basis (ℵ₂.type × ℕ), ∀ h_nonempty : T ≠ ∅,
-  ∃ p : 𝒞, (ι p).val ⊆ T :=
+lemma cohen_poset_dense_basis : ∀ T ∈ @standard_basis ((card_ex κ).type × ℕ), ∀ h_nonempty : T ≠ ∅,
+  ∃ p : cohen_poset κ, (cohen_poset_inc p).val ⊆ T :=
 begin
   intros T Ht H_nonempty, simp[standard_basis] at Ht,
   cases Ht with H_empty Ht, contradiction,
@@ -256,22 +254,22 @@ begin
   {convert HS_right,
     from eq₀.symm, from eq₀.symm, from eq₀.symm, all_goals{symmetry, from cast_heq _ _}},
   convert H₂, from eq₀, from eq₀, from eq₀,
-  apply function.hfunext, from eq₁, intros a a' H,
-  apply function.hfunext, from eq₁, intros b b' H',
-  from prop_decidable_cast_lemma eq₁ ‹_› ‹_›,
+  apply function.hfunext, from (eq₁), intros a a' H,
+  apply function.hfunext, from (eq₁), intros b b' H',
+  from prop_decidable_cast_lemma (eq₁) ‹_› ‹_›,
   from cast_heq _ _, from cast_heq _ _, from eq₀, from eq₀
 end
 
-lemma 𝒞_dense {b : 𝔹} (H : ⊥ < b) : ∃ p : 𝒞, ι p ≤ b :=
+lemma cohen_poset_dense {b : (cohen_algebra κ)} (H : ⊥ < b) : ∃ p : cohen_poset κ, cohen_poset_inc p ≤ b :=
 begin
   cases (classical.choice (classical.nonempty_of_not_empty _ H.right.symm)) with S_wit H_wit,
-  change ∃ p, (ι p).val ⊆ b.val,
+  change ∃ p, (cohen_poset_inc p).val ⊆ b.val,
   have := mem_basis_subset_of_mem_open (is_topological_basis_standard_basis) H_wit (is_open_of_is_regular b.property),
   rcases (mem_basis_subset_of_mem_open
            (is_topological_basis_standard_basis) H_wit (is_open_of_is_regular b.property))
          with ⟨v, Hv₁, Hv₂, Hv₃⟩,
   have : v ≠ ∅, by {intro H, rw[H] at Hv₂, cases Hv₂},
-  cases (𝒞_dense_basis ‹_› ‹_› ‹_›) with p H_p, from ⟨p, subset_trans H_p ‹_›⟩
+  cases (cohen_poset_dense_basis ‹_› ‹_› ‹_›) with p H_p, from ⟨p, subset_trans H_p ‹_›⟩
 end
 
 lemma to_set_inter {α : Type*} {p₁ p₂ : finset α} : (p₁ ∩ p₂).to_set = (p₁.to_set ∩ p₂.to_set) :=
@@ -293,15 +291,15 @@ lemma not_mem_of_inter_empty_right {α : Type*} {p₁ p₂ : finset α}
   (H : p₂ ∩ p₁ = ∅) {a : α} : a ∈ p₁.to_set → ¬ a ∈ p₂.to_set :=
 by {rw[finset.inter_comm] at H, apply not_mem_of_inter_empty_left, from ‹_›}
 
-lemma 𝒞_nonzero (p : 𝒞) : ⊥ ≠ (ι p) :=
+lemma cohen_poset_nonzero (p : cohen_poset κ) : ⊥ ≠ (cohen_poset_inc p) :=
 begin
-  intro H, replace H := H.symm, rw[eq_bot_iff] at H, rw[le_iff_subset'] at H,
+  intro H, replace H := H.symm, rw[eq_bot_iff] at H, rw[le_iff_subset''] at H,
   rw[bot_eq_empty] at H,
-  suffices : nonempty (ι p).val,
+  suffices : nonempty (cohen_poset_inc p).val,
     by {have := classical.choice this, specialize H this.property, cases H},
-  apply nonempty.intro, fsplit, exact (cast eq₂ p.ins.to_set),
+  apply nonempty.intro, fsplit, exact (cast (eq₂) p.ins.to_set),
   split, finish, intro x, cases x with ν n, intro H,
-  suffices : cast eq₁ (ν, n) ∈ - cast eq₂ (p.ins).to_set,
+  suffices : cast (eq₁) (ν, n) ∈ - cast (eq₂) (p.ins).to_set,
     {convert this, from eq₀, from eq₀, from eq₀, cc, cc},
   suffices : (ν, n) ∈ - p.ins.to_set,
     {convert this, from eq₀.symm, from eq₀.symm, from eq₀.symm, cc, from eq₀.symm,
@@ -311,7 +309,7 @@ end
 
 lemma subset_of_eq {α : Type*} {a b : finset α} (H : a = b) : a ⊆ b := by rw[H]; refl
 
-lemma 𝒞_disjoint_row (p : 𝒞) : ∃ n : ℕ, ∀ ξ : ℵ₂.type, (cast eq₁.symm (ξ,n)) ∉ p.ins ∧ (cast eq₁.symm (ξ,n)) ∉ p.out :=
+lemma cohen_poset_disjoint_row (p : cohen_poset κ) : ∃ n : ℕ, ∀ ξ : (card_ex κ).type, (cast (eq₁).symm (ξ,n)) ∉ p.ins ∧ (cast (eq₁).symm (ξ,n)) ∉ p.out :=
 begin
   let Y := (finset.image π₂ p.ins) ∪ (finset.image π₂ p.out),
   by_cases (p.ins ∪ p.out) = ∅,
@@ -340,11 +338,17 @@ begin
     apply finset.le_max_of_mem this ‹_›
 end
 
-lemma 𝒞_anti {p₁ p₂ : 𝒞} : p₁.ins ⊆ p₂.ins → p₁.out ⊆ p₂.out → ι p₂ ≤ ι p₁  :=
-by {intros H₁ H₂, rw[le_iff_subset'], tidy}
+lemma cohen_poset_anti {p₁ p₂ : cohen_poset κ} : p₁.ins ⊆ p₂.ins → p₁.out ⊆ p₂.out → cohen_poset_inc p₂ ≤ cohen_poset_inc p₁  :=
+by {intros H₁ H₂, rw[le_iff_subset''], tidy}
+
+end cohen_algebra
+end cohen_algebra
 
 namespace cohen_real
+
 section cohen_real
+variables (κ : cardinal.{u})
+open cohen_algebra
 
 -- attribute [instance, priority 0] 𝔹_boolean_algebra
 
@@ -352,51 +356,53 @@ section cohen_real
 
 -- attribute [instance, priority 1000] σ
 -- include σ
-/-- `cohen_real.χ ν` is the indicator function on ℕ induced by every ordinal less than ℵ₂ -/
-def χ (ν : (ℵ₂̌  : bSet 𝔹).type) : ℕ → 𝔹 :=
-  λ n, principal_open ν n
+/-- `cohen_real.χ ν` is the indicator function on ℕ induced by every ordinal less than (card_ex κ) -/
+def χ (ν : ((card_ex κ)̌  : bSet (cohen_algebra κ)).type) : ℕ → (cohen_algebra κ) :=
+  λ n, principal_open κ ν n
 
-/-- `cohen_real.mk ν` is the subset of (ω : bSet 𝔹) induced by `cohen_real.χ ν` -/
-def mk (ν : (ℵ₂̌  : bSet 𝔹).type) : bSet 𝔹 :=
-  @set_of_indicator 𝔹 _ omega $ λ n, χ ν n.down
+/-- `cohen_real.mk ν` is the subset of (ω : bSet (cohen_algebra κ)) induced by `cohen_real.χ ν` -/
+def mk (ν : ((card_ex κ)̌  : bSet (cohen_algebra κ)).type) : bSet (cohen_algebra κ) :=
+  @set_of_indicator (cohen_algebra κ) _ omega $ λ n, χ κ ν n.down
 
-@[simp, cleanup]lemma mk_type {ν} : (mk ν).type = ulift ℕ := rfl
 
-@[simp, cleanup]lemma mk_func {ν} {n} : (mk ν).func n = bSet.of_nat (n.down) := rfl
+variable {κ}
+@[simp, cleanup]lemma mk_type {ν} : (mk κ ν).type = ulift ℕ := rfl
 
-@[simp, cleanup]lemma mk_bval {ν} {n} : (mk ν).bval n = (χ ν) (n.down) := rfl
+@[simp, cleanup]lemma mk_func {ν} {n} : (mk κ ν).func n = bSet.of_nat (n.down) := rfl
 
-/-- bSet 𝔹 believes that each `mk ν` is a subset of omega -/
-lemma definite {ν} {Γ} : Γ ≤ mk ν ⊆ᴮ omega :=
+@[simp, cleanup]lemma mk_bval {ν} {n} : (mk κ ν).bval n = (χ κ ν) (n.down) := rfl
+
+/-- bSet (cohen_algebra κ) believes that each `mk κ ν` is a subset of omega -/
+lemma definite {ν} {Γ} : Γ ≤ mk κ ν ⊆ᴮ omega :=
 by simp [mk, subset_unfold]; from λ _, by rw[<-deduction]; convert omega_definite
 
-/-- bSet 𝔹 believes that each `mk ν` is an element of 𝒫(ω) -/
-lemma definite' {ν} {Γ} : Γ ≤ mk ν ∈ᴮ bv_powerset omega := bv_powerset_spec.mp definite
+/-- bSet (cohen_algebra κ) believes that each `mk κ ν` is an element of 𝒫(ω) -/
+lemma definite' {ν} {Γ} : Γ ≤ mk κ ν ∈ᴮ bv_powerset omega := bv_powerset_spec.mp definite
 
 -- TODO(jesse) refactor this proof to use axiom of extensionality instead, or prove a more general version
 
-lemma sep {n} {Γ} {ν₁ ν₂} (H₁ : Γ ≤ (of_nat n) ∈ᴮ (mk ν₁)) (H₂ : Γ ≤ (- ((of_nat n) ∈ᴮ (mk ν₂)))) :
-  Γ ≤ (- ((mk ν₁) =ᴮ (mk ν₂))) :=
+lemma sep {n} {Γ} {ν₁ ν₂} (H₁ : Γ ≤ (of_nat n) ∈ᴮ (mk κ ν₁)) (H₂ : Γ ≤ (- ((of_nat n) ∈ᴮ (mk κ ν₂)))) :
+  Γ ≤ (- ((mk κ ν₁) =ᴮ (mk κ ν₂))) :=
 begin
   rw[bv_eq_unfold], rw[neg_inf, neg_infi, neg_infi], simp only [neg_imp],
-  refine le_sup_left_of_le _, rw[@bounded_exists 𝔹 _ (mk ν₁) (λ z, -(z ∈ᴮ mk ν₂)) _],
+  refine le_sup_left_of_le _, rw[@bounded_exists (cohen_algebra κ) _ (mk κ ν₁) (λ z, -(z ∈ᴮ mk κ ν₂)) _],
   swap, change B_ext _, simp[-imp_bot, imp_bot.symm],
   apply bv_use (bSet.of_nat n), bv_split_goal
 end
 
-lemma not_mem_of_not_mem {p : 𝒞} {ν} {n} (H : (ν,n) ∈ p.out) : ι p ≤ -( (of_nat n) ∈ᴮ (mk ν)) :=
+lemma not_mem_of_not_mem {p : cohen_poset κ} {ν} {n} (H : (ν,n) ∈ p.out) : cohen_poset_inc p ≤ -( (of_nat n) ∈ᴮ (mk κ ν)) :=
 begin
 rw[mem_unfold, neg_supr], bv_intro k, rw[neg_inf], simp,
        by_cases n = k.down, swap, rw[bSet.of_nat_inj ‹_›],
        from le_sup_right_of_le (by simp),
        refine le_sup_left_of_le _, rw[<-h],
-       rw[le_iff_subset'], unfold ι χ, rintros S ⟨H_S₁, H_S₂⟩,
+       rw[le_iff_subset''], unfold cohen_poset_inc χ, rintros S ⟨H_S₁, H_S₂⟩,
        apply mem_neg_principal_open_of_not_mem, have := H_S₂ H, convert this,
        from eq₀.symm, from eq₀.symm, from eq₀.symm,
        from cast_heq _ _, from (cast_heq _ _).symm
 end
 
-private lemma inj_cast_lemma (ν' : type (ℵ₂̌  : bSet 𝔹)) (n' : ℕ) :
+private lemma inj_cast_lemma (ν' : type ((card_ex κ)̌  : bSet (cohen_algebra κ))) (n' : ℕ) :
   cast eq₁.symm (cast eq₀ ν', n') = (ν', n') :=
 begin
   let a := _, change cast a _ = _,
@@ -404,45 +410,49 @@ begin
   simp[b] at a, dedup, change cast a_1 _ = _, cc
 end
 
-/-- Whenever ν₁ ≠ ν₂ < ℵ₂, bSet 𝔹 believes that `mk ν₁` and `mk ν₂` are distinct -/
-lemma inj {ν₁ ν₂} (H_neq : ν₁ ≠ ν₂) : (mk ν₁) =ᴮ (mk ν₂) ≤ (⊥ : 𝔹) :=
+/-- Whenever ν₁ ≠ ν₂ < (card_ex κ), bSet (cohen_algebra κ) believes that `mk κ ν₁` and `mk κ ν₂` are distinct -/
+lemma inj {ν₁ ν₂} (H_neq : ν₁ ≠ ν₂) : (mk κ ν₁) =ᴮ (mk κ ν₂) ≤ (⊥ : (cohen_algebra κ)) :=
 begin
   by_contra, replace h := (bot_lt_iff_not_le_bot.mpr ‹_›),
-  cases 𝒞_dense h with p H_p, cases 𝒞_disjoint_row p with n H_n,
-  let p' : 𝒞 := { ins := insert (ν₁,n) (p.ins),
+  cases cohen_poset_dense h with p H_p, cases cohen_poset_disjoint_row p with n H_n,
+  let p' : cohen_poset κ := { ins := insert (ν₁,n) (p.ins),
   out := insert (ν₂,n) p.out,
   H := by {ext, split; intro H, swap, cases H, have := p.H, simp at H, cases a_1 with ν' n',
            cases H with H₁ H₂, specialize H_n (cast eq₀ ν'), cases H_n, cases H₁; cases H₂, cc,
            exfalso, apply H_n_right, convert H₂, rw[show n = n', by cc], apply inj_cast_lemma,
            exfalso, apply H_n_left, convert H₁, rw[show n = n', by cc], apply inj_cast_lemma,
            rw[<-this], simp[*,-this]} },
-  have this₀ : ι p' ≤ ι p,
-    from 𝒞_anti (by {dsimp[p'], from λ i _, by {simp, from or.inr ‹_›}})
+  have this₀ : cohen_poset_inc p' ≤ cohen_poset_inc p,
+    from cohen_poset_anti (by {dsimp[p'], from λ i _, by {simp, from or.inr ‹_›}})
                 (by {dsimp[p'], from λ i _, by {simp, from or.inr ‹_›}}),
-  have this₁ : ι p' ≤ (ñ̌) ∈ᴮ (cohen_real.mk ν₁),
+  have this₁ : cohen_poset_inc p' ≤ (ñ̌) ∈ᴮ (mk κ ν₁),
     by {rw[mem_unfold], apply bv_use (ulift.up n), refine le_inf _ bv_eq_refl',
-         {simp [le_iff_subset', χ, _root_.principal_open, ι, cantor_space.principal_open],
+         {simp [le_iff_subset'', χ, principal_open, cohen_poset_inc, cantor_space.principal_open],
          have : (ν₁, n) ∈ p'.ins,
            by simp[p'], intros S H_S _, specialize H_S this,
               convert H_S; [from eq₀.symm, from eq₀.symm, from eq₀.symm, cc, cc]}},
-  have this₂ : ι p' ≤ - ((ñ̌) ∈ᴮ (cohen_real.mk ν₂)),
+  have this₂ : cohen_poset_inc p' ≤ - ((ñ̌) ∈ᴮ (mk κ ν₂)),
     by {have : (ν₂, n) ∈ p'.out, by {simp[p']},
        from not_mem_of_not_mem ‹_›},
-  have this₃ : ι p' ≤ - (mk ν₁ =ᴮ mk ν₂),
+  have this₃ : cohen_poset_inc p' ≤ - (mk κ ν₁ =ᴮ mk κ ν₂),
     from sep ‹_› ‹_›,
-  have this₄ : ι p' ≤ (mk ν₁ =ᴮ mk ν₂),
+  have this₄ : cohen_poset_inc p' ≤ (mk κ ν₁ =ᴮ mk κ ν₂),
     from le_trans this₀ ‹_›,
-  suffices : ι p' = ⊥, from absurd this.symm (𝒞_nonzero p'),
+  suffices : cohen_poset_inc p' = ⊥, from absurd this.symm (cohen_poset_nonzero p'),
   bv_and_intro this₃ this₄, simpa using H
 end
-
 end cohen_real
 end cohen_real
 
 section neg_CH
+variables (κ₁ κ₂ : cardinal.{u}) (H_reg₁ : is_regular κ₁) (H_reg₂ : is_regular κ₂) (H_inf₁ : cardinal.omega < κ₁) (H_inf₂ : cardinal.omega < κ₂) (H_lt : κ₁ < κ₂)
 
-local notation `ℵ₀` := (omega : bSet 𝔹)
-local notation `𝔠` := (bv_powerset ℵ₀ : bSet 𝔹)
+open cohen_algebra
+
+local notation `ℵ₀` := (omega : bSet (cohen_algebra κ₂))
+
+local notation `𝔠` := (bv_powerset ℵ₀)
+
 local infix `≺`:70 := (λ x y, -(larger_than x y))
 
 local infix `≼`:70 := (λ x y, injects_into x y)
@@ -462,17 +472,17 @@ begin
   have := (@exists_aleph κ₁).mp ‹_›, cases this with k₁ h, subst h,
   have := (@exists_aleph κ₂).mp (le_of_lt (lt_of_le_of_lt ‹_› ‹_›)), cases this with k₂ h,
   subst h,
-  from uncountable_fiber_of_regular' (aleph k₁) (aleph k₂) ‹_› ‹_› ‹_› _ (by simp) _ (by simp) g
+  from uncountable_fiber_of_regular' (aleph k₁) (aleph k₂) ‹_› ‹_› ‹_› _ (mk_type_mk_eq _ ‹_›) _ (mk_type_mk_eq _ (by simp*)) g
 end
 
-lemma cardinal_inequality_of_regular (κ₁ κ₂ : cardinal) (H_reg₁ : cardinal.is_regular κ₁) (H_reg₂ : cardinal.is_regular κ₂) (H_inf : (omega : cardinal) ≤ κ₁) (H_lt : κ₁ < κ₂) : (⊤ : 𝔹) ≤ (pSet.ordinal.mk (ord κ₁))̌  ≺ (pSet.ordinal.mk (ord κ₂))̌  :=
+lemma cardinal_inequality_of_regular (κ₁ κ₂ : cardinal) (H_reg₁ : cardinal.is_regular κ₁) (H_reg₂ : cardinal.is_regular κ₂) (H_inf : (omega : cardinal) ≤ κ₁) (H_lt : κ₁ < κ₂) : (⊤ : (cohen_algebra κ₂)) ≤ (pSet.ordinal.mk (ord κ₁))̌  ≺ (pSet.ordinal.mk (ord κ₂))̌  :=
 begin
   simp[larger_than, -top_le_iff], rw[<-imp_bot],
   bv_imp_intro, bv_cases_at' H f, by_contra,
   have := classical.axiom_of_choice
             (AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
   cases this with g g_spec,
-  suffices : ¬ CCC 𝔹, from absurd 𝔹_CCC this,
+  suffices : ¬ CCC (cohen_algebra κ₂), from absurd cohen_algebra_CCC this,
   apply not_CCC_of_uncountable_fiber; try{assumption},
     {have := (@cardinal.exists_aleph κ₁).mp ‹_›, cases this with k' H_k', subst H_k', simp*},
     {have := (@cardinal.exists_aleph κ₁).mp ‹_›, cases this with k' H_k', subst H_k', simp*,
@@ -483,89 +493,83 @@ begin
      apply uncountable_fiber_of_regular' κ₁ κ₂; try{simp*},
      from H_reg₂.right,
      have := (@exists_aleph κ₂).mp (le_of_lt (lt_of_le_of_lt ‹_› ‹_›)), cases this with k₂ h,
-     subst h; apply mk_type_mk_eq, from ‹_›, apply mk_type_mk_eq,
-     from le_of_lt (lt_of_le_of_lt ‹_› ‹_›)}
+     subst h, from mk_type_mk_eq _ ‹_›, from mk_type_mk_eq _ (le_of_lt (lt_of_le_of_lt ‹_› ‹_›))}
 end
 
-lemma ℵ₀_lt_ℵ₁ : (⊤ : 𝔹)  ≤ ℵ₀ ≺ ℵ₁̌  :=
+lemma cohen_real.mk_ext : ∀ (i j : type ((card_ex κ₂)̌  : bSet (cohen_algebra κ₂))), func ((card_ex κ₂)̌ ) i =ᴮ func ((card_ex κ₂)̌ ) j ≤
+  (λ (x : type ((card_ex κ₂)̌ )), cohen_real.mk κ₂ x) i =ᴮ (λ (x : type ((card_ex κ₂)̌ )), cohen_real.mk κ₂ x) j :=
+begin
+  intros i j, by_cases i = j,
+   {simp[h]},
+   {refine poset_yoneda _, intros Γ a, simp only [le_inf_iff] at *,
+     have : func ((card_ex κ₂)̌ ) i = ((card_ex κ₂).func (check_cast i))̌ ,
+       by simp[check_func],
+     rw[this] at a,
+     have : func ((card_ex κ₂)̌ ) j = ((card_ex κ₂).func (check_cast j))̌ ,
+       by simp[check_func],
+     rw[this] at a,
+   suffices : func (card_ex κ₂) (check_cast i)̌  =ᴮ func (card_ex κ₂) (check_cast j)̌  ≤ ⊥,
+     from le_trans a (le_trans this bot_le),
+   rw[le_bot_iff], apply check_bv_eq_bot_of_not_equiv,
+   apply ordinal.mk_inj, unfold check_cast, intro H, cc}
+end
+
+
+
+noncomputable def neg_CH_func : bSet (cohen_algebra κ₂) :=
+@function.mk _ _ ((card_ex κ₂)̌ ) (λ x, cohen_real.mk κ₂ x) (cohen_real.mk_ext κ₂)
+
+variables {κ₁ κ₂}
+def CH : (cohen_algebra κ₂) := - ⨆ x, ⨆y, (ℵ₀ ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(ℵ₀))
+
+include κ₁ H_reg₁ H_inf₁
+
+lemma ℵ₀_lt_κ₁ : (⊤ : (cohen_algebra κ₂))  ≤ ℵ₀ ≺ (card_ex κ₁)̌  :=
 begin
   simp[larger_than, -top_le_iff], rw[<-imp_bot],
   bv_imp_intro, bv_cases_at' H f, by_contra,
   have := classical.axiom_of_choice
             (AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
   cases this with g g_spec,
-  suffices : ¬ CCC 𝔹, from absurd 𝔹_CCC this,
+  suffices : ¬ CCC (cohen_algebra κ₂), from absurd cohen_algebra_CCC this,
   apply not_CCC_of_uncountable_fiber; try{assumption},
     {from le_of_eq (by simp)},
-    {simp},
+    {simp*},
     {intros i₁ i₂ H_neq, from ordinal.mk_inj _ _ _ ‹_›},
     {dsimp at g,
-     apply uncountable_fiber_of_regular' (aleph 0) (aleph 1); try{simp*},
-     from is_regular_aleph_one.right}
+     apply uncountable_fiber_of_regular' (aleph 0) κ₁; try{simp*},
+     from H_reg₁.right}
 end
+omit H_reg₁ H_inf₁
 
-
-lemma ℵ₁_lt_ℵ₂ : (⊤ : 𝔹) ≤ ℵ₁̌  ≺ ℵ₂̌  :=
-cardinal_inequality_of_regular _ _ (is_regular_aleph_one)
-  (is_regular_aleph_two) (by simp) (by simp)
-
-lemma cohen_real.mk_ext : ∀ (i j : type (ℵ₂̌  : bSet 𝔹)), func (ℵ₂̌ ) i =ᴮ func (ℵ₂̌ ) j ≤
-  (λ (x : type (ℵ₂̌ )), cohen_real.mk x) i =ᴮ (λ (x : type (ℵ₂̌ )), cohen_real.mk x) j :=
-begin
-  intros i j, by_cases i = j,
-   {simp[h]},
-   {refine poset_yoneda _, intros Γ a, simp only [le_inf_iff] at *,
-     have : func (ℵ₂̌ ) i = (ℵ₂.func (check_cast i))̌ ,
-       by simp[check_func],
-     rw[this] at a,
-     have : func (ℵ₂̌ ) j = (ℵ₂.func (check_cast j))̌ ,
-       by simp[check_func],
-     rw[this] at a,
-   suffices : func ℵ₂ (check_cast i)̌  =ᴮ func ℵ₂ (check_cast j)̌  ≤ ⊥,
-     from le_trans a (le_trans this bot_le),
-   rw[le_bot_iff], apply check_bv_eq_bot_of_not_equiv,
-   apply ordinal.mk_inj, unfold check_cast, intro H, cc}
-end
-
-noncomputable def neg_CH_func : bSet 𝔹 :=
-@function.mk _ _ (ℵ₂̌ ) (λ x, cohen_real.mk x) cohen_real.mk_ext
-
-theorem ℵ₂_le_𝔠 : ⊤ ≤ is_func' (ℵ₂̌ ) 𝔠 (neg_CH_func) ⊓ is_inj (neg_CH_func) :=
+theorem κ₂_le_𝔠 : ⊤ ≤ is_func' ((card_ex κ₂)̌ ) 𝔠 (neg_CH_func κ₂) ⊓ is_inj (neg_CH_func κ₂) :=
 begin
 refine le_inf _ _,
 
   {unfold neg_CH_func, refine le_inf _ _, refine mk_is_func _ _,
     bv_intro w₁, bv_imp_intro, rw[mem_unfold] at H,
-    bv_cases_at' H ν, apply bv_use (cohen_real.mk ν),
+    bv_cases_at' H ν, apply bv_use (cohen_real.mk κ₂ ν),
     refine le_inf cohen_real.definite' _, swap,
     rw[mem_unfold], apply bv_use ν, bv_split,
-    from le_inf ‹_› (by apply le_trans H_1_right; from subst_congr_pair_left)},
+    from le_inf ‹_› (by apply le_trans H_1_right; from subst_congr_pair_left), refl},
 
   {refine mk_inj_of_inj _ _, from λ _ _ _, cohen_real.inj ‹_›},
 end
 
-def CH : 𝔹 := - ⨆ x, ⨆y, (ℵ₀ ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(ℵ₀))
+include H_reg₁ H_inf₁ H_reg₂ H_inf₂ H_lt
 
-theorem neg_CH : ⊤ ≤ -CH :=
+/-- For every pair of infinite regular cardinals κ₁ < κ₂, the continuum in bSet (cohen_algebra κ₂) is properly larger than (card_ex κ₁)̌ . -/
+theorem neg_CH : (⊤ : cohen_algebra κ₂) ≤ -(CH) :=
 begin
-  dsimp [CH], rw[lattice.neg_neg], apply bv_use (ℵ₁̌ ),
-  apply bv_use (ℵ₂̌ ), simp only [lattice.le_inf_iff],
-  refine ⟨⟨ℵ₀_lt_ℵ₁, ℵ₁_lt_ℵ₂⟩, bv_use neg_CH_func⟩,
-  from ℵ₂_le_𝔠
+  dsimp [CH], rw[lattice.neg_neg], apply bv_use ((card_ex κ₁)̌ ),
+  apply bv_use ((card_ex κ₂)̌ ), simp only [lattice.le_inf_iff],
+  refine ⟨⟨ℵ₀_lt_κ₁ H_reg₁ H_inf₁,_⟩,_⟩,
+  from  cardinal_inequality_of_regular _ _ (H_reg₁)
+  (H_reg₂) (le_of_lt ‹_›) (‹_›),
+  refine le_supr_of_le (neg_CH_func κ₂) _,
+  apply κ₂_le_𝔠, from κ₂
 end
 
--- lemma lt_of_lt_of_le' {x y z : bSet 𝔹} {Γ} (hxy : Γ ≤ x ≺ y) (hyz : Γ ≤ y ≼ z) : Γ ≤ x ≺ z :=
--- begin
---   dsimp only at hxy hyz ⊢, sorry
--- end
 
--- def CH' : 𝔹 := - ⨆ x, (ℵ₀ ≺ x) ⊓ (x ≺ 𝒫(ℵ₀))
-
--- theorem neg_CH' : ⊤ ≤ -CH' :=
--- begin
---   rw [CH', lattice.neg_neg], apply bv_use (ℵ₁̌ ),
---   simp only [lattice.le_inf_iff],
---   refine ⟨ℵ₀_lt_ℵ₁, lt_of_lt_of_le' ℵ₁_lt_ℵ₂ (bv_use neg_CH_func)⟩, exact ℵ₂_le_𝔠
--- end
 
 end neg_CH

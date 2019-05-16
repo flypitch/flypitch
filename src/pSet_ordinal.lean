@@ -29,6 +29,8 @@ by {convert @typein_lt_type _ (ξ.out.r) (ξ.out.wo) i, simp}
 λ η, limit_rec_on η ∅ (λ ξ mk_ξ, pSet.succ mk_ξ)
   (λ ξ h_limit ih, ⟨ξ.out.α, λ i, ih (@typein _ ξ.out.r ξ.out.wo i) (by simp)⟩)
 
+def card_ex : cardinal.{u} → pSet.{u} := λ κ, ordinal.mk (ord κ)
+
 @[simp]lemma mk_type {α} {A} : (pSet.mk α A).type = α := rfl
 
 @[simp]lemma mk_func {α} {A} : (pSet.mk α A).func = A := rfl
@@ -438,18 +440,27 @@ begin
     {from ordinal.mk_inj_limit}
 end
 
--- @[simp]lemma mk_type_mk_eq' {k} : #(ordinal.mk (aleph k).ord).type = (aleph k) :=
--- begin
---   rw[ordinal.mk_limit_type (aleph_is_limit (k))], convert card_ord (aleph k),
---   rw[<-(@card_type _ (aleph k).ord.out.r (aleph k).ord.out.wo)], simp
--- end
+@[simp]lemma mk_type_mk_eq'''' {k} : #(ordinal.mk (aleph k).ord).type = (aleph k) :=
+begin
+  rw[ordinal.mk_limit_type (aleph_is_limit (k))], convert card_ord (aleph k),
+  rw[<-(@card_type _ (aleph k).ord.out.r (aleph k).ord.out.wo)], simp
+end
 
-@[simp]lemma mk_type_mk_eq (κ : cardinal) (H_inf : cardinal.omega ≤ κ) : #(ordinal.mk (ord κ)).type = κ :=
+lemma mk_type_mk_eq (κ : cardinal) (H_inf : cardinal.omega ≤ κ) : #(ordinal.mk (ord κ)).type = κ :=
 begin
   cases (@exists_aleph κ).mp ‹_› with k H_k,
   subst H_k, rw[ordinal.mk_limit_type (aleph_is_limit (k))], convert card_ord (aleph k),
   rw[<-(@card_type _ (aleph k).ord.out.r (aleph k).ord.out.wo)], simp
 end
+
+@[simp]lemma mk_type_mk_eq' (κ : cardinal) (H_inf : cardinal.omega < κ) : #(ordinal.mk (ord κ)).type = κ :=
+mk_type_mk_eq _ (le_of_lt ‹_›)
+
+@[simp]lemma mk_type_mk_eq'' {κ : cardinal} {H_inf : cardinal.omega ≤ κ} : #(card_ex κ).type = κ :=
+mk_type_mk_eq κ ‹_›
+
+@[simp]lemma mk_type_mk_eq''' {κ : cardinal} {H_inf : cardinal.omega < κ} : #(card_ex κ).type = κ :=
+mk_type_mk_eq _ (le_of_lt ‹_›)
 
 lemma zero_aleph : cardinal.omega = (aleph 0) := by simp
 
