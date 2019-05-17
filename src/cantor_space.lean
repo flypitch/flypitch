@@ -31,14 +31,12 @@ by {haveI := classical.prop_decidable p, by_cases p, exact true, exact false}
 
 @[simp]lemma Prop_to_bool_false : Prop_to_bool false = ff := by simp
 
-noncomputable lemma equiv_Prop_bool : equiv Prop bool :=
-begin
-  refine ⟨Prop_to_bool,by {intro b, cases b, exact false, exact true},_,_⟩,
-  {unfold function.left_inverse, intro p, haveI := classical.prop_decidable p, by_cases p,
-  rw[eq_true_of_provable h, Prop_to_bool_true],
-  rw[eq_false_of_provable_neg h, Prop_to_bool_false],},
-  {intro x, cases x; finish}
-end
+noncomputable def equiv_Prop_bool : equiv Prop bool :=
+{ to_fun := Prop_to_bool,
+  inv_fun := λ b, by {cases b, exact false, exact true},
+  left_inv := λ p, by {by_cases p, rw[eq_true_of_provable h, Prop_to_bool_true],
+                        rw[eq_false_of_provable_neg h, Prop_to_bool_false]},
+  right_inv := λ x, by cases x; finish }
 
 noncomputable instance Prop_encodable : encodable Prop :=
  @encodable.of_equiv _ _ (by apply_instance) equiv_Prop_bool

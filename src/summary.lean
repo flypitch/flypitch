@@ -40,6 +40,8 @@ This file summarizes:
 
 #print provable
 
+#print is_consistent
+
 #print pSet
 
 #print bSet
@@ -85,6 +87,9 @@ begin
   from bSet_models_emptyset _,
   from bSet_models_collection _ ‹_›
 end
+
+theorem ZFC'_is_consistent {β : Type} [nontrivial_complete_boolean_algebra β] :
+  is_consistent ZFC' := consis_of_exists_bmodel (bSet_models_ZFC' β)
 
 def CH_sentence := CH_f
 

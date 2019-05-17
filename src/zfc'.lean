@@ -109,6 +109,8 @@ def V : bStructure L_ZFC' (β) :=
 
 @[simp]lemma V_eq {a b} : (V β).eq a b = a =ᴮ b := rfl
 
+@[instance]lemma V_β_nonempty : nonempty (V β) := ⟨bSet.empty⟩
+
 lemma alpha_equiv₁ {C : (bSet β) → β} : (⨅(x : bSet β), C x) = ⨅(y : bSet β), C y := rfl
 lemma alpha_equiv₂ {C : (bSet β) → β} : (⨆(x : bSet β), C x) = ⨆(y : bSet β), C y := rfl
 
@@ -340,6 +342,10 @@ begin
   from bSet_models_collection _ ‹_›
 end
 
+include β
+theorem ZFC'_consistent : is_consistent ZFC' := consis_of_exists_bmodel (bSet_models_ZFC' β)
+omit β
+
 /-- f is =ᴮ-extensional if for every w₁ w₂ v₁ v₂, if pair (w₁ v₁) and pair (w₂ v₂) ∈ f and
     w₁ =ᴮ w₂, then v₁ =ᴮ v₂ -/
 def is_extensional_f : bounded_formula L_ZFC' 1 :=
@@ -418,12 +424,12 @@ lemma subst_unfold₂ : (injects_into_f[P' omega /0]) = ∃'(((is_func_f.cast (d
   (∀' (&'0 ∈' &'2 ⟹ (∃' (&'0 ∈' (Powerset omega) ⊓' (pair' &'1 &'0 ∈' &'2))))))
   ⊓' is_inj_f.cast (dec_trivial))) := rfl
 
-
 end ZFC'
 
 open pSet cardinal
 
 section CH_unprovable
+
 
 lemma neg_CH_f : ⊤ ⊩[V 𝔹] ∼CH_f :=
 begin
