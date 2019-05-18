@@ -12,7 +12,11 @@ open topological_space set
 
 meta def not_as_big_bertha : tactic string := `[cc] >> pure "cc"
 
+meta def not_as_big_bertha' : tactic string := `[{[smt] close}] >> pure "{[smt] close}"
+
 meta def with_cc : list (tactic string) := tactic.tidy.default_tactics ++ [not_as_big_bertha]
+
+meta def with_cc' : list (tactic string) := tactic.tidy.default_tactics ++ [not_as_big_bertha']
 
 section lemmas
 lemma subtype.eq_iff {α : Type*} {P : α → Prop} {a b : subtype P} :
