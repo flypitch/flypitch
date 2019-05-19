@@ -35,7 +35,7 @@ meta def str_preformula : ∀ n m : ℕ, ℕ → bounded_preformula L_ZFC' n m �
  | n m z (∀' t) := "(∀x" ++ to_string(z+1) ++ "," ++ str_preformula (n+1) m (z+1) t ++ ")"
 
 meta def str_formula : ∀ {n : ℕ}, bounded_formula L_ZFC' n → ℕ → string
--- := λ n f k, str_preformula n 0 k f
+-- := λ f n, str_preformula _ _ 0 f
  | n ((f₁ ⟹ (f₂ ⟹ bd_falsum)) ⟹ bd_falsum) m:= "(" ++ str_formula f₁ m ++ "∧" ++ str_formula f₂ m ++ ")"
  | n ((f₁ ⟹ bd_falsum) ⟹ f₂) m := "(" ++ str_formula f₁ m ++ " ∨ " ++ str_formula f₂ m ++ ")"
  | n (bd_equal s1 s2) m := "(" ++ str_term n m s1 ++ " = " ++ str_term n m s2 ++ ")"
