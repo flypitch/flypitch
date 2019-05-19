@@ -42,10 +42,17 @@ meta def str_formula : ∀ {n : ℕ}, bounded_formula L_ZFC' n → ℕ → strin
  | n (∀' f) m := "(∀x"++ to_string(m + 1) ++ "," ++ (str_formula f (m+1) ) ++ ")"
  | _ bd_falsum _ := "⊥"
 | n (f ⟹ bd_falsum) m := "~" ++ str_formula f m
+ | n (bd_apprel (bd_apprel (bd_rel ((ε : L_ZFC'.relations 2))) a) b) m := str_preterm _ _ m a ++ " ∈ " ++ str_preterm _ _ m b
  | n (bd_apprel (f₁) f₂) m := str_preformula n 1 m f₁ ++ "(" ++ str_term n m f₂ ++ ")"
  | n (bd_imp a b) m := "(" ++ str_formula a m ++ " ⟹ " ++ str_formula b m ++ ")"
 
 meta def print_formula : ∀ {n : ℕ}, bounded_formula L_ZFC' n → string := λ f, str_formula f ‹_›
+
+@[instance]meta def formula_to_string {n} : has_to_string (bounded_formula L_ZFC' n) := ⟨print_formula⟩
+
+meta def print_formula_list {n} (axms : list (bounded_formula L_ZFC' n)) : tactic unit :=
+do tactic.trace (to_string axms)
+-- TODO(jesse) format this so that newlines are inserted after commas
 
 section test
 
@@ -55,4 +62,6 @@ meta def testsentence : sentence L_ZFC' := ∀' ∀' (&1 ≃ &0 ⟹ ∀' (&0 ≃
 -- #eval print_formula testsentence
 -- #eval print_formula CH_f
 -- #eval print_formula axiom_of_powerset
+-- #eval print_formula axiom_of_emptyset
+-- #eval print_formula_list ([axiom_of_emptyset, axiom_of_pairing])
 end test

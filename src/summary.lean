@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 Authors: Jesse Han, Floris van Doorn
 -/
-import .zfc' .completeness
+import .zfc' .completeness .print_formula
 
 open fol bSet pSet lattice
 
@@ -49,6 +49,8 @@ This file summarizes:
 #print L_ZFC'
 
 #print ZFC'
+
+#eval print_formula_list ([axiom_of_emptyset, axiom_of_pairing, axiom_of_extensionality, axiom_of_union, axiom_of_powerset, axiom_of_infinity, axiom_of_regularity, zorns_lemma])
 
 #print CH_f
 
