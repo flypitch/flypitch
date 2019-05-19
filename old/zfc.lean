@@ -2,7 +2,7 @@
 Copyright (c) 2019 The Flypitch Project. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 
-Authors: Jesse Han, Floris van Doorn
+Authors: Jesse Han, Floris van Doorn, Andrew Tindall
 -/
 import .fol set_theory.zfc
 
@@ -22,39 +22,9 @@ def ZFC_el : L_ZFC.relations 2 := ZFC_rel.ϵ
 
 local infix ` ∈' `:100 := bounded_formula_of_relation ZFC_el
 
----ugly but working (str_formula says it's not well-founded recursion, but it evaluates anyways)
---def str_preterm : ∀ n m : ℕ, ℕ → bounded_preterm L_ZFC n m → string
---  | n m z &k := "x" ++ to_string(z - k)
---  | _ _ _ _ := "h"
---def str_term: ∀ n : ℕ, ℕ → bounded_term L_ZFC n → string
---  | n m &k := "x" ++ to_string(m - k.val)
---  | _ _ _ := "n"
---def str_preformula : ∀ n m : ℕ, ℕ → bounded_preformula L_ZFC n m → string
---  | _ _ _ (bd_falsum ) := "⊥"
---  | n m z (bd_equal a b) := str_preterm n m z a ++ " = " ++ str_preterm n m z b
---  | n m z (a ⟹ b) := str_preformula n m z a ++ " ⟹ " ++ str_preformula n m z b
---  | n m z (bd_rel _) := "∈"
---  | n m z (bd_apprel a b) := str_preformula n (m+1) z a ++ "(" ++ str_term n z b ++ ")"
---  | n m z (∀' t) := "(∀x" ++ to_string(z+1) ++ "," ++ str_preformula (n+1) m (z+1) t ++ ")"
---def str_formula : ∀ {n : ℕ}, bounded_formula L_ZFC n → ℕ → string
---  | n ((f₁ ⟹ (f₂ ⟹ bd_falsum)) ⟹ bd_falsum) m:= "(" ++ str_formula f₁ m ++ "∧" ++ str_formula f₂ m ++ ")"
---  | n ((f₁ ⟹ bd_falsum) ⟹ f₂) m := "(" ++ str_formula f₁ m ++ " ∨ " ++ str_formula f₂ m ++ ")"
---  | n (bd_equal s1 s2) m := "(" ++ str_term n m s1 ++ " = " ++ str_term n m s2 ++ ")"
---  | n (∀' f) m := "(∀x"++ to_string(m + 1) ++ "," ++ (str_formula f (m+1) ) ++ ")"
---  | _ bd_falsum _ := "⊥"
--- | n (f ⟹ bd_falsum) m := "~" ++ str_formula f m
---  | n (bd_apprel (f₁) f₂) m := str_preformula n 1 m f₁ ++ "(" ++ str_term n m f₂ ++ ")"
---  | n (bd_imp a b) m := "(" ++ str_formula a m ++ " ⟹ " ++ str_formula b m ++ ")"
---
---def print_formula : ∀ {n : ℕ}, bounded_formula L_ZFC n → string := λ n f, str_formula f n
-
 local notation `lift_cast` := by {repeat{apply nat.succ_le_succ}, apply nat.zero_le}
 
--- section test
 
--- /- ∀ x, ∀ y, x = y → ∀ z, z = x → z = y -/
--- def testsentence : sentence L_ZFC := ∀' ∀' (&1 ≃ &0 ⟹ ∀' (&0 ≃ &2 ⟹ &0 ≃ &1))
--- end test
 
 ----------------------------------------------------------------------------
 
