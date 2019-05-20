@@ -39,6 +39,7 @@ meta def str_formula : ∀ {n : ℕ}, bounded_formula L_ZFC' n → ℕ → strin
  | n ((f₁ ⟹ (f₂ ⟹ bd_falsum)) ⟹ bd_falsum) m:= "(" ++ str_formula f₁ m ++ "∧" ++ str_formula f₂ m ++ ")"
  | n ((f₁ ⟹ bd_falsum) ⟹ f₂) m := "(" ++ str_formula f₁ m ++ " ∨ " ++ str_formula f₂ m ++ ")"
  | n (bd_equal s1 s2) m := "(" ++ str_term n m s1 ++ " = " ++ str_term n m s2 ++ ")"
+ | n ((∀' (f ⟹ bd_falsum)) ⟹ bd_falsum) m := "∃x" ++ to_string(m + 1) ++ "," ++ str_formula f (m+1)
  | n (∀' f) m := "(∀x"++ to_string(m + 1) ++ "," ++ (str_formula f (m+1) ) ++ ")"
  | _ bd_falsum _ := "⊥"
 | n (f ⟹ bd_falsum) m := "~" ++ str_formula f m
@@ -63,5 +64,7 @@ meta def testsentence : sentence L_ZFC' := ∀' ∀' (&1 ≃ &0 ⟹ ∀' (&0 ≃
 -- #eval print_formula CH_f
 -- #eval print_formula axiom_of_powerset
 -- #eval print_formula axiom_of_emptyset
+-- #eval print_formula axiom_of_infinity
+-- -- "(∅ ∈ ω∧(∀x1,(x1 ∈ ω ⟹ ∃x2,(x2 ∈ ω∧x1 ∈ x2))))"
 -- #eval print_formula_list ([axiom_of_emptyset, axiom_of_pairing])
 end test
