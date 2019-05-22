@@ -10,6 +10,15 @@ leanpkg configure
 leanpkg build
 #+END_SRC
 
+This will additionally compile the requisite parts of ~mathlib~, and will take multiple minutes.
+
+Optionally, you can install the ~update-mathlib~ script (see [[https://github.com/leanprover-community/mathlib/blob/master/docs/install/linux.md][here]] for instructions) which will download pre-built ~.olean~ files, considerably speeding up the compilation time. In this case, you can instead run
+#+BEGIN_SRC
+leanpkg configure
+update-mathlib
+leanpkg build
+#+END_SRC
+
 Installation instructions for Lean (using ~elan~) can be found [[https://github.com/leanprover-community/mathlib/blob/master/docs/elan.md][here]].
 
 ** Viewing and navigating the project
