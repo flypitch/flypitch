@@ -598,8 +598,7 @@ begin
  have : Γ ≤ w ⊆ᴮ x,
    by {rw[subset_unfold'], bv_intro w', bv_imp_intro,
        have := mem_of_mem_subset a_left_right H,
-       apply mem_of_mem_subset, show bSet 𝔹, from y,
-       apply subset_of_mem_transitive ‹_› ‹_›, from ‹_›},
+       from mem_of_mem_subset (subset_of_mem_transitive ‹_› ‹_›) ‹_›},
  from H_right w ‹_› ‹_›}
 end
 

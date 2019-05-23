@@ -7,3 +7,4 @@ auto/*
 **/*.olean
 /_target
 /leanpkg.path
+test.org

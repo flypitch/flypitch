@@ -1,6 +1,6 @@
 [package]
 name = "flypitch"
-version = "1.1"
+version = "1.2"
 lean_version = "3.4.2"
 path = "src"
 
