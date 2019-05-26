@@ -1122,15 +1122,10 @@ begin
   intros h₁ h₂ H, unfold core.mk_ϕ at H, replace H := congr_fun H,
   apply top_unique,
   have : ∀ i_z : u.type, u.bval i_z ⊓ x =ᴮ u.func i_z ⊓ u.bval i_z ⊓ u.func i_z =ᴮ y  ≤ x =ᴮ y :=
-    λ i_z, by {apply le_trans, show _ ≤ x =ᴮ u.func i_z ⊓ u.func i_z =ᴮ y, apply le_inf,
-    iterate 2 {apply inf_le_left_of_le}, apply inf_le_right_of_le, refl, swap, apply bv_eq_trans,
-    repeat{apply inf_le_right_of_le}, refl}, dsimp at H,
-    simp[show ∀ a, y =ᴮ func u a = func u a =ᴮ y, by {intro, apply bv_eq_symm}] at H,
-  have this' :  (∀ (i_z : type u), bval u i_z ⊓ x =ᴮ func u i_z ⊓ bval u i_z ⊓ func u i_z =ᴮ y ≤ x =ᴮ y) ↔
-          ∀ (i_z : type u), ((bval u i_z ⊓ x =ᴮ func u i_z) ⊓ (bval u i_z ⊓ func u i_z =ᴮ y) ≤ x =ᴮ y),
-    by {apply forall_congr, intro a, apply iff_of_eq, ac_refl},
-  rw[this'] at this, simp[H] at this, rw[<-supr_le_iff] at this, apply le_trans _ this, rw[eq_top_iff] at h₂,
-  convert h₂, simp[mem_unfold], congr' 1, ext, congr' 1, apply bv_eq_symm
+    λ i_z, by {tidy_context, from bv_context_trans (‹_› : Γ ≤ x =ᴮ func u i_z) ‹_›},
+    dsimp at H, simp[H] at this, rw[<-supr_le_iff] at this, rw[eq_top_iff] at h₂,
+    refine le_trans _ this, convert h₂, rw[mem_unfold], congr' 1, ext,
+    refine le_antisymm _ _; tidy_context, from ⟨⟨⟨‹_›,‹_›⟩,‹_›⟩, bv_context_symm ‹_›⟩
 end
 
 noncomputable def core.S' (u : bSet 𝔹) : (core.mk_ϕ u '' set.univ) → bSet 𝔹 :=
@@ -1225,7 +1220,8 @@ def bSet_of_core {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} (h : core 
   (bSet_of_core_set h C).bval i = ⊤ := rfl
 
 lemma of_core_mem {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} {h : core u S} {C : set α} {i} :
-  ⊤ ≤ (bSet_of_core_set h C).func i ∈ᴮ u := by simp; apply h.left
+  ⊤ ≤ (bSet_of_core_set h C).func i ∈ᴮ u :=
+top_le_iff.mpr (h.left _)
 
 /-- Given a core S for u, pull back the ordering -/
 def subset' {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} (h : core u S) : α → α → Prop :=
@@ -1329,7 +1325,7 @@ by induction x; refl
 @[simp]lemma check_bval_mk {α : Type u} {A : α → pSet} {i} : ((pSet.mk α A)̌ ).bval i = (⊤ : 𝔹) := rfl
 
 @[simp]lemma check_empty_eq_empty : (∅ : pSet)̌ = (∅ : bSet 𝔹) :=
-by {dsimp[check, has_emptyc.emptyc, empty, pSet.empty], tidy}
+by {change mk _ _ _ = mk _ _ _, congr, tidy}
 
  -- this is essentially a restatement of mem.mk/mem.mk', but will be useful later
 @[simp]lemma mem_top_of_bval_top {u : bSet 𝔹} {i : u.type} {H_top : u.bval i = ⊤} : u.func i ∈ᴮ u = ⊤ :=
