@@ -605,12 +605,7 @@ end
 by tidy
 
 @[simp]lemma subst_congr_neg {ϕ₁ : bSet 𝔹 → 𝔹} {h : B_ext ϕ₁} : B_ext (λ x, - ϕ₁ x) :=
-begin
-  simp only [imp_bot.symm],
-  ac_change' (B_ext (λ x, ϕ₁ x ⟹ ((λ y, (⊥ : 𝔹)) x))),
-  simp only [bv_eq_symm],
-  apply subst_congr_imp; simp, exact h
-end
+by {simp only [imp_bot.symm], apply subst_congr_imp, simpa, from subst_congr_const}
 
 @[simp]lemma subst_congr_infi {ι : Type*} {Ψ : ι → (bSet 𝔹 → 𝔹)} {h : ∀ i, B_ext $ Ψ i} : B_ext (λ x, ⨅i, Ψ i x) :=
 by {intros x y, dsimp, bv_intro i, apply bv_specialize_right i, apply h}
@@ -646,9 +641,7 @@ begin
 end
 
 @[simp]lemma empty_subset {x : bSet 𝔹} {Γ : 𝔹} : Γ ≤ ∅ ⊆ᴮ x :=
-begin
-  rw[subset_unfold], bv_intro, repeat{cases i}
-end
+by rw[subset_unfold]; bv_intro; repeat{cases i}
 
 lemma empty_spec {x : bSet 𝔹} {Γ : 𝔹} : Γ ≤ -(x ∈ᴮ ∅) := by simp[mem_unfold]
 
@@ -658,7 +651,7 @@ by {have := @empty_spec 𝔹 _ x Γ, rw[<-imp_bot] at this, from this H}
 @[simp]lemma subst_congr_insert1_left {u w v : bSet 𝔹} : u =ᴮ w ≤ bSet.insert1 u v =ᴮ bSet.insert1 w v :=
 begin
   rcases v with ⟨α,A,B⟩, simp[bSet.insert1], split; intro i; apply bv_imp_intro;
-  apply le_sup_right_of_le; apply bv_use i; rw[inf_comm]; simp
+  refine le_sup_right_of_le _; apply bv_use i; rw[inf_comm]; simp
 end
 
 @[simp]lemma subst_congr_insert1_left' {u w v : bSet 𝔹} {c : 𝔹} {h : c ≤ u =ᴮ w} : c ≤ bSet.insert1 u v =ᴮ bSet.insert1 w v :=
@@ -770,9 +763,10 @@ rw[bv_eq_unfold],
     have : a i ⊓ a j ⊓ func (τ (i_z.fst)) (i_z.snd) ∈ᴮ τ j ≤ (τ i =ᴮ τ j) ⊓ func (τ (i_z.fst)) (i_z.snd) ∈ᴮ τ j,
       by {apply inf_le_inf (h_star i j), refl},
     apply le_trans this, rw[bv_eq_symm], apply subst_congr_mem_right},
-  {bv_intro i_z, rw[<-deduction], apply le_supr_of_le (sigma.mk i i_z),
-  simp, apply le_supr_of_le i, apply inf_le_inf (by refl : a i ≤ a i), dsimp, cases (τ i),
-  apply le_supr_of_le i_z, from le_inf (by refl) (by simp)}
+  {bv_intro i_z, rw[<-deduction], refine le_supr_of_le (sigma.mk i i_z) _,
+  simp only [bv_eq_top_of_eq, mem, type, inf_top_eq, bval, func],
+  refine le_supr_of_le i _, refine inf_le_inf (by refl : a i ≤ a i) _, dsimp only,
+  cases (τ i), refine le_supr_of_le i_z _, from le_inf (by refl) (by simp)}
 end
 
 lemma mixing_lemma {ι : Type u} (a : ι → 𝔹) (τ : ι → bSet 𝔹) (h_star : ∀ i j : ι, a i ⊓ a j ≤ τ i =ᴮ τ j) : ∃ x, ∀ i : ι, a i ≤ x =ᴮ τ i :=
