@@ -210,7 +210,8 @@ end notation_test
 
 
 /- ℕ' satisfies PA induction schema -/
-theorem PA_standard_model_induction {index : nat} {ψ : bounded_formula L_peano (index + 1)} : ℕ' ⊨ bd_alls index (ψ[zero /0] ⊓ ∀'(ψ ⟹ (ψ ↑' 1 # 1)[succ &0 /0]) ⟹ ∀' ψ) :=
+theorem PA_standard_model_induction {index : nat} {ψ : bounded_formula L_peano (index + 1)} :
+  ℕ' ⊨ bd_alls index (ψ[zero /0] ⊓ ∀'(ψ ⟹ (ψ ↑' 1 # 1)[succ &0 /0]) ⟹ ∀' ψ) :=
 begin
   rw[realize_sentence_bd_alls], intro xs,
   simp,
