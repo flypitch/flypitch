@@ -570,7 +570,7 @@ by {unfold B_ext, intros, rw[inf_comm, bv_eq_symm], apply subst_congr_subset_lef
 @[simp]lemma B_ext_subset_right {x : bSet 𝔹} : B_ext (λ y, x ⊆ᴮ y) :=
 by {unfold B_ext, intros, rw[inf_comm], apply subst_congr_subset_right}
 
-@[simp]lemma subst_congr_sup {ϕ₁ ϕ₂ : bSet 𝔹 → 𝔹} {h₁ : B_ext ϕ₁} {h₂ : B_ext ϕ₂} :
+@[simp]lemma B_ext_sup {ϕ₁ ϕ₂ : bSet 𝔹 → 𝔹} {h₁ : B_ext ϕ₁} {h₂ : B_ext ϕ₂} :
   B_ext (λ x, ϕ₁ x ⊔ ϕ₂ x) :=
 begin
   intros x y, dsimp, rw[inf_comm, deduction], apply bv_or_elim;
@@ -578,7 +578,7 @@ begin
   rw[inf_comm]; [apply h₁, apply h₂]
 end
 
-@[simp]lemma subst_congr_inf {ϕ₁ ϕ₂ : bSet 𝔹 → 𝔹} {h₁ : B_ext ϕ₁} {h₂ : B_ext ϕ₂} :
+@[simp]lemma B_ext_inf {ϕ₁ ϕ₂ : bSet 𝔹 → 𝔹} {h₁ : B_ext ϕ₁} {h₂ : B_ext ϕ₂} :
   B_ext (λ x, ϕ₁ x ⊓ ϕ₂ x) :=
 begin
   intros x y, dsimp, apply le_inf,
@@ -590,7 +590,7 @@ begin
     apply h₂
 end
 
-@[simp]lemma subst_congr_imp {ϕ₁ ϕ₂ : bSet 𝔹 → 𝔹} {h₁ : B_ext ϕ₁} {h₂ : B_ext ϕ₂} :
+@[simp]lemma B_ext_imp {ϕ₁ ϕ₂ : bSet 𝔹 → 𝔹} {h₁ : B_ext ϕ₁} {h₂ : B_ext ϕ₂} :
   B_ext (λ x, ϕ₁ x ⟹ ϕ₂ x) :=
 begin
   unfold B_ext, intros x y, rw[<-deduction],
@@ -601,16 +601,16 @@ begin
   apply inf_le_left_of_le, rw[inf_comm, bv_eq_symm], apply h₂
 end
 
-@[simp]lemma subst_congr_const {b : 𝔹} : B_ext (λ x, b) :=
+@[simp]lemma B_ext_const {b : 𝔹} : B_ext (λ x, b) :=
 by tidy
 
-@[simp]lemma subst_congr_neg {ϕ₁ : bSet 𝔹 → 𝔹} {h : B_ext ϕ₁} : B_ext (λ x, - ϕ₁ x) :=
-by {simp only [imp_bot.symm], apply subst_congr_imp, simpa, from subst_congr_const}
+@[simp]lemma B_ext_neg {ϕ₁ : bSet 𝔹 → 𝔹} {h : B_ext ϕ₁} : B_ext (λ x, - ϕ₁ x) :=
+by {simp only [imp_bot.symm], apply B_ext_imp, simpa, from B_ext_const}
 
-@[simp]lemma subst_congr_infi {ι : Type*} {Ψ : ι → (bSet 𝔹 → 𝔹)} {h : ∀ i, B_ext $ Ψ i} : B_ext (λ x, ⨅i, Ψ i x) :=
+@[simp]lemma B_ext_infi {ι : Type*} {Ψ : ι → (bSet 𝔹 → 𝔹)} {h : ∀ i, B_ext $ Ψ i} : B_ext (λ x, ⨅i, Ψ i x) :=
 by {intros x y, dsimp, bv_intro i, apply bv_specialize_right i, apply h}
 
-@[simp]lemma subst_congr_supr {ι : Type*} {ψ : ι → (bSet 𝔹 → 𝔹)} {h : ∀i, B_ext $ ψ i} : B_ext (λ x, ⨆i, ψ i x) :=
+@[simp]lemma B_ext_supr {ι : Type*} {ψ : ι → (bSet 𝔹 → 𝔹)} {h : ∀i, B_ext $ ψ i} : B_ext (λ x, ⨆i, ψ i x) :=
 by {intros x y, dsimp, apply bv_cases_right, intro i, apply bv_use i, apply h}
 
 example {y : bSet 𝔹} : B_ext (λ x : bSet 𝔹, x ∈ᴮ y ⊔ y ∈ᴮ x) := by simp
@@ -1827,8 +1827,8 @@ begin
   have := @bounded_forall _ _ C (λ z, ϕ w₁ z), rw[this],
   bv_intro w₂, apply bv_specialize_left w₂, apply bv_imp_intro, simp only [inf_assoc],
   apply le_trans, apply bv_imp_elim, refl, intros w₁ w₂, apply h₁,
-  intros w₁ w₂, apply subst_congr_infi, intro j,
-  apply subst_congr_imp; simp*
+  intros w₁ w₂, apply B_ext_infi, intro j,
+  apply B_ext_imp; simp*
 end
 
 lemma subset'_inductive (X : bSet 𝔹) (H : ⊤ ≤ (⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
