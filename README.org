@@ -26,6 +26,8 @@ To view the project, we recommend the use of a Lean-aware editor like [[https://
 
 A summary of the main results can be found in ~/src/summary.lean~, containing ~#print~ statements of important definitions and duplicated proofs of the main theorems. From there, one may use their editor's jump-to-definition feature to trace the dependencies of the definitions and proofs.
 
+We also have a formula pretty-printer which prints de Bruijn indices as their named representations. Code and examples for the pretty-printer can be found in ~/src/print_formula.lean~.
+
 ** Contributors
  - [[https://www.pitt.edu/~jmh288][Jesse Han]]
  - [[http://florisvandoorn.com/][Floris van Doorn]]
