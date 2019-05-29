@@ -613,7 +613,7 @@ by {intros x y, dsimp, bv_intro i, apply bv_specialize_right i, apply h}
 @[simp]lemma B_ext_supr {ι : Type*} {ψ : ι → (bSet 𝔹 → 𝔹)} {h : ∀i, B_ext $ ψ i} : B_ext (λ x, ⨆i, ψ i x) :=
 by {intros x y, dsimp, apply bv_cases_right, intro i, apply bv_use i, apply h}
 
-example {y : bSet 𝔹} : B_ext (λ x : bSet 𝔹, x ∈ᴮ y ⊔ y ∈ᴮ x) := by simp
+example {y : bSet 𝔹} : B_ext (λ x : bSet 𝔹, x ∈ᴮ y ⊔ y ∈ᴮ x) := by change B_ext _; simp
 
 lemma bv_rw' {x y : bSet 𝔹} {Γ : 𝔹} (H : Γ ≤ x =ᴮ y) {ϕ : bSet 𝔹 → 𝔹} {h_congr : B_ext ϕ} {H_new : Γ ≤ ϕ y} : Γ ≤ ϕ x :=
 begin
