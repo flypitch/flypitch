@@ -20,14 +20,14 @@ inductive abel_functions : ℕ → Type
 | zero : abel_functions 0
 | plus : abel_functions 2
 
-def L_abel : Language := ⟨abel_functions, λn, empty⟩
+def L_abel : Language := ⟨abel_functions, λn, pempty⟩
 
 def L_abel_plus {n} (t₁ t₂ : bounded_term L_abel n) : bounded_term L_abel n :=
 @bounded_term_of_function L_abel 2 n abel_functions.plus t₁ t₂
 
 def zero {n} : bounded_term L_abel n := bd_const abel_functions.zero
 
-infix ` +' `:100 := _root_.abel.L_abel_plus
+local infix ` +' `:100 := _root_.abel.L_abel_plus
 
 def a_assoc : sentence L_abel := ∀' ∀' ∀' (((&2 +' &1) +' &0) ≃ (&2 +' (&1 +' &0)))
 
