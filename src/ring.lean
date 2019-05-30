@@ -2,7 +2,7 @@
   The first-order theory of rings (experimental)
 -/
 
-import .fol .abel .language_extension
+import .fol .abel .language_extension tactic
 
 open fol abel
 
@@ -28,7 +28,6 @@ def L_ring_plus {n} (t₁ t₂ : bounded_term L_ring n) : bounded_term L_ring n 
 def L_ring_times {n} (t₁ t₂ : bounded_term L_ring n) : bounded_term L_ring n :=
 @bounded_term_of_function L_ring 2 n L_ring_functions.times t₁ t₂
 
-
 local infix ` +' `:100 := L_ring_plus
 local infix ` ×' `:100 := L_ring_times
 
@@ -46,22 +45,20 @@ def one {n} : bounded_term L_ring n := bd_const (L_ring_functions.one)
    - multiplication is associative and has an identity, and
    - multiplication is left and right distributive
 -/
-
+-- "∀ x, 1 × x = x"
 def mul_assoc : sentence L_ring := ∀' ∀' ∀' (((&2 ×' &1) ×' &0) ≃ (&2 ×' (&1 ×' &0)))
 def mul_id_left : sentence L_ring := ∀'(one ×' &0 ≃ &0)
 def mul_id_right : sentence L_ring := ∀' (&0 ×' one ≃ &0)
-def mul_dist_left : sentence L_ring := ∀' ∀' ∀' ((&2 ×' (&1 +' &0)) ≃ (&2 ×' &1) +' (&2 ×' &0))
-def mul_dist_right : sentence L_ring := ∀' ∀' ∀' (((&1 +' &0) ×' &2) ≃ (&1 ×' &2) +' (&0 ×' &2))
+def mul_dist_left : sentence L_ring :=
+∀' ∀' ∀' ((&2 ×' (&1 +' &0)) ≃ (&2 ×' &1) +' (&2 ×' &0))
+def mul_dist_right : sentence L_ring :=
+∀' ∀' ∀' (((&1 +' &0) ×' &2) ≃ (&1 ×' &2) +' (&0 ×' &2))
 
 def T_ring : Theory L_ring :=
 (Lhom.on_sentence (to_L_ring) '' T_ab) ∪
            {mul_assoc, mul_id_left, mul_id_right, mul_dist_left, mul_dist_right}
 
-/-
-  A commutative ring satisfies the additional axiom that multiplication is commutative
--/
-
-
+-- A commutative ring satisfies the additional axiom that multiplication is commutative
 def mul_comm : sentence L_ring := ∀' ∀' (&1 ×' &0 ≃ &0 ×' &1) 
 
 def T_comm_ring : Theory L_ring := T_ring ∪ {mul_comm}
