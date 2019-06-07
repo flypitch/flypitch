@@ -1329,13 +1329,13 @@ end interactive
 end tactic
 
 namespace lattice
+
 example {β : Type*} [bounded_lattice β] : ⊤ ⊓ (⊤ : β) ⊓ ⊤ ≤ ⊤ :=
 begin
   tidy_context -- {trace_result := tt},
 --/- `tidy_context` says -/ apply poset_yoneda, intros Γ a, simp only [le_inf_iff] at *, cases a, assumption
 -- not bad!
 end
-
 -- local infix ` ⟹ `:75 := lattice.imp
 
 -- example {β : Type*} [complete_boolean_algebra β] {a b c : β} :
