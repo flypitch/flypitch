@@ -1021,6 +1021,9 @@ end lattice
 
 namespace tactic
 namespace interactive
+
+meta def back_chaining : tactic unit := local_context >>= tactic.back_chaining_core skip (`[simp*])
+
 section natded_tactics
 open tactic interactive tactic.tidy
 open lean.parser lean interactive.types
@@ -1294,6 +1297,9 @@ meta def tidy_split_goals_tactics : list (tactic string) :=
 
 meta def bv_split_goal (trace : parse $ optional (tk "?")) : tactic unit :=
   tactic.tidy {trace_result := trace.is_some, tactics := tidy_split_goals_tactics}
+
+meta def bv_or_inr : tactic unit := `[refine le_sup_right_of_le _]
+meta def bv_or_inl : tactic unit := `[refine le_sup_left_of_le _]
 
 meta structure context_cfg :=
 (trace_result : bool := ff)
