@@ -84,6 +84,8 @@ If G is any filter and ẋ is any Q-name, define
 ẋ(G) recursively by ẋ(G) := { ẏ(G) : ∃p ∈ G (( ẏ, p) ∈ ẋ)}
 
 x ↦ ẋ is a map (Name α).{u} → Type u, parametrized by a pfilter (G : pfilter α)
+
+However, what does it mean for a filter in this case to be generic?
 -/
 def eval {P : Type u} [forcing_notion P] (𝒢 : pfilter P) : P-name → Type u
 | ⟨α, A, B⟩ := Σ p : {a : α // B a ∈ 𝒢.X}, eval (A p.1)
