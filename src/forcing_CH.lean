@@ -40,4 +40,14 @@ and we need to exhibit an injection 𝒫(ω) ↪ ℵ₁, and then the result sho
 Alternately, we can try to construct surjections going either way, which should prove that the sets are equinumerous.
 -/
 
+/-
+  Note: Proposition 14.2 says that once we complete a σ-closed forcing, it we can show that
+
+For any P-name f such that there exists p : P with p ⊩ (f is a function with domain ω), there exists a q ≤ p and a real function g such that q ⊩ f = ǧ.
+
+In either case, we will have to show that the canonical comparison maps
+
+ℵ₁ → ℵ₁̌, and P(ω) → P(ω)̌  are surjective. This has a very clear meaning for the powerset of omega, less so for aleph 1, but I think if we grind out the calculations we will see.
+-/
+
 end collapsing_algebra
