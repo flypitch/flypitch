@@ -752,6 +752,9 @@ def aleph_one_spec_internal (x : bSet 𝔹) : 𝔹 :=
   (larger_than x bSet.omega) ⊓
   (⨅y, (Ord(y) ⟹ (larger_than y bSet.omega ⟹ x ⊆ᴮ y)))
 
+-- TODO(jesse) prove this using regularity
+-- lemma aleph_one_exists {Γ} : Γ ≤ ⨆(x : bSet 𝔹), aleph_one_spec_internal x := sorry
+
 end ordinals
 
 theorem bSet_zorns_lemma' : ⊤ ≤ ⨅(X : bSet 𝔹), -(X =ᴮ ∅) ⟹ ((⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
@@ -776,7 +779,9 @@ begin
         replace H_left := H_left none,
         dsimp at H_left, replace H_left := H_left (le_top),
         from bot_of_mem_self' ‹_›},
-    intros x, tidy_context, apply mem_singleton_of_eq,
+    intros x, /- `tidy_context` says -/ apply poset_yoneda, intros Γ a,
+    simp only [le_inf_iff] at *, cases a, simp only [le_inf_iff] at *,
+    apply mem_singleton_of_eq,
     apply subset_ext, simp,
     rw[subset_unfold'], bv_intro w, bv_imp_intro,
     have := bv_union_spec' x, show 𝔹, from Γ_1,
