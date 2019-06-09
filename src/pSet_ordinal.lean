@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 Authors: Jesse Han, Floris van Doorn
 -/
-import set_theory.ordinal set_theory.zfc tactic.tidy set_theory.cofinality
+import set_theory.ordinal set_theory.zfc tactic.tidy set_theory.cofinality .to_mathlib data.nat.enat
 
 open ordinal
 
@@ -512,6 +512,9 @@ by {apply subset_of_all_mem, from λ _ _, by assumption}
 lemma subset_trans {x y z : pSet} : x ⊆ y → y ⊆ z → x ⊆ z :=
 by {simp only [subset_all_mem], tidy}
 
+lemma of_nat_succ {k} : of_nat (k + 1) = pSet.succ (of_nat k) :=
+by unfold of_nat; tidy
+
 lemma subset_of_le {k₁ k₂ : ℕ} (H : k₁ ≤ k₂) : of_nat k₁ ⊆ of_nat k₂ :=
 begin
   induction k₂ with k₂ ih, replace H := nat.eq_zero_of_le_zero H, rw[H], unfold of_nat,
@@ -536,6 +539,74 @@ end
 
 lemma le_of_subset {k₁ k₂ : ℕ} (H : of_nat k₁ ⊆ of_nat k₂) : k₁ ≤ k₂ :=
 by {by_contra, simp at a, replace a := false_of_subset_of_nat_ge a, contradiction}
+
+lemma of_nat_of_mem_of_nat {y : pSet.{u}} {k} (H_mem : y ∈ (of_nat k : pSet.{u})) :
+  ∃ j, equiv (y : pSet.{u}) (of_nat j : pSet.{u}) :=
+begin
+  induction k with k ih, {tidy},
+  unfold of_nat at H_mem, cases mem_insert H_mem,
+  from ⟨k, h⟩, back_chaining
+end
+
+lemma of_nat_is_transitive {k : ℕ} : is_transitive (of_nat k) :=
+begin
+  intros y Hy, induction k, unfold of_nat at Hy, {tidy},
+  unfold of_nat at Hy, cases mem_insert ‹_›,
+  apply subset_of_all_mem, intros z Hz, rw[mem.congr_right h] at Hz,
+  apply (all_mem_of_subset (subset_of_le _)), from Hz, apply nat.le_succ,
+  rw[subset_all_mem] at k_ih ⊢, intros z Hz, specialize k_ih ‹_› z ‹_›,
+  apply (all_mem_of_subset (subset_of_le (nat.le_succ _))), from ‹_›
+end
+
+lemma of_nat_mem_of_lt {k₁ k₂ : ℕ} (H_lt : k₁ < k₂) : (of_nat k₁ : pSet.{u}) ∈ (of_nat k₂ : pSet.{u}) :=
+begin
+  induction k₂ with k₂ ih₂, cases H_lt,
+  by_cases k₁ = k₂, subst h, simp[of_nat_succ],
+  have : k₁ < k₂, by {exact array.push_back_idx H_lt h},
+  specialize ih₂ this, have : of_nat k₂ ∈ of_nat (nat.succ k₂),
+  by simp[of_nat_succ], have this₁ := all_mem_of_subset (subset_of_le (le_of_lt ‹_›)),
+  have this₂ := all_mem_of_subset (subset_of_le (le_of_lt $ lt_add_one k₂)),
+  back_chaining
+end
+
+lemma lt_of_of_nat_mem {k₁ k₂ : ℕ} (H_mem : of_nat k₁ ∈ of_nat k₂) : k₁ < k₂ :=
+begin
+  by_contra, replace a := not_lt.mp a, have : of_nat k₂ ⊆ of_nat k₁, by apply subset_of_le ‹_›,
+  rw[subset_all_mem] at this, suffices : of_nat k₁ ∈ of_nat k₁, from mem_self ‹_›,
+  back_chaining
+end
+
+lemma is_transitive_omega : is_transitive (omega : pSet.{u}) :=
+begin
+  intros z H, cases H, cases H_w with k, simp at H_h,
+  rw[subset.congr_left H_h], unfold omega, rw[subset_all_mem],
+  intros y Hy, have := of_nat_of_mem_of_nat Hy, cases this with j Hj,
+  rw[mem.congr_left Hj], use j, simp[equiv.refl]
+end
+
+lemma is_ewo_omega : epsilon_well_orders (omega : pSet.{u}) :=
+begin
+  refine ⟨_,_⟩,
+    {intros y Hy z Hz, cases Hy, cases Hz, cases Hy_w with k₁, cases Hz_w with k₂,
+     dsimp at Hy_h Hz_h, have := lt_trichotomy k₁ k₂, cases this, swap, cases this,
+     subst this, left, from equiv.euc Hy_h ‹_›,
+     right, right, rw[mem.congr_left ‹_›], rw[mem.congr_right Hy_h],
+     from of_nat_mem_of_lt ‹_›, right, left, rw[mem.congr_left Hy_h], rw[mem.congr_right Hz_h],
+     from of_nat_mem_of_lt ‹_›},
+    {intros u Hu Hu_ne_empty,
+     by_contra, push_neg at a,
+     replace Hu_ne_empty := Set.regularity ⟦u⟧ (not_empty_of_not_equiv_empty ‹_›),
+     rcases Hu_ne_empty with ⟨y,⟨Hy₁, Hy₂⟩⟩,
+     specialize a (quotient.out y), cases a, suffices : y ∉ ⟦u⟧, by contradiction,
+     {rw[mem_iff] at a, convert a, rw[quotient.out_eq]},
+     cases a with z Hz, cases Hz with Hz₁ Hz₂,
+     have : ⟦z⟧ ∈ (⟦u⟧ ∩ y : Set),
+       by {apply Set.mem_inter.mpr, rw[<-mem_iff], use ‹_›,
+           rw[mem_iff] at Hz₂, convert Hz₂, rw[quotient.out_eq]},
+     apply Set.mem_empty ⟦z⟧, rwa[Hy₂] at this}
+end
+
+lemma Ord_omega : Ord (omega : pSet) := ⟨is_ewo_omega, is_transitive_omega⟩
 
 lemma of_nat_inj {n k : ℕ} (H_neq : n ≠ k) : ¬ (pSet.equiv (of_nat n : pSet.{u}) (of_nat k : pSet.{u})) :=
 begin
