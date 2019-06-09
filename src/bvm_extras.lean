@@ -694,7 +694,7 @@ begin
   apply check_subset ‹_›
 end
 
-lemma check_ewo_left {x : pSet} (H : pSet.epsilon_well_orders x) : (⊤ : 𝔹) ≤ (⨅y, y∈ᴮ x̌ ⟹
+lemma check_ewo_left {x : pSet} (H : pSet.epsilon_well_orders x) {Γ : 𝔹} : Γ ≤ (⨅y, y∈ᴮ x̌ ⟹
   (⨅z, z ∈ᴮ x̌ ⟹ (y =ᴮ z ⊔ y ∈ᴮ z ⊔ z ∈ᴮ y))) :=
 begin
   bv_intro y, bv_imp_intro, bv_intro z, bv_imp_intro,
@@ -712,14 +712,14 @@ begin
   from check_mem ‹_›
 end
 
-lemma check_ewo_right {x : pSet} (H : pSet.epsilon_well_orders x) : (⊤ : 𝔹) ≤ (⨅u, u ⊆ᴮ x̌ ⟹ (- (u =ᴮ ∅) ⟹ ⨆y, y∈ᴮ u ⊓ (⨅z', z' ∈ᴮ u ⟹ (- (z' ∈ᴮ y))))) :=
+lemma check_ewo_right {x : pSet} (H : pSet.epsilon_well_orders x) {Γ : 𝔹} : Γ ≤ (⨅u, u ⊆ᴮ x̌ ⟹ (- (u =ᴮ ∅) ⟹ ⨆y, y∈ᴮ u ⊓ (⨅z', z' ∈ᴮ u ⟹ (- (z' ∈ᴮ y))))) :=
 begin
   bv_intro u, bv_imp_intro, bv_imp_intro, cases H,
   rw[subset_unfold'] at H_1, apply bSet_axiom_of_regularity, from ‹_›
 end
 
 lemma check_ewo {x : pSet} (H : pSet.epsilon_well_orders x) {Γ} : Γ ≤ epsilon_well_orders (x̌ : bSet 𝔹) :=
-le_trans (le_top) $ le_inf (check_ewo_left ‹_›) (check_ewo_right ‹_›)
+le_inf (check_ewo_left ‹_›) (check_ewo_right ‹_›)
 
 lemma check_Ord {x : pSet} (H : pSet.Ord x) : ⊤ ≤ Ord (x̌ : bSet 𝔹) :=
 le_inf (check_ewo H.left) (check_is_transitive H.right)
@@ -754,6 +754,9 @@ def aleph_one_spec_internal (x : bSet 𝔹) : 𝔹 :=
 
 -- TODO(jesse) prove this using regularity
 -- lemma aleph_one_exists {Γ} : Γ ≤ ⨆(x : bSet 𝔹), aleph_one_spec_internal x := sorry
+
+-- TODO(jesse) prove this
+lemma check_aleph_one_le_aleph_one {Γ : 𝔹} : Γ ≤ ⨅(x : bSet 𝔹), (aleph_one_spec_internal x ⟹ ((pSet.ordinal.mk (aleph 1).ord)̌  ⊆ᴮ  x)) := sorry
 
 end ordinals
 
