@@ -685,7 +685,7 @@ H.symm
 --   {sorry}
 -- end
 
-lemma check_is_transitive {x : pSet} (H : pSet.is_transitive x) : ⊤ ≤ is_transitive (x̌ : bSet 𝔹) :=
+lemma check_is_transitive {x : pSet} (H : pSet.is_transitive x) {Γ} : Γ ≤ is_transitive (x̌ : bSet 𝔹) :=
 begin
   bv_intro y, bv_imp_intro,
   unfold pSet.is_transitive at H, rw[mem_unfold] at H_1,
@@ -718,8 +718,8 @@ begin
   rw[subset_unfold'] at H_1, apply bSet_axiom_of_regularity, from ‹_›
 end
 
-lemma check_ewo {x : pSet} (H : pSet.epsilon_well_orders x) : ⊤ ≤ epsilon_well_orders (x̌ : bSet 𝔹) :=
-le_inf (check_ewo_left ‹_›) (check_ewo_right ‹_›)
+lemma check_ewo {x : pSet} (H : pSet.epsilon_well_orders x) {Γ} : Γ ≤ epsilon_well_orders (x̌ : bSet 𝔹) :=
+le_trans (le_top) $ le_inf (check_ewo_left ‹_›) (check_ewo_right ‹_›)
 
 lemma check_Ord {x : pSet} (H : pSet.Ord x) : ⊤ ≤ Ord (x̌ : bSet 𝔹) :=
 le_inf (check_ewo H.left) (check_is_transitive H.right)
@@ -739,6 +739,18 @@ begin
   {let A := _, change Γ ≤ A ∈ᴮ x at k_ih,
    convert H₂ A ‹_›, from check_succ_eq_succ_check}
 end
+
+lemma of_nat_mem_of_lt {k₁ k₂ : ℕ} (H_lt : k₁ < k₂) {Γ} : Γ ≤ (bSet.of_nat k₁ : bSet 𝔹) ∈ᴮ (bSet.of_nat k₂) :=
+check_mem $ pSet.of_nat_mem_of_lt H_lt
+
+lemma Ord_omega {Γ : 𝔹} : Γ ≤ Ord(omega) :=
+le_inf (check_ewo pSet.is_ewo_omega) (check_is_transitive pSet.is_transitive_omega)
+
+/-- ℵ₁ is defined as: the least ordinal which is larger than ω -/
+def aleph_one_spec_internal (x : bSet 𝔹) : 𝔹 :=
+  (Ord x) ⊓
+  (larger_than x bSet.omega) ⊓
+  (⨅y, (Ord(y) ⟹ (larger_than y bSet.omega ⟹ x ⊆ᴮ y)))
 
 end ordinals
 
