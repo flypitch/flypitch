@@ -992,6 +992,9 @@ instance infi_to_pi {ι β : Type*} [complete_boolean_algebra β] {Γ : β} {ϕ 
 lemma bv_em {β : Type*} [boolean_algebra β] (Γ) (b : β) :
   Γ ≤ b ⊔ -b := by simp
 
+lemma bv_absurd {β} [boolean_algebra β] {Γ : β} (b : β) (H₁ : Γ ≤ b) (H₂ : Γ ≤ -b) : Γ ≤ ⊥ :=
+@le_trans _ _ _ (b ⊓ -b) _ (le_inf ‹_› ‹_›) (by simp)
+
 lemma neg_imp {β : Type*} [boolean_algebra β] {a b : β} : -(a ⟹ b) = a ⊓ (-b) :=
 by simp[imp]
 
@@ -1057,6 +1060,10 @@ lhs_rhs_of_le e >>= λ x, return x.2
 meta def hyp_is_ineq (e : expr) : tactic bool :=
   (do `(%%x ≤ %%y) <- infer_type e,
      return tt)<|> return ff
+
+meta def hyp_is_neg_ineq (e : expr) : tactic bool :=
+  (do `(%%x ≤ - %%y) <- infer_type e,
+     return tt) <|> return ff
 
 meta def trace_inequalities : tactic unit :=
   (local_context >>= λ l, l.mfilter (hyp_is_ineq)) >>= trace
@@ -1150,6 +1157,9 @@ meta def auto_or_elim : tactic unit := tactic.repeat auto_or_elim_step --TODO(je
 
 -- example {β ι : Type u} [lattice.complete_boolean_algebra β] {s : ι → β} {H' : ⊤ ≤ ⨆i, s i} {b : β} : b ≤ ⊤ :=
 -- by {specialize_context ⊤, bv_cases_at H' i, specialize_context Γ, sorry }
+
+meta def bv_exists_intro (i : parse texpr): tactic unit :=
+  `[refine le_supr_of_le %%i _]
 
 def eta_beta_cfg : dsimp_config :=
 { md := reducible,
@@ -1301,6 +1311,41 @@ meta def bv_split_goal (trace : parse $ optional (tk "?")) : tactic unit :=
 meta def bv_or_inr : tactic unit := `[refine le_sup_right_of_le _]
 meta def bv_or_inl : tactic unit := `[refine le_sup_left_of_le _]
 
+/--
+Succeeds on `e` iff `e` can be matched to the pattern x ≤ - y
+-/
+private meta def is_le_neg (e : expr) : tactic (expr × expr) :=
+do `(%%x ≤ - %%y) <- pure e, return (x,y)
+   
+-- private meta def le_not (lhs : expr) (rhs : expr) : expr → tactic expr := λ e,
+-- do `(%%x ≤ - %%y) <- pure e,
+--    is_def_eq x lhs >> is_def_eq y rhs >> return e
+
+/--
+Given an expr `e` such that the type of `e` is `x ≤ -y`, succeed if an expression of type `x ≤ y` is in context and return it.
+-/
+private meta def find_dual_of (e : expr) : tactic expr :=
+do ctx <- local_context,
+   `(%%y₁ ≤ - %%y₂) <- (infer_type e),
+   match ctx with
+   | [] := tactic.fail "there are no hypotheses"
+   | hd :: tl := do b <- (succeeds (do `(%%x₁ ≤ %%x₂) <- (infer_type hd),
+                                       is_def_eq x₁ y₁, is_def_eq x₂ y₂)),
+                    if b then return hd else by exact _match tl
+   end                 
+
+private meta def find_dual (xs : list expr) : tactic (expr × expr) :=
+do xs' <- (xs.mfilter hyp_is_neg_ineq),
+   match xs' with
+   | list.nil := tactic.fail "no negated terms found"
+   | (hd :: tl) := (do hd' <- find_dual_of hd, return (hd', hd)) <|> by exact _match tl
+   end
+
+meta def bv_contradiction  : tactic unit :=
+do ctx <- (local_context >>= λ l, l.mfilter (hyp_is_ineq)),
+   (h₁,h₂) <- find_dual ctx,
+   mk_app (`lattice.bv_absurd) [h₁,h₂] >>= tactic.exact
+
 meta structure context_cfg :=
 (trace_result : bool := ff)
 (trace_result_prefix : string := "/- `tidy_context` says -/ apply poset_yoneda, ")
@@ -1342,6 +1387,7 @@ begin
 --/- `tidy_context` says -/ apply poset_yoneda, intros Γ a, simp only [le_inf_iff] at *, cases a, assumption
 -- not bad!
 end
+
 -- local infix ` ⟹ `:75 := lattice.imp
 
 -- example {β : Type*} [complete_boolean_algebra β] {a b c : β} :
