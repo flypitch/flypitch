@@ -66,8 +66,8 @@ section collapsing_algebra
 variables {X Y : Type u}
 
 
-end collapsing_algebra
--- def collapse_poset.canonical_inclusion : collapse_poset X Y → collapse_algebra X Y := sorry
+
+-- def collapse_poset.canonical_inclusion : collapse_poset X Y → collapse_algebra X Y :=
 -- λ p, ⟨collapse_poset.principal_open p, is_regular_of_clopen collapse_poset.principal_open_is_clopen⟩
 
 
@@ -76,7 +76,7 @@ end collapsing_algebra
 -- begin
 --   sorry
 -- end
-
+end collapsing_algebra
 -- notation `⟨ﾉ◕ヮ◕⟩ﾉ`:100 := collapse_poset.canonical_inclusion
 
 -- ち ぢ っ つ づ て で と ど な に ぬ ね の は
@@ -136,7 +136,7 @@ We furthermore then need that, assuming we have a σ-closed forcing, that
 ⊤ ≤ (ℵ_(η̌)) ≤ (ℵ_η)̌ , because otherwise, (ℵ_η)̌  < ℵ_(η̌) and therefore, (ℵ_η)̌  is countable. But this contradicts the fact that these maps must be reflected back to pSet.
 -/
 
-
+example : false := sorry
 
 variables (X Y : Type u) [H_nonempty : nonempty (X → Y)]
 local notation `𝔹` := (collapse_algebra X Y)
@@ -146,7 +146,3 @@ local notation `𝔹` := (collapse_algebra X Y)
 -- def function_reflect (x y : pSet) (Γ : 𝔹) (f) (H : Γ ≤ is_func' (x̌) (y̌) f) : pSet := sorry
 
 -- def function_reflect_spec (x y : pSet} (Γ : 𝔹) (f) (H : Γ ≤ is_func' (x̌) (y̌) f) : (function_reflect x y Γ f H)̌  =ᴮ f := sorry
-
-
-
-
