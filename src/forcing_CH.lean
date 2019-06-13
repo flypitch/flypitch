@@ -57,47 +57,46 @@ lemma collapse_poset.principal_open_is_closed {X Y} {p : collapse_poset X Y} : i
 lemma collapse_poset.principal_open_is_clopen {X Y} {p : collapse_poset X Y} : is_clopen (collapse_poset.principal_open p) :=
 ⟨collapse_poset.principal_open_is_open, collapse_poset.principal_open_is_closed⟩ 
 
-section collapsing_algebra
-variables (X Y : Type u)
+def collapse_algebra (X Y : Type u) := @regular_opens (X → Y) (collapse_space X Y)
 
-local notation `ノಠ益ಠ)ノ彡┻━┻`:50 := collapse_poset.principal_open
-/--
-  The collapse algebra of X and Y is the algebra of regular opens of the collapse space of X and Y.
--/
-def collapse_algebra := @regular_opens (X → Y) (collapse_space X Y)
-
--- end collapsing_algebra
-
--- section collapsing_algebra
-variables {X Y}
-variable [H_nonempty : nonempty (X → Y)]
-
--- @[instance, priority 9001]def collapse_algebra_is_boolean_algebra [H_nonempty : nonempty Y] : nontrivial_complete_boolean_algebra (collapse_algebra X Y) :=
--- begin
---   suffices this : nonempty (X → Y),
---     from regular_open_algebra ‹_›,
---   from ⟨λ _, classical.choice ‹_›⟩
--- end
-
-@[instance, priority 10000]def complete_boolean_algebra_collapse_algebra : nontrivial_complete_boolean_algebra (collapse_algebra X Y) :=
+@[instance, priority 10000]def complete_boolean_algebra_collapse_algebra {X Y : Type u} [H_nonempty : nonempty (X → Y)] : nontrivial_complete_boolean_algebra (collapse_algebra X Y) :=
 regular_open_algebra H_nonempty
 
-def collapse_poset.canonical_inclusion : collapse_poset X Y → collapse_algebra X Y :=
-λ p, ⟨ノಠ益ಠ)ノ彡┻━┻ p, is_regular_of_clopen collapse_poset.principal_open_is_clopen⟩
+section collapsing_algebra
+variables {X Y : Type u}
 
 
-notation `⟨ﾉ◕ヮ◕⟩ﾉ`:100 := collapse_poset.canonical_inclusion
+end collapsing_algebra
+-- def collapse_poset.canonical_inclusion : collapse_poset X Y → collapse_algebra X Y := sorry
+-- λ p, ⟨collapse_poset.principal_open p, is_regular_of_clopen collapse_poset.principal_open_is_clopen⟩
+
+
+
+-- lemma collapse_poset_dense [nonempty (X → Y)] {b : collapse_algebra X Y} (H : ⊥ ≤ b) : ∃ p, collapse_poset.canonical_inclusion p ≤ b :=
+-- begin
+--   sorry
+-- end
+
+-- notation `⟨ﾉ◕ヮ◕⟩ﾉ`:100 := collapse_poset.canonical_inclusion
 
 -- ち ぢ っ つ づ て で と ど な に ぬ ね の は
 
-include H_nonempty
-lemma collapse_poset_dense {b : collapse_algebra X Y} (H : ⊥ ≤ b) : ∃ p, ⟨ﾉ◕ヮ◕⟩ﾉ p ≤ b := sorry
+
+
+
 
 -- #check (by apply_instance : has_le (X → Y))
 
 
+-- local notation `⟨╯°□°⟩╯ミ!!!` := sorry
+
+-- theorem hewwo : false := ⟨╯°□°⟩╯ミ!!!
+
+-- #print hewwo
 
 
+
+😀
 -- instance discrete_topology_continuum : topological_space (set ℕ) := generate_from ⊤
 
 -- /-- the Boolean algebra for forcing CH is the regular open algebra of the space of functions {ℵ₁ → set(ω)}, where both ℵ₁ and (set(ω)) are given the discrete topology -/
@@ -137,16 +136,16 @@ We furthermore then need that, assuming we have a σ-closed forcing, that
 ⊤ ≤ (ℵ_(η̌)) ≤ (ℵ_η)̌ , because otherwise, (ℵ_η)̌  < ℵ_(η̌) and therefore, (ℵ_η)̌  is countable. But this contradicts the fact that these maps must be reflected back to pSet.
 -/
 
-end collapsing_algebra
+
 
 variables (X Y : Type u) [H_nonempty : nonempty (X → Y)]
 local notation `𝔹` := (collapse_algebra X Y)
 
-#exit
-include H_nonempty
-def function_reflect (x y : pSet) (Γ : 𝔹) (f) (H : Γ ≤ is_func' (x̌) (y̌) f) : pSet := sorry
 
-def function_reflect_spec (x y : pSet} (Γ : 𝔹) (f) (H : Γ ≤ is_func' (x̌) (y̌) f) : (function_reflect x y Γ f H)̌  =ᴮ f := sorry
+-- include H_nonempty
+-- def function_reflect (x y : pSet) (Γ : 𝔹) (f) (H : Γ ≤ is_func' (x̌) (y̌) f) : pSet := sorry
+
+-- def function_reflect_spec (x y : pSet} (Γ : 𝔹) (f) (H : Γ ≤ is_func' (x̌) (y̌) f) : (function_reflect x y Γ f H)̌  =ᴮ f := sorry
 
 
 

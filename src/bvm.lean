@@ -1219,7 +1219,7 @@ def subset' {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} (h : core u S) 
 
 open classical zorn
 
-@[instance]def subset'_partial_order {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} (h : core u S) : partial_order α :=
+def subset'_partial_order {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} (h : core u S) : partial_order α :=
 { le := subset' h,
   lt := λ a₁ a₂, (subset' h a₁ a₂) ∧ a₁ ≠ a₂,
   le_refl := by {simp[subset']},
@@ -1238,6 +1238,8 @@ open classical zorn
       intros a b H₁ H₂, apply core_inj' h, unfold subset' at H₁ H₂, rw[eq_top_iff] at H₁ H₂ ⊢, apply subset_ext,
       repeat{assumption}
     end}
+
+local attribute [instance] subset'_partial_order
 
 lemma subset'_trans {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} {h : core u S} : by haveI := subset'_partial_order h; from ∀ a b c : α, a ≤ b → b ≤ c → a ≤ c :=
   by apply partial_order.le_trans
