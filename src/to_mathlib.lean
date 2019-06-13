@@ -8,7 +8,7 @@ Authors: Jesse Han, Floris van Doorn
 
 import algebra.ordered_group data.set.disjointed data.set.countable set_theory.cofinality
        topology.opens --topology.maps
-       tactic.find tactic.squeeze tactic.tidy tactic.linarith
+       tactic
 
 universe variables u v w w'
 
@@ -1324,10 +1324,9 @@ do `(%%x ≤ - %%y) <- pure e, return (x,y)
 /--
 Given an expr `e` such that the type of `e` is `x ≤ -y`, succeed if an expression of type `x ≤ y` is in context and return it.
 -/
-private meta def find_dual_of (e : expr) : tactic expr :=
-do ctx <- local_context,
-   `(%%y₁ ≤ - %%y₂) <- (infer_type e),
-   match ctx with
+private meta def find_dual_of (ctx_le : list expr) (ctx_le_negated : list expr) (e : expr) : tactic expr :=
+do `(%%y₁ ≤ - %%y₂) <- (infer_type e),
+   match ctx_le with
    | [] := tactic.fail "there are no hypotheses"
    | hd :: tl := do b <- (succeeds (do `(%%x₁ ≤ %%x₂) <- (infer_type hd),
                                        is_def_eq x₁ y₁, is_def_eq x₂ y₂)),
@@ -1335,16 +1334,16 @@ do ctx <- local_context,
    end                 
 
 private meta def find_dual (xs : list expr) : tactic (expr × expr) :=
-do xs' <- (xs.mfilter hyp_is_neg_ineq),
+do xs' <- (xs.mfilter (λ x, succeeds (do `(- %%y) <- ((infer_type x) >>= (rhs_of_le)), skip))),
    match xs' with
    | list.nil := tactic.fail "no negated terms found"
-   | (hd :: tl) := (do hd' <- find_dual_of hd, return (hd', hd)) <|> by exact _match tl
+   | (hd :: tl) := (do hd' <- find_dual_of xs xs' hd, return (hd', hd)) <|> by exact _match tl
    end
 
 meta def bv_contradiction  : tactic unit :=
 do ctx <- (local_context >>= λ l, l.mfilter (hyp_is_ineq)),
    (h₁,h₂) <- find_dual ctx,
-   mk_app (`lattice.bv_absurd) [h₁,h₂] >>= tactic.exact
+   bv_exfalso >> mk_app (`lattice.bv_absurd) [h₁,h₂] >>= tactic.exact
 
 meta structure context_cfg :=
 (trace_result : bool := ff)
@@ -1388,10 +1387,33 @@ begin
 -- not bad!
 end
 
--- local infix ` ⟹ `:75 := lattice.imp
+local infix ` ⟹ `:75 := lattice.imp
 
--- example {β : Type*} [complete_boolean_algebra β] {a b c : β} :
---  ( a ⟹ b ) ⊓ ( b ⟹ c ) ≤ a ⟹ c :=
--- by {tidy_context, bv_imp_intro, from a_1_right (a_1_left ‹_›)}
+example {𝔹} [complete_boolean_algebra 𝔹] {a b c : 𝔹} :
+ ( a ⟹ b ) ⊓ ( b ⟹ c ) ≤ a ⟹ c :=
+by {tidy_context, bv_imp_intro, from a_1_right (a_1_left H)}
+-- tactic state before final step:
+-- a b c Γ : β,
+-- Γ_1 : β := a ⊓ Γ,
+-- a_1_left : Γ_1 ≤ a ⟹ b,
+-- a_1_right : Γ_1 ≤ b ⟹ c,
+-- H : Γ_1 ≤ a
+-- ⊢ Γ_1 ≤ c
+
+
+example {β : Type*} [complete_boolean_algebra β] {a b c : β} :
+ ( a ⟹ b ) ⊓ ( b ⟹ c ) ≤ a ⟹ c :=
+begin
+  rw[<-deduction], unfold imp, rw[inf_sup_right, inf_sup_right],
+  simp only [inf_assoc, sup_assoc], refine sup_le _ _,
+  ac_change' (-a ⊓ a) ⊓ (-b ⊔ c) ≤ c,
+  from inf_le_left_of_le (by simp), rw[inf_sup_right],
+  let x := _, let y := _, change b ⊓ (x ⊔ y) ≤ _,
+  rw[inf_sup_left], apply sup_le,
+  { simp[x, inf_assoc.symm] },
+  { from inf_le_right_of_le (by simp) }
+end
+
+
 
 end lattice

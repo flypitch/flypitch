@@ -405,8 +405,7 @@ begin
     suffices : Γ ≤ F i =ᴮ F j, by {apply le_trans this ‹_›},
     bv_mp a_left_left_right eq_of_eq_pair_right,
     bv_mp a_left_right_right eq_of_eq_pair_right,
-    apply bv_context_trans, rw[bv_eq_symm], from ‹_›,
-    apply bv_context_trans, from a_right, from ‹_›
+    from bv_context_trans (bv_context_symm ‹_›) (bv_context_trans a_right ‹_›)
 end
 
 -- lemma mk_inj_of_inj {u : bSet 𝔹} {F : u.type → bSet 𝔹} (h_inj : ∀ i j, i ≠ j → F i =ᴮ F j ≤ ⊥) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) :
@@ -755,12 +754,14 @@ def aleph_one_spec_internal (x : bSet 𝔹) : 𝔹 :=
 -- TODO(jesse) prove this using regularity
 -- lemma aleph_one_exists {Γ} : Γ ≤ ⨆(x : bSet 𝔹), aleph_one_spec_internal x := sorry
 
+-- maybe it would be better to define ℵ₁ as the union of all the ordinals which ω surjects onto?
+
 -- TODO(jesse) prove this
-lemma check_aleph_one_le_aleph_one {Γ : 𝔹} : Γ ≤ ⨅(x : bSet 𝔹), (aleph_one_spec_internal x ⟹ ((pSet.ordinal.mk (aleph 1).ord)̌  ⊆ᴮ  x)) := sorry
+-- lemma check_aleph_one_le_aleph_one {Γ : 𝔹} : Γ ≤ ⨅(x : bSet 𝔹), (aleph_one_spec_internal x ⟹ ((pSet.ordinal.mk (aleph 1).ord)̌  ⊆ᴮ  x)) := sorry
 
 end ordinals
 
-theorem bSet_zorns_lemma' : ⊤ ≤ ⨅(X : bSet 𝔹), -(X =ᴮ ∅) ⟹ ((⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
+theorem bSet_zorns_lemma' {Γ : 𝔹} : Γ  ≤ ⨅(X : bSet 𝔹), -(X =ᴮ ∅) ⟹ ((⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
   w₁ ∈ᴮ y ⊓ w₂ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X)) ⟹ (⨆c, c ∈ᴮ X ⊓ (⨅z, z ∈ᴮ X ⟹ (c ⊆ᴮ z ⟹ c =ᴮ z)))) :=
 begin
   bv_intro X, rw[<-curry_uncurry],
@@ -772,7 +773,8 @@ begin
              bv_union y ∈ᴮ x)) (λ x, ⨆ (c : bSet 𝔹), c ∈ᴮ x ⊓ ⨅ (z : bSet 𝔹), z ∈ᴮ x ⟹ (c ⊆ᴮ z ⟹ c =ᴮ z))
              (by change B_ext _; simp) (by change B_ext _; simp) _ _,
 
-  rw[eq_top_iff] at this, from this X,
+  rw[eq_top_iff] at this, replace this := (le_trans le_top this : Γ ≤ _),
+    from this X,
     dsimp, intros u Hu, rw[eq_top_iff] at Hu ⊢, bv_split,
     apply bSet_zorns_lemma, from (top_unique ‹_›),
     from ‹_›, apply top_unique, dsimp, apply bv_use ({∅} : bSet 𝔹),
@@ -795,7 +797,7 @@ begin
     bv_split, replace a_left := a_left w' ‹_›,
     have : Γ_2 ≤ ∅ =ᴮ w', by {apply eq_of_mem_singleton, from ‹_›},
     apply bv_exfalso, apply bot_of_mem_empty, show bSet 𝔹, from w,
-    apply bv_rw' this, simp, from ‹_›
+    apply bv_rw' this, simpa
 end
 
 end bSet

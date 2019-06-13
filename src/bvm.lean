@@ -122,11 +122,7 @@ lemma bv_use {ι : Type*} (i : ι) {s : ι → 𝔹} {b : 𝔹}  {h : b ≤ s i}
 lemma bv_context_apply {β : Type*} [complete_boolean_algebra β] {Γ a₁ a₂ : β}
   (h₁ : Γ ≤ a₁ ⟹ a₂) (h₂ : Γ ≤ a₁) : Γ ≤ a₂ := h₁ ‹_›
 
-lemma bv_by_contra {Γ b : 𝔹} {H : Γ ≤ (-b) ⟹ ⊥} : Γ ≤ b :=
-by {simp at H, from ‹_›}
-
-lemma bv_absurd {Γ : 𝔹} (b : 𝔹) (H₁ : Γ ≤ b) (H₂ : Γ ≤ -b) : Γ ≤ ⊥ :=
-@le_trans _ _ _ (b ⊓ -b) _ (le_inf ‹_› ‹_›) (by simp)
+lemma bv_by_contra {Γ b : 𝔹} {H : Γ ≤ (-b) ⟹ ⊥} : Γ ≤ b := by simpa using H
 
 end natded
 end lattice
@@ -906,11 +902,11 @@ begin
   {/- `tidy_context` says -/ apply poset_yoneda, intros Γ a,
     simp only [le_inf_iff] at *, cases a, cases a_right, cases a_left,
      replace a_right_right := a_right_right ⟨x,‹_›⟩, dsimp at a_right_right,
-     from bv_absurd x.val ‹_› ‹_›},
+     bv_contradiction},
   { /- `tidy_context` says -/ apply poset_yoneda, intros Γ a,
     simp only [le_inf_iff] at *, cases a, cases a_right, cases a_left,
      replace a_left_right := a_left_right ⟨y,‹_›⟩, dsimp at a_left_right,
-     from bv_absurd y.val ‹_› ‹_›}
+     bv_contradiction}
 end
 
 lemma witness_antichain_antichain : antichain ((@witness_antichain _ _ ϕ r _) '' set.univ) :=
