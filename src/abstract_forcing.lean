@@ -1,12 +1,14 @@
 /- The formalism of forcing, following Justin Moore's notes -/
 
-import order.bounded_lattice tactic order.complete_boolean_algebra set_theory.zfc
+import order.bounded_lattice tactic order.complete_boolean_algebra set_theory.zfc .to_mathlib
 
 open lattice
 
 universe u
 
 @[class]def forcing_notion (α : Type u) : Type u := order_top α
+
+@[instance]def has_top_forcing_notion (α : Type u) [H : forcing_notion α] : has_top α := sorry
 
 instance partial_order_of_forcing_notion (α : Type u) [H : forcing_notion α] : partial_order α :=
 { le := H.le,
@@ -55,9 +57,8 @@ instance : forcing_notion punit := order_top.mk (by finish)
 
 instance HEWWO {α : Type u} [complete_boolean_algebra α] : forcing_notion α := order_top.mk (by finish)
 
-
 --TODO(jesse) rewrite in terms of pSet.rec and Name.rec
-lemma trivial_name : pSet.{u} ≃ (punit-name : Type (u+1)) :=
+def pSet_equiv_trivial_name : pSet.{u} ≃ (punit-name : Type (u+1)) :=
 { to_fun := λ u,
   begin
     induction u with α A ih,
@@ -71,7 +72,11 @@ lemma trivial_name : pSet.{u} ≃ (punit-name : Type (u+1)) :=
   left_inv :=
     λ x, by induction x; finish,
   right_inv :=
-    λ y, by induction y; finish}
+    λ y, by induction y; finish }
+
+def Pcheck {P} [forcing_notion P] : pSet.{u} → (P-name : Type (u+1))
+| ⟨α, A⟩ := ⟨α, λ a, Pcheck (A a), λ _, ⊤⟩
+
 
 namespace pfilter
 
@@ -91,8 +96,13 @@ def eval {P : Type u} [forcing_notion P] (𝒢 : pfilter P) : P-name → Type u
 | ⟨α, A, B⟩ := Σ p : {a : α // B a ∈ 𝒢.X}, eval (A p.1)
 
 def eval_image {P : Type u} [forcing_notion P] (𝒢 : pfilter P): Type (u + 1) :=
-Σ x : P-name, eval 𝒢 x -- this should be our new model of set theory
+{α // ∃ x, α = eval 𝒢 x} -- this should be our new model of set theory
 
 --TODO 6.8. 6.9, and 6.10 from Moore's notes
+
+def foo {P : Type u} [forcing_notion P] (𝒢 : pfilter P)  : pSet.{u} → (eval_image.{u} 𝒢) := λ x, ⟨eval 𝒢 (Pcheck x), ⟨_, rfl⟩⟩
+
+-- now foo is the canonical map from pSet to eval_image
+-- need to check that (foo x) is "equivalent" to x again in some way
 
 end pfilter
