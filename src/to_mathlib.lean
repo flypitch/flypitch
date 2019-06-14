@@ -1020,6 +1020,16 @@ def CCC (𝔹 : Type u) [boolean_algebra 𝔹] : Prop :=
   ∀ ι : Type u, ∀ 𝓐 : ι → 𝔹, (∀ i, ⊥ < 𝓐 i) →
     (∀ i j, i ≠ j → 𝓐 i ⊓ 𝓐 j ≤ ⊥) → (cardinal.mk ι) ≤ cardinal.omega
 
+@[reducible]noncomputable def Prop_to_bot_top {𝔹 : Type u} [has_bot 𝔹] [has_top 𝔹] : Prop → 𝔹 :=
+λ p, by {haveI : decidable p := classical.prop_decidable _, by_cases p, from ⊤, from ⊥}
+
+@[simp]lemma Prop_to_bot_top_true {𝔹 : Type u} [has_bot 𝔹] [has_top 𝔹] {p : Prop} {H : p} : Prop_to_bot_top p = (⊤ : 𝔹) := by simp[*, Prop_to_bot_top]
+
+@[simp]lemma Prop_to_bot_top_false {𝔹 : Type u} [has_bot 𝔹] [has_top 𝔹] {p : Prop} {H : ¬ p} : Prop_to_bot_top p = (⊥ : 𝔹) := by simp[*, Prop_to_bot_top]
+
+-- noncomputable def to_boolean_valued_set {𝔹} [has_bot 𝔹] [has_top 𝔹] {α} : set α → (α → 𝔹) :=
+-- λ s, Prop_to_bot_top ∘ s
+
 end lattice
 
 namespace tactic
