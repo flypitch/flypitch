@@ -534,6 +534,17 @@ def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func f) ⊓ ⨅v, v ∈ᴮ
 
 def injects_into (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ is_inj f
 
+local infix `≺`:70 := (λ x y, -(larger_than x y))
+
+local infix `≼`:70 := (λ x y, injects_into x y)
+
+lemma lt_of_lt_of_le (x y z : bSet 𝔹) {Γ} (H_nonzero : ⊥ < Γ) (H₁ : Γ ≤ x ≺ y) (H₂ : Γ ≤ y ≼ z) : Γ ≤ x ≺ z :=
+begin
+  dsimp only [larger_than, injects_into] at ⊢ H₁ H₂,
+  rw[<-imp_bot] at ⊢ H₁,
+  bv_imp_intro, sorry
+end
+
 def Card (y : bSet 𝔹) : 𝔹 := Ord(y) ⊓ ⨅x, x ∈ᴮ y ⟹ (- larger_than y x)
 
 lemma is_transitive_of_mem_Ord (y x : bSet 𝔹) : Ord x ⊓ y ∈ᴮ x ≤ (is_transitive y) :=
