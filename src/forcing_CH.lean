@@ -22,6 +22,7 @@ end lemmas
 
 section collapse_poset
 variables (X Y : Type u)
+
 /--
 A member of `collapse_poset X Y` is an "indexed" partial function from a countable subset of X into Y.
 -/
@@ -67,53 +68,17 @@ variables {X Y : Type u}
 
 
 
--- def collapse_poset.canonical_inclusion : collapse_poset X Y → collapse_algebra X Y :=
--- λ p, ⟨collapse_poset.principal_open p, is_regular_of_clopen collapse_poset.principal_open_is_clopen⟩
+def collapse_poset.canonical_inclusion : collapse_poset X Y → collapse_algebra X Y :=
+λ p, ⟨collapse_poset.principal_open p, is_regular_of_clopen collapse_poset.principal_open_is_clopen⟩
 
+notation `⟨ﾉ◕ヮ◕⟩ﾉ`:100 := collapse_poset.canonical_inclusion
 
+lemma collapse_poset_dense [nonempty (X → Y)] {b : collapse_algebra X Y} (H : ⊥ ≤ b) : ∃ p, ⟨ﾉ◕ヮ◕⟩ﾉ p ≤ b :=
+begin
+  sorry
+end
 
--- lemma collapse_poset_dense [nonempty (X → Y)] {b : collapse_algebra X Y} (H : ⊥ ≤ b) : ∃ p, collapse_poset.canonical_inclusion p ≤ b :=
--- begin
---   sorry
--- end
 end collapsing_algebra
--- notation `⟨ﾉ◕ヮ◕⟩ﾉ`:100 := collapse_poset.canonical_inclusion
-
--- ち ぢ っ つ づ て で と ど な に ぬ ね の は
-
-
-
-
-
--- #check (by apply_instance : has_le (X → Y))
-
-
--- local notation `⟨╯°□°⟩╯ミ!!!` := sorry
-
--- theorem hewwo : false := ⟨╯°□°⟩╯ミ!!!
-
--- #print hewwo
-
-
-
-😀
--- instance discrete_topology_continuum : topological_space (set ℕ) := generate_from ⊤
-
--- /-- the Boolean algebra for forcing CH is the regular open algebra of the space of functions {ℵ₁ → set(ω)}, where both ℵ₁ and (set(ω)) are given the discrete topology -/
--- def collapsing_algebra : Type* :=
---   @regular_opens (card_ex (aleph 1) → (set ℕ)) (Pi.topological_space)
-
-/-
-Now, we need a surjection to appear, so that (in V 𝔹) ℵ₁ ↠ 𝒫(ω). This means that ℵ₁ is larger than 𝒫(ω), so that ¬ (ℵ₁ < 𝒫(ω)).
-
-Since ω < 𝒫(ω) is absolute (I think), we just need that 𝒫(ω) ≤ ℵ₁, so we need to construct an injection.
-
-Anyways, here's the goal: to show that 𝒫(ω) is the same size as ℵ₁, we need to exhibit an injection into 𝒫(ω),
-
-and we need to exhibit an injection 𝒫(ω) ↪ ℵ₁, and then the result should follow from Schroeder-Bernstein.
-
-Alternately, we can try to construct surjections going either way, which should prove that the sets are equinumerous.
--/
 
 /-
   Note: Proposition 14.2 says that once we complete a σ-closed forcing, it we can show that
