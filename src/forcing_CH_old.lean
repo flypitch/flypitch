@@ -107,7 +107,7 @@ variables (X Y : Type u) [H_nonempty : nonempty (X → Y)]
 local notation `𝔹` := (collapse_algebra X Y)
 
 
--- include H_nonempty
+-- include H_nonempty --TODO(jesse) make these type-check
 -- def function_reflect (x y : pSet) (Γ : 𝔹) (f) (H : Γ ≤ is_func' (x̌) (y̌) f) : pSet := sorry
 
 -- def function_reflect_spec (x y : pSet} (Γ : 𝔹) (f) (H : Γ ≤ is_func' (x̌) (y̌) f) : (function_reflect x y Γ f H)̌  =ᴮ f := sorry
