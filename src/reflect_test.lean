@@ -2,260 +2,260 @@ import .fol .abel
 
 universe u
 
-section weekdays
-@[derive has_reflect]
-inductive weekday : Type
-| monday          : weekday
-| another_day     : weekday → weekday
-
-open weekday
-
-meta def dump_weekday (f : weekday) : tactic unit :=
-tactic.trace $ to_string (expr.to_raw_fmt (reflect f).to_expr) 
-
--- run_cmd dump_weekday (another_day (another_day monday))
---(app (const weekday.another_day []) (app (const weekday.another_day []) (const weekday.monday [])))
-
-inductive weekday' : Type
-| monday          : weekday'
-| another_day     : weekday' → weekday'
-
-open weekday'
-meta instance has_reflect_weekday' : has_reflect weekday'
-| weekday'.monday                  := `(monday)
-| (weekday'.another_day x)         := `(λ l, weekday'.another_day l).subst $
-                                        by haveI := has_reflect_weekday'; exact (reflect x)
-
-meta def dump_weekday' (f : weekday') : tactic unit :=
-tactic.trace $ to_string (expr.to_raw_fmt (reflect f).to_expr) 
-
-
--- run_cmd dump_weekday' (another_day (another_day monday))
--- (app (const weekday'.another_day []) (app (const weekday'.another_day []) (const weekday'.monday [])))
-end weekdays
--- meta instance has_reflect_preterm {L : Language.{u}} : Π{n : ℕ}, has_reflect (preterm L n)
--- | 0 (var k) := `(@preterm.var L).subst (reflect k)
-
+-- section weekdays
 -- @[derive has_reflect]
+-- inductive weekday : Type
+-- | monday          : weekday
+-- | another_day     : weekday → weekday
 
-open fol abel
+-- open weekday
 
-section preterm_aux 
-inductive preterm_aux (L : Language.{u}) : Type u
-| var     : ℕ → preterm_aux
-| func    : ∀ k : ℕ, L.functions k → preterm_aux
-| app     : preterm_aux → preterm_aux → preterm_aux
+-- meta def dump_weekday (f : weekday) : tactic unit :=
+-- tactic.trace $ to_string (expr.to_raw_fmt (reflect f).to_expr) 
 
-def to_aux {L : Language.{u}} : ∀ {l : ℕ},  preterm L l → preterm_aux L
-| 0 (var n)      := preterm_aux.var _ n
-| k (func f)     := preterm_aux.func _ f
-| k (app t₁ t₂)  := preterm_aux.app (to_aux t₁) (to_aux t₂)
+-- -- run_cmd dump_weekday (another_day (another_day monday))
+-- --(app (const weekday.another_day []) (app (const weekday.another_day []) (const weekday.monday [])))
 
+-- inductive weekday' : Type
+-- | monday          : weekday'
+-- | another_day     : weekday' → weekday'
 
-def L_abel_plus' (t₁ t₂ : preterm L_abel 0) : preterm L_abel 0 :=
-@term_of_function L_abel 2 (abel_functions.plus : L_abel.functions 2) t₁ t₂
-end preterm_aux
+-- open weekday'
+-- meta instance has_reflect_weekday' : has_reflect weekday'
+-- | weekday'.monday                  := `(monday)
+-- | (weekday'.another_day x)         := `(λ l, weekday'.another_day l).subst $
+--                                         by haveI := has_reflect_weekday'; exact (reflect x)
 
-local infix ` +' `:100 := L_abel_plus'
+-- meta def dump_weekday' (f : weekday') : tactic unit :=
+-- tactic.trace $ to_string (expr.to_raw_fmt (reflect f).to_expr) 
 
-local notation ` zero ` := (func abel_functions.zero : preterm L_abel 0)
 
-section L_abel_term_biopsy
+-- -- run_cmd dump_weekday' (another_day (another_day monday))
+-- -- (app (const weekday'.another_day []) (app (const weekday'.another_day []) (const weekday'.monday [])))
+-- end weekdays
+-- -- meta instance has_reflect_preterm {L : Language.{u}} : Π{n : ℕ}, has_reflect (preterm L n)
+-- -- | 0 (var k) := `(@preterm.var L).subst (reflect k)
 
-def sample1 : preterm L_abel 0 := (zero +' zero)
+-- -- @[derive has_reflect]
 
-def sample2 : preterm L_abel 0 := zero
+-- open fol abel
 
--- #reduce sample2
+-- section preterm_aux 
+-- inductive preterm_aux (L : Language.{u}) : Type u
+-- | var     : ℕ → preterm_aux
+-- | func    : ∀ k : ℕ, L.functions k → preterm_aux
+-- | app     : preterm_aux → preterm_aux → preterm_aux
 
-open expr
-meta def sample2_expr : expr :=
-mk_app (const `preterm.func list.nil) ([(const `L_abel list.nil), `(0), const `abel_functions.zero list.nil] : list expr)
+-- def to_aux {L : Language.{u}} : ∀ {l : ℕ},  preterm L l → preterm_aux L
+-- | 0 (var n)      := preterm_aux.var _ n
+-- | k (func f)     := preterm_aux.func _ f
+-- | k (app t₁ t₂)  := preterm_aux.app (to_aux t₁) (to_aux t₂)
 
-end L_abel_term_biopsy
 
-section simpler_biopsy
+-- def L_abel_plus' (t₁ t₂ : preterm L_abel 0) : preterm L_abel 0 :=
+-- @term_of_function L_abel 2 (abel_functions.plus : L_abel.functions 2) t₁ t₂
+-- end preterm_aux
 
-inductive my_inductive : Type
-| a : my_inductive
-| b : my_inductive
-| f : my_inductive → my_inductive
+-- local infix ` +' `:100 := L_abel_plus'
 
-open my_inductive
-def sample3 : my_inductive := f a
+-- local notation ` zero ` := (func abel_functions.zero : preterm L_abel 0)
 
-open expr
+-- section L_abel_term_biopsy
 
-meta def sample3_expr : expr :=
-app (const `my_inductive.f list.nil) (const `my_inductive.a list.nil)
+-- def sample1 : preterm L_abel 0 := (zero +' zero)
 
-def sample3_again : my_inductive := by tactic.exact (sample3_expr)
+-- def sample2 : preterm L_abel 0 := zero
 
-example : sample3 = sample3_again := rfl
+-- -- #reduce sample2
 
-end simpler_biopsy
+-- open expr
+-- meta def sample2_expr : expr :=
+-- mk_app (const `preterm.func list.nil) ([(const `L_abel list.nil), `(0), const `abel_functions.zero list.nil] : list expr)
 
-namespace tactic
-namespace interactive
-open interactive interactive.types expr
+-- end L_abel_term_biopsy
 
-def my_test_term : preterm L_abel 0 := (zero +' zero)
+-- section simpler_biopsy
 
-end interactive
-end tactic
+-- inductive my_inductive : Type
+-- | a : my_inductive
+-- | b : my_inductive
+-- | f : my_inductive → my_inductive
 
-section test
--- def my_term : preterm L_abel 0 := sorry
+-- open my_inductive
+-- def sample3 : my_inductive := f a
 
--- #check tactic.interactive.rcases
+-- open expr
 
-end test
+-- meta def sample3_expr : expr :=
+-- app (const `my_inductive.f list.nil) (const `my_inductive.a list.nil)
 
-section sample4
+-- def sample3_again : my_inductive := by tactic.exact (sample3_expr)
 
-/-- Note: this is the same as `dfin` -/
-inductive my_indexed_family : ℕ → Type u
-| z {} : my_indexed_family 0
-| s : ∀ {k}, my_indexed_family k → my_indexed_family (k+1)
+-- example : sample3 = sample3_again := rfl
 
--- meta example : ∀ {n}, has_reflect (my_indexed_family n)
--- | 0 z := `(z)
+-- end simpler_biopsy
 
+-- namespace tactic
+-- namespace interactive
+-- open interactive interactive.types expr
 
-open my_indexed_family
+-- def my_test_term : preterm L_abel 0 := (zero +' zero)
 
-def sample4 : my_indexed_family 1 := s z
+-- end interactive
+-- end tactic
 
--- #check tactic.eval_expr
+-- section test
+-- -- def my_term : preterm L_abel 0 := sorry
 
-end sample4
+-- -- #check tactic.interactive.rcases
 
-section sample4
+-- end test
 
-inductive dfin'' : ℕ → Type
-| fz {n} : dfin'' (n+1)
-| fs {n} : dfin'' n → dfin'' (n+1)
+-- section sample4
 
-inductive dfin' : ℕ → Type u
-| gz {n} :  dfin' (n+1)
-| gs {n} :  dfin' n → dfin' (n+1)
+-- /-- Note: this is the same as `dfin` -/
+-- inductive my_indexed_family : ℕ → Type u
+-- | z {} : my_indexed_family 0
+-- | s : ∀ {k}, my_indexed_family k → my_indexed_family (k+1)
 
-open dfin dfin'
+-- -- meta example : ∀ {n}, has_reflect (my_indexed_family n)
+-- -- | 0 z := `(z)
 
-meta instance dfin.reflect : ∀ {n}, has_reflect (dfin'' n)
-| _ dfin''.fz := `(dfin''.fz)
-| _ (dfin''.fs n) := `(dfin''.fs).subst (dfin.reflect n)
 
--- /- errors all over---why doesn't reflect like universe parameters? -/
--- meta instance dfin'.reflect : ∀ {n}, has_reflect (dfin' n)
--- | _ fz := `(fz)
--- | _ (fs n) := `(fs).subst (dfin'.reflect n)
+-- open my_indexed_family
 
-end sample4
+-- def sample4 : my_indexed_family 1 := s z
 
-section reflect_preterm
+-- -- #check tactic.eval_expr
 
-/- Language with a single constant symbol -/
-inductive L_pt_functions : ℕ → Type
-| pt : L_pt_functions 0
+-- end sample4
 
-def L_pt : Language.{0} := ⟨L_pt_functions, λ _, empty⟩
+-- section sample4
 
-def pt_preterm : preterm L_pt 0 := preterm.func L_pt_functions.pt
+-- inductive dfin'' : ℕ → Type
+-- | fz {n} : dfin'' (n+1)
+-- | fs {n} : dfin'' n → dfin'' (n+1)
 
-meta def pt_preterm_reflected : expr :=
-expr.mk_app (expr.const `preterm.func [level.zero]) [ (expr.const `L_pt list.nil), `(0), (expr.const `L_pt_functions.pt list.nil)]
+-- inductive dfin' : ℕ → Type u
+-- | gz {n} :  dfin' (n+1)
+-- | gs {n} :  dfin' n → dfin' (n+1)
 
-set_option trace.app_builder true
+-- open dfin dfin'
 
--- meta def pt_preterm_reflected' : expr := by tactic.mk_app "preterm.func" [(expr.const `L_pt []), `(0), (expr.const `L_pt_functions.pt [])]
+-- meta instance dfin.reflect : ∀ {n}, has_reflect (dfin'' n)
+-- | _ dfin''.fz := `(dfin''.fz)
+-- | _ (dfin''.fs n) := `(dfin''.fs).subst (dfin.reflect n)
 
-#check tactic.mk_app
+-- -- /- errors all over---why doesn't reflect like universe parameters? -/
+-- -- meta instance dfin'.reflect : ∀ {n}, has_reflect (dfin' n)
+-- -- | _ fz := `(fz)
+-- -- | _ (fs n) := `(fs).subst (dfin'.reflect n)
 
-meta def pt_preterm_reflected'' : tactic expr :=
-tactic.to_expr ```(preterm.func L_pt_functions.pt : preterm L_pt 0)
+-- end sample4
 
-def pt_preterm' : preterm L_pt 0 := by pt_preterm_reflected'' >>= tactic.exact
+-- section reflect_preterm
 
--- def pt_preterm' : preterm L_pt 0 := by tactic.exact pt_preterm_reflected
+-- /- Language with a single constant symbol -/
+-- inductive L_pt_functions : ℕ → Type
+-- | pt : L_pt_functions 0
 
-example : pt_preterm = pt_preterm' := rfl
-  -- infer type failed, incorrect number of universe levels
+-- def L_pt : Language.{0} := ⟨L_pt_functions, λ _, empty⟩
 
--- want: example : pt_preterm = pt_preterm' := rfl
+-- def pt_preterm : preterm L_pt 0 := preterm.func L_pt_functions.pt
 
+-- meta def pt_preterm_reflected : expr :=
+-- expr.mk_app (expr.const `preterm.func [level.zero]) [ (expr.const `L_pt list.nil), `(0), (expr.const `L_pt_functions.pt list.nil)]
 
-end reflect_preterm
+-- set_option trace.app_builder true
 
+-- -- meta def pt_preterm_reflected' : expr := by tactic.mk_app "preterm.func" [(expr.const `L_pt []), `(0), (expr.const `L_pt_functions.pt [])]
 
-namespace hewwo
-section reflect_preterm2
-def L_pt.pt' : L_pt.functions 0 := L_pt_functions.pt
+-- #check tactic.mk_app
 
-#reduce (by apply_instance : reflected L_pt.pt')
--- `(L_pt.pt')
+-- meta def pt_preterm_reflected'' : tactic expr :=
+-- tactic.to_expr ```(preterm.func L_pt_functions.pt : preterm L_pt 0)
 
-meta def pt_preterm_reflected : tactic expr :=
-tactic.mk_app ``preterm.func [`(L_pt.pt')]
+-- def pt_preterm' : preterm L_pt 0 := by pt_preterm_reflected'' >>= tactic.exact
 
-def pt_preterm' : preterm L_pt 0 := by pt_preterm_reflected >>= tactic.exact
+-- -- def pt_preterm' : preterm L_pt 0 := by tactic.exact pt_preterm_reflected
 
-#eval tactic.trace (@expr.to_raw_fmt tt `(L_pt.pt'))
+-- example : pt_preterm = pt_preterm' := rfl
+--   -- infer type failed, incorrect number of universe levels
 
-#check reflect
+-- -- want: example : pt_preterm = pt_preterm' := rfl
 
 
-end reflect_preterm2
-end hewwo
+-- end reflect_preterm
 
-section reflect_preterm3
 
-inductive L_pt_func_functions : ℕ → Type
-| pt  : L_pt_func_functions 0
-| foo : L_pt_func_functions 1
+-- namespace hewwo
+-- section reflect_preterm2
+-- def L_pt.pt' : L_pt.functions 0 := L_pt_functions.pt
 
-open L_pt_func_functions
+-- #reduce (by apply_instance : reflected L_pt.pt')
+-- -- `(L_pt.pt')
 
-def L_pt_func : Language.{0} :=
-⟨L_pt_func_functions, λ _, ulift empty⟩
+-- meta def pt_preterm_reflected : tactic expr :=
+-- tactic.mk_app ``preterm.func [`(L_pt.pt')]
 
--- def foo_pt_term : preterm L_pt_func 0 :=
--- preterm.app (preterm.func L_pt_func_functions.foo) (preterm.func L_pt_func_functions.pt)
+-- def pt_preterm' : preterm L_pt 0 := by pt_preterm_reflected >>= tactic.exact
 
--- def foo_pt_term_reflected : expr :=
--- begin
---   tactic.mk_app ``preterm.func [(by tactic.mk_app `preterm.func [`(L_pt_func_functions.foo)]), (by tactic.mk_app `preterm.func [`(L_pt_func_functions.pt)])]
--- end
+-- #eval tactic.trace (@expr.to_raw_fmt tt `(L_pt.pt'))
 
--- def foo' : preterm L_pt_func 1 := preterm.func L_pt_func_functions.foo
+-- #check reflect
 
 
--- #reduce (by apply_instance : reflected L_pt_func_functions.foo)
+-- end reflect_preterm2
+-- end hewwo
 
-set_option trace.app_builder true
+-- section reflect_preterm3
 
-def my_foo : L_pt_func.functions 1 := L_pt_func_functions.foo
+-- inductive L_pt_func_functions : ℕ → Type
+-- | pt  : L_pt_func_functions 0
+-- | foo : L_pt_func_functions 1
 
-def my_pt : L_pt_func.functions 0 := L_pt_func_functions.pt
+-- open L_pt_func_functions
 
--- meta def foo_pt_term_reflected : tactic expr := tactic.mk_app ``preterm.func [`()]
+-- def L_pt_func : Language.{0} :=
+-- ⟨L_pt_func_functions, λ _, ulift empty⟩
 
-meta def foo_pt_term_reflected' : tactic expr :=
-do e₁ <- tactic.mk_app ``preterm.func [`(my_foo)],
-   e₂ <- tactic.mk_app ``preterm.func [`(my_pt)],
-   tactic.mk_app ``preterm.app [e₁, e₂]
--- #print foo_pt_term_reflected'
+-- -- def foo_pt_term : preterm L_pt_func 0 :=
+-- -- preterm.app (preterm.func L_pt_func_functions.foo) (preterm.func L_pt_func_functions.pt)
 
+-- -- def foo_pt_term_reflected : expr :=
+-- -- begin
+-- --   tactic.mk_app ``preterm.func [(by tactic.mk_app `preterm.func [`(L_pt_func_functions.foo)]), (by tactic.mk_app `preterm.func [`(L_pt_func_functions.pt)])]
+-- -- end
 
+-- -- def foo' : preterm L_pt_func 1 := preterm.func L_pt_func_functions.foo
 
--- meta def bar : tactic expr :=
---   tactic.mk_app ``preterm.func [`(foo_mask)]
 
-set_option trace.app_builder true
+-- -- #reduce (by apply_instance : reflected L_pt_func_functions.foo)
 
-def foo_pt_term_reflected : preterm L_pt_func 0 := by (foo_pt_term_reflected' >>= tactic.exact)
+-- set_option trace.app_builder true
 
--- #reduce foo_pt_term_reflected
+-- def my_foo : L_pt_func.functions 1 := L_pt_func_functions.foo
 
+-- def my_pt : L_pt_func.functions 0 := L_pt_func_functions.pt
 
-end reflect_preterm3
+-- -- meta def foo_pt_term_reflected : tactic expr := tactic.mk_app ``preterm.func [`()]
+
+-- meta def foo_pt_term_reflected' : tactic expr :=
+-- do e₁ <- tactic.mk_app ``preterm.func [`(my_foo)],
+--    e₂ <- tactic.mk_app ``preterm.func [`(my_pt)],
+--    tactic.mk_app ``preterm.app [e₁, e₂]
+-- -- #print foo_pt_term_reflected'
+
+
+
+-- -- meta def bar : tactic expr :=
+-- --   tactic.mk_app ``preterm.func [`(foo_mask)]
+
+-- set_option trace.app_builder true
+
+-- def foo_pt_term_reflected : preterm L_pt_func 0 := by (foo_pt_term_reflected' >>= tactic.exact)
+
+-- -- #reduce foo_pt_term_reflected
+
+
+-- end reflect_preterm3
