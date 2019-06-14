@@ -1,4 +1,4 @@
-import .bvm .bvm_extras .regular_open_algebra .to_mathlib
+import .bvm .bvm_extras .regular_open_algebra .to_mathlib data.pfun tactic
 
 /-
   Forcing the continuum hypothesis.
@@ -20,94 +20,159 @@ lemma check_forall (x : pSet) (ϕ : bSet 𝔹 → 𝔹) {h : B_ext ϕ} {b : 𝔹
 
 end lemmas
 
-section collapse_poset
-variables (X Y : Type u)
+namespace pfun
 
-/--
-A member of `collapse_poset X Y` is an "indexed" partial function from a countable subset of X into Y.
+section pfun_lemmas
+
+/- Two partial functions are equal if their graphs are equal -/
+lemma ext_graph {α β : Type*} (f g : α →. β) (h_graph : f.graph = g.graph) : f = g :=
+  pfun.ext $ λ _ _, iff_of_eq (congr_fun h_graph (_,_))
+
+lemma graph_empty_iff_dom_empty {α β : Type*} (f : α →. β) : f.graph = ∅ ↔ f.dom = ∅ :=
+begin
+  have := dom_iff_graph f,
+  split; intro; ext; safe, from this _ _ ‹_›
+end
+
+/- A functional graph is a univalent graph -/
+def functional {α β : Type*} (Γ : set (α × β)) : Prop :=
+  ∀ a b₁ b₂, (a, b₁) ∈ Γ → (a, b₂) ∈ Γ → b₁ = b₂
+
+lemma congr_arg {α β : Type*} (f : α →. β) : ∀ {x} {y} (h₁ : x ∈ f.dom) (h₂ : y ∈ f.dom)
+  (h_eq : x = y), fn f x h₁ = fn f y h₂ :=
+by intros; congr; assumption
+
+lemma functional_subset {α β : Type*} (Γ Γ': set (α × β)) (h_Γ' : Γ' ⊆ Γ) (h_Γ : functional Γ) : functional Γ' :=
+  λ _ _ _ _ _, by apply h_Γ; tidy
+
+/-- The graph of a pfun is always functional -/
+lemma graph_functional {α β : Type*} (f : α →. β) : functional f.graph := by tidy
+
+/-- Given a partial functional relation, turn it into a pfun -/
+noncomputable def of_graph {α β : Type*} (Γ : set (α × β)) (h_Γ : functional Γ) : α →. β :=
+  λ a, ⟨∃ c ∈ Γ, (prod.fst c) = a, λ h, @prod.snd α β $ (classical.indefinite_description _ h).val⟩
+
+lemma of_graph_property {α β : Type*} (Γ : set $ α × β) (h_Γ : functional Γ) (a : α) (h : ∃ c ∈ Γ, (prod.fst c) = a) : ∃ (H : Γ (classical.indefinite_description _ h)), (classical.indefinite_description _ h).val.fst = a :=
+  by apply (classical.indefinite_description _ h).property
+
+lemma of_graph_get {α β : Type*} (Γ : set $ α × β) (h_Γ : functional Γ) (a : α) : ∀ h,
+(of_graph Γ h_Γ a).get h = (classical.indefinite_description _ h).val.snd :=
+  by intro; refl
+
+lemma of_graph_val {α β : Type*} (Γ : set $ α × β) (h_Γ : functional Γ) (a : α) (h : ∃ c ∈ Γ, (prod.fst c) = a) (c' ∈ Γ) (h' : c'.1 = a) :
+  @prod.snd α β (classical.indefinite_description _ h).val = c'.snd :=
+begin
+  let c'', swap, change (prod.snd c'' = c'.snd),
+  apply h_Γ a, swap, convert H, ext, rwa[h'], refl,
+  have := (classical.indefinite_description _ h).property,
+  cases this with this1 this2, rw[<-this2], convert this1, ext; refl
+end
+
+@[simp]lemma graph_of_graph {α β : Type*} (Γ : set $ α × β) (h_Γ : functional Γ) : (of_graph Γ h_Γ).graph = Γ :=
+begin
+  ext, rcases x with ⟨a,b⟩, dsimp[graph],
+  split; intro H, {cases H, induction H_h, cases H_w, cases H_w_h, induction H_w_h_h,
+  convert H_w_h_w, ext, refl, rw[of_graph_get], apply of_graph_val; try{assumption}; refl},
+  fsplit, {tidy}, rw[of_graph_get], apply @of_graph_val _ _ Γ _ a _ (a,b) _;
+  try{assumption}; refl
+end
+
+@[simp]lemma of_graph_graph {α β : Type*} {f : α →. β} : of_graph (f.graph) (graph_functional f) = f :=
+  by apply ext_graph; rw[graph_of_graph]
+
+@[simp]lemma dom_of_graph {α β : Type*} (Γ : set $ α × β) (h_Γ : functional Γ) : (of_graph Γ h_Γ).dom = (prod.fst '' Γ) :=
+begin
+ ext, split; intros, {tidy},
+ {cases a, cases a_h, cases a_w, induction a_h_right, dsimp at *, fsplit,
+ work_on_goal 0 { fsplit }, work_on_goal 2 {fsplit,
+ work_on_goal 0 { assumption }, refl }}
+end
+
+@[simp]lemma dom_of_graph_union {α β : Type*} (Γ : set $ α × β) (p : α × β) (h_Γ : functional Γ) (h_Γ' : functional $ Γ ∪ {p}) : (of_graph (Γ ∪ {p}) h_Γ').dom = (of_graph Γ h_Γ).dom ∪ {p.fst} :=
+  by simp[dom_of_graph, set.image_insert_eq]
+
+lemma in_dom_of_in_graph {α β : Type*} {f : α →. β} : ∀ {a} {b}, (a,b) ∈ f.graph → a ∈ f.dom :=
+  by {intros a b H, apply (pfun.dom_iff_graph _ a).mpr, exact ⟨b,H⟩}
+
+lemma lift_graph' {α β : Type*} {f : α →. β} {a : α} {b : β} (h_a : a ∈ f.dom) : (a,b) ∈ f.graph ↔ pfun.fn f a h_a = b := by tidy
+
+variables {α β : Type u}
+
+def is_extension_of (f₁ f₂ : α →. β) : Prop := ∃ (H : f₁.dom ⊆ f₂.dom), restrict f₂ H = f₁
+
+/-
+TODO(jesse) avoid tactic mode and use classical.indefinite_description explicitly
 -/
-structure collapse_poset :=
-(dom      : ℕ → X)
-(im       : ℕ → Y)
-(congr    : ∀ k₁ k₂ : ℕ, dom k₁ = dom k₂ → im k₁ = im k₂)
--- (inj : function.injective dom) -- TODO(jesse) do we need to also assume this?
+noncomputable def union_of_omega_chain (f : ℕ → α →. β) : α →. β :=
+λ x, { dom := x ∈ (set.Union (λ k, (f k).dom) : set α),
+  get := λ H,
+  begin
+    choose some_dom H_mem₁ H_mem₂ using H,
+    choose k Hk₁ using H_mem₁, subst Hk₁,
+    from fn (f k) x ‹_›
+  end}
+/-
+TODO(jesse) rework this in terms of graphs of pfuns instead
+-/
+lemma union_of_omega_chain_spec (f : ℕ → α →. β) (H_chain : ∀ (k₁ k₂) (H_le : k₁ ≤ k₂), is_extension_of (f k₁) (f k₂)) :
+∀ k, is_extension_of (f k) (union_of_omega_chain f):=
+begin
+  intro k, fsplit, change _ ⊆ set.Union _,
+    {/- `tidy` says -/ intros a a_1, simp at *, fsplit, work_on_goal 1 { assumption }},
+  ext1, sorry
+end
+
+end pfun_lemmas
+
+end pfun
+
+section collapse_poset
+variables X Y : Type u
+
+structure collapse_poset : Type u :=
+(f        : pfun X Y)
+(Hc       : set.countable f.dom)
+
+open pfun
 
 variables {X Y}
 def collapse_poset.extends (p : collapse_poset X Y) (f : X → Y) : Prop :=
-∀ k : ℕ, f(p.dom k) = p.im k
+∀ (x : X) (H_x : x ∈ p.f.dom), f x = (fn p.f x H_x)
 
-/--
-The basic open attached to (p : collapse_poset X Y) is the collection of all functions g which extend p.
--/
 def collapse_poset.principal_open (p : collapse_poset X Y) : set (X → Y) :=
-{g | collapse_poset.extends p g}
+{f | collapse_poset.extends p f}
 
--- -- @[instance, priority 9001]
--- def collapse_space (X Y) : topological_space (X → Y) :=
--- generate_from _ 
-end collapse_poset
-
-@[instance, priority 9001]def collapse_space (X Y : Type u) : topological_space (X → Y) :=
+def collapse_space : topological_space (X → Y) :=
 generate_from $ collapse_poset.principal_open '' set.univ
 
-lemma collapse_poset.principal_open_is_open {X Y} {p : collapse_poset X Y} : is_open (collapse_poset.principal_open p) :=
-by {constructor, use p, simp}
 
-lemma collapse_poset.principal_open_is_closed {X Y} {p : collapse_poset X Y} : is_closed (collapse_poset.principal_open p) := sorry
 
-lemma collapse_poset.principal_open_is_clopen {X Y} {p : collapse_poset X Y} : is_clopen (collapse_poset.principal_open p) :=
-⟨collapse_poset.principal_open_is_open, collapse_poset.principal_open_is_closed⟩ 
+end collapse_poset
 
-def collapse_algebra (X Y : Type u) := @regular_opens (X → Y) (collapse_space X Y)
+local attribute [instance, priority 9000] collapse_space
 
-@[instance, priority 10000]def complete_boolean_algebra_collapse_algebra {X Y : Type u} [H_nonempty : nonempty (X → Y)] : nontrivial_complete_boolean_algebra (collapse_algebra X Y) :=
+section collapse_algebra
+variables X Y : Type u
+
+def collapse_algebra := @regular_opens (X → Y) collapse_space
+
+variables {X Y}
+
+@[instance, priority 9000] def collapse_algebra_boolean_algebra [H_nonempty : nonempty (X → Y)] : nontrivial_complete_boolean_algebra (collapse_algebra X Y) :=
 regular_open_algebra H_nonempty
 
-section collapsing_algebra
-variables {X Y : Type u}
+end collapse_algebra
+
+local notation `𝔹` := collapse_algebra ((aleph 1).out : Type 0) (set ℕ)
+
+namespace collapse_algebra
+
+--TODO(jesse) maybe we need to relax 𝔹-valued equality to just being equinumerous in 𝔹?
+lemma aleph_one_is_aleph_one {Γ : 𝔹} (x : bSet 𝔹) (Hx : ∀{Γ'}, Γ' ≤ aleph_one_spec_internal x) : Γ ≤ (card_ex $ aleph 1)̌  =ᴮ x := sorry
+
+lemma continuum_is_continuum {Γ : 𝔹} : Γ ≤ (pSet.powerset omega)̌  =ᴮ (bv_powerset bSet.omega) := sorry
 
 
 
-def collapse_poset.canonical_inclusion : collapse_poset X Y → collapse_algebra X Y :=
-λ p, ⟨collapse_poset.principal_open p, is_regular_of_clopen collapse_poset.principal_open_is_clopen⟩
+end collapse_algebra
 
-notation `⟨ﾉ◕ヮ◕⟩ﾉ`:100 := collapse_poset.canonical_inclusion
-
-lemma collapse_poset_dense [nonempty (X → Y)] {b : collapse_algebra X Y} (H : ⊥ ≤ b) : ∃ p, ⟨ﾉ◕ヮ◕⟩ﾉ p ≤ b :=
-begin
-  sorry
-end
-
-end collapsing_algebra
-
-/-
-  Note: Proposition 14.2 says that once we complete a σ-closed forcing, it we can show that
-
-For any P-name f such that there exists p : P with p ⊩ (f is a function with domain ω), there exists a q ≤ p and a real function g such that q ⊩ f = ǧ.
-
-In either case, we will have to show that the canonical comparison maps
-
-ℵ₁ → ℵ₁̌, and P(ω) → P(ω)̌  are surjective. This has a very clear meaning for the powerset of omega, less so for aleph 1, but I think if we grind out the calculations we will see.
--/
-
-/- 2019-06-12T14:21:36
-
-Note that by some considerations in Chapter 2 of Bell, we have that
-
-⊤ ≤ (ℵ_η)̌  ≤ (ℵ_(η̌)) (by a well-founded recursion)
-
-We furthermore then need that, assuming we have a σ-closed forcing, that
-
-⊤ ≤ (ℵ_(η̌)) ≤ (ℵ_η)̌ , because otherwise, (ℵ_η)̌  < ℵ_(η̌) and therefore, (ℵ_η)̌  is countable. But this contradicts the fact that these maps must be reflected back to pSet.
--/
-
-example : false := sorry
-
-variables (X Y : Type u) [H_nonempty : nonempty (X → Y)]
-local notation `𝔹` := (collapse_algebra X Y)
-
-
--- include H_nonempty --TODO(jesse) make these type-check
--- def function_reflect (x y : pSet) (Γ : 𝔹) (f) (H : Γ ≤ is_func' (x̌) (y̌) f) : pSet := sorry
-
--- def function_reflect_spec (x y : pSet} (Γ : 𝔹) (f) (H : Γ ≤ is_func' (x̌) (y̌) f) : (function_reflect x y Γ f H)̌  =ᴮ f := sorry
