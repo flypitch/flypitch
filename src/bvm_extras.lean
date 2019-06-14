@@ -538,7 +538,7 @@ local infix `≺`:70 := (λ x y, -(larger_than x y))
 
 local infix `≼`:70 := (λ x y, injects_into x y)
 
-lemma lt_of_lt_of_le (x y z : bSet 𝔹) {Γ} (H_nonzero : ⊥ < Γ) (H₁ : Γ ≤ x ≺ y) (H₂ : Γ ≤ y ≼ z) : Γ ≤ x ≺ z :=
+lemma bSet_lt_of_lt_of_le (x y z : bSet 𝔹) {Γ} (H_nonzero : ⊥ < Γ) (H₁ : Γ ≤ x ≺ y) (H₂ : Γ ≤ y ≼ z) : Γ ≤ x ≺ z :=
 begin
   dsimp only [larger_than, injects_into] at ⊢ H₁ H₂,
   rw[<-imp_bot] at ⊢ H₁,
