@@ -1663,6 +1663,26 @@ begin
   apply bv_rw' H, simp, rwa[bv_powerset_spec]
 end
 
+lemma subset_of_pointwise_bounded {Γ : 𝔹} {x : bSet 𝔹} {p : x.type → 𝔹} {p' : x.type → 𝔹} (H_bd : ∀ i : x.type, p i ≤ p' i) : Γ ≤ set_of_indicator p ⊆ᴮ set_of_indicator p' :=
+begin
+  simp[subset_unfold], intro i, bv_imp_intro, apply bv_use i,
+  from le_inf (le_trans H (by simp*)) bv_eq_refl'
+end
+
+lemma check_powerset_subset_powerset (x : pSet) {Γ : 𝔹} : Γ ≤ (pSet.powerset x)̌  ⊆ᴮ (bv_powerset (x̌))
+:=
+begin
+  rw[subset_unfold], bv_intro s, simp only [mem, bval, top_imp, func, check, check_bval_top],
+  suffices : ∃ χ : (x̌).type → 𝔹, Γ ≤ ((pSet.powerset x)̌ .func s) =ᴮ (set_of_indicator χ),
+    by {cases this with χ Hχ, rw[mem_unfold], apply bv_use χ, refine le_inf _ _,
+        { change _ ≤ _ ⊆ᴮ _, have := bv_rw' (bv_context_symm Hχ), show bSet 𝔹 → 𝔹,
+          from λ z, z ⊆ᴮ x̌, from this, simp, sorry }, -- TOOD(jesse) use subset_check lemma and func_powerset_check lemma
+        { from ‹_› }},
+
+   cases x with α A,
+     use (λ i, Prop_to_bot_top (s i)), sorry -- TODO(jesse) use subset_ext and grind it out
+end
+
 section infinity
 local notation `ω` := pSet.omega
 
