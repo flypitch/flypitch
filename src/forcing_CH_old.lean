@@ -8,6 +8,20 @@ universe u
 
 open lattice bSet topological_space pSet cardinal
 
+local infix ` ⟹ `:65 := lattice.imp
+
+local infix ` ⇔ `:50 := lattice.biimp
+
+local infix `≺`:70 := (λ x y, -(larger_than x y))
+
+local infix `≼`:70 := (λ x y, injects_into x y)
+
+local notation `ℵ₁` := (card_ex $ aleph 1)
+
+local notation `ω` := (bSet.omega)
+
+def my_CH {𝔹} [nontrivial_complete_boolean_algebra 𝔹] : 𝔹 := - ⨆ x, ⨆y, (omega ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(omega))
+
 section lemmas
 
 variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
@@ -163,16 +177,43 @@ regular_open_algebra H_nonempty
 
 end collapse_algebra
 
-local notation `𝔹` := collapse_algebra ((aleph 1).out : Type 0) (set ℕ)
+local notation ` 𝔹 ` := collapse_algebra ((aleph 1).out : Type 0) (set ℕ)
 
 namespace collapse_algebra
 
 --TODO(jesse) maybe we need to relax 𝔹-valued equality to just being equinumerous in 𝔹?
-lemma aleph_one_is_aleph_one {Γ : 𝔹} (x : bSet 𝔹) (Hx : ∀{Γ'}, Γ' ≤ aleph_one_spec_internal x) : Γ ≤ (card_ex $ aleph 1)̌  =ᴮ x := sorry
+-- lemma aleph_one_is_aleph_one {Γ : 𝔹} (x : bSet 𝔹) (Hx : ∀{Γ'}, Γ' ≤ aleph_one_spec_internal x) : Γ ≤ (card_ex $ aleph 1)̌  =ᴮ x := 
+
+lemma aleph_one_is_aleph_one (Γ : 𝔹) : Γ ≤ aleph_one_universal_property (ℵ₁̌ )
 
 lemma continuum_is_continuum {Γ : 𝔹} : Γ ≤ (pSet.powerset omega)̌  =ᴮ (bv_powerset bSet.omega) := sorry
 
 
 
+-- theorem CH_true : (⊤ : 𝔹) ≤ my_CH :=
+-- begin
+--   unfold my_CH, rw[imp_bot.symm], rw[<-deduction],
+--   simp[-le_bot_iff], intros x y,
+--   have := @poset_yoneda 𝔹 _ _ ⊥, apply this, intro Γ, intro H,
+--   rw[le_inf_iff, le_inf_iff] at H, cases H, cases H_left,
+--   have := aleph_one_is_aleph_one Γ, unfold aleph_one_universal_property at this,
+--   bv_specialize_at this x, 
+-- end
+
+
 end collapse_algebra
 
+
+theorem CH_true_aux {β} [nontrivial_complete_boolean_algebra β]
+  (H_aleph_one : ∀{Γ : β}, Γ ≤ aleph_one_universal_property (ℵ₁̌ ))
+  (H_not_lt    : ∀{Γ : β}, Γ ≤ - ((ℵ₁)̌  ≺ 𝒫(ω)))
+  : ∀{Γ : β}, Γ ≤ my_CH :=
+begin
+  intro Γ, unfold my_CH, rw[<-imp_bot], bv_imp_intro,
+  bv_cases_at H x, bv_cases_at H_1 y, clear H H_1, bv_split, bv_split,
+  unfold aleph_one_universal_property at H_aleph_one,
+  replace H_aleph_one := @H_aleph_one Γ_3 x ‹_›,
+  suffices H_aleph_one_lt_continuum : Γ_3 ≤ (ℵ₁)̌  ≺ 𝒫(ω),
+    from bv_absurd _ H_aleph_one_lt_continuum H_not_lt,
+  from bSet_lt_of_lt_of_le _ y _ (bSet_lt_of_le_of_lt _ x _ ‹_› ‹_›) ‹_›
+end
