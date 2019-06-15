@@ -538,11 +538,16 @@ local infix `≺`:70 := (λ x y, -(larger_than x y))
 
 local infix `≼`:70 := (λ x y, injects_into x y)
 
-lemma bSet_lt_of_lt_of_le (x y z : bSet 𝔹) {Γ} (H_nonzero : ⊥ < Γ) (H₁ : Γ ≤ x ≺ y) (H₂ : Γ ≤ y ≼ z) : Γ ≤ x ≺ z :=
+lemma bSet_lt_of_lt_of_le (x y z : bSet 𝔹) {Γ} (H₁ : Γ ≤ x ≺ y) (H₂ : Γ ≤ y ≼ z) : Γ ≤ x ≺ z :=
 begin
   dsimp only [larger_than, injects_into] at ⊢ H₁ H₂,
   rw[<-imp_bot] at ⊢ H₁,
   bv_imp_intro, sorry
+end
+
+lemma bSet_lt_of_le_of_lt (x y z : bSet 𝔹) {Γ} (H₁ : Γ ≤ x ≼ y) (H₂ : Γ ≤ y ≺ z) : Γ ≤ x ≺ z :=
+begin
+  sorry
 end
 
 def Card (y : bSet 𝔹) : 𝔹 := Ord(y) ⊓ ⨅x, x ∈ᴮ y ⟹ (- larger_than y x)
@@ -761,6 +766,12 @@ def aleph_one_spec_internal (x : bSet 𝔹) : 𝔹 :=
   (Ord x) ⊓
   (larger_than x bSet.omega) ⊓
   (⨅y, (Ord(y) ⟹ (larger_than y bSet.omega ⟹ x ⊆ᴮ y)))
+
+/--
+The universal property of ℵ₁ is that it injects into any set which is larger than ω
+-/
+def aleph_one_universal_property (x : bSet 𝔹) : 𝔹 := ⨅ z, (bSet.omega ≺ z) ⟹ (x ≼ z)
+
 
 -- TODO(jesse) prove this using regularity
 -- lemma aleph_one_exists {Γ} : Γ ≤ ⨆(x : bSet 𝔹), aleph_one_spec_internal x := sorry
