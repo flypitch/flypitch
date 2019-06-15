@@ -520,7 +520,7 @@ noncomputable def neg_CH_func : bSet (cohen_algebra κ₂) :=
 @function.mk _ _ ((card_ex κ₂)̌ ) (λ x, cohen_real.mk κ₂ x) (cohen_real.mk_ext κ₂)
 
 variables {κ₁ κ₂}
-def CH : (cohen_algebra κ₂) := - ⨆ x, ⨆y, (ℵ₀ ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(ℵ₀))
+-- def CH : (cohen_algebra κ₂) := - ⨆ x, ⨆y, (ℵ₀ ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(ℵ₀))
 
 include κ₁ H_reg₁ H_inf₁
 
@@ -542,7 +542,7 @@ begin
 end
 omit H_reg₁ H_inf₁
 
-theorem κ₂_le_𝔠 : ⊤ ≤ is_func' ((card_ex κ₂)̌ ) 𝔠 (neg_CH_func κ₂) ⊓ is_inj (neg_CH_func κ₂) :=
+theorem κ₂_le_𝔠 : (⊤ : cohen_algebra κ₂) ≤ is_func' ((card_ex κ₂)̌ ) 𝔠 (neg_CH_func κ₂) ⊓ is_inj (neg_CH_func κ₂) :=
 begin
 refine le_inf _ _,
 

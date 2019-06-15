@@ -544,9 +544,7 @@ refine le_inf _ _,
   {refine mk_inj_of_inj _ _, from λ _ _ _, cohen_real.inj ‹_›},
 end
 
-def CH : 𝔹 := - ⨆ x, ⨆y, (ℵ₀ ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(ℵ₀))
-
-theorem neg_CH : ⊤ ≤ -CH :=
+theorem neg_CH : (⊤ : 𝔹) ≤ -CH :=
 begin
   dsimp [CH], rw[lattice.neg_neg], apply bv_use (ℵ₁̌ ),
   apply bv_use (ℵ₂̌ ), simp only [lattice.le_inf_iff],

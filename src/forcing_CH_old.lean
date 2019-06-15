@@ -16,11 +16,23 @@ local infix `≺`:70 := (λ x y, -(larger_than x y))
 
 local infix `≼`:70 := (λ x y, injects_into x y)
 
-local notation `ℵ₁` := (card_ex $ aleph 1)
+@[reducible]private noncomputable definition ℵ₁ := (card_ex $ aleph 1)
 
 local notation `ω` := (bSet.omega)
 
-def my_CH {𝔹} [nontrivial_complete_boolean_algebra 𝔹] : 𝔹 := - ⨆ x, ⨆y, (omega ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(omega))
+theorem CH_true_aux {β} [nontrivial_complete_boolean_algebra β]
+  (H_aleph_one : ∀{Γ : β}, Γ ≤ aleph_one_universal_property (ℵ₁̌ ))
+  (H_not_lt    : ∀{Γ : β}, Γ ≤ - ((ℵ₁)̌  ≺ 𝒫(ω)))
+  : ∀{Γ : β}, Γ ≤ CH :=
+begin
+  intro Γ, unfold CH, rw[<-imp_bot], bv_imp_intro,
+  bv_cases_at H x, bv_cases_at H_1 y, clear H H_1, bv_split, bv_split,
+  unfold aleph_one_universal_property at H_aleph_one,
+  replace H_aleph_one := @H_aleph_one Γ_3 x ‹_›,
+  suffices H_aleph_one_lt_continuum : Γ_3 ≤ (ℵ₁)̌  ≺ 𝒫(ω),
+    from bv_absurd _ H_aleph_one_lt_continuum H_not_lt,
+  from bSet_lt_of_lt_of_le _ y _ (bSet_lt_of_le_of_lt _ x _ ‹_› ‹_›) ‹_›
+end
 
 section lemmas
 
@@ -159,8 +171,6 @@ def collapse_poset.principal_open (p : collapse_poset X Y) : set (X → Y) :=
 def collapse_space : topological_space (X → Y) :=
 generate_from $ collapse_poset.principal_open '' set.univ
 
-
-
 end collapse_poset
 
 local attribute [instance, priority 9000] collapse_space
@@ -177,43 +187,61 @@ regular_open_algebra H_nonempty
 
 end collapse_algebra
 
-local notation ` 𝔹 ` := collapse_algebra ((aleph 1).out : Type 0) (set ℕ)
+private def 𝔹 : Type u := collapse_algebra ((ℵ₁ : pSet.{u}).type) (powerset omega : pSet.{u}).type
+
+instance nonempty_aleph_one_powerset_omega : nonempty $ ((ℵ₁).type) → (powerset omega).type :=
+⟨λ _, by {unfold pSet.omega, from λ _, false}⟩ 
+
+instance 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 :=
+by unfold 𝔹; apply_instance
 
 namespace collapse_algebra
 
---TODO(jesse) maybe we need to relax 𝔹-valued equality to just being equinumerous in 𝔹?
--- lemma aleph_one_is_aleph_one {Γ : 𝔹} (x : bSet 𝔹) (Hx : ∀{Γ'}, Γ' ≤ aleph_one_spec_internal x) : Γ ≤ (card_ex $ aleph 1)̌  =ᴮ x := 
+lemma π_χ_regular (p : type (card_ex (aleph 1)) × (powerset omega).type) : @_root_.is_regular _ collapse_space {g : type (card_ex (aleph 1)) → type (powerset omega) | g (p.fst) = p.snd} :=
+sorry
 
-lemma aleph_one_is_aleph_one (Γ : 𝔹) : Γ ≤ aleph_one_universal_property (ℵ₁̌ )
+def π_χ : ((ℵ₁ : pSet.{u}).type × (pSet.powerset omega : pSet.{u}).type) → 𝔹 :=
+λ p, ⟨{g | g p.1 = p.2}, π_χ_regular _⟩
+
+private lemma eq₀ : ((ℵ₁)̌  : bSet 𝔹).type = (ℵ₁).type := by simp
+
+private lemma eq₀' : ((powerset omega)̌  : bSet.{u} 𝔹).type = (powerset omega).type := by simp
+
+private lemma eq₁ : (((ℵ₁)̌  : bSet 𝔹).type × ((powerset omega)̌  : bSet 𝔹).type) = ((ℵ₁ .type) × (powerset omega).type) := by simp
+
+noncomputable def π : bSet 𝔹 := @set_of_indicator (𝔹 : Type u) _ (prod (ℵ₁̌ ) ((powerset omega)̌ )) (λ z, π_χ (cast eq₁ z))
+
+lemma π_is_extensional {Γ} : Γ ≤ is_extensional π := sorry
+
+lemma π_is_functional {Γ} : Γ ≤ is_functional π := sorry
+
+lemma π_is_func {Γ} : Γ ≤ (is_func π) := le_inf π_is_extensional π_is_functional
+
+lemma π_is_surj {Γ} : Γ ≤ ⨅v, v ∈ᴮ (powerset omega)̌  ⟹ ⨆ w, w ∈ᴮ (ℵ₁ ̌) ⊓ pair w v ∈ᴮ π :=
+begin
+  bv_intro v, bv_imp_intro, sorry
+end
+
+lemma π_spec {Γ : 𝔹} : Γ ≤ (is_func π) ⊓ ⨅v, v ∈ᴮ (powerset omega)̌  ⟹ (⨆w, w ∈ᴮ (ℵ₁̌ ) ⊓ pair w v ∈ᴮ π) := le_inf π_is_func π_is_surj
+
+lemma ℵ₁_larger_than_continuum {Γ : 𝔹} : Γ ≤ larger_than (ℵ₁ ̌) ((powerset omega)̌ ) :=
+by apply bv_use π; from π_spec
+
+lemma aleph_one_is_aleph_one (Γ : 𝔹) : Γ ≤ aleph_one_universal_property (ℵ₁̌ ) := sorry
 
 lemma continuum_is_continuum {Γ : 𝔹} : Γ ≤ (pSet.powerset omega)̌  =ᴮ (bv_powerset bSet.omega) := sorry
 
-
-
--- theorem CH_true : (⊤ : 𝔹) ≤ my_CH :=
--- begin
---   unfold my_CH, rw[imp_bot.symm], rw[<-deduction],
---   simp[-le_bot_iff], intros x y,
---   have := @poset_yoneda 𝔹 _ _ ⊥, apply this, intro Γ, intro H,
---   rw[le_inf_iff, le_inf_iff] at H, cases H, cases H_left,
---   have := aleph_one_is_aleph_one Γ, unfold aleph_one_universal_property at this,
---   bv_specialize_at this x, 
--- end
-
+theorem CH_true : (⊤ : 𝔹) ≤ CH :=
+begin
+  refine CH_true_aux _ _,
+    { from aleph_one_is_aleph_one },
+    { intro Γ, rw[<-imp_bot],
+      bv_imp_intro,
+      suffices ex_surj : Γ_1 ≤ larger_than (ℵ₁̌ ) (𝒫 ω),
+        by {dsimp [Γ_1] at H ex_surj ⊢, bv_contradiction},
+      apply bv_rw' (bv_symm continuum_is_continuum),
+        { from B_ext_larger_than_right },
+        { from ℵ₁_larger_than_continuum }}
+end
 
 end collapse_algebra
-
-
-theorem CH_true_aux {β} [nontrivial_complete_boolean_algebra β]
-  (H_aleph_one : ∀{Γ : β}, Γ ≤ aleph_one_universal_property (ℵ₁̌ ))
-  (H_not_lt    : ∀{Γ : β}, Γ ≤ - ((ℵ₁)̌  ≺ 𝒫(ω)))
-  : ∀{Γ : β}, Γ ≤ my_CH :=
-begin
-  intro Γ, unfold my_CH, rw[<-imp_bot], bv_imp_intro,
-  bv_cases_at H x, bv_cases_at H_1 y, clear H H_1, bv_split, bv_split,
-  unfold aleph_one_universal_property at H_aleph_one,
-  replace H_aleph_one := @H_aleph_one Γ_3 x ‹_›,
-  suffices H_aleph_one_lt_continuum : Γ_3 ≤ (ℵ₁)̌  ≺ 𝒫(ω),
-    from bv_absurd _ H_aleph_one_lt_continuum H_not_lt,
-  from bSet_lt_of_lt_of_le _ y _ (bSet_lt_of_le_of_lt _ x _ ‹_› ‹_›) ‹_›
-end

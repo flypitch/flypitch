@@ -1242,10 +1242,15 @@ do
    pr <- to_expr ``(le_trans %%e_H %%e_L),
    note n none pr >>= λ h, dsimp_hyp h none [] eta_beta_cfg
 
-meta def bv_imp_intro : tactic unit :=
-do Γ_old <- target >>= lhs_of_le,
+meta def bv_imp_intro (nm : parse $ optional ident_) : tactic unit :=
+match nm with
+| none := do Γ_old <- target >>= lhs_of_le,
   `[refine lattice.context_imp_intro _] >> (get_unused_name "H" >>= tactic.intro) >> skip,
   specialize_context_core Γ_old
+| (some n) := do Γ_old <- target >>= lhs_of_le,
+  `[refine lattice.context_imp_intro _] >> (tactic.intro n) >> skip,
+  specialize_context_core Γ_old
+end
 
 /-- `ac_change g' changes the current goal `tgt` to `g` by
      creating a new goal of the form `tgt = g`, and will

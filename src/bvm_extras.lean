@@ -242,11 +242,11 @@ begin
      have : a ⊓ b ≤ {{func v i}, {x,y}} =ᴮ {{func v i}, {func v i, func w j}},
        by {apply subst_congr_insert1_left'', have this₁ : a ⊓ b ≤ {x,y} =ᴮ {func v i, y}, by simp*,
        have this₂ : a ⊓ b ≤ {func v i, y} =ᴮ {func v i, func w j}, by simp*,
-       apply bv_context_trans; from ‹_›},
+       from bv_context_trans ‹_› ‹_›},
 
      apply le_trans, show 𝔹, from a ⊓ b,
        by {ac_change' (bval v i ⊓ bval w j) ⊓ (a ⊓ b) ≤ a ⊓ b, from inf_le_right},
-     apply bv_context_trans; from ‹_›}
+     from bv_context_trans ‹_› ‹_›}
 end
 
 
@@ -534,9 +534,17 @@ def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func f) ⊓ ⨅v, v ∈ᴮ
 
 def injects_into (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ is_inj f
 
+@[simp]lemma B_ext_larger_than_right {y : bSet 𝔹} : B_ext (λ z, larger_than y z) :=
+by simp[larger_than]
+
+@[simp]lemma B_ext_larger_than_left {y : bSet 𝔹} : B_ext (λ z, larger_than z y) :=
+by simp[larger_than]
+
 local infix `≺`:70 := (λ x y, -(larger_than x y))
 
 local infix `≼`:70 := (λ x y, injects_into x y)
+
+def CH {𝔹} [nontrivial_complete_boolean_algebra 𝔹] : 𝔹 := - ⨆ x, ⨆y, (omega ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(omega))
 
 lemma bSet_lt_of_lt_of_le (x y z : bSet 𝔹) {Γ} (H₁ : Γ ≤ x ≺ y) (H₂ : Γ ≤ y ≼ z) : Γ ≤ x ≺ z :=
 begin
