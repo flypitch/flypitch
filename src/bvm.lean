@@ -44,7 +44,7 @@ lemma bv_or_elim_left {b₁ b₂ c d : 𝔹} {h₁ : b₁ ⊓ d ≤ c} {h₂ : b
 lemma bv_or_elim_right {b₁ b₂ c d : 𝔹} {h₁ : d ⊓ b₁ ≤ c} {h₂ : d ⊓ b₂ ≤ c} : d ⊓ (b₁ ⊔ b₂) ≤ c :=
   by {rw[inf_comm] at ⊢ h₁ h₂; apply bv_or_elim_left; assumption}
 
-lemma bv_exfalso {a b : 𝔹} {h : a ≤ ⊥} : a ≤ b :=
+lemma bv_exfalso {a b : 𝔹} (h : a ≤ ⊥) : a ≤ b :=
 le_trans h bot_le
 
 lemma bv_cases_left {ι : Type*} {s : ι → 𝔹} {c b : 𝔹} {h : ∀ i : ι, (s i ⊓ c ≤ b)} :
@@ -508,6 +508,9 @@ begin
   ac_change' c ⊓ (x ⊆ᴮ y ⊓ y ⊆ᴮ z) ≤ x ⊆ᴮ z, apply inf_le_right_of_le,
   apply subset_trans
 end
+
+lemma mem_of_mem_subset {x y z : bSet 𝔹} {Γ} (H₂ : Γ ≤ y ⊆ᴮ z) (H₁ : Γ ≤ x ∈ᴮ y) : Γ ≤ x ∈ᴮ z :=
+by {rw[subset_unfold'] at H₂, from H₂ x ‹_›}
 
 -- lemma bounded_forall' {ϕ : bSet 𝔹 → 𝔹 } {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} {v : bSet 𝔹} :
 --   (⨅(i_x : v.type), (v.bval i_x ⟹ ϕ (v.func i_x))) = (⨅(x : bSet 𝔹), x ∈ᴮ v ⟹ ϕ x)  :=
@@ -1739,7 +1742,8 @@ instance has_zero_bSet : has_zero (bSet 𝔹) := ⟨of_nat 0⟩
 
 instance has_one_bSet : has_one (bSet 𝔹) := ⟨of_nat 1⟩
 
-example : 0 ∈ᴮ 1 = (⊤ : 𝔹) := by {apply top_unique, unfold has_zero.zero, apply bv_use none, simp}
+example : 0 ∈ᴮ 1 = (⊤ : 𝔹) :=
+by {apply top_unique, unfold has_zero.zero, apply bv_use none, simp}
 
 @[simp, cleanup]lemma omega_bval {k} : (omega : bSet 𝔹).bval k = ⊤ :=
 by refl

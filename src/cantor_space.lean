@@ -62,11 +62,11 @@ instance clopens_lattice {α : Type*} [topological_space α] : lattice (clopens 
   lt_iff_le_not_le :=
     by {intros; split; intros,
       {split, {from a_1.left},
-        intro H, apply a_1.right, apply subset_ext, from a_1.left, from ‹_›},
+        intro H, apply a_1.right, refine le_antisymm _ _, from a_1.left, from ‹_›},
         {/- `tidy` says -/ cases a_1, cases b, cases a, cases a_property,
         cases b_property, dsimp at *, fsplit,
         work_on_goal 0 { assumption }, intros a, induction a, solve_by_elim}},
-  le_antisymm := by {intros, apply subtype.eq, apply subset_ext; from ‹_›},
+  le_antisymm := by {intros, apply subtype.eq, refine le_antisymm _ _; from ‹_›},
   le_sup_left := by {intros, simp, intros x Hx, left, from ‹_›},
   le_sup_right := by {intros, simp, intros x Hx, right, from ‹_›},
   sup_le := by {intros, intros x Hx, cases Hx, from a_1 ‹_›, from a_2 ‹_›},

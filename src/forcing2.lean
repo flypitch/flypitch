@@ -269,7 +269,7 @@ begin
            (is_topological_basis_standard_basis) H_wit (is_open_of_is_regular b.property))
          with ⟨v, Hv₁, Hv₂, Hv₃⟩,
   have : v ≠ ∅, by {intro H, rw[H] at Hv₂, cases Hv₂},
-  cases (cohen_poset_dense_basis ‹_› ‹_› ‹_›) with p H_p, from ⟨p, subset_trans H_p ‹_›⟩
+  cases (cohen_poset_dense_basis ‹_› ‹_› ‹_›) with p H_p, from ⟨p, set.subset.trans H_p ‹_›⟩
 end
 
 lemma to_set_inter {α : Type*} {p₁ p₂ : finset α} : (p₁ ∩ p₂).to_set = (p₁.to_set ∩ p₂.to_set) :=
@@ -573,3 +573,4 @@ end
 
 
 end neg_CH
+

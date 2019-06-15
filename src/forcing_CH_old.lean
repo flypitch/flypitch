@@ -20,10 +20,20 @@ local infix `≼`:70 := (λ x y, injects_into x y)
 
 local notation `ω` := (bSet.omega)
 
-theorem CH_true_aux {β} [nontrivial_complete_boolean_algebra β]
-  (H_aleph_one : ∀{Γ : β}, Γ ≤ aleph_one_universal_property (ℵ₁̌ ))
-  (H_not_lt    : ∀{Γ : β}, Γ ≤ - ((ℵ₁)̌  ≺ 𝒫(ω)))
-  : ∀{Γ : β}, Γ ≤ CH :=
+section lemmas
+
+variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
+
+/-- Corresponds to proposition 5.2 in Moore's 'the method of forcing':
+Let x be a set and let ϕ(v) be a formula in the forcing language. If ∀ y ∈ x, p ⊩ ϕ(y̌), then p ⊩ ∀ y ∈ (x̌), ϕ(y)
+-/
+lemma check_forall (x : pSet) (ϕ : bSet 𝔹 → 𝔹) {h : B_ext ϕ} {b : 𝔹} :
+  (∀ (y : x.type), b ≤ ϕ((x.func y)̌ )) → (b ≤ (⨅(y : x.type), ϕ((x.func y)̌ ))) := λ H, le_infi ‹_›
+
+theorem CH_true_aux
+  (H_aleph_one : ∀{Γ : 𝔹}, Γ ≤ aleph_one_universal_property (ℵ₁̌ ))
+  (H_not_lt    : ∀{Γ : 𝔹}, Γ ≤ - ((ℵ₁)̌  ≺ 𝒫(ω)))
+  : ∀{Γ : 𝔹}, Γ ≤ CH :=
 begin
   intro Γ, unfold CH, rw[<-imp_bot], bv_imp_intro,
   bv_cases_at H x, bv_cases_at H_1 y, clear H H_1, bv_split, bv_split,
@@ -34,15 +44,102 @@ begin
   from bSet_lt_of_lt_of_le _ y _ (bSet_lt_of_le_of_lt _ x _ ‹_› ‹_›) ‹_›
 end
 
-section lemmas
+def rel_of_array
+  (x y : bSet 𝔹) (af : x.type → y.type → 𝔹)
+  : bSet 𝔹 :=
+set_of_indicator (λ pr, (af pr.1 pr.2) : (prod x y).type → 𝔹)
 
-variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
+lemma rel_of_array_surj (x y : bSet 𝔹) (af : x.type → y.type → 𝔹)
+  (H_bval₁ : ∀ i, x.bval i = ⊤)
+  (H_bval₂ : ∀ i, y.bval i = ⊤)
+  (H_wide : ∀ j, (⨆ i, af i j) = ⊤) {Γ}
+  : Γ ≤ (is_surj x y (rel_of_array x y af)) :=
+begin
+  unfold is_surj, bv_intro z, bv_imp_intro Hz, rw[<-@bounded_exists 𝔹 _ x _ _],
+  simp [H_bval₁],
+    { rw[mem_unfold] at Hz, bv_cases_at Hz i, simp[H_bval₂] at Hz_1,
+     apply bv_rw' Hz_1,
+       { apply B_ext_supr, intro i,
+       from @B_ext_pair_right 𝔹 _ (λ z, z ∈ᴮ rel_of_array x y af) (by simp) _},
+       { rw[rel_of_array], simp, rw[supr_comm],
+         transitivity ⨆ (j : type x), af j i ⊓
+           pair (func x j) (func y i) =ᴮ pair (func x j) (func y i),
+        conv {congr, skip, congr, funext, rw[bv_eq_refl _]}, simp[H_wide],
+        clear_except, tidy_context,
+        bv_cases_at a j, refine bv_use (j,i),
+        refine bv_use j, from ‹_›}},
+    { change B_ext _, from B_ext_term (B_ext_mem_left) (by simp)}
+end
 
-/-- Corresponds to proposition 5.2 in Moore's 'the method of forcing':
-Let x be a set and let ϕ(v) be a formula in the forcing language. If ∀ y ∈ x, p ⊩ ϕ(y̌), then p ⊩ ∀ y ∈ (x̌), ϕ(y)
--/
-lemma check_forall (x : pSet) (ϕ : bSet 𝔹 → 𝔹) {h : B_ext ϕ} {b : 𝔹} :
-  (∀ (y : x.type), b ≤ ϕ((x.func y)̌ )) → (b ≤ (⨅(y : x.type), ϕ((x.func y)̌ ))) := λ H, le_infi ‹_›
+lemma mem_left_of_mem_rel_of_array {x y w₁ w₂ : bSet 𝔹} {af : x.type → y.type → 𝔹}
+  {Γ} (H_mem_left : Γ ≤ pair w₁ w₂ ∈ᴮ rel_of_array x y af)
+  (H_bval₁ : ∀ i, x.bval i = ⊤)
+  : Γ ≤ w₁ ∈ᴮ x :=
+begin
+  unfold rel_of_array at H_mem_left, dsimp at H_mem_left,
+  bv_cases_at H_mem_left p, cases p with i j, dsimp at H_mem_left_1,
+  bv_split_at H_mem_left_1, have := eq_of_eq_pair_left' ‹_›,
+  apply bv_rw' this, simp, apply mem.mk'', simp only [H_bval₁ _, le_top]
+end
+
+lemma mem_right_of_mem_rel_of_array {x y w₁ w₂ : bSet 𝔹} {af : x.type → y.type → 𝔹}
+  {Γ} (H_mem_right : Γ ≤ pair w₁ w₂ ∈ᴮ rel_of_array x y af)
+  (H_bval₂ : ∀ i, y.bval i = ⊤)
+  : Γ ≤ w₂ ∈ᴮ y :=
+begin
+  unfold rel_of_array at H_mem_right, dsimp at H_mem_right,
+  bv_cases_at H_mem_right p, cases p with i j, dsimp at H_mem_right_1,
+  bv_split_at H_mem_right_1, have := eq_of_eq_pair_right' ‹_›,
+  apply bv_rw' this, simp, apply mem.mk'', simp only [H_bval₂ _, le_top]
+end
+
+local attribute [instance] classical.prop_decidable
+
+lemma rel_of_array_extensional (x y : bSet 𝔹) (af : x.type → y.type → 𝔹)
+  (H_bval₁ : ∀ i, x.bval i = ⊤)
+  (H_bval₂ : ∀ i, y.bval i = ⊤)
+  (H_wide : ∀ j, (⨆ i, af i j) = ⊤)
+  (H_anti : ∀ i, (∀ j₁ j₂, j₁ ≠ j₂ → af i j₁ ⊓ af i j₂ ≤ ⊥))
+  (H_inj  : ∀ i₁ i₂, ⊥ < (func x i₁) =ᴮ (func x i₂) → i₁ = i₂)
+  {Γ}
+  : Γ ≤ (is_extensional (rel_of_array x y af)) :=
+begin
+  bv_intro w₁, bv_intro v₁, bv_intro w₂, bv_intro v₂,
+  bv_imp_intro H_mem, bv_split,
+  bv_imp_intro H_eq,
+  have this : Γ_2 ≤ pair w₁ v₂ ∈ᴮ rel_of_array x y af,
+    by {apply bv_rw' H_eq,
+          { exact B_ext_term (B_ext_mem_left) (by simp) },
+          { from ‹_› }},
+  clear_except H_mem_left this H_anti H_inj H_eq,
+  dsimp[rel_of_array] at H_mem_left this,
+  bv_cases_at H_mem_left p₁, cases p₁ with i₁ j₁,
+  suffices : Γ_3 ≤ v₂ =ᴮ (y.func j₁),
+    by {refine bv_context_trans _ (bv_symm this), bv_split,
+         from eq_of_eq_pair_right' ‹_›},
+  bv_cases_at this p₂, cases p₂ with i₂ j₂,
+  suffices : Γ_4 ≤ (y.func j₂) =ᴮ (func y j₁),
+    by {exact bv_context_trans (by bv_split; from eq_of_eq_pair_right' ‹_›) (this)},
+  by_cases j₁ = j₂,
+    { subst h, from bv_eq_refl'},
+    { bv_exfalso, by_cases i₁ = i₂,
+        { subst h, specialize H_anti i₁ j₁ j₂ ‹_›, refine le_trans _ H_anti,
+          bv_split, bv_split_goal},
+        { suffices : Γ_4 ≤ - (w₁ =ᴮ v₁),
+            by {exact bv_absurd (w₁ =ᴮ v₁) ‹_› ‹_›},
+          suffices : Γ_4 ≤ w₁ =ᴮ (func x i₁) ∧ Γ_4 ≤ v₁ =ᴮ (func x i₂),
+            by { clear_except H_inj this h,
+                 apply bv_rw' this.left, by simp,
+                 apply bv_rw' this.right, by simp,
+                 suffices H_le_bot : (func x i₁ =ᴮ func x i₂) ≤ ⊥,
+                   by {rw[<-imp_bot, <-deduction], from le_trans (by simp) H_le_bot},
+                 suffices H_not_bot_lt : ¬ (⊥ < func x i₁ =ᴮ func x i₂),
+                   by {clear_except H_not_bot_lt, finish[bot_lt_iff_not_le_bot]},
+                 clear_except H_inj h, intro H, from absurd (H_inj _ _ H) ‹_›},
+          bv_split,
+          refine ⟨eq_of_eq_pair_left' H_mem_left_1_right,
+                   bv_context_trans (bv_symm H_eq) (eq_of_eq_pair_left' this_1_right)⟩}}
+end
 
 end lemmas
 
@@ -171,6 +268,10 @@ def collapse_poset.principal_open (p : collapse_poset X Y) : set (X → Y) :=
 def collapse_space : topological_space (X → Y) :=
 generate_from $ collapse_poset.principal_open '' set.univ
 
+def collapse_space_basis : set $ set (X → Y) := sorry
+
+def collapse_space_basis_spec : @is_topological_basis (X → Y) collapse_space collapse_space_basis := sorry
+
 end collapse_poset
 
 local attribute [instance, priority 9000] collapse_space
@@ -209,18 +310,61 @@ private lemma eq₀' : ((powerset omega)̌  : bSet.{u} 𝔹).type = (powerset om
 
 private lemma eq₁ : (((ℵ₁)̌  : bSet 𝔹).type × ((powerset omega)̌  : bSet 𝔹).type) = ((ℵ₁ .type) × (powerset omega).type) := by simp
 
-noncomputable def π : bSet 𝔹 := @set_of_indicator (𝔹 : Type u) _ (prod (ℵ₁̌ ) ((powerset omega)̌ )) (λ z, π_χ (cast eq₁ z))
+@[reducible]def π_af : ((ℵ₁̌  : bSet 𝔹) .type) → ((powerset omega)̌  : bSet 𝔹) .type → 𝔹 :=
+λ η S, (⟨{g | g (cast eq₀ η) = (cast eq₀' S)}, sorry⟩ : 𝔹)
 
-lemma π_is_extensional {Γ} : Γ ≤ is_extensional π := sorry
+lemma π_af_wide :  ∀ (j : ((powerset omega)̌ ).type), (⨆ (i : type (ℵ₁̌ )), π_af i j) = (⊤ : 𝔹) :=
+begin
+ intro S,
+   refine Sup_eq_top_of_dense_Union _,
+   apply dense_of_dense_in_basis _ collapse_space_basis_spec _,
+   intros B HB HB_ne, sorry
+end
 
-lemma π_is_functional {Γ} : Γ ≤ is_functional π := sorry
+lemma π_af_anti : ∀ (i : type (ℵ₁̌  : bSet 𝔹)) (j₁ j₂ : type ((powerset omega)̌ )),
+    j₁ ≠ j₂ → π_af i j₁ ⊓ π_af i j₂ ≤ ⊥ :=
+begin
+  intros i j₁ j₂ H_neq, sorry
+end
+
+lemma aleph_one_inj : (∀ i₁ i₂, ⊥ < (func (ℵ₁̌  : bSet 𝔹) i₁) =ᴮ (func (ℵ₁̌  : bSet 𝔹) i₂) → i₁ = i₂) :=
+begin
+  suffices this : ∀ (x y : type (ℵ₁)),
+    x ≠ y → ¬equiv (func (ℵ₁) x) (func (ℵ₁) y),
+    by {intros i₁ i₂ H, haveI : decidable (i₁ = i₂) := classical.prop_decidable _,
+        by_contra, 
+        have H_cast_eq : (cast eq₀ i₁) ≠ (cast eq₀ i₂),
+          by {intro, apply a, cc},
+        specialize this (cast eq₀ i₁) (cast eq₀ i₂) ‹_›,
+        have this₀ := check_bv_eq_bot_of_not_equiv this,
+        suffices this₁ : func (ℵ₁̌ ) i₁ =ᴮ func (ℵ₁̌ ) i₂ = ⊥,
+          by {exfalso, rw[eq_bot_iff] at this₀, rw[bot_lt_iff_not_le_bot] at H,
+              suffices : func (ℵ₁̌  : bSet 𝔹) i₁ =ᴮ func (ℵ₁ ̌) i₂ ≤ ⊥, by contradiction,
+              change_congr (func ℵ₁ (cast eq₀ i₁))̌   =ᴮ (func ℵ₁ (cast eq₀ i₂)) ̌ ≤ ⊥,
+              apply check_func, apply check_func, from ‹_›},
+        convert this₀; apply check_func},
+  exact λ _ _ _, ordinal.mk_inj _ _ _ ‹_›
+end
+
+noncomputable def π : bSet 𝔹 :=
+rel_of_array (ℵ₁̌  : bSet 𝔹) ((powerset omega)̌ ) π_af
+
+-- noncomputable def π : bSet 𝔹 := @set_of_indicator (𝔹 : Type u) _ (prod (ℵ₁̌ ) ((powerset omega)̌ )) (λ z, π_χ (cast eq₁ z))
+
+lemma π_is_extensional {Γ} : Γ ≤ is_extensional π :=
+begin
+  unfold π, refine rel_of_array_extensional _ _ _ (by simp) (by simp) _ _ _,
+  { from π_af_wide },
+  { from π_af_anti },
+  { from aleph_one_inj },
+end
+
+lemma π_is_functional {Γ} : Γ ≤ is_functional π := is_functional_of_is_extensional _ π_is_extensional
 
 lemma π_is_func {Γ} : Γ ≤ (is_func π) := le_inf π_is_extensional π_is_functional
 
-lemma π_is_surj {Γ} : Γ ≤ ⨅v, v ∈ᴮ (powerset omega)̌  ⟹ ⨆ w, w ∈ᴮ (ℵ₁ ̌) ⊓ pair w v ∈ᴮ π :=
-begin
-  bv_intro v, bv_imp_intro, sorry
-end
+lemma π_is_surj {Γ} : Γ ≤ is_surj (ℵ₁̌ ) ((powerset omega)̌ ) π :=
+rel_of_array_surj _ _ _ (by simp) (by simp) (π_af_wide)
 
 lemma π_spec {Γ : 𝔹} : Γ ≤ (is_func π) ⊓ ⨅v, v ∈ᴮ (powerset omega)̌  ⟹ (⨆w, w ∈ᴮ (ℵ₁̌ ) ⊓ pair w v ∈ᴮ π) := le_inf π_is_func π_is_surj
 

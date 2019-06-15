@@ -149,6 +149,27 @@ begin
   from bv_eq_refl'
 end
 
+@[reducible]def B_congr (t : bSet 𝔹 → bSet 𝔹) : Prop := ∀ x₁ x₂, x₁ =ᴮ x₂ ≤ t x₁ =ᴮ t x₂
+
+@[simp]lemma B_ext_term {ϕ : bSet 𝔹 → 𝔹} (H : B_ext ϕ) {t : bSet 𝔹 → bSet 𝔹} (H' : B_congr t) : B_ext (λ z, ϕ ((λ w, t w) z) ) :=
+begin
+  intros x y, tidy_context,
+  suffices : Γ ≤ t x =ᴮ t y,
+    by {apply bv_rw' (bv_symm this), from ‹_›, from ‹_›},
+  from le_trans ‹_› (H' x y)
+end
+
+@[simp]lemma B_congr_pair_left {y : bSet 𝔹} : B_congr (λ x, pair x y) :=
+  by {intros x₁ x₂, from @subst_congr_pair_left _ _ _ _ _}
+
+@[simp]lemma B_congr_pair_right {y : bSet 𝔹} : B_congr (λ x, pair y x) :=
+  by {intros x₁ x₂, from @subst_congr_pair_right _ _ _ _ _}
+
+@[simp]lemma B_ext_pair_left {ϕ : bSet 𝔹 → 𝔹} {H : B_ext ϕ} {x} : B_ext (λ z, ϕ ((λ w, pair w x) z)) :=
+by simp[H]
+
+@[simp]lemma B_ext_pair_right {ϕ : bSet 𝔹 → 𝔹} {H : B_ext ϕ} {x} : B_ext (λ z, ϕ ((λ w, pair x w) z)) := by simp[H]
+
 example {y z : bSet 𝔹} : ⊤ ≤ ({y,z} : bSet 𝔹) =ᴮ ({z,y}) := insert1_symm _ _
 
 lemma eq_of_eq_pair'_left {x z y : bSet 𝔹} : pair x y =ᴮ pair z y ≤ x =ᴮ z :=
@@ -231,7 +252,7 @@ poset_yoneda_inv Γ eq_of_eq_pair_right
   (⨅(z:(prod v w).type), ϕ z) = ⨅(z : v.type × w.type), ϕ z :=
 by refl
 
-@[simp]lemma prod_mem {v w x y : bSet 𝔹} : x ∈ᴮ v ⊓ y ∈ᴮ w ≤ pair x y ∈ᴮ prod v w :=
+lemma prod_mem_old {v w x y : bSet 𝔹} : x ∈ᴮ v ⊓ y ∈ᴮ w ≤ pair x y ∈ᴮ prod v w :=
 begin
   simp[pair, prod], simp only[mem_unfold], apply bv_cases_left, intro i,
   apply bv_cases_right, intro j, apply bv_use (i,j), tidy,
@@ -249,6 +270,29 @@ begin
      from bv_context_trans ‹_› ‹_›}
 end
 
+lemma prod_mem {v w x y : bSet 𝔹} {Γ} : Γ ≤ x ∈ᴮ v → Γ ≤ y ∈ᴮ w → Γ ≤ pair x y ∈ᴮ prod v w :=
+λ H₁ H₂, by {transitivity x ∈ᴮ v ⊓ y ∈ᴮ w, bv_split_goal, from prod_mem_old}
+
+lemma mem_left_of_prod_mem {v w x y : bSet 𝔹} {Γ : 𝔹} : Γ ≤ pair x y ∈ᴮ prod v w → Γ ≤ x ∈ᴮ v :=
+begin
+  intro H_pair_mem, rw[mem_unfold] at H_pair_mem, bv_cases_at H_pair_mem p, cases p with i j,
+  dsimp at *, bv_split, rw[mem_unfold], apply bv_use i,
+  replace H_pair_mem_1_right := eq_of_eq_pair_left' H_pair_mem_1_right,
+  simp only [le_inf_iff] at *, simp*
+end
+
+lemma mem_right_of_prod_mem {v w x y : bSet 𝔹} {Γ : 𝔹} : Γ ≤ pair x y ∈ᴮ prod v w → Γ ≤ y ∈ᴮ w :=
+begin
+  intro H_pair_mem, rw[mem_unfold] at H_pair_mem, bv_cases_at H_pair_mem p, cases p with i j,
+  dsimp at *, bv_split, rw[mem_unfold], apply bv_use j,
+  replace H_pair_mem_1_right := eq_of_eq_pair_right' H_pair_mem_1_right,
+  simp only [le_inf_iff] at *, simp*
+end
+
+lemma mem_prod_iff {v w x y : bSet 𝔹} {Γ} : Γ ≤ pair x y ∈ᴮ prod v w ↔ (Γ ≤ x ∈ᴮ v ∧ Γ ≤ y ∈ᴮ w) :=
+⟨λ _, ⟨mem_left_of_prod_mem ‹_›, mem_right_of_prod_mem ‹_›⟩, λ ⟨_,_⟩, prod_mem ‹_› ‹_›⟩
+
+
 
 -- /-- f is =ᴮ-extensional on x if for every w₁ and w₂ ∈ x, if w₁ =ᴮ w₂, then for every v₁ and v₂, if (w₁,v₁) ∈ f and (w₂,v₂) ∈ f, then v₁ =ᴮ v₂ -/
 -- @[reducible]def is_extensional (x f : bSet 𝔹) : 𝔹 :=
@@ -265,6 +309,16 @@ end
 
 @[reducible]def is_functional (f : bSet 𝔹) : 𝔹 :=
 ⨅z, (⨆w, pair z w ∈ᴮ f) ⟹ (⨆w', ⨅w'', pair z w'' ∈ᴮ f ⟹ w' =ᴮ w'')
+
+lemma is_functional_of_is_extensional (f : bSet 𝔹) {Γ} (H : Γ ≤ is_extensional f) : Γ ≤ is_functional f :=
+begin
+  unfold is_functional, unfold is_extensional at H,
+  bv_intro z, bv_imp_intro w_spec,
+  bv_cases_at w_spec w, clear w_spec,
+  replace H := H z z, apply bv_use w,
+  bv_intro w', bv_imp_intro Hw',
+  from H w w' (le_inf ‹_› ‹_›) (bv_eq_refl')
+end
 
 -- f is a function if it is a subset of prod x y and it satisfies the following two conditions:
 -- 1. it is =ᴮ-extensional
@@ -521,16 +575,16 @@ def is_transitive (x : bSet 𝔹) : 𝔹 := ⨅y, y∈ᴮ x ⟹ y ⊆ᴮ x
 lemma subset_of_mem_transitive {x w : bSet 𝔹} {Γ : 𝔹} (H₁ : Γ ≤ is_transitive x) (H₂ : Γ ≤ w ∈ᴮ x) : Γ ≤ w ⊆ᴮ x :=
 by {bv_specialize_at H₁ w, bv_to_pi H₁_1, solve_by_elim}
 
-lemma mem_of_mem_subset {w y x : bSet 𝔹} {Γ} (H₁ : Γ ≤ y ⊆ᴮ x) (H₂ : Γ ≤ w ∈ᴮ y) : Γ ≤ w ∈ᴮ x :=
-by {rw[subset_unfold'] at H₁, bv_specialize_at H₁ w, bv_to_pi', solve_by_elim}
-
 @[simp] lemma B_ext_is_transitive : B_ext (is_transitive : bSet 𝔹 → 𝔹) :=
 by {intros x y, unfold is_transitive, revert x y, change B_ext _, simp}
 
 def Ord (x : bSet 𝔹) : 𝔹 := epsilon_well_orders x ⊓ is_transitive x
 
+@[reducible]def is_surj (x y : bSet 𝔹) (f : bSet 𝔹) : 𝔹 :=
+⨅v, v ∈ᴮ y ⟹ (⨆w, w ∈ᴮ x ⊓ pair w v ∈ᴮ f)
+
 /-- x is larger than y if there exists a function f such that for every v ∈ y, there exists a w ∈ x such that (w,v) ∈ f -/
-def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func f) ⊓ ⨅v, v ∈ᴮ y ⟹ (⨆w, w ∈ᴮ x ⊓ pair w v ∈ᴮ f)
+def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func f) ⊓ (is_surj x y f)
 
 def injects_into (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ is_inj f
 

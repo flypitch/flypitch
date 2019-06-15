@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 Authors: Jesse Han, Floris van Doorn
 -/
-import .set_theory order.complete_boolean_algebra
+import .set_theory order.complete_boolean_algebra topology.basic
 
 local attribute [instance] classical.prop_decidable
 
@@ -18,17 +18,6 @@ meta def with_cc : list (tactic string) := tactic.tidy.default_tactics ++ [not_a
 
 meta def with_cc' : list (tactic string) := tactic.tidy.default_tactics ++ [not_as_big_bertha']
 
-section lemmas
-lemma subtype.eq_iff {α : Type*} {P : α → Prop} {a b : subtype P} :
-  a = b ↔ a.val = b.val := by tidy
-
-lemma subset_ext {α : Type*} {S₁ S₂ : set α} (H : S₁ ⊆ S₂) (H' : S₂ ⊆ S₁) : S₁ = S₂ := by tidy
-
-theorem subset_trans {α : Type*} {a b c : set α} : a ⊆ b →  b ⊆ c → a ⊆ c :=
-assume x h, by {intros x Ha, solve_by_elim}
-
-end lemmas
-
 namespace topological_space
 section topology_lemmas
 variables {α : Type*} [τ : topological_space α]
@@ -40,7 +29,27 @@ attribute [simp] interior_eq_of_open
 
 include τ
 
-def dense {S : set α} : Prop := ∀ U : set α, @is_open α τ U → U ≠ ∅ → U ∩ S ≠ ∅
+def dense (S : set α) : Prop := ∀ U : set α, @is_open α τ U → U ≠ ∅ → U ∩ S ≠ ∅
+
+lemma closure_univ_of_dense {S : set α} (H_dense : dense S) : closure S = univ :=
+dense_iff_inter_open.mpr H_dense
+
+/--
+S is dense in the basis 𝓑 if S meets every B ∈ 𝓑.
+-/
+def dense_in_basis (S : set α) {𝓑 : set $ set α} (H_basis : is_topological_basis 𝓑) : Prop :=
+∀ B ∈ 𝓑, B ≠ ∅ → B ∩ S ≠ ∅
+
+lemma dense_of_dense_in_basis (S : set α) {𝓑} (H_basis : is_topological_basis 𝓑) (H : dense_in_basis S H_basis) : dense S :=
+begin
+  intros U HU HU_ne,
+  cases (exists_mem_of_ne_empty ‹_›) with a Ha,
+  rcases mem_basis_subset_of_mem_open ‹_› Ha ‹_› with ⟨B, ⟨HB₁, ⟨HB₂, HB₃⟩⟩⟩,
+  suffices this : ∃ a', a' ∈ U ∧ a' ∈ S,
+    from ne_empty_of_exists_mem this,
+  have := exists_mem_of_ne_empty (H _ HB₁ (ne_empty_of_exists_mem (by finish))),
+  rcases this with ⟨x,⟨Hx₁,Hx₂⟩⟩, use x, tidy
+end
 
 def nowhere_dense (S : set α) : Prop := int (cl S) = ∅
 
@@ -118,6 +127,12 @@ local notation `int`:65 := interior
 @[simp]lemma is_open_perp {S : set α} : is_open (Sᵖ) :=
 by {unfold perp, apply is_open_compl_iff.mpr, simp}
 
+@[simp]lemma perp_univ : univᵖ = (∅ : set α) :=
+by simp[perp_unfold]
+
+@[simp]lemma perp_empty : (∅ : set α)ᵖ = univ :=
+by simp[perp_unfold]
+
 @[simp, ematch]lemma is_open_of_is_regular {S : set α} (H : (: is_regular S :)) : is_open S :=
 by {unfold is_regular at H, rw[H], simp}
 
@@ -178,7 +193,7 @@ by {rw[regular_iff_p_p] at H,
 
 @[simp]lemma is_regular_eq_p_p {S : set α} (H : is_regular S) : Sᵖᵖ = S :=
 begin
-  apply subset_ext,
+  refine le_antisymm _ _,
     apply is_regular_stable_subset ‹_›, intros _ _, from ‹_›,
   from in_p_p_of_open (is_open_of_is_regular ‹_›)
 end
@@ -197,7 +212,7 @@ by {simp}
 
 @[simp]lemma is_regular_p_p {S : set α} : is_regular (Sᵖᵖ) :=
 begin
-  apply subset_ext,
+  refine le_antisymm _ _,
     rw[<-p_p_eq_int_cl], apply subset_p_p_of_open,
     apply is_open_of_p_p',
     rw[<-p_p_eq_int_cl], simp, intros _ _, from ‹_›
@@ -244,7 +259,7 @@ begin
     by {replace this₈ := p_anti this₈, replace this₈ := p_anti this₈,
         conv {congr, rw[inter_comm], skip, rw[inter_comm]}, from this₈},
   rw[<-p_eq_p_p_p] at this₉,
-  from subset_trans this₇ this₉, from is_open_perp
+  from subset.trans this₇ this₉, from is_open_perp
 end
 
 @[simp]lemma is_regular_inter {S₁ S₂ : set α} (H₁ : is_regular S₁) (H₂ : is_regular S₂) : is_regular (S₁ ∩ S₂) :=
@@ -263,17 +278,19 @@ variables {α : Type*} [τ : topological_space α]
 
 include τ
 
-local attribute [reducible] perp
+
 
 variable (α)
 @[reducible]def regular_opens := {S : set α // is_regular S}
+
+local attribute [reducible] perp
 
 variable{α}
 def regular_open_poset : partial_order (regular_opens α) :=
 {le := λ S₁ S₂, S₁.val ⊆ S₂.val,
   lt := λ S₁ S₂, S₁.val ⊆ S₂.val ∧ S₁.val ≠ S₂.val,
   le_refl := by {intro a, simp only},
-  le_trans := by {intros a b c H₁ H₂, apply subset_trans H₁ H₂},
+  le_trans := by {intros a b c H₁ H₂, apply subset.trans H₁ H₂},
   lt_iff_le_not_le := by {intros a b, split; intro H, tidy,
                       suffices : a_val = b_val,
                       by contradiction, ext; intros; split; intros,
@@ -291,12 +308,12 @@ def regular_open_lattice : lattice (regular_opens α) :=
 { sup := λ S₁ S₂, ⟨(S₁.val ∪ S₂.val)ᵖᵖ, by {apply is_regular_sup}⟩,
     le_sup_left :=
     begin
-      intros a b, refine subset_trans (show a.val ⊆ a.val ∪ b.val, by simp) (show a.val ∪ b.val ⊆ (a.val ∪ b.val)ᵖᵖ, from _),
+      intros a b, refine subset.trans (show a.val ⊆ a.val ∪ b.val, by simp) (show a.val ∪ b.val ⊆ (a.val ∪ b.val)ᵖᵖ, from _),
       apply subset_p_p_of_open (is_open_union (is_open_of_is_regular a.property) (is_open_of_is_regular b.property)),
     end,
   le_sup_right :=
     begin
-      intros a b, refine subset_trans (show b.val ⊆ a.val ∪ b.val, by simp) (show a.val ∪ b.val ⊆ (a.val ∪ b.val)ᵖᵖ, from _),
+      intros a b, refine subset.trans (show b.val ⊆ a.val ∪ b.val, by simp) (show a.val ∪ b.val ⊆ (a.val ∪ b.val)ᵖᵖ, from _),
       apply subset_p_p_of_open (is_open_union (is_open_of_is_regular a.property) (is_open_of_is_regular b.property)),
     end,
   sup_le := by {intros a b c H₁ H₂, apply is_regular_stable_subset, from c.property, intros x Hx, cases Hx; solve_by_elim},
@@ -334,7 +351,7 @@ local attribute [instance] regular_open_has_neg
 
 
 def regular_open.Sup : set (regular_opens α) → (regular_opens α) :=
-λ 𝒮,⟨⋃₀(subtype.val '' 𝒮)ᵖᵖ, is_regular_p_p⟩
+λ 𝒮, ⟨⋃₀(subtype.val '' 𝒮)ᵖᵖ, is_regular_p_p⟩
 
 def regular_open_has_Sup : has_Sup (regular_opens α) :=
 ⟨regular_open.Sup⟩
@@ -360,8 +377,7 @@ begin
     unfold has_Sup.Sup regular_open_has_Sup regular_open.Sup, simp,
     suffices : (⋃ (x : {S // is_regular S}) (H : x ∈ 𝒜), x.val)ᵖᵖ ⊆ A.val,
       by tidy,
-    apply is_regular_stable_subset, from A.property,
-    intros a Ha, simp at Ha, tidy
+    apply is_regular_stable_subset, from A.property, tidy
 end
 
 lemma perp_self_empty {S : set α} : S ∩ (Sᵖ) = ∅ :=
@@ -549,15 +565,25 @@ def regular_open_algebra (H_nonempty : nonempty α) :
   bot_lt_top :=
     by {apply lt_iff_le_and_ne.mpr, split,
        have := regular_open_bounded_lattice.bot_le, specialize this ⊤,
-       from this, intro H, simp[subtype.eq_iff] at H,
+       from this, intro H, simp[subtype.ext] at H,
        change (∅ : set α) = univ at H, tactic.unfreeze_local_instances,
        cases H_nonempty, suffices : H_nonempty ∈ (∅ : set α), by {cases this}, simp[H]},
   .. regular_open_boolean_algebra,
   ..regular_open_complete_lattice
   }
 
+lemma p_p_eq_univ_of_dense {S : set α} (H_dense : dense S) : Sᵖᵖ = univ :=
+by simp only [perp_unfold, closure_univ_of_dense H_dense,
+               set.compl_univ, closure_empty, set.compl_empty]
+
+lemma Sup_eq_top_of_dense_Union {ι} {rO : ι → regular_opens α}
+  (H_dense : dense $ ⋃₀(subtype.val '' range (λ (i : ι), rO i)))
+  : (⨆i, rO i : regular_opens α) = ⊤ :=
+by {change Sup _ = _, rw[Sup_unfold], exact subtype.ext.mpr (p_p_eq_univ_of_dense ‹_›)}
+
 open cardinal function
-local attribute [instance] [priority 0] subtype.preorder -- why is regular_opens reducible? :/
+local attribute [instance] [priority 0] subtype.preorder
+
 lemma CCC_regular_opens (h : countable_chain_condition α) : CCC (regular_opens α) :=
 begin
   intros β O hO h2O,
@@ -574,6 +600,6 @@ begin
     rw [disjoint_iff_eq_empty], refine subset.antisymm _ (empty_subset _), exact h2O _ _ this }
 end
 
-
 end regular_algebra
+
 

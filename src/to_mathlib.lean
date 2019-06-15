@@ -1316,6 +1316,7 @@ meta def tidy_split_goals_tactics : list (tactic string) :=
  propositional_goal >> assumption >> pure "assumption",
   propositional_goal >> (`[solve_by_elim])    >> pure "solve_by_elim",
   `[refine lattice.le_inf _ _] >> pure "refine lattice.le_inf _ _",
+  `[exact bv_eq_refl _]        >> pure "exact bv_eq_refl _",
   `[rw[bSet.bv_eq_symm]] >> assumption >> pure "rw[bSet.bv_eq_symm], assumption",
    bv_intro none >> pure "bv_intro"
 ]
