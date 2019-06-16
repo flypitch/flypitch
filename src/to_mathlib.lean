@@ -320,6 +320,20 @@ enum_typein r a
 
 end ordinal
 
+namespace cardinal
+
+lemma exists_mem_compl_of_mk_lt_mk {α} (P : set α) (H_lt : cardinal.mk P  < cardinal.mk α) : ∃ x : α, x ∈ (- P) :=
+begin
+  haveI : decidable (∃ (x : α), x ∈ - P) := classical.prop_decidable _,
+  by_contra, push_neg at a,
+  replace a := (by finish : ∀ x, x ∈ P),
+  suffices : mk α ≤ mk P ,
+    by {exact absurd H_lt (not_lt.mpr ‹_›)},
+  refine mk_le_of_injective _, from λ _, ⟨‹_›, a ‹_›⟩, tidy
+end
+
+end cardinal
+
 namespace set
 lemma disjoint_iff_eq_empty {α} {s t : set α} : disjoint s t ↔ s ∩ t = ∅ := disjoint_iff
 
@@ -1096,7 +1110,7 @@ do  v_a <- target >>= lhs_of_le,
     Γ_name <- get_unused_name "Γ",
     v <- mk_mvar, v' <- mk_mvar,
     Γ_new <- pose Γ_name none v,
-
+    -- TODO(jesse) try replacing to_expr with an expression via mk_app instead
     new_goal <- to_expr ``((%%Γ_new : %%tp) ≤ %%v'),
     tactic.change new_goal,
     ctx <- local_context,
@@ -1316,7 +1330,7 @@ meta def tidy_split_goals_tactics : list (tactic string) :=
  propositional_goal >> assumption >> pure "assumption",
   propositional_goal >> (`[solve_by_elim])    >> pure "solve_by_elim",
   `[refine lattice.le_inf _ _] >> pure "refine lattice.le_inf _ _",
-  `[exact bv_eq_refl _]        >> pure "exact bv_eq_refl _",
+  `[exact bv_eq_refl']        >> pure "exact bv_eq_refl _",
   `[rw[bSet.bv_eq_symm]] >> assumption >> pure "rw[bSet.bv_eq_symm], assumption",
    bv_intro none >> pure "bv_intro"
 ]

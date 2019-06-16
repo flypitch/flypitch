@@ -249,12 +249,14 @@ end pfun_lemmas
 
 end pfun
 
+local prefix `#`:50 := cardinal.mk
+
 section collapse_poset
 variables X Y : Type u
 
 structure collapse_poset : Type u :=
 (f        : pfun X Y)
-(Hc       : set.countable f.dom)
+(Hc       : #f.dom ≤ (aleph 0))
 
 open pfun
 
@@ -268,9 +270,31 @@ def collapse_poset.principal_open (p : collapse_poset X Y) : set (X → Y) :=
 def collapse_space : topological_space (X → Y) :=
 generate_from $ collapse_poset.principal_open '' set.univ
 
-def collapse_space_basis : set $ set (X → Y) := sorry
+def collapse_space_basis : set $ set (X → Y) := collapse_poset.principal_open '' set.univ
 
 def collapse_space_basis_spec : @is_topological_basis (X → Y) collapse_space collapse_space_basis := sorry
+
+
+
+/--
+Given a partial function f : X →. Y and a point y : Y, define an extension g of f to X such that g(x) = y whenever x ∉ f.dom
+-/
+noncomputable def trivial_extension (f : X →. Y) (y : Y) : X → Y :=
+λ x,
+  begin
+    haveI : decidable (x ∈ f.dom) := classical.prop_decidable _,
+    by_cases x ∈ f.dom,
+      { exact fn f x ‹_› },
+      { exact y }
+  end
+
+lemma trivial_extension_mem_principal_open {p : collapse_poset X Y} {y : Y}
+  : (trivial_extension p.f y) ∈ collapse_poset.principal_open p :=
+by unfold trivial_extension; tidy; simp*
+
+lemma exists_mem_compl_dom_of_unctbl (p : collapse_poset X Y) (H_card : (aleph 0) < #X) :
+  ∃ x : X, x ∉ p.f.dom :=
+exists_mem_compl_of_mk_lt_mk _ $ lt_of_le_of_lt p.Hc ‹_›
 
 end collapse_poset
 
@@ -310,6 +334,21 @@ private lemma eq₀' : ((powerset omega)̌  : bSet.{u} 𝔹).type = (powerset om
 
 private lemma eq₁ : (((ℵ₁)̌  : bSet 𝔹).type × ((powerset omega)̌  : bSet 𝔹).type) = ((ℵ₁ .type) × (powerset omega).type) := by simp
 
+lemma aleph_one_type_uncountable : (aleph 0) < # ℵ₁.type :=
+eq.mpr
+  (id
+     (eq.trans
+        ((λ [c : has_lt cardinal] (a a_1 : cardinal) (e_2 : a = a_1) (a_2 a_3 : cardinal) (e_3 : a_2 = a_3),
+            congr (congr_arg has_lt.lt e_2) e_3)
+           (aleph 0)
+           omega
+           aleph_zero
+           (#type ℵ₁)
+           (aleph 1)
+           (@mk_type_mk_eq''' _ (by simp)))
+        (propext (iff_true_intro omega_lt_aleph_one))))
+  trivial
+
 @[reducible]def π_af : ((ℵ₁̌  : bSet 𝔹) .type) → ((powerset omega)̌  : bSet 𝔹) .type → 𝔹 :=
 λ η S, (⟨{g | g (cast eq₀ η) = (cast eq₀' S)}, sorry⟩ : 𝔹)
 
@@ -318,14 +357,25 @@ begin
  intro S,
    refine Sup_eq_top_of_dense_Union _,
    apply dense_of_dense_in_basis _ collapse_space_basis_spec _,
-   intros B HB HB_ne, sorry
+   intros B HB HB_ne,
+   unfold collapse_space_basis at HB, cases HB with p Hp, simp at Hp, subst Hp,
+   refine set.ne_empty_of_exists_mem _,
+   { cases exists_mem_compl_dom_of_unctbl p aleph_one_type_uncountable with η Hη,
+     use trivial_extension p.f S, use trivial_extension_mem_principal_open,
+     change ∃ x, _, use (π_af (cast eq₀.symm η) S).val,
+     refine ⟨_, _⟩, change ∃ x, _, refine ⟨_,_⟩,
+     apply π_af (cast eq₀.symm η) S, refine ⟨_,_⟩,
+       { exact set.mem_range_self _ },
+       { refl },
+     { unfold trivial_extension, dsimp,
+       suffices this : (cast eq₀ (cast eq₀.symm η) ∉ pfun.dom (p.f)),
+         by {simp*, refl},
+       intro, apply Hη, cc} }
 end
 
 lemma π_af_anti : ∀ (i : type (ℵ₁̌  : bSet 𝔹)) (j₁ j₂ : type ((powerset omega)̌ )),
     j₁ ≠ j₂ → π_af i j₁ ⊓ π_af i j₂ ≤ ⊥ :=
-begin
-  intros i j₁ j₂ H_neq, sorry
-end
+λ _ _ _ _ _ h, by cases h; finish
 
 lemma aleph_one_inj : (∀ i₁ i₂, ⊥ < (func (ℵ₁̌  : bSet 𝔹) i₁) =ᴮ (func (ℵ₁̌  : bSet 𝔹) i₂) → i₁ = i₂) :=
 begin
@@ -371,7 +421,8 @@ lemma π_spec {Γ : 𝔹} : Γ ≤ (is_func π) ⊓ ⨅v, v ∈ᴮ (powerset ome
 lemma ℵ₁_larger_than_continuum {Γ : 𝔹} : Γ ≤ larger_than (ℵ₁ ̌) ((powerset omega)̌ ) :=
 by apply bv_use π; from π_spec
 
-lemma aleph_one_is_aleph_one (Γ : 𝔹) : Γ ≤ aleph_one_universal_property (ℵ₁̌ ) := sorry
+lemma aleph_one_is_aleph_one (Γ : 𝔹) : Γ ≤ aleph_one_universal_property (ℵ₁̌ ) :=
+sorry
 
 lemma continuum_is_continuum {Γ : 𝔹} : Γ ≤ (pSet.powerset omega)̌  =ᴮ (bv_powerset bSet.omega) := sorry
 
