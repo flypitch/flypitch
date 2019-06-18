@@ -312,6 +312,8 @@ begin
   use y, from ⟨‹_›,‹_›⟩
 end
 
+def is_surj (x y f : pSet.{u}) : Prop := ∀ b : pSet.{u}, b ∈ y → ( ∃ a : pSet.{u}, a ∈ x → (Set.pair ⟦a⟧ ⟦b⟧ ∈ ⟦f⟧))
+
 -- lemma mk_lt_of_lt {β₁ β₂ : ordinal.{u}} (H : β₁ < β₂) : ordinal.mk β₁ ∈ ordinal.mk β₂ :=
 -- begin
 --   revert H, revert β₁, apply limit_rec_on β₂,
@@ -613,5 +615,7 @@ begin
   intro H, replace H := (equiv.ext _ _).mp H, cases H with H₁ H₂,
   apply H_neq, apply le_antisymm; from le_of_subset ‹_›
 end
+
+@[simp]lemma Ord_mk (ξ : ordinal) : Ord (ordinal.mk ξ) := sorry
 
 end pSet
