@@ -1,4 +1,4 @@
-import .bvm .bvm_extras .regular_open_algebra .to_mathlib data.pfun tactic
+import .bvm .bvm_extras .regular_open_algebra .to_mathlib data.pfun tactic .pSet_ordinal
 
 /-
   Forcing the continuum hypothesis.
@@ -30,7 +30,16 @@ variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 Let x be a set and let ϕ(v) be a formula in the forcing language. If ∀ y ∈ x, p ⊩ ϕ(y̌), then p ⊩ ∀ y ∈ (x̌), ϕ(y)
 -/
 lemma check_forall (x : pSet) (ϕ : bSet 𝔹 → 𝔹) {h : B_ext ϕ} {b : 𝔹} :
-  (∀ (y : x.type), b ≤ ϕ((x.func y)̌ )) → (b ≤ (⨅(y : x.type), ϕ((x.func y)̌ ))) := λ H, le_infi ‹_›
+  (∀ (y : x.type), b ≤ ϕ((x.func y)̌ )) → (b ≤ (⨅(y : x.type), ϕ((x.func y)̌ ))) :=
+λ H, le_infi ‹_›
+
+lemma aleph_one_check_is_aleph_one_of_omega_lt {Γ : 𝔹} (H : Γ ≤ bSet.omega ≺ (ℵ₁)̌ ): Γ ≤ (ℵ₁̌ ) =ᴮ (aleph_one) :=
+begin
+  refine subset_ext aleph_one_check_sub_aleph_one _,
+  have := @aleph_one_satisfies_Ord_spec _ _ Γ, unfold aleph_one_Ord_spec at this,
+  bv_split, revert this_right, bv_split, intro this_right,
+  from this_right (ℵ₁ ̌) (by simp) ‹_›
+end
 
 theorem CH_true_aux
   (H_aleph_one : ∀{Γ : 𝔹}, Γ ≤ aleph_one_universal_property (ℵ₁̌ ))
@@ -104,7 +113,7 @@ lemma rel_of_array_extensional (x y : bSet 𝔹) (af : x.type → y.type → �
   (H_anti : ∀ i, (∀ j₁ j₂, j₁ ≠ j₂ → af i j₁ ⊓ af i j₂ ≤ ⊥))
   (H_inj  : ∀ i₁ i₂, ⊥ < (func x i₁) =ᴮ (func x i₂) → i₁ = i₂)
   {Γ}
-  : Γ ≤ (is_extensional (rel_of_array x y af)) :=
+  : Γ ≤ (is_func (rel_of_array x y af)) :=
 begin
   bv_intro w₁, bv_intro v₁, bv_intro w₂, bv_intro v₂,
   bv_imp_intro H_mem, bv_split,
@@ -272,11 +281,35 @@ def collapse_poset.principal_open (p : collapse_poset X Y) : set (X → Y) :=
 def collapse_space : topological_space (X → Y) :=
 generate_from $ collapse_poset.principal_open '' set.univ
 
+local attribute [instance, priority 9001] collapse_space
+
 def collapse_space_basis : set $ set (X → Y) := collapse_poset.principal_open '' set.univ
 
 def collapse_space_basis_spec : @is_topological_basis (X → Y) collapse_space collapse_space_basis := sorry
 
+open collapse_poset
 
+def one_point_pfun (x : X) (y : Y) : X →. Y :=
+λ a, { dom := a = x,
+       get := λ _, y }
+
+@[simp]lemma one_point_pfun.eval {x a : X} {y : Y} (H_a : a = x) : fn (one_point_pfun x y) a H_a = y := by refl
+
+def one_point_collapse_poset (x : X) (y : Y) : collapse_poset X Y :=
+{ f := one_point_pfun x y,
+  Hc := by {unfold one_point_pfun, tidy, from 0} }
+
+lemma one_point_collapse_poset_principal_open {x : X} {y : Y} :
+  (principal_open $ one_point_collapse_poset x y) = {g | g x = y} :=
+begin
+  ext, dsimp at *, fsplit, work_on_goal 0 { intros a }, work_on_goal 1 { intros a x_2 H_x, induction H_x, assumption }, sorry
+end
+
+lemma is_regular_one_point_regular_open {x : X} {y : Y} :
+  is_regular (principal_open (one_point_collapse_poset x y)) :=
+begin
+  sorry
+end
 
 /--
 Given a partial function f : X →. Y and a point y : Y, define an extension g of f to X such that g(x) = y whenever x ∉ f.dom
@@ -325,7 +358,10 @@ by unfold 𝔹; apply_instance
 namespace collapse_algebra
 
 lemma π_χ_regular (p : type (card_ex (aleph 1)) × (powerset omega).type) : @_root_.is_regular _ collapse_space {g : type (card_ex (aleph 1)) → type (powerset omega) | g (p.fst) = p.snd} :=
-sorry
+begin
+  let A := (collapse_poset.principal_open (one_point_collapse_poset (p.fst) (p.snd))),
+  sorry
+end
 
 def π_χ : ((ℵ₁ : pSet.{u}).type × (pSet.powerset omega : pSet.{u}).type) → 𝔹 :=
 λ p, ⟨{g | g p.1 = p.2}, π_χ_regular _⟩
@@ -391,7 +427,7 @@ rel_of_array (ℵ₁̌  : bSet 𝔹) ((powerset omega)̌ ) π_af
 
 -- noncomputable def π : bSet 𝔹 := @set_of_indicator (𝔹 : Type u) _ (prod (ℵ₁̌ ) ((powerset omega)̌ )) (λ z, π_χ (cast eq₁ z))
 
-lemma π_is_extensional {Γ} : Γ ≤ is_extensional π :=
+lemma π_is_func {Γ} : Γ ≤ is_func π :=
 begin
   unfold π, refine rel_of_array_extensional _ _ _ (by simp) (by simp) _ _ _,
   { from π_af_wide },
@@ -399,9 +435,7 @@ begin
   { from aleph_one_inj },
 end
 
-lemma π_is_functional {Γ} : Γ ≤ is_functional π := is_functional_of_is_extensional _ π_is_extensional
-
-lemma π_is_func {Γ} : Γ ≤ (is_func π) := le_inf π_is_extensional π_is_functional
+lemma π_is_functional {Γ} : Γ ≤ is_functional π := is_functional_of_is_func _ π_is_func
 
 lemma π_is_surj {Γ} : Γ ≤ is_surj (ℵ₁̌ ) ((powerset omega)̌ ) π :=
 rel_of_array_surj _ _ _ (by simp) (by simp) (π_af_wide)
@@ -423,20 +457,35 @@ If q ∈ P satisfies q ≤ pᵢ for all i (i.e. is a witness to the ω-closed as
 and g is the function attached to the collection of pairs (i, y_i), show that q ⊩ f = ǧ.
 -/
 
-#check is_func
-
 def function_reflect (g : bSet 𝔹) (x y : pSet) {Γ} (H : Γ ≤  is_func' (x̌) (y̌) g) : pSet := sorry
 
-def function_reflect_spec {g} {x y} {Γ : 𝔹} (H : Γ ≤ _) : Γ ≤ (function_reflect g x y H)̌  =ᴮ g :=
+lemma function_reflect_spec {g} {x y} {Γ : 𝔹} (H : Γ ≤ _) : Γ ≤ (function_reflect g x y H)̌  =ᴮ g :=
 sorry
 
-lemma aleph_one_is_aleph_one {Γ : 𝔹} : Γ ≤ (ℵ₁̌ ) =ᴮ (aleph_one) := sorry
+lemma function_reflect_surj_of_surj {g} {x y} {Γ : 𝔹} (H : Γ ≤ _) (H_not_zero : ⊥ < Γ) (H_surj : Γ ≤ is_surj (x̌) (y̌) (g : bSet 𝔹)) :
+  pSet.is_surj x y (function_reflect g x y H) :=
+sorry
+
+lemma ex_no_surj_omega_aleph_one : ¬ ∃ f : pSet, pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f := sorry
+
+lemma omega_lt_aleph_one {Γ : 𝔹} : Γ ≤ bSet.omega ≺ (ℵ₁̌ ) :=
+begin
+  unfold larger_than, rw[<-imp_bot], rw[<-deduction], /- `tidy_context` says -/ refine poset_yoneda _, intros Γ_1 a, simp only [le_inf_iff] at *, cases a,
+  bv_cases_at a_right f, rw[le_inf_iff] at a_right_1, cases a_right_1,
+  by_contra, replace a := (bot_lt_iff_not_le_bot.mpr a),
+  suffices this : ∃ f : pSet, pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f,
+    by {exfalso, from ex_no_surj_omega_aleph_one ‹_›},
+  let g := (function_reflect f (pSet.omega) (ordinal.mk (aleph 1).ord) sorry), 
+  use g,
+  apply function_reflect_surj_of_surj, from ‹_›, from a_right_1_right
+end
+
 
 lemma aleph_one_check_universal_property (Γ : 𝔹) : Γ ≤ aleph_one_universal_property (ℵ₁̌  : bSet 𝔹) :=
 begin
-  apply bv_rw' aleph_one_is_aleph_one,
-  { sorry },
-  { sorry }
+  apply bv_rw' (aleph_one_check_is_aleph_one_of_omega_lt (omega_lt_aleph_one)),
+  { simp },
+  { from aleph_one_satisfies_universal_property }
 end
 
 lemma continuum_is_continuum {Γ : 𝔹} : Γ ≤ (pSet.powerset omega)̌  =ᴮ (bv_powerset bSet.omega) :=
@@ -445,7 +494,7 @@ begin
   bv_intro χ, bv_imp_intro H_χ,
   suffices this : ∃ S : (powerset omega).type, Γ_1 ≤  (set_of_indicator χ) =ᴮ ((powerset omega).func S)̌ ,
     by { cases this with S HS, apply bv_use S, rwa[top_inf_eq] },
-  sorry
+  sorry -- TODO(jesse): come up with a specialized argument for this
 end
 
 theorem CH_true : (⊤ : 𝔹) ≤ CH :=
