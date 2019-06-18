@@ -66,7 +66,7 @@ lemma rel_of_array_surj (x y : bSet 𝔹) (af : x.type → y.type → 𝔹)
   (H_wide : ∀ j, (⨆ i, af i j) = ⊤) {Γ}
   : Γ ≤ (is_surj x y (rel_of_array x y af)) :=
 begin
-  unfold is_surj, bv_intro z, bv_imp_intro Hz, rw[<-@bounded_exists 𝔹 _ x _ _],
+  bv_intro z, bv_imp_intro Hz, rw[<-@bounded_exists 𝔹 _ x _ _],
   simp [H_bval₁],
     { rw[mem_unfold] at Hz, bv_cases_at Hz i, simp[H_bval₂] at Hz_1,
      apply bv_rw' Hz_1,
