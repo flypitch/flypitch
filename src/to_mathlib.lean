@@ -1377,7 +1377,7 @@ do ctx <- (local_context >>= λ l, l.mfilter (hyp_is_ineq)),
 
 meta structure context_cfg :=
 (trace_result : bool := ff)
-(trace_result_prefix : string := "/- `tidy_context` says -/ apply poset_yoneda, ")
+(trace_result_prefix : string := "/- `tidy_context` says -/ refine poset_yoneda _, ")
 (tactics : list(tactic string) := tidy_context_tactics)
 
 meta def cfg_of_context_cfg : context_cfg → cfg :=
