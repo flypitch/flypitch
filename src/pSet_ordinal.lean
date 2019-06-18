@@ -440,12 +440,6 @@ begin
     {from ordinal.mk_inj_limit}
 end
 
-@[simp]lemma mk_type_mk_eq'''' {k} : #(ordinal.mk (aleph k).ord).type = (aleph k) :=
-begin
-  rw[ordinal.mk_limit_type (aleph_is_limit (k))], convert card_ord (aleph k),
-  rw[<-(@card_type _ (aleph k).ord.out.r (aleph k).ord.out.wo)], simp
-end
-
 lemma mk_type_mk_eq (κ : cardinal) (H_inf : cardinal.omega ≤ κ) : #(ordinal.mk (ord κ)).type = κ :=
 begin
   cases (@exists_aleph κ).mp ‹_› with k H_k,
@@ -461,6 +455,12 @@ mk_type_mk_eq κ ‹_›
 
 @[simp]lemma mk_type_mk_eq''' {κ : cardinal} {H_inf : cardinal.omega < κ} : #(card_ex κ).type = κ :=
 mk_type_mk_eq _ (le_of_lt ‹_›)
+
+@[simp]lemma mk_type_mk_eq'''' {k} : #(ordinal.mk (aleph k).ord).type = (aleph k) :=
+begin
+  rw[ordinal.mk_limit_type (aleph_is_limit (k))], convert card_ord (aleph k),
+  rw[<-(@card_type _ (aleph k).ord.out.r (aleph k).ord.out.wo)], simp
+end
 
 lemma zero_aleph : cardinal.omega = (aleph 0) := by simp
 
