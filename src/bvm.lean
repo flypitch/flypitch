@@ -1677,10 +1677,10 @@ lemma check_powerset_subset_powerset (x : pSet) {Γ : 𝔹} : Γ ≤ (pSet.power
 begin
   rw[subset_unfold], bv_intro s, simp only [mem, bval, top_imp, func, check, check_bval_top],
   suffices : ∃ χ : (x̌).type → 𝔹, Γ ≤ ((pSet.powerset x)̌ .func s) =ᴮ (set_of_indicator χ),
-    by {cases this with χ Hχ, rw[mem_unfold], apply bv_use χ, refine le_inf _ _,
+    by {cases this with χ Hχ, rw[mem_unfold], apply bv_use χ, refine le_inf _ ‹_›,
         { change _ ≤ _ ⊆ᴮ _, have := bv_rw' (bv_context_symm Hχ), show bSet 𝔹 → 𝔹,
           from λ z, z ⊆ᴮ x̌, from this, simp, sorry }, -- TOOD(jesse) use subset_check lemma and func_powerset_check lemma
-        { from ‹_› }},
+ },
 
    cases x with α A,
      use (λ i, Prop_to_bot_top (s i)), sorry -- TODO(jesse) use subset_ext and grind it out
