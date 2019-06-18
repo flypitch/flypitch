@@ -20,6 +20,8 @@ local infix `≼`:70 := (λ x y, injects_into x y)
 
 local notation `ω` := (bSet.omega)
 
+local attribute [instance, priority 0] classical.prop_decidable
+
 section lemmas
 
 variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
@@ -68,7 +70,7 @@ begin
         clear_except, tidy_context,
         bv_cases_at a j, refine bv_use (j,i),
         refine bv_use j, from ‹_›}},
-    { change B_ext _, from B_ext_term (B_ext_mem_left) (by simp)}
+    { change B_ext _, from B_ext_term (B_ext_mem_left) (by simp) }
 end
 
 lemma mem_left_of_mem_rel_of_array {x y w₁ w₂ : bSet 𝔹} {af : x.type → y.type → 𝔹}
@@ -335,19 +337,7 @@ private lemma eq₀' : ((powerset omega)̌  : bSet.{u} 𝔹).type = (powerset om
 private lemma eq₁ : (((ℵ₁)̌  : bSet 𝔹).type × ((powerset omega)̌  : bSet 𝔹).type) = ((ℵ₁ .type) × (powerset omega).type) := by simp
 
 lemma aleph_one_type_uncountable : (aleph 0) < # ℵ₁.type :=
-eq.mpr
-  (id
-     (eq.trans
-        ((λ [c : has_lt cardinal] (a a_1 : cardinal) (e_2 : a = a_1) (a_2 a_3 : cardinal) (e_3 : a_2 = a_3),
-            congr (congr_arg has_lt.lt e_2) e_3)
-           (aleph 0)
-           omega
-           aleph_zero
-           (#type ℵ₁)
-           (aleph 1)
-           (@mk_type_mk_eq''' _ (by simp)))
-        (propext (iff_true_intro omega_lt_aleph_one))))
-  trivial
+by simp only [cardinal.aleph_zero, pSet.omega_lt_aleph_one, pSet.mk_type_mk_eq''']
 
 @[reducible]def π_af : ((ℵ₁̌  : bSet 𝔹) .type) → ((powerset omega)̌  : bSet 𝔹) .type → 𝔹 :=
 λ η S, (⟨{g | g (cast eq₀ η) = (cast eq₀' S)}, sorry⟩ : 𝔹)
@@ -421,15 +411,47 @@ lemma π_spec {Γ : 𝔹} : Γ ≤ (is_func π) ⊓ ⨅v, v ∈ᴮ (powerset ome
 lemma ℵ₁_larger_than_continuum {Γ : 𝔹} : Γ ≤ larger_than (ℵ₁ ̌) ((powerset omega)̌ ) :=
 by apply bv_use π; from π_spec
 
-lemma aleph_one_is_aleph_one (Γ : 𝔹) : Γ ≤ aleph_one_universal_property (ℵ₁̌ ) :=
+-- for these two lemmas, need 2.17 (iv) in Bell, which follows from (i) ⟹ (ii)
+-- i.e. If 𝔹 has a dense subset P which is ω-closed, then for any η < ℵ₁, and any x,
+-- bSet 𝔹 ⊩ Func(η̌, x̌) = Func(η, x)̌ .
+
+/-
+Proof sketch:
+Let p : P be such that p ⊩ f is a function from η̌ to x̌. Using the ω-closed assumption, find a descending sequence {p_i : P} and a set {y_i ∈ x} such that for each i, pᵢ ⊩ f(i) = y_i.
+
+If q ∈ P satisfies q ≤ pᵢ for all i (i.e. is a witness to the ω-closed assumption),
+and g is the function attached to the collection of pairs (i, y_i), show that q ⊩ f = ǧ.
+-/
+
+#check is_func
+
+def function_reflect (g : bSet 𝔹) (x y : pSet) {Γ} (H : Γ ≤  is_func' (x̌) (y̌) g) : pSet := sorry
+
+def function_reflect_spec {g} {x y} {Γ : 𝔹} (H : Γ ≤ _) : Γ ≤ (function_reflect g x y H)̌  =ᴮ g :=
 sorry
 
-lemma continuum_is_continuum {Γ : 𝔹} : Γ ≤ (pSet.powerset omega)̌  =ᴮ (bv_powerset bSet.omega) := sorry
+lemma aleph_one_is_aleph_one {Γ : 𝔹} : Γ ≤ (ℵ₁̌ ) =ᴮ (aleph_one) := sorry
+
+lemma aleph_one_check_universal_property (Γ : 𝔹) : Γ ≤ aleph_one_universal_property (ℵ₁̌  : bSet 𝔹) :=
+begin
+  apply bv_rw' aleph_one_is_aleph_one,
+  { sorry },
+  { sorry }
+end
+
+lemma continuum_is_continuum {Γ : 𝔹} : Γ ≤ (pSet.powerset omega)̌  =ᴮ (bv_powerset bSet.omega) :=
+begin
+  refine subset_ext (check_powerset_subset_powerset _) _,
+  bv_intro χ, bv_imp_intro H_χ,
+  suffices this : ∃ S : (powerset omega).type, Γ_1 ≤  (set_of_indicator χ) =ᴮ ((powerset omega).func S)̌ ,
+    by { cases this with S HS, apply bv_use S, rwa[top_inf_eq] },
+  sorry
+end
 
 theorem CH_true : (⊤ : 𝔹) ≤ CH :=
 begin
   refine CH_true_aux _ _,
-    { from aleph_one_is_aleph_one },
+    { from aleph_one_check_universal_property },
     { intro Γ, rw[<-imp_bot],
       bv_imp_intro,
       suffices ex_surj : Γ_1 ≤ larger_than (ℵ₁̌ ) (𝒫 ω),

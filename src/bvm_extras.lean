@@ -594,6 +594,12 @@ by simp[larger_than]
 @[simp]lemma B_ext_larger_than_left {y : bSet 𝔹} : B_ext (λ z, larger_than z y) :=
 by simp[larger_than]
 
+lemma B_ext_injects_into_left {y : bSet 𝔹} : B_ext (λ z, injects_into z y) :=
+by {simp[injects_into], sorry }
+
+lemma B_ext_injects_into_right {y : bSet 𝔹} : B_ext (λ z, injects_into y z) :=
+by sorry
+
 local infix `≺`:70 := (λ x y, -(larger_than x y))
 
 local infix `≼`:70 := (λ x y, injects_into x y)
@@ -608,6 +614,11 @@ begin
 end
 
 lemma bSet_lt_of_le_of_lt (x y z : bSet 𝔹) {Γ} (H₁ : Γ ≤ x ≼ y) (H₂ : Γ ≤ y ≺ z) : Γ ≤ x ≺ z :=
+begin
+  sorry
+end
+
+lemma bSet_le_of_subset {x y : bSet 𝔹} {Γ} (H : Γ ≤ x ⊆ᴮ y) : Γ ≤ x ≼ y :=
 begin
   sorry
 end
@@ -833,6 +844,17 @@ def aleph_one_spec_internal (x : bSet 𝔹) : 𝔹 :=
 The universal property of ℵ₁ is that it injects into any set which is larger than ω
 -/
 def aleph_one_universal_property (x : bSet 𝔹) : 𝔹 := ⨅ z, (bSet.omega ≺ z) ⟹ (x ≼ z)
+
+lemma B_ext_aleph_one_universal_property : B_ext (aleph_one_universal_property : bSet 𝔹 → 𝔹) :=
+begin
+  intros x y, unfold aleph_one_universal_property, revert x y, sorry
+end
+
+lemma aleph_one_exists {Γ : 𝔹} : Γ ≤ ⨆x, aleph_one_spec_internal x := sorry
+
+def aleph_one : bSet 𝔹 := sorry
+
+lemma aleph_one_satisfies_universal_property {Γ : 𝔹} : Γ ≤ aleph_one_universal_property (aleph_one) := sorry
 
 
 -- TODO(jesse) prove this using regularity
