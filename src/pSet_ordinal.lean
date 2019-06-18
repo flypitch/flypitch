@@ -18,7 +18,34 @@ local attribute [instance, priority 0] classical.prop_decidable
 
 universe u
 
+namespace ordinal
+
+lemma lt_zero_false {x : ordinal} : x < 0 → false :=
+by {apply not_lt_of_ge, from zero_le _}
+
+end ordinal
+
+open ordinal
+
 namespace pSet
+
+lemma mem_mem_false {x y : pSet.{u}} (H₁:  x ∈ y) (H₂ : y ∈ x) : false :=
+begin
+  have := Set.regularity {⟦x⟧, ⟦y⟧},
+  have H_nonempty : {⟦x⟧, ⟦y⟧} ≠ ∅,
+    by {have := Set.eq_empty, intro H, have := (this {⟦x⟧, ⟦y⟧}).mp H,
+      specialize this ⟦x⟧, apply this, simp},
+  specialize this ‹_›, rcases this with ⟨z, ⟨Hz₁, Hz₂⟩⟩,
+  cases Set.mem_insert.mp Hz₁,
+  rw[h] at Hz₂, have := (Set.eq_empty _).mp Hz₂, apply this,
+  show Set, from ⟦x⟧, simp, exact H₁,
+
+  have := Set.mem_singleton.mp h,
+  rw[this] at Hz₂, have := (Set.eq_empty _).mp Hz₂, apply this,
+  show Set, from ⟦y⟧, simp, exact H₂
+end
+
+@[simp]lemma mem_self {x : pSet.{u}} (H : x ∈ x) : false := mem_mem_false H H
 
 @[reducible]def succ (x : pSet) : pSet := insert x x
 
@@ -99,6 +126,13 @@ by simp[*, ordinal.mk]
 @[simp]lemma ordinal.mk_limit_type {η : ordinal} (H_limit : is_limit η) : (ordinal.mk η).type = η.out.α :=
 by simp*; refl
 
+@[simp]lemma mem_mk_limit_of_lt {η : ordinal} (H_limit : is_limit η) (ξ : ordinal) (Hξ : ξ < η) : ordinal.mk ξ ∈ ordinal.mk η :=
+begin
+  conv {to_rhs, rw[ordinal.mk_limit ‹_›]},
+  convert mem.mk ((λ (x : (quotient.out η).α), ordinal.mk (typein ((quotient.out η).r) x))) _,
+  swap, exact enum η.out.r ξ (by convert Hξ; simp), simp
+end
+
 def epsilon_well_orders (x : pSet.{u}) : Prop :=
   (∀ y, y ∈ x → (∀ z, z ∈ x → (equiv y z ∨ y ∈ z ∨ z ∈ y))) ∧
   (∀ u, u ⊆ x → (¬ (equiv u (∅ : pSet.{u})) → ∃ y, (y ∈ u ∧ (∀ z', z' ∈ u → ¬ z' ∈ y))))
@@ -106,6 +140,10 @@ def epsilon_well_orders (x : pSet.{u}) : Prop :=
 def is_transitive (x : pSet) : Prop := ∀ y, y ∈ x → y ⊆ x
 
 def Ord (x : pSet) : Prop := epsilon_well_orders x ∧ is_transitive x
+
+@[simp]lemma is_transitive_of_Ord {x} (H : Ord x) : is_transitive x := H.right
+
+@[simp]lemma is_ewo_of_Ord {x} (H : Ord x) : epsilon_well_orders x := H.left
 
 lemma equiv_of_eq {x y : pSet} : ⟦x⟧ = ⟦y⟧ → pSet.equiv x y :=
 λ H, quotient.eq.mp H
@@ -147,6 +185,9 @@ end
 
 lemma subset_all_mem {x y : pSet} : y ⊆ x ↔ ∀ z, z ∈ y → z ∈ x :=
 by {split; intros; [apply all_mem_of_subset, apply subset_of_all_mem], repeat{assumption}}
+
+lemma mem_trans_of_transitive {x y z : pSet} (H₁ : x ∈ y) (H₂ : y ∈ z) (H_trans : is_transitive z) : x ∈ z :=
+subset_all_mem.mp (H_trans y H₂) x H₁
 
 lemma empty_empty : (∅ : Set) = ⟦(∅ : pSet)⟧ := by refl
 
@@ -192,6 +233,29 @@ begin
   rw[quotient.out_eq], exact ‹_›
 end
 
+lemma mk_mem_mk_of_lt {ξ η : ordinal} (H_lt : ξ < η) : (ordinal.mk ξ) ∈ (ordinal.mk η) :=
+begin
+  revert H_lt, revert ξ, apply limit_rec_on η; clear η,
+    { intros, exfalso, from lt_zero_false ‹_› },
+    { intros η ih ξ H_lt, replace H_lt := ordinal.lt_succ.mp ‹_›,
+      by_cases ξ = η,
+        { subst h, simp },
+        { suffices H_lt_η : ξ < η,
+            by {refine mem_trans_of_transitive (ih ‹_›) (by simp) (by simp)},
+           from lt_of_le_of_ne ‹_› ‹_› }},
+    { intros η H_limit ih ξ H_lt, from mem_mk_limit_of_lt ‹_› _ ‹_› }
+end
+
+lemma ordinal.lt_of_mk_mem {ξ η : ordinal} (H_lt : ordinal.mk ξ ∈ ordinal.mk η) : ξ < η :=
+begin
+  have := lt_trichotomy ξ η, repeat{cases this},
+    { from ‹_› },
+    { exfalso, from mem_self ‹_› },
+    { suffices : ordinal.mk η ∈ ordinal.mk ξ,
+        by {exfalso, from mem_mem_false ‹_› ‹_›}, 
+      from mk_mem_mk_of_lt ‹_› }
+end
+
 lemma transitive_succ (x : pSet) (H : is_transitive x) : is_transitive (succ x) :=
 begin
   intros y Hy, have := mem_insert Hy,
@@ -225,6 +289,25 @@ begin
   apply mem_Union.mpr, use y, use ‹_›, from ‹_›
 end
 
+lemma Ord_limit : ∀ (o : ordinal), is_limit o → (∀ (o' : ordinal), o' < o → Ord (ordinal.mk o')) → Ord (ordinal.mk o) :=
+begin
+  intros η Hη ih, rw[ordinal.mk_limit Hη],
+  refine ⟨_,_⟩,
+    { sorry },
+    { intros y Hy, cases Hy with y_ξ Hy_ξ, rw[subset.congr_left Hy_ξ],
+      let ξ := typein ((quotient.out η).r) y_ξ,
+      change ordinal.mk ξ ⊆ _, sorry
+       } 
+end
+
+@[simp]lemma Ord_mk (η : ordinal) : Ord (ordinal.mk η) :=
+begin
+  apply limit_rec_on η,
+    { simp },
+    { intros; simp* },
+    { exact Ord_limit }
+end
+
 -- lemma transitive_mk (η : ordinal.{u}) : is_transitive $ ordinal.mk η :=
 -- begin
 --   apply limit_rec_on η,
@@ -235,24 +318,6 @@ end
 
 --   simp*, intros y yH, sorry
 -- end
-
-lemma mem_mem_false {x y : pSet.{u}} (H₁:  x ∈ y) (H₂ : y ∈ x) : false :=
-begin
-  have := Set.regularity {⟦x⟧, ⟦y⟧},
-  have H_nonempty : {⟦x⟧, ⟦y⟧} ≠ ∅,
-    by {have := Set.eq_empty, intro H, have := (this {⟦x⟧, ⟦y⟧}).mp H,
-      specialize this ⟦x⟧, apply this, simp},
-  specialize this ‹_›, rcases this with ⟨z, ⟨Hz₁, Hz₂⟩⟩,
-  cases Set.mem_insert.mp Hz₁,
-  rw[h] at Hz₂, have := (Set.eq_empty _).mp Hz₂, apply this,
-  show Set, from ⟦x⟧, simp, exact H₁,
-
-  have := Set.mem_singleton.mp h,
-  rw[this] at Hz₂, have := (Set.eq_empty _).mp Hz₂, apply this,
-  show Set, from ⟦y⟧, simp, exact H₂
-end
-
-@[simp]lemma mem_self {x : pSet.{u}} (H : x ∈ x) : false := mem_mem_false H H
 
 lemma mem_mem_mem_false {x y z : pSet.{u}} (H₁ : x ∈ y) (H₂ : y ∈ z) (H₃ : z ∈ x) : false :=
 begin
@@ -375,9 +440,6 @@ begin
   right_inv := dec_trivial,
   ord := dec_trivial}
 end
-
-lemma lt_zero_false {x : ordinal} : x < 0 → false :=
-by {apply not_lt_of_ge, from zero_le _}
 
 lemma ordinal.mk_coherent {ξ β : ordinal} {H_lt : β < ξ} :
   ∃ j : (ordinal.mk ξ).type, (ordinal.mk ξ).func j = ordinal.mk β :=
@@ -614,14 +676,6 @@ lemma of_nat_inj {n k : ℕ} (H_neq : n ≠ k) : ¬ (pSet.equiv (of_nat n : pSet
 begin
   intro H, replace H := (equiv.ext _ _).mp H, cases H with H₁ H₂,
   apply H_neq, apply le_antisymm; from le_of_subset ‹_›
-end
-
-@[simp]lemma Ord_mk (η : ordinal) : Ord (ordinal.mk η) :=
-begin
-  apply limit_rec_on η,
-    { simp },
-    { intros; simp* },
-    { sorry }
 end
 
 end pSet
