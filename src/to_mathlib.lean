@@ -1386,7 +1386,7 @@ meta def cfg_of_context_cfg : context_cfg → cfg :=
   tactics := X.tactics}
 
 meta def tidy_context (cfg : context_cfg := {}) : tactic unit :=
-`[apply poset_yoneda] >> tactic.tidy (cfg_of_context_cfg cfg)
+`[refine poset_yoneda _] >> tactic.tidy (cfg_of_context_cfg cfg)
 
 def with_h_asms {𝔹} [lattice.lattice 𝔹] (Γ : 𝔹) : Π (xs : list (𝔹)) (g : 𝔹), Prop
  | [] x := Γ ≤ x
