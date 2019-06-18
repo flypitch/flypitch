@@ -351,7 +351,7 @@ by apply le_antisymm; [apply subset_subset_of_eq, apply eq_of_subset_subset]
 @[simp]lemma subset_self {x : bSet 𝔹} {Γ : 𝔹} : Γ ≤ x ⊆ᴮ x :=
 by {apply le_trans, apply le_top, rw[show ⊤ = x =ᴮ x, by simp[bv_eq_refl]], rw[eq_iff_subset_subset], apply inf_le_left}
 
-theorem subset_ext {x y : bSet 𝔹} {Γ : 𝔹} {h₁ : Γ ≤ x ⊆ᴮ y} {h₂ : Γ ≤ y ⊆ᴮ x} : Γ ≤ x =ᴮ y :=
+theorem subset_ext {x y : bSet 𝔹} {Γ : 𝔹} (h₁ : Γ ≤ x ⊆ᴮ y) (h₂ : Γ ≤ y ⊆ᴮ x) : Γ ≤ x =ᴮ y :=
 begin
   apply bv_have h₂, rw[deduction], apply bv_have h₁, rw[<-deduction],
   ac_change' Γ ⊓ (x ⊆ᴮ y ⊓ y ⊆ᴮ x) ≤ x =ᴮ y, apply inf_le_right_of_le,
@@ -487,7 +487,7 @@ begin
 end
 
 theorem mem_ext {x y : bSet 𝔹} {Γ : 𝔹} {h₁ : Γ ≤ ⨅z, z ∈ᴮ x ⟹ z ∈ᴮ y} {h₂ : Γ ≤ ⨅z, z ∈ᴮ y ⟹ z ∈ᴮ x} : Γ ≤ x =ᴮ y :=
-by {apply subset_ext; rw[subset_unfold']; from ‹_›}
+by {refine subset_ext _ _; rw[subset_unfold']; from ‹_›}
 
 @[simp]lemma subset_self_eq_top {x : bSet 𝔹} : x ⊆ᴮ x = ⊤ :=
 top_unique subset_self
@@ -1234,12 +1234,12 @@ def subset'_partial_order {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} (
       suffices : S a = S b,
         by {have := core_inj u _ ⟨h_left, h_right⟩ this, contradiction},
       suffices : a = b, by rw[this]; refl, apply core_inj' ⟨h_left, h_right⟩, dsimp,
-      rw[eq_top_iff] at a_1_left a_1 ⊢, apply subset_ext, repeat{assumption}
+      rw[eq_top_iff] at a_1_left a_1 ⊢, from subset_ext ‹_› ‹_›
       end,
   le_antisymm :=
     begin
-      intros a b H₁ H₂, apply core_inj' h, unfold subset' at H₁ H₂, rw[eq_top_iff] at H₁ H₂ ⊢, apply subset_ext,
-      repeat{assumption}
+      intros a b H₁ H₂, apply core_inj' h, unfold subset' at H₁ H₂, rw[eq_top_iff] at H₁ H₂ ⊢,
+      from subset_ext ‹_› ‹_›
     end}
 
 local attribute [instance] subset'_partial_order
