@@ -300,7 +300,7 @@ lemma mem_prod_iff {v w x y : bSet 𝔹} {Γ} : Γ ≤ pair x y ∈ᴮ prod v w 
 
 /-- f is =ᴮ-extensional if for every w₁ w₂ v₁ v₂, if pair (w₁ v₁) and pair (w₂ v₂) ∈ f and
     w₁ =ᴮ w₂, then v₁ =ᴮ v₂ -/
-@[reducible]def is_extensional (f : bSet 𝔹) : 𝔹 :=
+@[reducible]def is_func (f : bSet 𝔹) : 𝔹 :=
   ⨅ w₁, ⨅w₂, ⨅v₁, ⨅ v₂, pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⟹ (w₁ =ᴮ w₂ ⟹ v₁ =ᴮ v₂)
 
 /-- f is a functional relation if for every z ∈ x, if there exists a w ∈ y such that (z,w) ∈ f, then for every w' ∈ y such that (z,w') ∈ f, w' =ᴮ w -/
@@ -310,9 +310,9 @@ lemma mem_prod_iff {v w x y : bSet 𝔹} {Γ} : Γ ≤ pair x y ∈ᴮ prod v w 
 @[reducible]def is_functional (f : bSet 𝔹) : 𝔹 :=
 ⨅z, (⨆w, pair z w ∈ᴮ f) ⟹ (⨆w', ⨅w'', pair z w'' ∈ᴮ f ⟹ w' =ᴮ w'')
 
-lemma is_functional_of_is_extensional (f : bSet 𝔹) {Γ} (H : Γ ≤ is_extensional f) : Γ ≤ is_functional f :=
+lemma is_functional_of_is_func (f : bSet 𝔹) {Γ} (H : Γ ≤ is_func f) : Γ ≤ is_functional f :=
 begin
-  unfold is_functional, unfold is_extensional at H,
+  unfold is_functional, unfold is_func at H,
   bv_intro z, bv_imp_intro w_spec,
   bv_cases_at w_spec w, clear w_spec,
   replace H := H z z, apply bv_use w,
@@ -320,13 +320,8 @@ begin
   from H w w' (le_inf ‹_› ‹_›) (bv_eq_refl')
 end
 
--- f is a function if it is a subset of prod x y and it satisfies the following two conditions:
--- 1. it is =ᴮ-extensional
--- 2. it is a functional relation
-def is_func (f : bSet 𝔹) : 𝔹 := (is_extensional f) ⊓ (is_functional f)
-
 /-- f is a function from x to y if for every element of x, there exists an element of y such that the pair is in f, and f is a function -/
-def is_func' (x y f : bSet 𝔹) : 𝔹 :=
+@[reducible]def is_func' (x y f : bSet 𝔹) : 𝔹 :=
   is_func f ⊓ (⨅w₁, w₁ ∈ᴮ x ⟹ ⨆w₂, w₂ ∈ᴮ y ⊓ pair w₁ w₂ ∈ᴮ f)
 
 /-- f is an injective function on x if it is a function and for every w₁ and w₂ ∈ x, if there exist v₁ and v₂ such that (w₁, v₁) ∈ f and (w₂, v₂) ∈ f,
@@ -335,12 +330,12 @@ def is_func' (x y f : bSet 𝔹) : 𝔹 :=
 --   is_func x y f ⊓ (⨅w₁ w₂, w₁ ∈ᴮ x ⊓ w₂ ∈ᴮ x ⟹
 --     (⨆v₁ v₂, (pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⊓ v₁ =ᴮ v₂ ⟹ w₁ =ᴮ w₂)))
 
-def is_inj (f : bSet 𝔹) : 𝔹 :=
+@[reducible]def is_inj (f : bSet 𝔹) : 𝔹 :=
   ⨅w₁, ⨅ w₂, ⨅v₁, ⨅ v₂, (pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⊓ v₁ =ᴮ v₂) ⟹ w₁ =ᴮ w₂
 
 lemma funext (f x y z : bSet 𝔹) {Γ : 𝔹} (H_func : Γ ≤ is_func f) (H : Γ ≤ (pair x y) ∈ᴮ f)
   (H' : Γ ≤ (pair x z) ∈ᴮ f) : Γ ≤ y =ᴮ z :=
-by {bv_split, exact H_func_left x x y z (by {bv_split_goal}) (by simp)}
+by {exact H_func x x y z (by {bv_split_goal}) (by simp)}
 
 def function.mk {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : bSet 𝔹 :=
 ⟨u.type, λ a, pair (u.func a) (F a), u.bval⟩
@@ -366,7 +361,7 @@ def check' {α : Type u} (A : α → bSet 𝔹) : bSet 𝔹 := ⟨α, A, λ x, �
 
 lemma mk_is_func {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : ⊤ ≤ is_func (function.mk F h_congr) :=
 begin
-  apply le_inf, bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂,
+  bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂,
   apply bv_imp_intro, apply bv_imp_intro, tidy_context,
   bv_cases_at a_left_right_left i,
   bv_cases_at a_left_right_right j,
@@ -380,17 +375,7 @@ begin
   simp, change _ ≤ (λ z, (F i) =ᴮ z) _, apply bv_rw' a_left_right_right_1_1_1_2,
   simp, apply le_trans, swap, apply h_congr,
   apply bv_context_trans, rw[bv_eq_symm], from ‹_›,
-  apply bv_context_trans, from ‹_›, from ‹_›,
-
-  bv_intro z, apply bv_imp_intro, rw[top_inf_eq], apply bv_Or_elim, intro w,
-  apply bv_use w, bv_intro w'', apply bv_imp_intro, tidy_context,
-  bv_cases_at a_left i, bv_cases_at a_right j,
-  bv_split_at a_left_1, bv_split_at a_right_1,
-  bv_mp a_left_1_1_1 (eq_of_eq_pair_left),   bv_mp a_left_1_1_1 (eq_of_eq_pair_right),
-  bv_mp a_right_1_1_1 (eq_of_eq_pair_left),  bv_mp a_right_1_1_1 (eq_of_eq_pair_right),
-  have : Γ_2 ≤ F i =ᴮ F j,
-    by {apply le_trans, swap, apply h_congr i j, apply bv_context_trans, rw[bv_eq_symm], from ‹_›, from ‹_›},
-  apply bv_context_trans, from ‹_›, apply bv_context_trans, from ‹_›, rw[bv_eq_symm], from ‹_›
+  apply bv_context_trans, from ‹_›, from ‹_›
 end
 
 -- lemma mk_is_func {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : ⊤ ≤ is_func u (check' F) (function.mk F h_congr) :=
@@ -594,11 +579,11 @@ by simp[larger_than]
 @[simp]lemma B_ext_larger_than_left {y : bSet 𝔹} : B_ext (λ z, larger_than z y) :=
 by simp[larger_than]
 
-lemma B_ext_injects_into_left {y : bSet 𝔹} : B_ext (λ z, injects_into z y) :=
-by {simp[injects_into], sorry }
+@[simp]lemma B_ext_injects_into_left {y : bSet 𝔹} : B_ext (λ z, injects_into z y) :=
+by simp[injects_into]
 
-lemma B_ext_injects_into_right {y : bSet 𝔹} : B_ext (λ z, injects_into y z) :=
-by sorry
+@[simp]lemma B_ext_injects_into_right {y : bSet 𝔹} : B_ext (λ z, injects_into y z) :=
+by simp[injects_into]
 
 local infix `≺`:70 := (λ x y, -(larger_than x y))
 
@@ -809,8 +794,11 @@ end
 lemma check_ewo {x : pSet} (H : pSet.epsilon_well_orders x) {Γ} : Γ ≤ epsilon_well_orders (x̌ : bSet 𝔹) :=
 le_inf (check_ewo_left ‹_›) (check_ewo_right ‹_›)
 
-lemma check_Ord {x : pSet} (H : pSet.Ord x) : ⊤ ≤ Ord (x̌ : bSet 𝔹) :=
+@[simp]lemma check_Ord {x : pSet} (H : pSet.Ord x) {Γ} : Γ ≤ Ord (x̌ : bSet 𝔹) :=
 le_inf (check_ewo H.left) (check_is_transitive H.right)
+
+@[simp]lemma Ord_card_ex (κ : cardinal) {Γ : 𝔹} : Γ ≤ Ord ((pSet.card_ex κ)̌ ) :=
+by simp[pSet.card_ex]
 
 def closed_under_successor (Γ) (x : bSet 𝔹) := Γ ≤ ⨅y, y ∈ᴮ x ⟹ succ y ∈ᴮ x
 
@@ -835,26 +823,30 @@ lemma Ord_omega {Γ : 𝔹} : Γ ≤ Ord(omega) :=
 le_inf (check_ewo pSet.is_ewo_omega) (check_is_transitive pSet.is_transitive_omega)
 
 /-- ℵ₁ is defined as: the least ordinal which is larger than ω -/
-def aleph_one_spec_internal (x : bSet 𝔹) : 𝔹 :=
+@[reducible]def aleph_one_Ord_spec (x : bSet 𝔹) : 𝔹 :=
   (Ord x) ⊓
   (larger_than x bSet.omega) ⊓
-  (⨅y, (Ord(y) ⟹ (larger_than y bSet.omega ⟹ x ⊆ᴮ y)))
+  (⨅y, (Ord(y) ⟹ (-larger_than bSet.omega y ⟹ x ⊆ᴮ y)))
 
 /--
 The universal property of ℵ₁ is that it injects into any set which is larger than ω
 -/
-def aleph_one_universal_property (x : bSet 𝔹) : 𝔹 := ⨅ z, (bSet.omega ≺ z) ⟹ (x ≼ z)
+@[reducible]def aleph_one_universal_property (x : bSet 𝔹) : 𝔹 := ⨅ z, (bSet.omega ≺ z) ⟹ (x ≼ z)
 
-lemma B_ext_aleph_one_universal_property : B_ext (aleph_one_universal_property : bSet 𝔹 → 𝔹) :=
+@[simp]lemma B_ext_aleph_one_universal_property : B_ext (aleph_one_universal_property : bSet 𝔹 → 𝔹) :=
 begin
-  intros x y, unfold aleph_one_universal_property, revert x y, sorry
+  intros x y, unfold aleph_one_universal_property, revert x y, change B_ext _, simp
 end
 
-lemma aleph_one_exists {Γ : 𝔹} : Γ ≤ ⨆x, aleph_one_spec_internal x := sorry
+lemma aleph_one_exists {Γ : 𝔹} : Γ ≤ ⨆x, aleph_one_Ord_spec x := sorry
 
 def aleph_one : bSet 𝔹 := sorry
 
+lemma aleph_one_check_sub_aleph_one {Γ : 𝔹} : Γ ≤ (pSet.card_ex (aleph 1))̌  ⊆ᴮ aleph_one := sorry
+
 lemma aleph_one_satisfies_universal_property {Γ : 𝔹} : Γ ≤ aleph_one_universal_property (aleph_one) := sorry
+
+lemma aleph_one_satisfies_Ord_spec {Γ : 𝔹} : Γ ≤ aleph_one_Ord_spec (aleph_one) := sorry
 
 
 -- TODO(jesse) prove this using regularity
