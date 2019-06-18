@@ -164,7 +164,7 @@ by {intro H', apply H, from equiv_of_eq H'}
 
 lemma mem_iff {x y : pSet} : x ∈ y ↔ ⟦x⟧ ∈ ⟦y⟧ := by refl
 
-lemma Ord_empty : Ord (∅ : pSet.{u}) :=
+@[simp]lemma Ord_empty : Ord (∅ : pSet.{u}) :=
 begin
   unfold has_emptyc.emptyc pSet.empty,
   unfold Ord epsilon_well_orders is_transitive, split,
@@ -201,7 +201,7 @@ begin
      have := all_mem_of_subset this, from this z Hz,
 end
 
-lemma Ord_succ (x : pSet) (H : Ord x) : Ord (succ x) :=
+@[simp]lemma Ord_succ (x : pSet) (H : Ord x) : Ord (succ x) :=
 begin
   refine ⟨_,_⟩, show is_transitive _,
     {apply transitive_succ _ H.right},
@@ -616,6 +616,12 @@ begin
   apply H_neq, apply le_antisymm; from le_of_subset ‹_›
 end
 
-@[simp]lemma Ord_mk (ξ : ordinal) : Ord (ordinal.mk ξ) := sorry
+@[simp]lemma Ord_mk (η : ordinal) : Ord (ordinal.mk η) :=
+begin
+  apply limit_rec_on η,
+    { simp },
+    { intros; simp* },
+    { sorry }
+end
 
 end pSet
