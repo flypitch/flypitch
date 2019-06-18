@@ -466,8 +466,13 @@ lemma function_reflect_surj_of_surj {g} {x y} {Γ : 𝔹} (H : Γ ≤ _) (H_not_
   pSet.is_surj x y (function_reflect g x y H) :=
 sorry
 
-lemma ex_no_surj_omega_aleph_one : ¬ ∃ f : pSet, pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f := sorry
+lemma ex_no_surj_omega_aleph_one : ¬ ∃ f : pSet, pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f :=
+begin
+  intro H, cases H with f Hf, dsimp[pSet.is_surj] at Hf, sorry
+end
 
+
+--TODO(jesse) check that this proof actually works
 lemma omega_lt_aleph_one {Γ : 𝔹} : Γ ≤ bSet.omega ≺ (ℵ₁̌ ) :=
 begin
   unfold larger_than, rw[<-imp_bot], rw[<-deduction], /- `tidy_context` says -/ refine poset_yoneda _, intros Γ_1 a, simp only [le_inf_iff] at *, cases a,
@@ -475,7 +480,7 @@ begin
   by_contra, replace a := (bot_lt_iff_not_le_bot.mpr a),
   suffices this : ∃ f : pSet, pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f,
     by {exfalso, from ex_no_surj_omega_aleph_one ‹_›},
-  let g := (function_reflect f (pSet.omega) (ordinal.mk (aleph 1).ord) sorry), 
+  let g := (function_reflect f (pSet.omega) (ordinal.mk (aleph 1).ord) sorry),
   use g,
   apply function_reflect_surj_of_surj, from ‹_›, from a_right_1_right
 end
