@@ -348,37 +348,37 @@ omit β
 
 /-- f is =ᴮ-extensional if for every w₁ w₂ v₁ v₂, if pair (w₁ v₁) and pair (w₂ v₂) ∈ f and
     w₁ =ᴮ w₂, then v₁ =ᴮ v₂ -/
-def is_extensional_f : bounded_formula L_ZFC' 1 :=
+def is_func_f : bounded_formula L_ZFC' 1 :=
 ∀' ∀' ∀' ∀' ((pair' &'3 &'1 ∈' &'4 ⊓' pair' &'2 &'0 ∈' &'4
   ⟹ (&'3 ≃ &'2 ⟹ &'1 ≃ &'0)))
 
-@[simp]lemma realize_is_extensional_f {f : V β} : boolean_realize_bounded_formula (by exact [f]) is_extensional_f dvector.nil = is_extensional f :=
+@[simp]lemma realize_is_func_f {f : V β} : boolean_realize_bounded_formula (by exact [f]) is_func_f dvector.nil = is_func f :=
 begin
-  simp[is_extensional_f, bSet.is_extensional], refl
+  simp[is_func_f, bSet.is_func], refl
 end
 
-def is_functional_f : bounded_formula L_ZFC' 1 :=
-∀' ((∃' (pair' &'1 &'0 ∈' &'2)) ⟹ (∃' ∀' (pair' &'2 &'0 ∈' &'3 ⟹ &'1 ≃ &'0)))
+-- def is_functional_f : bounded_formula L_ZFC' 1 :=
+-- ∀' ((∃' (pair' &'1 &'0 ∈' &'2)) ⟹ (∃' ∀' (pair' &'2 &'0 ∈' &'3 ⟹ &'1 ≃ &'0)))
 
-@[simp]lemma realize_is_functional_f (f : V β) :  boolean_realize_bounded_formula (by exact [f]) is_functional_f dvector.nil = is_functional f :=
-begin
-  simp[is_functional_f, bSet.is_functional]
-end
+-- @[simp]lemma realize_is_functional_f (f : V β) :  boolean_realize_bounded_formula (by exact [f]) is_functional_f dvector.nil = is_functional f :=
+-- begin
+--   simp[is_functional_f, bSet.is_functional]
+-- end
 
-def is_func_f : bounded_formula L_ZFC' 1 :=
-  is_extensional_f ⊓' is_functional_f
+-- def is_func_f : bounded_formula L_ZFC' 1 :=
+--   is_func_f ⊓' is_functional_f
 
-@[simp]lemma realize_is_func_f {f : V β} : begin apply boolean_realize_bounded_formula, from [f], from is_func_f, from dvector.nil end = is_func f :=
-begin
-  simp[is_func_f, bSet.is_func]
-end
+-- @[simp]lemma realize_is_func_f {f : V β} : begin apply boolean_realize_bounded_formula, from [f], from is_func_f, from dvector.nil end = is_func f :=
+-- begin
+--   simp[is_func_f, bSet.is_func],
+-- end
 
 def is_func'_f : bounded_formula L_ZFC' 3 :=
   (is_func_f.cast (dec_trivial)) ⊓' (∀' (&'0 ∈' &'3 ⟹ (∃' (&'0 ∈' &'3 ⊓' (pair' &'1 &'0 ∈' &'2)))))
 
 @[simp]lemma realize_is_func'_f {x y f : V β} : boolean_realize_bounded_formula (by exact [f, y, x]) is_func'_f dvector.nil = is_func' x y f :=
 begin
-  simp[is_func', is_func, is_func'_f, is_func_f]
+  simp[is_func'_f]
 end
 
 def larger_than_f : bounded_formula L_ZFC' 2 :=

@@ -233,29 +233,6 @@ begin
   rw[quotient.out_eq], exact ‹_›
 end
 
-lemma mk_mem_mk_of_lt {ξ η : ordinal} (H_lt : ξ < η) : (ordinal.mk ξ) ∈ (ordinal.mk η) :=
-begin
-  revert H_lt, revert ξ, apply limit_rec_on η; clear η,
-    { intros, exfalso, from lt_zero_false ‹_› },
-    { intros η ih ξ H_lt, replace H_lt := ordinal.lt_succ.mp ‹_›,
-      by_cases ξ = η,
-        { subst h, simp },
-        { suffices H_lt_η : ξ < η,
-            by {refine mem_trans_of_transitive (ih ‹_›) (by simp) (by simp)},
-           from lt_of_le_of_ne ‹_› ‹_› }},
-    { intros η H_limit ih ξ H_lt, from mem_mk_limit_of_lt ‹_› _ ‹_› }
-end
-
-lemma ordinal.lt_of_mk_mem {ξ η : ordinal} (H_lt : ordinal.mk ξ ∈ ordinal.mk η) : ξ < η :=
-begin
-  have := lt_trichotomy ξ η, repeat{cases this},
-    { from ‹_› },
-    { exfalso, from mem_self ‹_› },
-    { suffices : ordinal.mk η ∈ ordinal.mk ξ,
-        by {exfalso, from mem_mem_false ‹_› ‹_›}, 
-      from mk_mem_mk_of_lt ‹_› }
-end
-
 lemma transitive_succ (x : pSet) (H : is_transitive x) : is_transitive (succ x) :=
 begin
   intros y Hy, have := mem_insert Hy,
@@ -281,6 +258,29 @@ begin
          apply well_founded, from ‹_›}},
 end
 
+lemma mk_mem_mk_of_lt {ξ η : ordinal} (H_lt : ξ < η) : (ordinal.mk ξ) ∈ (ordinal.mk η) :=
+begin
+  revert H_lt, revert ξ, apply limit_rec_on η; clear η,
+    { intros, exfalso, from lt_zero_false ‹_› },
+    { intros η ih ξ H_lt, replace H_lt := ordinal.lt_succ.mp ‹_›,
+      by_cases ξ = η,
+        { subst h, simp },
+        { suffices H_lt_η : ξ < η,
+            by {simp, from mem_insert' (or.inr (by solve_by_elim))},
+           from lt_of_le_of_ne ‹_› ‹_› }},
+    { intros η H_limit ih ξ H_lt, from mem_mk_limit_of_lt ‹_› _ ‹_› }
+end
+
+lemma ordinal.lt_of_mk_mem {ξ η : ordinal} (H_lt : ordinal.mk ξ ∈ ordinal.mk η) : ξ < η :=
+begin
+  have := lt_trichotomy ξ η, repeat{cases this},
+    { from ‹_› },
+    { exfalso, from mem_self ‹_› },
+    { suffices : ordinal.mk η ∈ ordinal.mk ξ,
+        by {exfalso, from mem_mem_false ‹_› ‹_›}, 
+      from mk_mem_mk_of_lt ‹_› }
+end
+
 lemma transitive_Union (x : pSet) (H : ∀ y ∈ x, is_transitive y) : is_transitive (Union x) :=
 begin
   intros z Hz, apply subset_of_all_mem, intros w Hw,
@@ -289,15 +289,50 @@ begin
   apply mem_Union.mpr, use y, use ‹_›, from ‹_›
 end
 
+lemma equiv_mk_of_mem_mk {η : ordinal} : ∀ x, x ∈ (ordinal.mk η) → ∃ ρ < η, equiv x $ ordinal.mk ρ :=
+begin
+  apply limit_rec_on η; clear η,
+    { intros x H, exfalso, simpa[pSet.mem_empty] using H },
+    { intros η ih ξ H_mem, rw[ordinal.mk_succ] at H_mem,
+      replace H_mem := mem_insert H_mem,
+      cases H_mem,
+        { use η, from ⟨(lt_succ_self _), ‹_›⟩},
+        { rcases ih _ ‹_› with ⟨p, H₁, H₂⟩,
+          use p, use lt_trans ‹_› (lt_succ_self _), from ‹_›}},
+    { intros η H_limit ih x Hx, rw[ordinal.mk_limit ‹_›] at Hx,
+      cases Hx with i H_i, dsimp at H_i, use (typein ((quotient.out η).r) i),
+      finish }
+end
+
 lemma Ord_limit : ∀ (o : ordinal), is_limit o → (∀ (o' : ordinal), o' < o → Ord (ordinal.mk o')) → Ord (ordinal.mk o) :=
 begin
-  intros η Hη ih, rw[ordinal.mk_limit Hη],
+  intros η Hη ih, 
   refine ⟨_,_⟩,
-    { sorry },
-    { intros y Hy, cases Hy with y_ξ Hy_ξ, rw[subset.congr_left Hy_ξ],
+    { unfold epsilon_well_orders, refine ⟨_,_⟩,
+        { intros x Hx z Hz, have this₁ := equiv_mk_of_mem_mk _ Hx,
+          have this₂ := equiv_mk_of_mem_mk _ Hz,
+          rcases this₁ with ⟨ξ₁, H₁, H₂⟩,
+          rcases this₂ with ⟨ξ₂, H₁', H₂'⟩,
+          have := lt_trichotomy ξ₁ ξ₂, repeat{cases this},
+          right, left, rw[mem.congr_left H₂], rw[mem.congr_right H₂'],
+          from mk_mem_mk_of_lt ‹_›,
+          left, from equiv.trans H₂ (equiv.symm H₂'),
+          right, right, rw[mem.congr_right H₂], rw[mem.congr_left H₂'],
+          from mk_mem_mk_of_lt ‹_›},
+        { exact λ _ _ _, well_founded _ ‹_› },
+        },
+    { rw[ordinal.mk_limit Hη],
+      intros y Hy, cases Hy with y_ξ Hy_ξ, rw[subset.congr_left Hy_ξ],
       let ξ := typein ((quotient.out η).r) y_ξ,
-      change ordinal.mk ξ ⊆ _, sorry
-       } 
+      change ordinal.mk ξ ⊆ _,
+      have ξ_lt_η : ξ < η,
+        by {simp[typein_lt_type]},
+      have : ∀ x, x ∈ (ordinal.mk ξ) → ∃ ρ < ξ, equiv x $ ordinal.mk ρ,
+        by {apply equiv_mk_of_mem_mk},
+      apply subset_of_all_mem, intros z Hz,
+      specialize this z Hz, rcases this with ⟨ρ, Hρ₁, Hρ₂⟩,
+      rw[mem.congr_left Hρ₂],
+      convert (mem_mk_limit_of_lt ‹_› _ (lt_trans Hρ₁ ‹_›)), simp* } 
 end
 
 @[simp]lemma Ord_mk (η : ordinal) : Ord (ordinal.mk η) :=
@@ -503,6 +538,22 @@ begin
     {from ordinal.mk_inj_successor},
     {from ordinal.mk_inj_limit}
 end
+
+lemma eq_of_mk_equiv {η₁ η₂ : ordinal} (H_equiv : equiv (ordinal.mk η₁) (ordinal.mk η₂)) : η₁ = η₂ :=
+begin
+  refine le_antisymm _ _,
+    { rw[<-not_lt], intro H_lt, replace H_lt := mk_mem_mk_of_lt H_lt,
+      suffices this : ordinal.mk η₁ ∈ ordinal.mk η₁,
+        by {exact mem_self ‹_›},
+      rwa[<-mem.congr_left H_equiv] at H_lt},
+    { rw[<-not_lt], intro H_lt, replace H_lt := mk_mem_mk_of_lt H_lt,
+      suffices this : ordinal.mk η₂ ∈ ordinal.mk η₂,
+        by {exact mem_self ‹_›},
+      rwa[mem.congr_left H_equiv] at H_lt}
+end
+
+lemma eq_iff_mk_eq {η₁ η₂ : ordinal} : η₁ = η₂ ↔ equiv (ordinal.mk η₁) (ordinal.mk η₂) :=
+⟨λ _, mk_equiv_of_eq ‹_›, λ _, eq_of_mk_equiv ‹_›⟩
 
 lemma mk_type_mk_eq (κ : cardinal) (H_inf : cardinal.omega ≤ κ) : #(ordinal.mk (ord κ)).type = κ :=
 begin
