@@ -1,4 +1,4 @@
-import .bvm .bvm_extras .regular_open_algebra .to_mathlib data.pfun tactic .pSet_ordinal
+import .bvm .bvm_extras .regular_open_algebra .to_mathlib data.pfun tactic .pSet_ordinal --
 
 /-
   Forcing the continuum hypothesis.
@@ -247,6 +247,7 @@ noncomputable def union_of_omega_chain (f : ℕ → α →. β) : α →. β :=
   end}
 /-
 TODO(jesse) rework this in terms of graphs of pfuns instead
+(take a union of the graphs, extract a pfun)
 -/
 lemma union_of_omega_chain_spec (f : ℕ → α →. β) (H_chain : ∀ (k₁ k₂) (H_le : k₁ ≤ k₂), is_extension_of (f k₁) (f k₂)) :
 ∀ k, is_extension_of (f k) (union_of_omega_chain f):=
@@ -272,20 +273,38 @@ structure collapse_poset : Type u :=
 open pfun
 
 variables {X Y}
+lemma collapse_poset.ran_ctbl (p : collapse_poset X Y) : # p.f.ran ≤ aleph 0 :=
+sorry
+
+lemma exists_mem_compl_dom_of_unctbl (p : collapse_poset X Y) (H_card : (aleph 0) < #X) :
+  ∃ x : X, x ∉ p.f.dom :=
+exists_mem_compl_of_mk_lt_mk _ $ lt_of_le_of_lt p.Hc ‹_›
+
+lemma exists_mem_compl_ran_of_unctbl (p : collapse_poset X Y) (H_card : (aleph 0) < #Y) :
+  ∃ y : Y, y ∉ p.f.ran :=
+exists_mem_compl_of_mk_lt_mk _ $ lt_of_le_of_lt (collapse_poset.ran_ctbl _)  ‹_›
+
 def collapse_poset.extends (p : collapse_poset X Y) (f : X → Y) : Prop :=
 ∀ (x : X) (H_x : x ∈ p.f.dom), f x = (fn p.f x H_x)
 
 def collapse_poset.principal_open (p : collapse_poset X Y) : set (X → Y) :=
 {f | collapse_poset.extends p f}
 
+@[simp]lemma mem_principal_open_iff {p : collapse_poset X Y} {f : X → Y} : f ∈ (collapse_poset.principal_open p) ↔ ∀ (x : X) (H_x : x ∈ p.f.dom), f x = (fn p.f x H_x) := by refl
+
+@[simp]lemma mem_ran_of_mem_dom {p : collapse_poset X Y} {f : X → Y} {x : X} (H : f ∈ collapse_poset.principal_open p) : x ∈ p.f.dom → f x ∈ p.f.ran :=
+by {intro H_mem, rw[mem_principal_open_iff] at H,
+    use x, rw[H _ ‹_›], from roption.get_mem H_mem}
+
 def collapse_space : topological_space (X → Y) :=
 generate_from $ collapse_poset.principal_open '' set.univ
 
 local attribute [instance, priority 9001] collapse_space
 
-def collapse_space_basis : set $ set (X → Y) := collapse_poset.principal_open '' set.univ
+@[simp]lemma collapse_poset.principal_open_is_open {p : collapse_poset X Y} : is_open (collapse_poset.principal_open p) :=
+generate_open.basic _ ⟨p, trivial, rfl⟩
 
-def collapse_space_basis_spec : @is_topological_basis (X → Y) collapse_space collapse_space_basis := sorry
+open collapse_poset
 
 open collapse_poset
 
@@ -299,16 +318,49 @@ def one_point_collapse_poset (x : X) (y : Y) : collapse_poset X Y :=
 { f := one_point_pfun x y,
   Hc := by {unfold one_point_pfun, tidy, from 0} }
 
-lemma one_point_collapse_poset_principal_open {x : X} {y : Y} :
+@[simp]lemma one_point_collapse_poset_principal_open {x : X} {y : Y} :
   (principal_open $ one_point_collapse_poset x y) = {g | g x = y} :=
 begin
-  ext, dsimp at *, fsplit, work_on_goal 0 { intros a }, work_on_goal 1 { intros a x_2 H_x, induction H_x, assumption }, sorry
+  ext, dsimp at *, fsplit, work_on_goal 0 { intros a }, work_on_goal 1 { intros a x_2 H_x, induction H_x, assumption }, exact a x rfl
 end
 
-lemma is_regular_one_point_regular_open {x : X} {y : Y} :
-  is_regular (principal_open (one_point_collapse_poset x y)) :=
+lemma collapse_poset.compl_principal_open_is_Union (p : collapse_poset X Y) : ∃ {ι : Type u} (s : ι → (collapse_poset X Y)), set.Union (λ i : ι, (principal_open $ s i)) = - (principal_open p) :=
 begin
-  sorry
+  use ({pr : X × Y // ∃ (H_mem : pr.1 ∈ p.f.dom), pr.2 ≠ (fn p.f pr.1 H_mem)}),  
+  use (λ s, one_point_collapse_poset s.1.1 s.1.2),
+  ext f, split; intro H,
+    { change _ ∉ _, intro H_mem, 
+      rcases H with ⟨P, ⟨⟨⟨x',y'⟩, ⟨H_mem₁, H_neq⟩⟩, Hpr⟩, H_mem₂⟩, subst Hpr,
+      suffices this : y' = (fn p.f x' ‹_›),
+        by { exact H_neq ‹_› },
+      rw[<-show f x' = y', by simpa using H_mem₂],
+      from mem_principal_open_iff.mpr H_mem _ _ },
+    { change _ → false at H, rw[mem_principal_open_iff] at H,
+      change ¬ _ at H, push_neg at H, rcases H with ⟨x, Hx, H_neq⟩,
+      suffices this : ∃ (a : X) (H_mem : (a, f a).fst ∈ dom (p.f)), ¬f a = fn (p.f) a H_mem,
+        by simpa,
+      from ⟨_, by use ‹_›⟩ }
+end
+
+@[simp]lemma collapse_poset.principal_open_is_closed {p : collapse_poset X Y} : is_closed (collapse_poset.principal_open p) :=
+by  {rcases collapse_poset.compl_principal_open_is_Union p with ⟨ι, ⟨s, Hu⟩⟩,
+     rw[is_closed, <-Hu], simp[is_open_Union]}
+
+@[simp] lemma collapse_poset.is_regular_principal_open (p : collapse_poset X Y) : is_regular (collapse_poset.principal_open p) :=
+by simp[is_clopen]
+
+def collapse_space_basis : set $ set (X → Y) := collapse_poset.principal_open '' set.univ
+
+def collapse_space_basis_spec : @is_topological_basis (X → Y) collapse_space collapse_space_basis := sorry
+
+@[simp]lemma is_regular_one_point_regular_open {x : X} {y : Y} :
+  is_regular (principal_open (one_point_collapse_poset x y)) :=
+collapse_poset.is_regular_principal_open _
+
+@[simp]lemma is_regular_one_point_regular_open' {x : X} {y : Y} :
+  is_regular {g : X → Y | g x = y} :=
+begin
+  rw[<-one_point_collapse_poset_principal_open], from is_regular_one_point_regular_open
 end
 
 /--
@@ -326,10 +378,6 @@ noncomputable def trivial_extension (f : X →. Y) (y : Y) : X → Y :=
 lemma trivial_extension_mem_principal_open {p : collapse_poset X Y} {y : Y}
   : (trivial_extension p.f y) ∈ collapse_poset.principal_open p :=
 by unfold trivial_extension; tidy; simp*
-
-lemma exists_mem_compl_dom_of_unctbl (p : collapse_poset X Y) (H_card : (aleph 0) < #X) :
-  ∃ x : X, x ∉ p.f.dom :=
-exists_mem_compl_of_mk_lt_mk _ $ lt_of_le_of_lt p.Hc ‹_›
 
 end collapse_poset
 
@@ -357,11 +405,10 @@ by unfold 𝔹; apply_instance
 
 namespace collapse_algebra
 
-lemma π_χ_regular (p : type (card_ex (aleph 1)) × (powerset omega).type) : @_root_.is_regular _ collapse_space {g : type (card_ex (aleph 1)) → type (powerset omega) | g (p.fst) = p.snd} :=
-begin
-  let A := (collapse_poset.principal_open (one_point_collapse_poset (p.fst) (p.snd))),
-  sorry
-end
+open collapse_poset
+
+lemma π_χ_regular (p : type (card_ex (aleph 1)) × (powerset omega).type) : @topological_space.is_regular _ collapse_space {g : type (card_ex (aleph 1)) → type (powerset omega) | g (p.fst) = p.snd} :=
+by simp
 
 def π_χ : ((ℵ₁ : pSet.{u}).type × (pSet.powerset omega : pSet.{u}).type) → 𝔹 :=
 λ p, ⟨{g | g p.1 = p.2}, π_χ_regular _⟩
@@ -376,7 +423,7 @@ lemma aleph_one_type_uncountable : (aleph 0) < # ℵ₁.type :=
 by simp only [cardinal.aleph_zero, pSet.omega_lt_aleph_one, pSet.mk_type_mk_eq''']
 
 @[reducible]def π_af : ((ℵ₁̌  : bSet 𝔹) .type) → ((powerset omega)̌  : bSet 𝔹) .type → 𝔹 :=
-λ η S, (⟨{g | g (cast eq₀ η) = (cast eq₀' S)}, sorry⟩ : 𝔹)
+λ η S, (⟨{g | g (cast eq₀ η) = (cast eq₀' S)}, by simp⟩ : 𝔹)
 
 lemma π_af_wide :  ∀ (j : ((powerset omega)̌ ).type), (⨆ (i : type (ℵ₁̌ )), π_af i j) = (⊤ : 𝔹) :=
 begin
@@ -501,6 +548,7 @@ begin
     by { cases this with S HS, apply bv_use S, rwa[top_inf_eq] },
   sorry -- TODO(jesse): come up with a specialized argument for this
 end
+
 
 theorem CH_true : (⊤ : 𝔹) ≤ CH :=
 begin

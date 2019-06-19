@@ -8,7 +8,7 @@ import .set_theory order.complete_boolean_algebra topology.basic
 
 local attribute [instance] classical.prop_decidable
 
-open topological_space set
+open set
 
 meta def not_as_big_bertha : tactic string := `[cc] >> pure "cc"
 
@@ -69,16 +69,24 @@ begin
   rw[interior_inter] at a, simp at a, tidy
 end
 
-@[ematch]lemma is_clopen_interior {S : set α} (H : (: is_clopen S :)) : interior S = S :=
+lemma is_clopen_interior {S : set α} (H : (: is_clopen S :)) : interior S = S :=
 interior_eq_of_open H.left
 
-@[ematch]lemma is_clopen_closure {S : set α} (H : (: is_clopen S :)) : closure S = S :=
+local attribute [ematch] is_clopen_interior
+
+lemma is_clopen_closure {S : set α} (H : (: is_clopen S :)) : closure S = S :=
 closure_eq_of_is_closed H.right
 
-@[ematch, simp]lemma closure_mono' {s t : set α} (H : (: s ⊆ t :)) : closure s ⊆ closure t ↔ true := by finish[closure_mono]
+local attribute [ematch] is_clopen_closure
 
-@[ematch]lemma closure_eq_compl_interior_compl' {s : set α} :
+@[simp]lemma closure_mono' {s t : set α} (H : (: s ⊆ t :)) : closure s ⊆ closure t ↔ true := by finish[closure_mono]
+
+local attribute [ematch] closure_mono'
+
+lemma closure_eq_compl_interior_compl' {s : set α} :
   closure s = - interior (- s) := closure_eq_compl_interior_compl
+
+local attribute [ematch] closure_eq_compl_interior_compl'
 
 lemma interior_compl' {s : set α} : interior (- s) = - closure s :=
 by apply interior_compl
@@ -90,26 +98,33 @@ by ext; simp
 lemma subset_anti {s t : set α} : -s ⊆ -t ↔ t ⊆ s :=
 compl_subset_compl
 
-@[ematch]lemma subset_anti' {s t : set α} (H : t ⊆ s) :  - (closure s) ⊆ - (closure t) :=
+lemma subset_anti' {s t : set α} (H : t ⊆ s) :  - (closure s) ⊆ - (closure t) :=
 by finish[subset_anti]
 
-@[ematch]lemma subset_anti_right {s t : set α} (H : s ⊆ -t) : s ⊆ -t ↔ t ⊆ -s :=
+local attribute [ematch] subset_anti'
+
+lemma subset_anti_right {s t : set α} (H : s ⊆ -t) : s ⊆ -t ↔ t ⊆ -s :=
 by {split, clear H, intro, rw[<-subset_anti], convert a, simp, finish}
+
+local attribute [ematch] subset_anti_right
 
 lemma compl_mono {s t : set α} (H : s ⊆ t) : - t ⊆ - s := by simp[*,subset_anti]
 
 end topology_lemmas
 end topological_space
 
-open topological_space
-
 open lattice
 section regular
 variables {α : Type*} [τ : topological_space α]
 
 include τ
-@[ematch, reducible]def is_regular (S : set α) : Prop :=
+@[reducible]def topological_space.is_regular (S : set α) : Prop :=
  S = interior (closure S)
+
+open topological_space
+
+local attribute [ematch] is_clopen_interior is_clopen_closure closure_mono'
+ is_regular subset_anti_right subset_anti' closure_eq_compl_interior_compl'
 
 -- @[reducible,simp,ematch]def int_of_cl (S : set α) := interior (closure S)
 
@@ -133,8 +148,10 @@ by simp[perp_unfold]
 @[simp]lemma perp_empty : (∅ : set α)ᵖ = univ :=
 by simp[perp_unfold]
 
-@[simp, ematch]lemma is_open_of_is_regular {S : set α} (H : (: is_regular S :)) : is_open S :=
+@[simp]lemma is_open_of_is_regular {S : set α} (H : (: is_regular S :)) : is_open S :=
 by {unfold is_regular at H, rw[H], simp}
+
+local attribute [ematch] is_open_of_is_regular
 
 @[simp]lemma is_regular_of_clopen {S : set α} (H : is_clopen S) : is_regular S :=
 by {[smt] eblast}
@@ -267,7 +284,10 @@ by {rw[regular_iff_p_p] at *, rw[p_p_inter_eq_inter_p_p (is_open_of_p_p H₁) (i
 
 end regular
 
+open topological_space
+
 section regular_algebra
+
 local postfix `ᵖ`:80 := perp
 
 local notation `cl`:65 := closure
@@ -601,5 +621,3 @@ begin
 end
 
 end regular_algebra
-
-

@@ -304,7 +304,7 @@ begin
  rw[this], apply le_supr
 end
 
-@[symm]theorem bv_eq_symm {x y : bSet 𝔹} : x =ᴮ y = y =ᴮ x :=
+theorem bv_eq_symm {x y : bSet 𝔹} : x =ᴮ y = y =ᴮ x :=
 begin
   induction x with α A B generalizing y, induction y with α' A' B',
   suffices : ∀ a : α, ∀ a' : α', A' a' =ᴮ A a = A a =ᴮ A' a',

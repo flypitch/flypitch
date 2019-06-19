@@ -418,6 +418,7 @@ begin
 end
 
 open cardinal
+
 lemma countable_chain_condition_set {α : Type u} : countable_chain_condition (set α) :=
 begin
   apply countable_chain_condition_pi, intros s hs,
@@ -430,3 +431,4 @@ end
 
 end cantor_space
 end cantor_space
+
