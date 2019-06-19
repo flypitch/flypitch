@@ -443,6 +443,8 @@ variables {α : Type u} {β : Type v} {γ : Type w}
 lemma ne_empty_of_exists_mem {s : set α} : ∀(h : ∃x, x ∈ s), s ≠ ∅
 | ⟨x, hx⟩ := ne_empty_of_mem hx
 
+@[simp]lemma mem_image_univ {f : α → β} {x} : f x ∈ f '' set.univ := ⟨x, ⟨trivial, rfl⟩⟩ 
+
 -- todo: only use image_preimage_eq_of_subset
 lemma image_preimage_eq_of_subset_image {f : α → β} {s : set β}
   {t : set α} (h : s ⊆ f '' t) : f '' (f ⁻¹' s) = s :=

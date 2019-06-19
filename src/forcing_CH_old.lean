@@ -257,6 +257,10 @@ begin
   ext1, sorry
 end
 
+lemma fn_mem_ran {X Y} {f : X →. Y} {x : X} {Hx : x ∈ f.dom} :
+  (fn f x Hx) ∈ f.ran :=
+by use x; tidy
+
 end pfun_lemmas
 
 end pfun
@@ -267,14 +271,44 @@ section collapse_poset
 variables X Y : Type u
 
 structure collapse_poset : Type u :=
-(f        : pfun X Y)
+(f        : X →. Y)
 (Hc       : #f.dom ≤ (aleph 0))
+
+def collapse_poset.empty {α β : Type u} : collapse_poset α β :=
+{ f := λ x, { dom := false, get := λ H, false.elim ‹_› },
+  Hc := by { change # (∅ : set α) ≤ _, simp } }
 
 open pfun
 
 variables {X Y}
+
 lemma collapse_poset.ran_ctbl (p : collapse_poset X Y) : # p.f.ran ≤ aleph 0 :=
-sorry
+begin
+  suffices : #p.f.ran ≤ #p.f.dom,
+    by {exact le_trans this p.Hc},
+  refine mk_le_of_surjective _,
+    { exact λ ⟨x,H⟩, ⟨fn p.f x H, by apply fn_mem_ran⟩},
+    { intros y, by_contra, push_neg at a,
+    /- `tidy` says -/ cases y, cases y_property, cases y_property_h,
+      induction y_property_h_h, simp at *, dsimp at *,
+      specialize a ‹_› ‹_›, finish }
+end
+
+def collapse_poset.inter (p₁ p₂ : collapse_poset X Y) : collapse_poset X Y :=
+{ f := λ x, { dom := ∃ (H₁ : p₁.f.dom x) (H₂ : p₂.f.dom x), (fn p₁.f x H₁ = fn p₂.f x H₂), get := λ H, by {refine fn p₁.f x (by tidy)}},
+  Hc := by {refine le_trans _ p₁.Hc, exact mk_le_mk_of_subset (by tidy)}}
+
+@[reducible]def collapse_poset.compatible (p₁ p₂ : collapse_poset X Y) : Prop :=
+∀ x (H₁ : p₁.f.dom x) (H₂ : p₂.f.dom x), p₁.f.fn x H₁ = p₂.f.fn x H₂
+
+noncomputable def collapse_poset.join (p₁ p₂ : collapse_poset X Y)
+  (H_compat : collapse_poset.compatible p₁ p₂) : collapse_poset X Y :=
+{ f := λ x, { dom := (p₁.f.dom x ∨ p₂.f.dom x),
+              get := λ H, dite (p₁.f.dom x) (λ H, p₁.f.fn x H)
+                               (λ H', p₂.f.fn x (or.resolve_left H ‹_›))},
+  Hc := begin
+          sorry
+        end }
 
 lemma exists_mem_compl_dom_of_unctbl (p : collapse_poset X Y) (H_card : (aleph 0) < #X) :
   ∃ x : X, x ∉ p.f.dom :=
@@ -290,11 +324,18 @@ def collapse_poset.extends (p : collapse_poset X Y) (f : X → Y) : Prop :=
 def collapse_poset.principal_open (p : collapse_poset X Y) : set (X → Y) :=
 {f | collapse_poset.extends p f}
 
+@[simp]lemma collapse_poset.principal_open_empty : collapse_poset.principal_open (collapse_poset.empty : collapse_poset X Y) = set.univ :=
+begin
+  ext f, split; intro H,
+    { trivial },
+    { tidy }
+end
+
 @[simp]lemma mem_principal_open_iff {p : collapse_poset X Y} {f : X → Y} : f ∈ (collapse_poset.principal_open p) ↔ ∀ (x : X) (H_x : x ∈ p.f.dom), f x = (fn p.f x H_x) := by refl
 
 @[simp]lemma mem_ran_of_mem_dom {p : collapse_poset X Y} {f : X → Y} {x : X} (H : f ∈ collapse_poset.principal_open p) : x ∈ p.f.dom → f x ∈ p.f.ran :=
-by {intro H_mem, rw[mem_principal_open_iff] at H,
-    use x, rw[H _ ‹_›], from roption.get_mem H_mem}
+by { intro H_mem, rw[mem_principal_open_iff] at H,
+     use x, rw[H _ ‹_›], from roption.get_mem H_mem }
 
 def collapse_space : topological_space (X → Y) :=
 generate_from $ collapse_poset.principal_open '' set.univ
@@ -349,9 +390,81 @@ by  {rcases collapse_poset.compl_principal_open_is_Union p with ⟨ι, ⟨s, Hu�
 @[simp] lemma collapse_poset.is_regular_principal_open (p : collapse_poset X Y) : is_regular (collapse_poset.principal_open p) :=
 by simp[is_clopen]
 
-def collapse_space_basis : set $ set (X → Y) := collapse_poset.principal_open '' set.univ
+@[simp]lemma dom_reduce {D : X → Prop} {D_get : Π x (H : D x), Y} : pfun.dom (λ x, roption.mk (D x) (D_get x) : X →. Y) = D := rfl
 
-def collapse_space_basis_spec : @is_topological_basis (X → Y) collapse_space collapse_space_basis := sorry
+@[simp]lemma fn_reduce {D : X → Prop} {D_get : Πx (H : D x), Y} {x} {H} : pfun.fn (λ x, roption.mk (D x) (D_get x) : X →. Y) x H = D_get x H := rfl
+
+@[simp]lemma mem_dom_join_of_mem_left {p₁ p₂ : collapse_poset X Y} {x} (Hx : p₁.f.dom x)
+  (H_compat : compatible p₁ p₂) : (collapse_poset.join p₁ p₂ H_compat).f.dom x := sorry
+
+@[simp]lemma mem_dom_join_of_mem_right {p₁ p₂ : collapse_poset X Y} {x} (Hx : p₂.f.dom x)
+  (H_compat : compatible p₁ p₂)  : (collapse_poset.join p₁ p₂ H_compat).f.dom x := sorry
+-- begin
+--   simp[join], refine ⟨_,_⟩,
+--     { from or.inl ‹_› },
+--     { intro H, solve_by_elim }
+-- end
+
+lemma inter_principal_open {p₁ p₂ : collapse_poset X Y} (H : compatible p₁ p₂) : principal_open p₁ ∩ principal_open p₂ = principal_open (join p₁ p₂ H) :=
+begin 
+  ext f; split; intro H_mem,
+    { rw mem_principal_open_iff, intros x H_x, simp[join] at H_x ⊢,
+      cases H_x, cases H_mem,
+        { simp*, solve_by_elim },
+        { by_cases p₁.f.dom x; cases H_mem; simp*; solve_by_elim }},
+    { refine ⟨_,_⟩,
+        all_goals{rw[mem_principal_open_iff] at ⊢ H_mem, intros x Hx, specialize H_mem x},
+          { specialize H_mem (mem_dom_join_of_mem_left ‹_› ‹_›),
+            change p₁.f.dom x at Hx, refine eq.trans H_mem _,
+            simp[*, join] },
+          { specialize H_mem (mem_dom_join_of_mem_right ‹_› ‹_›),
+            change p₂.f.dom x at Hx, by_cases p₁.f.dom x,
+            { rw[<-H], rw[H_mem], simp[join, h], from ‹_› },
+            { rw[H_mem], simp[join, h] }}}
+end
+
+def collapse_space_basis : set $ set (X → Y) := insert (∅ : set (X → Y)) (collapse_poset.principal_open '' set.univ)
+
+def collapse_space_basis_spec : @is_topological_basis (X → Y) collapse_space collapse_space_basis := 
+begin
+  refine ⟨λ P HP P' HP' f H_mem_inter, _,_,_⟩,
+    { rw[collapse_space_basis] at HP HP',
+      cases HP; cases HP',
+
+        { suffices this : f ∈ (∅ : set $ X → Y),
+            by {cases this}, substs HP, cases H_mem_inter, from ‹_› },
+        { suffices this : f ∈ (∅ : set $ X → Y),
+            by {cases this}, substs HP, cases H_mem_inter, from ‹_› },
+        { suffices this : f ∈ (∅ : set $ X → Y),
+            by {cases this}, substs HP', cases H_mem_inter, from ‹_› },
+
+      simp only [set.image_univ, set.mem_range] at HP HP',
+      cases HP with y Hy; cases HP' with y' Hy',
+
+      substs Hy Hy', use (principal_open y ∩ principal_open y'),
+      refine ⟨_,⟨‹_›,(by refl)⟩⟩,
+       { by_cases H_compat : (compatible y y'),
+           { right, refine ⟨_,⟨trivial, _⟩⟩, from join y y' ‹_›, rw[inter_principal_open] },
+           { suffices this : principal_open y ∩ principal_open y' = ∅,
+               by {rw[this], from or.inl rfl },
+             ext g; split; intro H,
+               { exfalso, cases H with H₁ H₂, simp at H₁ H₂,
+                 push_neg at H_compat, rcases H_compat with ⟨x, Hx₁, Hx₂, Hx₃⟩,
+                 apply Hx₃, transitivity g x; solve_by_elim },
+               { cases H }}}},
+
+    { refine le_antisymm (λ _ _, trivial) _,
+      intros f _a, refine ⟨_,_⟩,
+      { exact (principal_open collapse_poset.empty) },
+      { refine ⟨by {rw[collapse_space_basis], right, exact set.mem_image_univ},_⟩, simp }},
+    { unfold collapse_space_basis collapse_space, refine le_antisymm _ _,
+      { refine generate_from_mono _, from λ _ _, or.inr ‹_›},
+      { intros T HT, induction HT,
+        { cases HT_H, subst HT_H, exact is_open_empty, constructor, from ‹_› },
+        { exact is_open_univ },
+        { apply generate_open.inter, from ‹_›, from ‹_› },
+        { apply generate_open.sUnion, intros S HS, solve_by_elim }}}
+end
 
 @[simp]lemma is_regular_one_point_regular_open {x : X} {y : Y} :
   is_regular (principal_open (one_point_collapse_poset x y)) :=
@@ -431,7 +544,9 @@ begin
    refine Sup_eq_top_of_dense_Union _,
    apply dense_of_dense_in_basis _ collapse_space_basis_spec _,
    intros B HB HB_ne,
-   unfold collapse_space_basis at HB, cases HB with p Hp, simp at Hp, subst Hp,
+   unfold collapse_space_basis at HB, cases HB with p Hp,
+   { contradiction }, cases Hp with p Hp,
+   simp at Hp, subst Hp,
    refine set.ne_empty_of_exists_mem _,
    { cases exists_mem_compl_dom_of_unctbl p aleph_one_type_uncountable with η Hη,
      use trivial_extension p.f S, use trivial_extension_mem_principal_open,
