@@ -301,14 +301,25 @@ def collapse_poset.inter (p₁ p₂ : collapse_poset X Y) : collapse_poset X Y :
 @[reducible]def collapse_poset.compatible (p₁ p₂ : collapse_poset X Y) : Prop :=
 ∀ x (H₁ : p₁.f.dom x) (H₂ : p₂.f.dom x), p₁.f.fn x H₁ = p₂.f.fn x H₂
 
+@[simp]lemma dom_reduce {D : X → Prop} {D_get : Π x (H : D x), Y} : pfun.dom (λ x, roption.mk (D x) (D_get x) : X →. Y) = D := rfl
+
+@[simp]lemma fn_reduce {D : X → Prop} {D_get : Πx (H : D x), Y} {x} {H} : pfun.fn (λ x, roption.mk (D x) (D_get x) : X →. Y) x H = D_get x H := rfl
+
 noncomputable def collapse_poset.join (p₁ p₂ : collapse_poset X Y)
   (H_compat : collapse_poset.compatible p₁ p₂) : collapse_poset X Y :=
 { f := λ x, { dom := (p₁.f.dom x ∨ p₂.f.dom x),
               get := λ H, dite (p₁.f.dom x) (λ H, p₁.f.fn x H)
                                (λ H', p₂.f.fn x (or.resolve_left H ‹_›))},
-  Hc := begin
-          sorry
-        end }
+  Hc := by rw[aleph_zero]; apply mk_union_countable_of_countable;
+             [convert p₁.Hc, convert p₂.Hc]; rw[aleph_zero] }
+
+@[simp]lemma mem_dom_join_of_mem_left {p₁ p₂ : collapse_poset X Y} {x} (Hx : p₁.f.dom x)
+  (H_compat : collapse_poset.compatible p₁ p₂) : (collapse_poset.join p₁ p₂ H_compat).f.dom x :=
+by finish[collapse_poset.join]
+
+@[simp]lemma mem_dom_join_of_mem_right {p₁ p₂ : collapse_poset X Y} {x} (Hx : p₂.f.dom x)
+  (H_compat : collapse_poset.compatible p₁ p₂) : (collapse_poset.join p₁ p₂ H_compat).f.dom x := 
+by finish[collapse_poset.join]
 
 lemma exists_mem_compl_dom_of_unctbl (p : collapse_poset X Y) (H_card : (aleph 0) < #X) :
   ∃ x : X, x ∉ p.f.dom :=
@@ -390,16 +401,6 @@ by  {rcases collapse_poset.compl_principal_open_is_Union p with ⟨ι, ⟨s, Hu�
 @[simp] lemma collapse_poset.is_regular_principal_open (p : collapse_poset X Y) : is_regular (collapse_poset.principal_open p) :=
 by simp[is_clopen]
 
-@[simp]lemma dom_reduce {D : X → Prop} {D_get : Π x (H : D x), Y} : pfun.dom (λ x, roption.mk (D x) (D_get x) : X →. Y) = D := rfl
-
-@[simp]lemma fn_reduce {D : X → Prop} {D_get : Πx (H : D x), Y} {x} {H} : pfun.fn (λ x, roption.mk (D x) (D_get x) : X →. Y) x H = D_get x H := rfl
-
-@[simp]lemma mem_dom_join_of_mem_left {p₁ p₂ : collapse_poset X Y} {x} (Hx : p₁.f.dom x)
-  (H_compat : compatible p₁ p₂) : (collapse_poset.join p₁ p₂ H_compat).f.dom x := sorry
-
-@[simp]lemma mem_dom_join_of_mem_right {p₁ p₂ : collapse_poset X Y} {x} (Hx : p₂.f.dom x)
-  (H_compat : compatible p₁ p₂)  : (collapse_poset.join p₁ p₂ H_compat).f.dom x := sorry
--- begin
 --   simp[join], refine ⟨_,_⟩,
 --     { from or.inl ‹_› },
 --     { intro H, solve_by_elim }
@@ -503,10 +504,36 @@ def collapse_algebra := @regular_opens (X → Y) collapse_space
 
 variables {X Y}
 
-@[instance, priority 9000] def collapse_algebra_boolean_algebra [H_nonempty : nonempty (X → Y)] : nontrivial_complete_boolean_algebra (collapse_algebra X Y) :=
-regular_open_algebra H_nonempty
+@[instance, priority 9001] def collapse_algebra_boolean_algebra [nonempty (X → Y)] : nontrivial_complete_boolean_algebra (collapse_algebra X Y) :=
+regular_open_algebra ‹_›
 
 end collapse_algebra
+
+def collapse_poset.inclusion {X Y : Type u} : collapse_poset X Y → collapse_algebra X Y :=
+λ p, ⟨collapse_poset.principal_open p, collapse_poset.is_regular_principal_open p⟩
+
+local notation `ι`:65 := collapse_poset.inclusion
+
+lemma collapse_poset_dense_basis {X Y : Type u} : ∀ T ∈ @collapse_space_basis X Y,
+  ∀ h_nonempty : T ≠ ∅, ∃ p : collapse_poset X Y, (ι p).val ⊆ T :=
+begin
+  intros T H_mem_basis _,
+  refine or.elim H_mem_basis (λ _, (false.elim (absurd ‹T = ∅› ‹_›))) (λ H, _),
+  rcases H with ⟨_,⟨_,H₂⟩⟩, from ⟨‹_›, by simp[H₂, collapse_poset.inclusion]⟩
+end
+
+lemma collapse_poset_dense {X Y : Type u} [nonempty (X → Y)] {b : collapse_algebra X Y}
+  (H : ⊥ < b) : ∃ p : (collapse_poset X Y), ι p ≤ b :=
+begin
+  cases (classical.choice (classical.nonempty_of_not_empty _ H.right.symm)) with S_wit H_wit,
+  change ∃ p, (ι p).val ⊆ b.val,
+  have := mem_basis_subset_of_mem_open (collapse_space_basis_spec) H_wit (is_open_of_is_regular b.property),
+  rcases (mem_basis_subset_of_mem_open
+           (collapse_space_basis_spec) H_wit (is_open_of_is_regular b.property))
+         with ⟨v, Hv₁, Hv₂, Hv₃⟩,
+  have : v ≠ ∅, by {intro H, rw[H] at Hv₂, cases Hv₂},
+  cases (collapse_poset_dense_basis ‹_› ‹_› ‹_›) with p H_p, from ⟨p, set.subset.trans H_p ‹_›⟩
+end
 
 private def 𝔹 : Type u := collapse_algebra ((ℵ₁ : pSet.{u}).type) (powerset omega : pSet.{u}).type
 
@@ -619,19 +646,14 @@ If q ∈ P satisfies q ≤ pᵢ for all i (i.e. is a witness to the ω-closed as
 and g is the function attached to the collection of pairs (i, y_i), show that q ⊩ f = ǧ.
 -/
 
-def function_reflect (g : bSet 𝔹) (x y : pSet) {Γ} (H : Γ ≤  is_func' (x̌) (y̌) g) : pSet := sorry
+def function_reflect (g : bSet 𝔹) {Γ} (H : Γ ≤  is_func g) : pSet := sorry
 
-lemma function_reflect_spec {g} {x y} {Γ : 𝔹} (H : Γ ≤ _) : Γ ≤ (function_reflect g x y H)̌  =ᴮ g :=
+lemma function_reflect_spec {g} {Γ : 𝔹} (H : Γ ≤ _) : Γ ≤ (function_reflect g H)̌  =ᴮ g :=
 sorry
 
 lemma function_reflect_surj_of_surj {g} {x y} {Γ : 𝔹} (H : Γ ≤ _) (H_not_zero : ⊥ < Γ) (H_surj : Γ ≤ is_surj (x̌) (y̌) (g : bSet 𝔹)) :
-  pSet.is_surj x y (function_reflect g x y H) :=
+  pSet.is_surj x y (function_reflect g H) :=
 sorry
-
-lemma ex_no_surj_omega_aleph_one : ¬ ∃ f : pSet, pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f :=
-begin
-  intro H, cases H with f Hf, dsimp[pSet.is_surj] at Hf, sorry
-end
 
 
 --TODO(jesse) check that this proof actually works
@@ -641,9 +663,8 @@ begin
   bv_cases_at a_right f, rw[le_inf_iff] at a_right_1, cases a_right_1,
   by_contra, replace a := (bot_lt_iff_not_le_bot.mpr a),
   suffices this : ∃ f : pSet, pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f,
-    by {exfalso, from ex_no_surj_omega_aleph_one ‹_›},
-  let g := (function_reflect f (pSet.omega) (ordinal.mk (aleph 1).ord) sorry),
-  use g,
+    by {exfalso, from pSet.ex_no_surj_omega_aleph_one ‹_›},
+  let g := (function_reflect f ‹_›), use g,
   apply function_reflect_surj_of_surj, from ‹_›, from a_right_1_right
 end
 

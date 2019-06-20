@@ -322,6 +322,10 @@ end ordinal
 
 namespace cardinal
 
+section cardinal_lemmas
+
+local prefix `#`:65 := cardinal.mk
+
 lemma exists_mem_compl_of_mk_lt_mk {α} (P : set α) (H_lt : cardinal.mk P  < cardinal.mk α) : ∃ x : α, x ∈ (- P) :=
 begin
   haveI : decidable (∃ (x : α), x ∈ - P) := classical.prop_decidable _,
@@ -331,6 +335,18 @@ begin
     by {exact absurd H_lt (not_lt.mpr ‹_›)},
   refine mk_le_of_injective _, from λ _, ⟨‹_›, a ‹_›⟩, tidy
 end
+
+@[simp]lemma mk_union_countable_of_countable {α} {P Q : set α} (HP : #P ≤ omega) (HQ : #Q ≤ omega) :
+  #((P ∪ Q : set α)) ≤ omega :=
+begin
+  have this₁ := @mk_union_add_mk_inter _ (P) (Q),
+  transitivity (#↥(P ∪ Q)) + #↥(P ∩ Q),
+    { apply cardinal.le_add_right },
+    { rw[this₁], rw[<-(add_eq_self (by refl : cardinal.omega ≤ cardinal.omega))],
+      refine cardinal.add_le_add _ _; from ‹_› }
+end
+
+end cardinal_lemmas
 
 end cardinal
 

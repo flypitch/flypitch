@@ -14,6 +14,8 @@ local infix ` ⟹ `:65 := lattice.imp
 
 local infix ` ⇔ `:50 := lattice.biimp
 
+local prefix `p𝒫`:65 := pSet.powerset
+
 namespace bSet
 variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 section extras
@@ -534,6 +536,31 @@ end
 
 lemma check_subset {x y : pSet} {Γ : 𝔹} (h_subset : x ⊆ y) : Γ ≤ x̌ ⊆ᴮ y̌ :=
   le_trans le_top (check_subset_of_subset ‹_›)
+
+lemma check_powerset_subset_powerset (x : pSet) {Γ : 𝔹} : Γ ≤ (pSet.powerset x)̌  ⊆ᴮ (bv_powerset (x̌))
+:=
+begin
+  rw[subset_unfold], bv_intro s, simp only [mem, bval, top_imp, func, check, check_bval_top],
+  suffices : ∃ χ : (x̌).type → 𝔹, Γ ≤ ((pSet.powerset x)̌ .func s) =ᴮ (set_of_indicator χ),
+    by {cases this with χ Hχ, rw[mem_unfold], apply bv_use χ, refine le_inf _ ‹_›,
+        { change _ ≤ _ ⊆ᴮ _, have := bv_rw' (bv_context_symm Hχ), show bSet 𝔹 → 𝔹,
+          from λ z, z ⊆ᴮ x̌, from this, by simp,
+          have eq_check_type : type ((p𝒫 x)̌ ) = pSet.type (p𝒫 x) :=
+            by {simp, recover, all_goals{from ‹_›} },
+          suffices this : (p𝒫 x).func (cast eq_check_type s) ⊆ x,
+            by {convert check_subset this, cases x, refl},
+          from pSet.mem_powerset.mp (by convert pSet.mem.mk (p𝒫 x).func _; from pSet.mk_eq)}},
+   cases x with α A,
+     use (λ i, Prop_to_bot_top (s i)), 
+   refine subset_ext _ _,
+     { rw[subset_unfold], bv_intro j, bv_imp_intro Hj, simp,
+       apply bv_use j.val,
+       refine le_inf _ _,
+         { sorry }, -- show in this case it's always ⊤
+         { sorry }}, -- this should be easy
+     { rw[subset_unfold], bv_intro j, bv_imp_intro Hj, simp,
+       sorry  } -- for this, case on whether or not the bval is ⊥ 
+end
 
 @[simp]lemma check_mem' {y : pSet} {i : y.type} : ((y.func i)̌ ) ∈ᴮ y̌ = (⊤ : 𝔹) :=
 by {apply top_unique, apply check_mem, cases y, apply pSet.mem.mk}

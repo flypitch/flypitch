@@ -729,4 +729,9 @@ begin
   apply H_neq, apply le_antisymm; from le_of_subset ‹_›
 end
 
+lemma ex_no_surj_omega_aleph_one : ¬ ∃ f : pSet, pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f :=
+begin
+  intro H, cases H with f Hf, dsimp[pSet.is_surj] at Hf, sorry
+end
+
 end pSet
