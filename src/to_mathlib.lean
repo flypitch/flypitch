@@ -626,7 +626,17 @@ arity'_iff_refl f
 end arity'
 end arity'
 
+namespace preorder
+
+@[simp]lemma lt_irrefl' {α} [preorder α] {Γ : α} (H_lt : Γ < Γ) : false := lt_irrefl _ ‹_›
+
+end preorder
+
+
 namespace lattice
+
+
+
 instance complete_degenerate_boolean_algebra : complete_boolean_algebra unit :=
 { sup := λ _ _, (),
   le := λ _ _, true,
@@ -699,12 +709,38 @@ theorem infi_sup_eq {α ι : Type*} [complete_distrib_lattice α] {a : α} {s : 
  (⨅(i:ι), s i) ⊔ a = ⨅(i:ι), s i ⊔ a :=
 by {rw[sup_comm], conv{to_rhs, simp[sup_comm]}, apply sup_infi_eq}
 
+/- These next two lemmas are duplicates, but with better names -/
 @[simp]lemma inf_self {α : Type*} [lattice α] {a : α} : a ⊓ a = a :=
-  by simp
+  inf_idem
 
 @[simp]lemma sup_self {α : Type*} [lattice α] {a : α} : a ⊔ a = a :=
-  by simp
+  sup_idem
 
+lemma bot_lt_iff_not_le_bot {α} [bounded_lattice α] {a : α} : ⊥ < a ↔ (¬ a ≤ ⊥) :=
+begin
+  rw[le_bot_iff],
+  split; intro,
+    from bot_lt_iff_ne_bot.mp ‹_›,
+  from bot_lt_iff_ne_bot.mpr ‹_›
+end
+
+/--
+  Given an indexed supremum (⨆i, s i) and (H : Γ ≤ ⨆i, s i), there exists some i such that ⊥ < Γ ⊓ s i.
+-/
+lemma nonzero_inf_of_nonzero_le_supr {α : Type*} [complete_distrib_lattice α] {ι : Type*} {s : ι → α} {Γ : α} (H_nonzero : ⊥ < Γ) (H : Γ ≤ ⨆i, s i) : ∃ i, ⊥ < Γ ⊓ s i :=
+begin
+  haveI := classical.prop_decidable, by_contra H', push_neg at H',
+  simp [bot_lt_iff_not_le_bot, -le_bot_iff] at H', replace H' := supr_le_iff.mpr H',
+  have H_absorb : Γ ⊓ (⨆(i : ι), s i) = Γ,
+    by {exact le_antisymm (inf_le_left) (le_inf (by refl) ‹_›)},
+  suffices this : (Γ ⊓ ⨆ (i : ι), s i) ≤ ⊥,
+    by {rw[H_absorb, le_bot_iff] at this, simpa[this] using H_nonzero},
+  rwa[inf_supr_eq]
+end
+
+/--
+  Material implication in a Boolean algebra
+-/
 def imp {α : Type*} [boolean_algebra α] : α → α → α :=
   λ a₁ a₂, (- a₁) ⊔ a₂
 
@@ -836,7 +872,7 @@ lemma supr_max_of_bounded {α β : Type*} [complete_lattice β] {A : α → β} 
 {h : b = ⨆(a:α), A a} {h_lt : c < b} {h_bounded : ∀ a : α, A a ≠ b → A a ≤ c} :
   ∃ x : α, A x = b :=
 begin
-  haveI : decidable ∃ (x : α), A x = b := by apply classical.prop_decidable,
+  haveI : decidable ∃ (x : α), A x = b := classical.prop_decidable _,
   by_contra, rw[h] at a, simp at a,
   suffices : b ≤ c, by {suffices : c < c, by {exfalso, have this' := lt_irrefl,
   show Type*, exact β, show preorder (id β), by {dsimp, apply_instance}, exact this' c this},
@@ -844,11 +880,13 @@ begin
   rw[h], apply supr_le, intro a', from h_bounded a' (by convert a a')
 end
 
+/-- Let A : α → β such that b ≤ ⨆(a : α) A a. Let c < b. If, for all a : α, A a ≠ b → A a ≤ c,
+then there exists some x : α such that b ≤ A x. -/
 lemma supr_max_of_bounded' {α β : Type*} [complete_lattice β] {A : α → β} {b c : β}
 {h : b ≤ ⨆(a:α), A a} {h_lt : c < b} {h_bounded : ∀ a : α, (¬ b ≤ A a) → A a ≤ c} :
   ∃ x : α, b ≤ A x :=
 begin
-  haveI : decidable ∃ (x : α), b ≤ A x := by apply classical.prop_decidable,
+  haveI : decidable ∃ (x : α), b ≤ A x := classical.prop_decidable _,
   by_contra, simp at a,
   suffices : b ≤ c, by {suffices : c < c, by {exfalso, have this' := lt_irrefl,
   show Type*, exact β, show preorder (id β), by {dsimp, apply_instance}, exact this' c this},
@@ -856,13 +894,15 @@ begin
   apply le_trans h, apply supr_le, intro a', from h_bounded a' (a a')
 end
 
+
+
 /-- As a consequence of the previous lemma, if ⨆(a : α), A a = ⊤ such that whenever A a ≠ ⊤ → A α = ⊥, there exists some x : α such that A x = ⊤. -/
 lemma supr_eq_top_max {α β : Type*} [complete_lattice β] {A : α → β} {h_nondeg : ⊥ < (⊤ : β)}
 {h_top : (⨆(a : α), A a) = ⊤} {h_bounded : ∀ a : α, A a ≠ ⊤ → A a = ⊥} : ∃ x : α, A x = ⊤ :=
   by {apply supr_max_of_bounded, cc, exact h_nondeg, tidy}
 
-lemma supr_eq_Gamma_max {α β : Type*} [complete_lattice β] {A : α → β} {Γ : β} {h_nonzero : ⊥ < Γ}
-{h_Γ : Γ ≤ (⨆a, A a)} {h_bounded : ∀ a, (¬ Γ ≤ A a) → A a = ⊥} : ∃ x : α, Γ ≤ A x :=
+lemma supr_eq_Gamma_max {α β : Type*} [complete_lattice β] {A : α → β} {Γ : β} (h_nonzero : ⊥ < Γ)
+(h_Γ : Γ ≤ (⨆a, A a)) (h_bounded : ∀ a, (¬ Γ ≤ A a) → A a = ⊥) : ∃ x : α, Γ ≤ A x :=
 begin
   apply supr_max_of_bounded', from ‹_›, from ‹_›, intros a H,
   specialize h_bounded a ‹_›, rwa[le_bot_iff]
@@ -908,7 +948,7 @@ lemma infi_congr {ι β : Type*} {s₁ s₂ : ι → β} [complete_lattice β] {
   (⨅(i:ι), s₁ i) = ⨅(i:ι), s₂ i :=
 by simp*
 
-lemma supr_congr {ι β : Type*} {s₁ s₂ : ι → β} [complete_lattice β] {h : ∀ i : ι, s₁ i = s₂ i} :
+@[simp]lemma supr_congr {ι β : Type*} {s₁ s₂ : ι → β} [complete_lattice β] {h : ∀ i : ι, s₁ i = s₂ i} :
   (⨆(i:ι), s₁ i) = ⨆(i:ι), s₂ i :=
 by simp*
 
@@ -1029,14 +1069,6 @@ lemma bv_absurd {β} [boolean_algebra β] {Γ : β} (b : β) (H₁ : Γ ≤ b) (
 
 lemma neg_imp {β : Type*} [boolean_algebra β] {a b : β} : -(a ⟹ b) = a ⊓ (-b) :=
 by simp[imp]
-
-lemma bot_lt_iff_not_le_bot {α} [bounded_lattice α] {a : α} : ⊥ < a ↔ (¬ a ≤ ⊥) :=
-begin
-  rw[le_bot_iff],
-  split; intro,
-    from bot_lt_iff_ne_bot.mp ‹_›,
-  from bot_lt_iff_ne_bot.mpr ‹_›
-end
 
 lemma nonzero_wit {β : Type*} [complete_lattice β] {ι : Type*} {s : ι → β} :
   (⊥ < (⨆i, s i)) → ∃ j, (⊥ < s j) :=

@@ -1,4 +1,4 @@
-import .bvm .bvm_extras .regular_open_algebra .to_mathlib data.pfun tactic .pSet_ordinal --
+import .bvm .bvm_extras .regular_open_algebra .to_mathlib data.pfun tactic .pSet_ordinal
 
 /-
   Forcing the continuum hypothesis.
@@ -648,7 +648,10 @@ and g is the function attached to the collection of pairs (i, y_i), show that q 
 
 def function_reflect (g : bSet 𝔹) {Γ} (H : Γ ≤  is_func g) : pSet := sorry
 
-lemma function_reflect_spec {g} {Γ : 𝔹} (H : Γ ≤ _) : Γ ≤ (function_reflect g H)̌  =ᴮ g :=
+lemma function_reflect_spec₁ {g} {Γ : 𝔹} (H : Γ ≤ _) : Γ ≤ (function_reflect g H)̌  =ᴮ g :=
+sorry
+
+lemma function_reflect_spec₂ {g} {Γ : 𝔹} (H : Γ ≤ _) : Set.is_func ⟦(function_reflect g H)⟧ :=
 sorry
 
 lemma function_reflect_surj_of_surj {g} {x y} {Γ : 𝔹} (H : Γ ≤ _) (H_not_zero : ⊥ < Γ) (H_surj : Γ ≤ is_surj (x̌) (y̌) (g : bSet 𝔹)) :

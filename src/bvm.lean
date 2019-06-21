@@ -1386,18 +1386,34 @@ by {induction a, induction b, simp[pSet.insert, bSet.insert1], split; ext; cases
 lemma mem_check_witness {y x : pSet.{u}} {Γ : 𝔹} {h_nonzero : ⊥ < Γ} (H : Γ ≤ y̌ ∈ᴮ (x̌)) : ∃ i : x.type, Γ ≤ y̌ =ᴮ (x.func i)̌  :=
 begin
   rw[mem_unfold] at H, simp at H,
-  have := supr_eq_Gamma_max, cases this with w h,
+  have := supr_eq_Gamma_max _ _ _, cases this with w h,
   use w, tactic.rotate 3, from λ a, (y̌ : bSet 𝔹) =ᴮ (x.func a)̌, from Γ,
-  from ‹_›, induction x, from H, swap, from ‹_›,
-  intros a H, by_contra, have := @check_bv_eq_dichotomy 𝔹 _ y (pSet.func x a),
-  cases this, swap, contradiction, rw[this] at H, apply H, from le_top
+  from ‹_›, cases x, from H, swap, from ‹_›,
+  intros a H, by_contra,
+  cases (@check_bv_eq_dichotomy 𝔹 _ y (pSet.func x a)),
+    { finish },
+    { contradiction }    
 end
 
-
---TODO(jesse) rename this lemma to something sane
-lemma foo {Γ : 𝔹} (h_nonzero : ⊥ < Γ) (x : pSet.{u}) (y : bSet 𝔹) (H_mem : Γ ≤ y ∈ᴮ x̌) : ∃ Γ' (z : pSet), (Γ' ≤ y =ᴮ ž) ∨ (Γ' ≤ -(y =ᴮ ž)) :=
+lemma instantiate_existential_over_check
+{ϕ : bSet 𝔹 → 𝔹} (H_congr : B_ext ϕ) (x : pSet) {Γ} (H_nonzero : ⊥ < Γ) (H_ex : Γ ≤ ⨆y, (y ∈ᴮ (x̌) ⊓ ϕ (y))) :
+  ∃ (Γ' : 𝔹) (H : Γ' ≤ Γ) (z) (H_mem : z ∈ x), Γ' ≤ ϕ (ž) :=
 begin
-  rw[mem_unfold] at H_mem, simp at H_mem, sorry --TODO(jesse) use a similar argument as above
+  rw[<-@bounded_exists] at H_ex, swap, by change B_ext _; simpa,
+  cases (nonzero_inf_of_nonzero_le_supr ‹_› ‹_›) with i Hi,
+  refine ⟨_, _, _, _, _⟩,
+    { exact Γ ⊓ (x̌.bval i) ⊓ ϕ (x̌.func i) },
+    { tidy_context },
+    { exact (x.func (cast (by cases x; refl) i)) },
+    { convert pSet.mem.mk _ _, simp },
+    { tidy_context, convert a_right, by cases x; refl }
+end
+
+lemma eq_check_of_mem_check {Γ : 𝔹} (h_nonzero : ⊥ < Γ) (x : pSet.{u}) (y : bSet 𝔹) (H_mem : Γ ≤ y ∈ᴮ x̌) :
+  ∃ Γ' (H_le : Γ' ≤ Γ) (z) (H_mem : z ∈ x), (Γ' ≤ y =ᴮ ž) :=
+begin
+  rw[mem_unfold] at H_mem, rw[@bounded_exists] at H_mem, swap, by change B_ext _; simp,
+  exact instantiate_existential_over_check (by simp) x ‹_› ‹_›
 end
 
 end check_names
@@ -1747,11 +1763,11 @@ begin
   apply le_inf, apply contains_empty_check_omega,
   rw [←bounded_forall],
   rw [infi_congr], swap,
-  intro n, rw [←bounded_exists, omega_bval, top_imp, @supr_congr _ _ _ (λ m, func omega n ∈ᴮ func omega m)],
+  intro n, rw [←bounded_exists, omega_bval, top_imp,
+                @supr_congr _ _ _ (λ m, func omega n ∈ᴮ func omega m)],
   intro m, rw [omega_bval, top_inf_eq],
-  swap, have := contains_succ_check_omega, dsimp [contains_succ] at this,
-  exact this,
   { intros, apply subst_congr_mem_right },
+  { exact contains_succ_check_omega },
   { change B_ext _, simp }
 end
 

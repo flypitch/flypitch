@@ -29,6 +29,12 @@ open ordinal
 
 namespace pSet
 
+@[simp]lemma mem.mk' {x : pSet} {i} : x.func i ∈ x :=
+by {cases x; apply pSet.mem.mk}
+
+lemma mem_unfold {x y : pSet} : x ∈ y ↔ ∃ j : y.type, equiv x (y.func j) :=
+by cases y; refl
+
 lemma mem_mem_false {x y : pSet.{u}} (H₁:  x ∈ y) (H₂ : y ∈ x) : false :=
 begin
   have := Set.regularity {⟦x⟧, ⟦y⟧},
@@ -66,6 +72,8 @@ def card_ex : cardinal.{u} → pSet.{u} := λ κ, ordinal.mk (ord κ)
 
 lemma mk_eq {x : pSet} : x = ⟨x.type, x.func⟩ :=
 by induction x; refl
+
+@[simp]lemma eta {x : pSet} : pSet.mk x.type x.func = (x : pSet) := (@mk_eq x).symm
 
 @[simp]lemma mk_type_forall {α} {A} {P : (pSet.mk α A).type → Prop} :
   (∀ x : (pSet.mk α A).type, P x) ↔ ∀ x : α, P x := by refl
@@ -148,8 +156,13 @@ def Ord (x : pSet) : Prop := epsilon_well_orders x ∧ is_transitive x
 lemma equiv_of_eq {x y : pSet} : ⟦x⟧ = ⟦y⟧ → pSet.equiv x y :=
 λ H, quotient.eq.mp H
 
+lemma equiv_iff_eq {x y : pSet} : equiv x y ↔ ⟦x⟧ = ⟦y⟧ :=
+⟨λ _, quotient.sound ‹_›, λ _, quotient.eq.mp ‹_›⟩
+
 instance mem_of_pSet : has_mem (quotient pSet.setoid) (quotient pSet.setoid) :=
 {mem := Set.mem}
+
+lemma mem_iff {x y : pSet} : x ∈ y ↔ ⟦x⟧ ∈ ⟦y⟧ := by refl
 
 lemma mem_insert {x y z : pSet} (H : x ∈ insert y z) : equiv x y ∨ x ∈ z :=
 begin
@@ -183,11 +196,17 @@ begin
   apply equiv.trans Hb ‹_›
 end
 
-lemma subset_all_mem {x y : pSet} : y ⊆ x ↔ ∀ z, z ∈ y → z ∈ x :=
+lemma subset_iff_all_mem {x y : pSet} : y ⊆ x ↔ ∀ z, z ∈ y → z ∈ x :=
 by {split; intros; [apply all_mem_of_subset, apply subset_of_all_mem], repeat{assumption}}
 
+lemma Set.subset_iff_all_mem {x y : Set} : y ⊆ x ↔ ∀ z, z ∈ y → z ∈ x :=
+by refl
+
+@[simp]lemma Set.mem.mk' {x : pSet} {i} : ⟦x.func i⟧ ∈ ⟦x⟧ :=
+by {rw[<-mem_iff], exact mem.mk'}
+
 lemma mem_trans_of_transitive {x y z : pSet} (H₁ : x ∈ y) (H₂ : y ∈ z) (H_trans : is_transitive z) : x ∈ z :=
-subset_all_mem.mp (H_trans y H₂) x H₁
+subset_iff_all_mem.mp (H_trans y H₂) x H₁
 
 lemma empty_empty : (∅ : Set) = ⟦(∅ : pSet)⟧ := by refl
 
@@ -202,8 +221,6 @@ end
 
 lemma not_empty_of_not_equiv_empty {x : pSet.{u}} (H : ¬ equiv x (∅ : pSet.{u})) : ⟦x⟧ ≠ (∅ : Set) :=
 by {intro H', apply H, from equiv_of_eq H'}
-
-lemma mem_iff {x y : pSet} : x ∈ y ↔ ⟦x⟧ ∈ ⟦y⟧ := by refl
 
 @[simp]lemma Ord_empty : Ord (∅ : pSet.{u}) :=
 begin
@@ -387,10 +404,10 @@ begin
 
   cases H with H_left H_trans, cases H_left with H_tri H_wf, unfold is_transitive at H_trans,
   have H_w_in_x : w ∈ x,
-    by {specialize H_trans y ‹_›, rw[subset_all_mem] at H_trans, specialize H_trans w ‹_›,
+    by {specialize H_trans y ‹_›, rw[subset_iff_all_mem] at H_trans, specialize H_trans w ‹_›,
     exact H_trans},
   have H_z_in_x : z ∈ x,
-    by {specialize H_trans w ‹_›, rw[subset_all_mem] at H_trans, from H_trans z ‹_›},
+    by {specialize H_trans w ‹_›, rw[subset_iff_all_mem] at H_trans, from H_trans z ‹_›},
   by_contra,
     specialize H_tri y ‹_› z ‹_›, simp* at H_tri,
     cases H_tri,
@@ -412,7 +429,11 @@ begin
   use y, from ⟨‹_›,‹_›⟩
 end
 
-def is_surj (x y f : pSet.{u}) : Prop := ∀ b : pSet.{u}, b ∈ y → ( ∃ a : pSet.{u}, a ∈ x → (Set.pair ⟦a⟧ ⟦b⟧ ∈ ⟦f⟧))
+
+--f ⊆ prod x y ∧ ∀z:Set.{u}, z ∈ x → ∃! w, pair z w ∈ f
+@[reducible]def is_func (x y f : pSet.{u}) : Prop := Set.is_func ⟦x⟧ ⟦y⟧ ⟦f⟧
+
+@[reducible]def is_surj (x y f : pSet.{u}) : Prop := ∀ b : pSet.{u}, b ∈ y → ( ∃ a : pSet.{u}, a ∈ x ∧ (Set.pair ⟦a⟧ ⟦b⟧ ∈ ⟦f⟧))
 
 -- lemma mk_lt_of_lt {β₁ β₂ : ordinal.{u}} (H : β₁ < β₂) : ordinal.mk β₁ ∈ ordinal.mk β₂ :=
 -- begin
@@ -428,7 +449,7 @@ def is_surj (x y f : pSet.{u}) : Prop := ∀ b : pSet.{u}, b ∈ y → ( ∃ a :
 --   cases this',
 --     {have this'' := @ih ξ ‹_›,
 --       suffices H : is_transitive (ordinal.mk (ordinal.succ η)),
---       specialize H (ordinal.mk η) (by simp), rw[subset_all_mem] at H,
+--       specialize H (ordinal.mk η) (by simp), rw[subset_iff_all_mem] at H,
 --       from H (ordinal.mk ξ) ‹_›, apply transitive_mk},
 --     {rw[this'], simp}},
 
@@ -625,7 +646,7 @@ lemma subset_refl {x : pSet} : x ⊆ x :=
 by {apply subset_of_all_mem, from λ _ _, by assumption}
 
 lemma subset_trans {x y z : pSet} : x ⊆ y → y ⊆ z → x ⊆ z :=
-by {simp only [subset_all_mem], tidy}
+by {simp only [subset_iff_all_mem], tidy}
 
 lemma of_nat_succ {k} : of_nat (k + 1) = pSet.succ (of_nat k) :=
 by unfold of_nat; tidy
@@ -669,7 +690,7 @@ begin
   unfold of_nat at Hy, cases mem_insert ‹_›,
   apply subset_of_all_mem, intros z Hz, rw[mem.congr_right h] at Hz,
   apply (all_mem_of_subset (subset_of_le _)), from Hz, apply nat.le_succ,
-  rw[subset_all_mem] at k_ih ⊢, intros z Hz, specialize k_ih ‹_› z ‹_›,
+  rw[subset_iff_all_mem] at k_ih ⊢, intros z Hz, specialize k_ih ‹_› z ‹_›,
   apply (all_mem_of_subset (subset_of_le (nat.le_succ _))), from ‹_›
 end
 
@@ -687,14 +708,14 @@ end
 lemma lt_of_of_nat_mem {k₁ k₂ : ℕ} (H_mem : of_nat k₁ ∈ of_nat k₂) : k₁ < k₂ :=
 begin
   by_contra, replace a := not_lt.mp a, have : of_nat k₂ ⊆ of_nat k₁, by apply subset_of_le ‹_›,
-  rw[subset_all_mem] at this, suffices : of_nat k₁ ∈ of_nat k₁, from mem_self ‹_›,
+  rw[subset_iff_all_mem] at this, suffices : of_nat k₁ ∈ of_nat k₁, from mem_self ‹_›,
   back_chaining
 end
 
 lemma is_transitive_omega : is_transitive (omega : pSet.{u}) :=
 begin
   intros z H, cases H, cases H_w with k, simp at H_h,
-  rw[subset.congr_left H_h], unfold omega, rw[subset_all_mem],
+  rw[subset.congr_left H_h], unfold omega, rw[subset_iff_all_mem],
   intros y Hy, have := of_nat_of_mem_of_nat Hy, cases this with j Hj,
   rw[mem.congr_left Hj], use j, simp[equiv.refl]
 end
@@ -729,9 +750,83 @@ begin
   apply H_neq, apply le_antisymm; from le_of_subset ‹_›
 end
 
-lemma ex_no_surj_omega_aleph_one : ¬ ∃ f : pSet, pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f :=
+-- lemma AE_of_AE_inj_indexing {x y : pSet} (H₁ : function.injective x.func) (H₂ : function.injective y.func) (H₂ : ∀ z ∈ y, ∃ w ∈ x,
+
+lemma function_lift_aux {x y f : pSet}
+ (H_func : is_func x y f)
+ {i : type x}
+ : ∃ (j : type y), Set.pair ⟦func x i⟧ ⟦func y j⟧ ∈ ⟦f⟧ :=
 begin
-  intro H, cases H with f Hf, dsimp[pSet.is_surj] at Hf, sorry
+  rcases H_func with ⟨f,Hf⟩, specialize Hf ⟦x.func i⟧ (by rw[<-mem_iff]; exact mem.mk'),
+  rcases Hf with ⟨w, Hw₁, Hw₂⟩,
+  have w_mem : w ∈ ⟦y⟧ :=
+  (Set.pair_mem_prod.mp (Set.subset_iff_all_mem.mp _ _ Hw₁)).right,
+  rw[show w = ⟦w.out⟧, by rw[quotient.out_eq]] at w_mem,
+  rw[<-mem_iff, mem_unfold] at w_mem,
+  cases w_mem with j Hj, use j,
+  have : ⟦quotient.out w⟧ = ⟦func y j⟧ := quotient.sound Hj,
+  rw[<-this], convert Hw₁, rw[quotient.out_eq],
+  swap, exact f
+end
+
+/--
+  Given a function between pSets, lift it to a function on their underlying types.
+-/
+def function_lift {x y : pSet} (f : pSet) (H_func : is_func x y f) : x.type → y.type :=
+λ i, classical.some (function_lift_aux ‹_› : ∃ j : y.type, Set.pair ⟦x.func i⟧ ⟦y.func j⟧ ∈ ⟦f⟧)
+
+lemma function_lift_spec {x y : pSet} {f} {H_func} {i : x.type} : Set.pair ⟦x.func i⟧ ⟦y.func (function_lift f H_func i)⟧ ∈ ⟦f⟧ :=
+classical.some_spec (function_lift_aux ‹_›)
+
+/--
+  An easy consequence of function_lift_spec: if the lift of f sends i to j, then the corresponding pair of pSets lives in f.
+-/
+lemma mem_fun_of_function_lift_graph {x y : pSet} {f} {H_func} : ∀ i j, (function_lift f H_func) i = j → Set.pair ⟦(x.func i)⟧ ⟦(y.func j)⟧ ∈ ⟦f⟧ :=
+by {intros _ _ H, rw[<-H], exact function_lift_spec}
+
+/--
+  If, in addition, the indexing function `y.func` is injective, f determines function_lift of f.
+-/
+lemma function_lift_graph_of_mem_fun_inj {x y : pSet} {f} {H_func} (H_inj : ∀ j₁ j₂ : y.type, equiv (y.func j₁) (y.func j₂) → j₁ = j₂) :
+  ∀ i j, Set.pair ⟦(x.func i)⟧ ⟦(y.func j)⟧ ∈ ⟦f⟧ → (function_lift f H_func) i = j :=
+begin
+  intros i j H, unfold is_func Set.is_func at H_func,
+  cases H_func with H_dom H_ext, specialize H_ext ⟦x.func i⟧ (Set.mem.mk'),
+  rcases H_ext with ⟨w, Hw₁, Hw₂⟩,
+  apply H_inj, apply equiv_of_eq, transitivity w,
+    { apply Hw₂, exact function_lift_spec },
+    { symmetry, exact Hw₂ _ ‹_› }
+end
+
+/--
+  As a consequence of the previous lemma, if f is pSet-surjective then its lift is Lean-surjective.
+-/
+lemma surj_lift {x y : pSet} {f} {H_func : is_func x y f} (H_inj : ∀ j₁ j₂ : y.type, equiv (y.func j₁) (y.func j₂) → j₁ = j₂) (H_surj : is_surj x y f) :
+  function.surjective (function_lift f H_func)
+:=
+begin
+  intro j,
+  suffices this : ∃ i : x.type, Set.pair ⟦x.func i⟧ ⟦y.func j⟧ ∈ ⟦f⟧,
+    by {cases this with i Hi, exact ⟨i, function_lift_graph_of_mem_fun_inj ‹_› _ _ Hi⟩},
+  unfold is_surj at H_surj, specialize H_surj (y.func j) (mem.mk'),
+  rcases H_surj with ⟨z_i, ⟨Hz_i₁, Hz_i₂⟩⟩, rw[mem_unfold] at Hz_i₁,
+  cases Hz_i₁ with j H_j, use j, convert Hz_i₂ using 2,
+  simpa[equiv_iff_eq] using H_j.symm
+end
+
+lemma ex_no_surj_omega_aleph_one : ¬ ∃ f : pSet, is_func (pSet.omega) (card_ex $ aleph 1) f ∧ (is_surj (pSet.omega) (card_ex $ aleph 1) f) :=
+begin
+  intro H,
+  suffices this : ∃ g : pSet.omega.type → (card_ex $ aleph 1).type, function.surjective g,
+    by {cases this with g Hg,
+        suffices H_bad : #((card_ex $ aleph 1).type) ≤ # pSet.omega.type,
+          by { simp at H_bad, exact not_lt_of_le ‹_› (by simp) },
+        exact mk_le_of_surjective Hg},
+    rcases H with ⟨f, Hf, Hf'⟩,
+    refine ⟨_,_⟩,
+      { exact function_lift f ‹_› },
+      { refine surj_lift _ ‹_›, intros j₁ j₂,
+         contrapose, apply ordinal.mk_inj }
 end
 
 end pSet
