@@ -753,8 +753,7 @@ end
 -- lemma AE_of_AE_inj_indexing {x y : pSet} (H₁ : function.injective x.func) (H₂ : function.injective y.func) (H₂ : ∀ z ∈ y, ∃ w ∈ x,
 
 lemma function_lift_aux {x y f : pSet}
- (H_func : is_func x y f)
- {i : type x}
+ (H_func : is_func x y f) {i : type x}
  : ∃ (j : type y), Set.pair ⟦func x i⟧ ⟦func y j⟧ ∈ ⟦f⟧ :=
 begin
   rcases H_func with ⟨f,Hf⟩, specialize Hf ⟦x.func i⟧ (by rw[<-mem_iff]; exact mem.mk'),

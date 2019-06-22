@@ -68,7 +68,7 @@ lemma rel_of_array_surj (x y : bSet 𝔹) (af : x.type → y.type → 𝔹)
 begin
   bv_intro z, bv_imp_intro Hz, rw[<-@bounded_exists 𝔹 _ x _ _],
   simp [H_bval₁],
-    { rw[mem_unfold] at Hz, bv_cases_at Hz i, simp[H_bval₂] at Hz_1,
+    { rw[bSet.mem_unfold] at Hz, bv_cases_at Hz i, simp[H_bval₂] at Hz_1,
      apply bv_rw' Hz_1,
        { apply B_ext_supr, intro i,
        from @B_ext_pair_right 𝔹 _ (λ z, z ∈ᴮ rel_of_array x y af) (by simp) _},
@@ -592,12 +592,13 @@ lemma π_af_anti : ∀ (i : type (ℵ₁̌  : bSet 𝔹)) (j₁ j₂ : type ((po
     j₁ ≠ j₂ → π_af i j₁ ⊓ π_af i j₂ ≤ ⊥ :=
 λ _ _ _ _ _ h, by cases h; finish
 
+-- TODO(jesse) refactor the proof of the suffices into a more general lemma
 lemma aleph_one_inj : (∀ i₁ i₂, ⊥ < (func (ℵ₁̌  : bSet 𝔹) i₁) =ᴮ (func (ℵ₁̌  : bSet 𝔹) i₂) → i₁ = i₂) :=
 begin
   suffices this : ∀ (x y : type (ℵ₁)),
     x ≠ y → ¬equiv (func (ℵ₁) x) (func (ℵ₁) y),
     by {intros i₁ i₂ H, haveI : decidable (i₁ = i₂) := classical.prop_decidable _,
-        by_contra, 
+        by_contra,
         have H_cast_eq : (cast eq₀ i₁) ≠ (cast eq₀ i₂),
           by {intro, apply a, cc},
         specialize this (cast eq₀ i₁) (cast eq₀ i₂) ‹_›,
@@ -651,8 +652,8 @@ def function_reflect (g : bSet 𝔹) {Γ} (H : Γ ≤  is_func g) : pSet := sorr
 lemma function_reflect_spec₁ {g} {Γ : 𝔹} (H : Γ ≤ _) : Γ ≤ (function_reflect g H)̌  =ᴮ g :=
 sorry
 
-lemma function_reflect_spec₂ {g} {Γ : 𝔹} (H : Γ ≤ _) : Set.is_func ⟦(function_reflect g H)⟧ :=
-sorry
+-- lemma function_reflect_spec₂ {g} {Γ : 𝔹} (H : Γ ≤ _) : is_func (function_reflect g H) :=
+-- sorry
 
 lemma function_reflect_surj_of_surj {g} {x y} {Γ : 𝔹} (H : Γ ≤ _) (H_not_zero : ⊥ < Γ) (H_surj : Γ ≤ is_surj (x̌) (y̌) (g : bSet 𝔹)) :
   pSet.is_surj x y (function_reflect g H) :=
@@ -665,10 +666,11 @@ begin
   unfold larger_than, rw[<-imp_bot], rw[<-deduction], /- `tidy_context` says -/ refine poset_yoneda _, intros Γ_1 a, simp only [le_inf_iff] at *, cases a,
   bv_cases_at a_right f, rw[le_inf_iff] at a_right_1, cases a_right_1,
   by_contra, replace a := (bot_lt_iff_not_le_bot.mpr a),
-  suffices this : ∃ f : pSet, pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f,
-    by {exfalso, from pSet.ex_no_surj_omega_aleph_one ‹_›},
+  suffices this : ∃ f : pSet, is_func _ _ f ∧ pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f,
+    by {exfalso, from pSet.ex_no_surj_omega_aleph_one this},
   let g := (function_reflect f ‹_›), use g,
-  apply function_reflect_surj_of_surj, from ‹_›, from a_right_1_right
+  sorry
+  -- apply function_reflect_surj_of_surj, from ‹_›, from a_right_1_right
 end
 
 
