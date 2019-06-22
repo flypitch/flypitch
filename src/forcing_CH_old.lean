@@ -608,8 +608,8 @@ begin
        { refl },
      { unfold trivial_extension, dsimp,
        suffices this : (cast eq₀ (cast eq₀.symm η) ∉ pfun.dom (p.f)),
-         by {simp*, refl},
-       intro, apply Hη, cc} }
+         by {simpa*},
+       intro, apply Hη, cc } }
 end
 
 lemma π_af_tall : ∀ (i : (card_ex $ aleph 1)̌ .type), (⨆(j : (powerset omega)̌ .type), π_af i j) = (⊤ : 𝔹) :=
