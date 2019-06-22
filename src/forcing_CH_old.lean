@@ -158,24 +158,24 @@ lemma rel_of_array_is_func'  (x y : bSet 𝔹) (af : x.type → y.type → 𝔹)
   (H_bval₁ : ∀ i, x.bval i = ⊤)
   (H_bval₂ : ∀ i, y.bval i = ⊤)
   (H_wide : ∀ j, (⨆ i, af i j) = ⊤)
+  (H_tall : ∀ i, (⨆ j, af i j) = ⊤) -- this is not in the book, but I think it should be
   (H_anti : ∀ i, (∀ j₁ j₂, j₁ ≠ j₂ → af i j₁ ⊓ af i j₂ ≤ ⊥))
   (H_inj  : ∀ i₁ i₂, ⊥ < (func x i₁) =ᴮ (func x i₂) → i₁ = i₂)
-  {Γ} [nonempty y.type]
+  {Γ}
   : Γ ≤ is_func' x y (rel_of_array x y af) :=
 begin
-  refine le_inf (by {apply rel_of_array_extensional, repeat{assumption}}) _,
+  refine le_inf (by apply rel_of_array_extensional; assumption) _,
   rw[<-bounded_forall], bv_intro i_x, bv_imp_intro Hi_x, rw[<-bounded_exists],
-    { by_cases H_bot : Γ_1 ≤ ⊥,
-      { convert bot_le, simpa using H_bot },
-      { rw[<-bot_lt_iff_not_le_bot] at H_bot,
-        let j := classical.choice ‹_›,
-        apply bv_use j, refine le_inf (by simp*) _,
-         rw[bSet.mem_unfold], sorry -- reindex, then apply bv_use j and apply H_wide
-        }},          
+    { simp[*,rel_of_array, -Γ_1], rw[supr_comm, supr_prod],
+      apply bv_use i_x,
+      transitivity ⨆ (j : type y),
+      af ((i_x, j).fst) ((i_x, j).snd) ⊓ pair (func x i_x) (func y j) =ᴮ pair (func x ((i_x, j).fst)) (func y ((i_x, j).snd)),
+        { conv { to_rhs, funext, congr, funext,rw[bv_eq_refl] }, simp[H_tall]},
+        { tidy_context, bv_cases_at a j, apply bv_use j, apply bv_use j,
+         from ‹_› }},
     { change B_ext _, from B_ext_term (B_ext_mem_left) (by simp) },
-    { change B_ext _, apply B_ext_supr, intro, apply B_ext_inf, simp,
-      from B_ext_term (B_ext_mem_left) (by simp)}
-end 
+    { change B_ext _, apply B_ext_supr, intro, apply B_ext_inf, simp, from B_ext_term (B_ext_mem_left) (by simp) }
+end
 
 end lemmas
 
