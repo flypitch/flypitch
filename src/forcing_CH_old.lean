@@ -627,6 +627,17 @@ begin
   { from aleph_one_inj },
 end
 
+lemma π_is_func' {Γ} : Γ ≤ is_func' sorry sorry π :=
+⟨╯°□°⟩╯︵┻━┻
+-- begin
+--   unfold π, refine le_inf _ _,
+--   sorry,
+-- refine rel_of_array_extensional _ _ _ (by simp) (by simp) _ _ _,
+--   { from π_af_wide },
+--   { from π_af_anti },
+--   { from aleph_one_inj },
+-- end
+
 lemma π_is_functional {Γ} : Γ ≤ is_functional π := is_functional_of_is_func _ π_is_func
 
 lemma π_is_surj {Γ} : Γ ≤ is_surj (ℵ₁̌ ) ((powerset omega)̌ ) π :=
@@ -634,8 +645,12 @@ rel_of_array_surj _ _ _ (by simp) (by simp) (π_af_wide)
 
 lemma π_spec {Γ : 𝔹} : Γ ≤ (is_func π) ⊓ ⨅v, v ∈ᴮ (powerset omega)̌  ⟹ (⨆w, w ∈ᴮ (ℵ₁̌ ) ⊓ pair w v ∈ᴮ π) := le_inf π_is_func π_is_surj
 
+lemma π_spec' {Γ : 𝔹} : Γ ≤ (is_func π) ⊓ ⨅v, v ∈ᴮ (powerset omega)̌  ⟹ (⨆w, w ∈ᴮ (ℵ₁̌ ) ⊓ pair w v ∈ᴮ π) := sorry
+-- le_inf π_is_func' π_is_surj
+
 lemma ℵ₁_larger_than_continuum {Γ : 𝔹} : Γ ≤ larger_than (ℵ₁ ̌) ((powerset omega)̌ ) :=
-by apply bv_use π; from π_spec
+sorry
+-- by apply bv_use π; from π_spec
 
 -- for these two lemmas, need 2.17 (iv) in Bell, which follows from (i) ⟹ (ii)
 -- i.e. If 𝔹 has a dense subset P which is ω-closed, then for any η < ℵ₁, and any x,
@@ -675,10 +690,6 @@ begin
     { apply function_reflect_spec₂ },
     { apply function_reflect_surj_of_surj, from ‹_›, from a_right_1_right }
 end
-
-
-
-
 
 lemma aleph_one_check_universal_property (Γ : 𝔹) : Γ ≤ aleph_one_universal_property (ℵ₁̌  : bSet 𝔹) :=
 begin

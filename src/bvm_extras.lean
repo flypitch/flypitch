@@ -380,6 +380,9 @@ begin
   apply bv_context_trans, from ‹_›, from ‹_›
 end
 
+--TODO(jesse) finish this
+lemma mk_is_func' {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) {Γ} : Γ ≤ is_func' u (check' F) (function.mk F h_congr) := sorry
+
 -- lemma mk_is_func {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : ⊤ ≤ is_func u (check' F) (function.mk F h_congr) :=
 -- begin
 -- repeat{apply le_inf},

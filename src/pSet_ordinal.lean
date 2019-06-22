@@ -433,6 +433,9 @@ end
 --f ⊆ prod x y ∧ ∀z:Set.{u}, z ∈ x → ∃! w, pair z w ∈ f
 @[reducible]def is_func (x y f : pSet.{u}) : Prop := Set.is_func ⟦x⟧ ⟦y⟧ ⟦f⟧
 
+@[reducible]def is_weak_func (x y f : pSet.{u}) : Prop :=
+  (∀ z, z ∈ ⟦x⟧ →  ∃! w, w ∈ ⟦y⟧ ∧ Set.pair z w ∈ ⟦f⟧)
+
 @[reducible]def is_surj (x y f : pSet.{u}) : Prop := ∀ b : pSet.{u}, b ∈ y → ( ∃ a : pSet.{u}, a ∈ x ∧ (Set.pair ⟦a⟧ ⟦b⟧ ∈ ⟦f⟧))
 
 -- lemma mk_lt_of_lt {β₁ β₂ : ordinal.{u}} (H : β₁ < β₂) : ordinal.mk β₁ ∈ ordinal.mk β₂ :=
@@ -768,20 +771,44 @@ begin
   swap, exact f
 end
 
+lemma function_lift'_aux {x y f : pSet}
+ (H_func : is_weak_func x y f) {i : type x}
+ : ∃ (j : type y), Set.pair ⟦func x i⟧ ⟦func y j⟧ ∈ ⟦f⟧ :=
+begin
+  rename H_func Hf, specialize Hf ⟦x.func i⟧ (by rw[<-mem_iff]; exact mem.mk'),
+  rcases Hf with ⟨w, ⟨Hw₁, Hw₁'⟩, Hw₂⟩,
+  have w_mem : w ∈ ⟦y⟧ := ‹_›
+  -- (Set.pair_mem_prod.mp (Set.subset_iff_all_mem.mp _ _ Hw₁)).right
+  ,
+  rw[show w = ⟦w.out⟧, by rw[quotient.out_eq]] at w_mem,
+  rw[<-mem_iff, mem_unfold] at w_mem,
+  cases w_mem with j Hj, use j,
+  have : ⟦quotient.out w⟧ = ⟦func y j⟧ := quotient.sound Hj,
+  rw[<-this], convert Hw₁', exact (quotient.out_eq _)
+end
 /--
   Given a function between pSets, lift it to a function on their underlying types.
 -/
 def function_lift {x y : pSet} (f : pSet) (H_func : is_func x y f) : x.type → y.type :=
 λ i, classical.some (function_lift_aux ‹_› : ∃ j : y.type, Set.pair ⟦x.func i⟧ ⟦y.func j⟧ ∈ ⟦f⟧)
 
+def function_lift' (x y : pSet) (f : pSet) (H_func : is_weak_func x y f) : x.type → y.type :=
+λ i, classical.some (function_lift'_aux ‹_› : ∃ j : y.type, Set.pair ⟦x.func i⟧ ⟦y.func j⟧ ∈ ⟦f⟧)
+
 lemma function_lift_spec {x y : pSet} {f} {H_func} {i : x.type} : Set.pair ⟦x.func i⟧ ⟦y.func (function_lift f H_func i)⟧ ∈ ⟦f⟧ :=
 classical.some_spec (function_lift_aux ‹_›)
+
+lemma function_lift'_spec {x y : pSet} {f} {H_func} {i : x.type} : Set.pair ⟦x.func i⟧ ⟦y.func (function_lift' x y f H_func i)⟧ ∈ ⟦f⟧ :=
+classical.some_spec (function_lift'_aux ‹_›)
 
 /--
   An easy consequence of function_lift_spec: if the lift of f sends i to j, then the corresponding pair of pSets lives in f.
 -/
 lemma mem_fun_of_function_lift_graph {x y : pSet} {f} {H_func} : ∀ i j, (function_lift f H_func) i = j → Set.pair ⟦(x.func i)⟧ ⟦(y.func j)⟧ ∈ ⟦f⟧ :=
 by {intros _ _ H, rw[<-H], exact function_lift_spec}
+
+lemma mem_fun_of_function_lift'_graph {x y : pSet} {f} {H_func} : ∀ i j, (function_lift' x y f H_func) i = j → Set.pair ⟦(x.func i)⟧ ⟦(y.func j)⟧ ∈ ⟦f⟧ :=
+by {intros _ _ H, rw[<-H], exact function_lift'_spec}
 
 /--
   If, in addition, the indexing function `y.func` is injective, f determines function_lift of f.
@@ -795,6 +822,19 @@ begin
   apply H_inj, apply equiv_of_eq, transitivity w,
     { apply Hw₂, exact function_lift_spec },
     { symmetry, exact Hw₂ _ ‹_› }
+end
+
+lemma function_lift'_graph_of_mem_fun_inj {x y : pSet} {f} {H_func} (H_inj : ∀ j₁ j₂ : y.type, equiv (y.func j₁) (y.func j₂) → j₁ = j₂) :
+  ∀ i j, Set.pair ⟦(x.func i)⟧ ⟦(y.func j)⟧ ∈ ⟦f⟧ → (function_lift' x y f H_func) i = j :=
+begin
+  intros i j H, unfold is_weak_func at H_func,
+  rename H_func H_ext, specialize H_ext ⟦x.func i⟧ (Set.mem.mk'),
+  rcases H_ext with ⟨w, ⟨Hw₁, Hw₁'⟩, Hw₂⟩,
+  apply H_inj, apply equiv_of_eq, transitivity w,
+    { apply Hw₂, refine ⟨_,_⟩,
+      { rw[<-mem_iff], exact mem.mk'},
+      { exact function_lift'_spec } },
+    { exact (Hw₂ _ ⟨Set.mem.mk',‹_›⟩).symm }
 end
 
 /--
@@ -813,6 +853,19 @@ begin
   simpa[equiv_iff_eq] using H_j.symm
 end
 
+lemma surj_lift' {x y : pSet} {f} {H_func} (H_inj : ∀ j₁ j₂ : y.type, equiv (y.func j₁) (y.func j₂) → j₁ = j₂) (H_surj : is_surj x y f) :
+  function.surjective (function_lift' x y f H_func)
+:=
+begin
+  intro j,
+  suffices this : ∃ i : x.type, Set.pair ⟦x.func i⟧ ⟦y.func j⟧ ∈ ⟦f⟧,
+    by {cases this with i Hi, exact ⟨i, function_lift'_graph_of_mem_fun_inj ‹_› _ _ Hi⟩},
+  unfold is_surj at H_surj, specialize H_surj (y.func j) (mem.mk'),
+  rcases H_surj with ⟨z_i, ⟨Hz_i₁, Hz_i₂⟩⟩, rw[mem_unfold] at Hz_i₁,
+  cases Hz_i₁ with j H_j, use j, convert Hz_i₂ using 2,
+  simpa[equiv_iff_eq] using H_j.symm
+end
+
 lemma ex_no_surj_omega_aleph_one : ¬ ∃ f : pSet, is_func (pSet.omega) (card_ex $ aleph 1) f ∧ (is_surj (pSet.omega) (card_ex $ aleph 1) f) :=
 begin
   intro H,
@@ -825,6 +878,21 @@ begin
     refine ⟨_,_⟩,
       { exact function_lift f ‹_› },
       { refine surj_lift _ ‹_›, intros j₁ j₂,
+         contrapose, apply ordinal.mk_inj }
+end
+
+lemma ex_no_surj_omega_aleph_one' : ¬ ∃ f : pSet, is_weak_func (pSet.omega) (card_ex $ aleph 1) f ∧ (is_surj (pSet.omega) (card_ex $ aleph 1) f) :=
+begin
+  intro H,
+  suffices this : ∃ g : pSet.omega.type → (card_ex $ aleph 1).type, function.surjective g,
+    by {cases this with g Hg,
+        suffices H_bad : #((card_ex $ aleph 1).type) ≤ # pSet.omega.type,
+          by { simp at H_bad, exact not_lt_of_le ‹_› (by simp) },
+        exact mk_le_of_surjective Hg},
+    rcases H with ⟨f, Hf, Hf'⟩,
+    refine ⟨_,_⟩,
+      { exact function_lift' _ _ f ‹_› },
+      { refine surj_lift' _ ‹_›, intros j₁ j₂,
          contrapose, apply ordinal.mk_inj }
 end
 
