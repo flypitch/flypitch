@@ -154,6 +154,18 @@ begin
                    bv_context_trans (bv_symm H_eq) (eq_of_eq_pair_left' this_1_right)⟩}}
 end
 
+lemma rel_of_array_is_func'  (x y : bSet 𝔹) (af : x.type → y.type → 𝔹)
+  (H_bval₁ : ∀ i, x.bval i = ⊤)
+  (H_bval₂ : ∀ i, y.bval i = ⊤)
+  (H_wide : ∀ j, (⨆ i, af i j) = ⊤)
+  (H_anti : ∀ i, (∀ j₁ j₂, j₁ ≠ j₂ → af i j₁ ⊓ af i j₂ ≤ ⊥))
+  (H_inj  : ∀ i₁ i₂, ⊥ < (func x i₁) =ᴮ (func x i₂) → i₁ = i₂)
+  {Γ}
+  : Γ ≤ is_func' x y (rel_of_array x y af) :=
+begin
+  sorry
+end 
+
 end lemmas
 
 namespace pfun
@@ -627,16 +639,15 @@ begin
   { from aleph_one_inj },
 end
 
-lemma π_is_func' {Γ} : Γ ≤ is_func' sorry sorry π :=
-⟨╯°□°⟩╯︵┻━┻
--- begin
---   unfold π, refine le_inf _ _,
---   sorry,
--- refine rel_of_array_extensional _ _ _ (by simp) (by simp) _ _ _,
---   { from π_af_wide },
---   { from π_af_anti },
---   { from aleph_one_inj },
--- end
+lemma π_is_func' {Γ} : Γ ≤ is_func' (ℵ₁̌  : bSet 𝔹) ((powerset omega)̌ ) π :=
+begin
+  unfold π, refine le_inf _ _,
+    { refine rel_of_array_extensional _ _ _ (by simp) (by simp) _ _ _,
+      { from π_af_wide },
+      { from π_af_anti },
+      { from aleph_one_inj }, },
+    { sorry },
+end
 
 lemma π_is_functional {Γ} : Γ ≤ is_functional π := is_functional_of_is_func _ π_is_func
 
