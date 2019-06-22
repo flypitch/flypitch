@@ -171,8 +171,7 @@ begin
       transitivity ⨆ (j : type y),
       af ((i_x, j).fst) ((i_x, j).snd) ⊓ pair (func x i_x) (func y j) =ᴮ pair (func x ((i_x, j).fst)) (func y ((i_x, j).snd)),
         { conv { to_rhs, funext, congr, funext,rw[bv_eq_refl] }, simp[H_tall]},
-        { tidy_context, bv_cases_at a j, apply bv_use j, apply bv_use j,
-         from ‹_› }},
+        { exact diagonal_supr_le_supr (by refl) }},
     { change B_ext _, from B_ext_term (B_ext_mem_left) (by simp) },
     { change B_ext _, apply B_ext_supr, intro, apply B_ext_inf, simp, from B_ext_term (B_ext_mem_left) (by simp) }
 end
@@ -611,6 +610,23 @@ begin
        suffices this : (cast eq₀ (cast eq₀.symm η) ∉ pfun.dom (p.f)),
          by {simp*, refl},
        intro, apply Hη, cc} }
+end
+
+lemma π_af_tall : ∀ (i : (card_ex $ aleph 1)̌ .type), (⨆(j : (powerset omega)̌ .type), π_af i j) = (⊤ : 𝔹) :=
+begin
+  intro i, refine Sup_eq_top_of_dense_Union _,
+  apply dense_of_dense_in_basis _ collapse_space_basis_spec _,
+  intros B HB HB_ne,
+  unfold collapse_space_basis at HB, cases HB with p Hp,
+    { contradiction },
+    { cases Hp with p Hp, simp at Hp, subst Hp, refine set.ne_empty_of_exists_mem _,
+      let f := classical.choice (classical.nonempty_of_not_empty _ ‹_›),
+      use f, use f.property, refine ⟨_,_⟩,
+        { exact {g | g (cast eq₀ i) = f.val (cast eq₀ i)} },
+        { refine ⟨⟨_,_⟩,_⟩,
+          { exact ⟨_, π_χ_regular ((cast eq₀ i), f.val (cast eq₀ i))⟩ },
+          { refine ⟨_, rfl⟩, refine ⟨f.val (cast eq₀ i), _⟩, refl },
+          { finish }}}
 end
 
 lemma π_af_anti : ∀ (i : type (ℵ₁̌  : bSet 𝔹)) (j₁ j₂ : type ((powerset omega)̌ )),

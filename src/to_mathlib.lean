@@ -1007,6 +1007,12 @@ begin
   [apply H₁, apply H₂]; from inf_le_left
 end
 
+lemma diagonal_supr_le_supr {α} [complete_lattice α] {ι} {s : ι → ι → α} {Γ : α} (H : Γ ≤ ⨆ i, s i i) : Γ ≤ ⨆ i j, s i j :=
+ le_trans H $ supr_le $ λ i,  le_supr_of_le i $ le_supr_of_le i $ by refl
+
+lemma diagonal_infi_le_infi {α} [complete_lattice α] {ι} {s : ι → ι → α} {Γ : α} (H : Γ ≤ ⨅ i j, s i j) : Γ ≤ ⨅ i, s i i :=
+  le_trans H $ le_infi $ λ i, infi_le_of_le i $ infi_le_of_le i $ by refl
+
 lemma context_and_intro {β : Type*} [lattice β] {Γ} {a₁ a₂ : β}
   (H₁ : Γ ≤ a₁) (H₂ : Γ ≤ a₂) : Γ ≤ a₁ ⊓ a₂ := le_inf ‹_› ‹_›
 
