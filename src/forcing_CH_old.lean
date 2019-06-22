@@ -623,10 +623,9 @@ begin
       let f := classical.choice (classical.nonempty_of_not_empty _ ‹_›),
       use f, use f.property, refine ⟨_,_⟩,
         { exact {g | g (cast eq₀ i) = f.val (cast eq₀ i)} },
-        { refine ⟨⟨_,_⟩,_⟩,
+        { refine ⟨⟨_,_⟩,by ext; refl⟩,
           { exact ⟨_, π_χ_regular ((cast eq₀ i), f.val (cast eq₀ i))⟩ },
-          { refine ⟨_, rfl⟩, refine ⟨f.val (cast eq₀ i), _⟩, refl },
-          { finish }}}
+          { exact ⟨⟨f.val (cast eq₀ i), rfl⟩, rfl⟩ }}}
 end
 
 lemma π_af_anti : ∀ (i : type (ℵ₁̌  : bSet 𝔹)) (j₁ j₂ : type ((powerset omega)̌ )),
@@ -668,12 +667,11 @@ end
 
 lemma π_is_func' {Γ} : Γ ≤ is_func' (ℵ₁̌  : bSet 𝔹) ((powerset omega)̌ ) π :=
 begin
-  unfold π, refine le_inf _ _,
-    { refine rel_of_array_extensional _ _ _ (by simp) (by simp) _ _ _,
-      { from π_af_wide },
-      { from π_af_anti },
-      { from aleph_one_inj }, },
-    { sorry },
+  unfold π, refine rel_of_array_is_func' _ _ _ (by simp) (by simp) _ _ _ _,
+    { from π_af_wide },
+    { from π_af_tall },
+    { from π_af_anti },
+    { from aleph_one_inj }
 end
 
 lemma π_is_functional {Γ} : Γ ≤ is_functional π := is_functional_of_is_func _ π_is_func
@@ -683,7 +681,7 @@ rel_of_array_surj _ _ _ (by simp) (by simp) (π_af_wide)
 
 lemma π_spec {Γ : 𝔹} : Γ ≤ (is_func π) ⊓ ⨅v, v ∈ᴮ (powerset omega)̌  ⟹ (⨆w, w ∈ᴮ (ℵ₁̌ ) ⊓ pair w v ∈ᴮ π) := le_inf π_is_func π_is_surj
 
-lemma π_spec' {Γ : 𝔹} : Γ ≤ (is_func π) ⊓ ⨅v, v ∈ᴮ (powerset omega)̌  ⟹ (⨆w, w ∈ᴮ (ℵ₁̌ ) ⊓ pair w v ∈ᴮ π) := sorry
+-- lemma π_spec' {Γ : 𝔹} : Γ ≤ (is_func π) ⊓ ⨅v, v ∈ᴮ (powerset omega)̌  ⟹ (⨆w, w ∈ᴮ (ℵ₁̌ ) ⊓ pair w v ∈ᴮ π) := sorry
 -- le_inf π_is_func' π_is_surj
 
 lemma ℵ₁_larger_than_continuum {Γ : 𝔹} : Γ ≤ larger_than (ℵ₁ ̌) ((powerset omega)̌ ) :=
