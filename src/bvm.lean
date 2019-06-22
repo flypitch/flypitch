@@ -580,7 +580,7 @@ begin
   rw[inf_comm]; [apply h₁, apply h₂]
 end
 
-@[simp]lemma B_ext_inf {ϕ₁ ϕ₂ : bSet 𝔹 → 𝔹} {h₁ : B_ext ϕ₁} {h₂ : B_ext ϕ₂} :
+@[simp]lemma B_ext_inf {ϕ₁ ϕ₂ : bSet 𝔹 → 𝔹} (h₁ : B_ext ϕ₁) (h₂ : B_ext ϕ₂) :
   B_ext (λ x, ϕ₁ x ⊓ ϕ₂ x) :=
 begin
   intros x y, dsimp, apply le_inf,

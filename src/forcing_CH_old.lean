@@ -160,10 +160,21 @@ lemma rel_of_array_is_func'  (x y : bSet 𝔹) (af : x.type → y.type → 𝔹)
   (H_wide : ∀ j, (⨆ i, af i j) = ⊤)
   (H_anti : ∀ i, (∀ j₁ j₂, j₁ ≠ j₂ → af i j₁ ⊓ af i j₂ ≤ ⊥))
   (H_inj  : ∀ i₁ i₂, ⊥ < (func x i₁) =ᴮ (func x i₂) → i₁ = i₂)
-  {Γ}
+  {Γ} [nonempty y.type]
   : Γ ≤ is_func' x y (rel_of_array x y af) :=
 begin
-  sorry
+  refine le_inf (by {apply rel_of_array_extensional, repeat{assumption}}) _,
+  rw[<-bounded_forall], bv_intro i_x, bv_imp_intro Hi_x, rw[<-bounded_exists],
+    { by_cases H_bot : Γ_1 ≤ ⊥,
+      { convert bot_le, simpa using H_bot },
+      { rw[<-bot_lt_iff_not_le_bot] at H_bot,
+        let j := classical.choice ‹_›,
+        apply bv_use j, refine le_inf (by simp*) _,
+         rw[bSet.mem_unfold], sorry -- reindex, then apply bv_use j and apply H_wide
+        }},          
+    { change B_ext _, from B_ext_term (B_ext_mem_left) (by simp) },
+    { change B_ext _, apply B_ext_supr, intro, apply B_ext_inf, simp,
+      from B_ext_term (B_ext_mem_left) (by simp)}
 end 
 
 end lemmas

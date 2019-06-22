@@ -626,12 +626,7 @@ arity'_iff_refl f
 end arity'
 end arity'
 
-namespace preorder
-
 @[simp]lemma lt_irrefl' {α} [preorder α] {Γ : α} (H_lt : Γ < Γ) : false := lt_irrefl _ ‹_›
-
-end preorder
-
 
 namespace lattice
 
@@ -893,8 +888,6 @@ begin
   exact lt_of_lt_of_le h_lt this},
   apply le_trans h, apply supr_le, intro a', from h_bounded a' (a a')
 end
-
-
 
 /-- As a consequence of the previous lemma, if ⨆(a : α), A a = ⊤ such that whenever A a ≠ ⊤ → A α = ⊥, there exists some x : α such that A x = ⊤. -/
 lemma supr_eq_top_max {α β : Type*} [complete_lattice β] {A : α → β} {h_nondeg : ⊥ < (⊤ : β)}
