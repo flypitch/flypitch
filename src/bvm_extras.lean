@@ -322,7 +322,7 @@ begin
   from H w w' (le_inf ‹_› ‹_›) (bv_eq_refl')
 end
 
-/-- f is a function from x to y if for every element of x, there exists an element of y such that the pair is in f, and f is a function -/
+/-- f is (more precisely, contains) a function from x to y if for every element of x, there exists an element of y such that the pair is in f, and f is a function -/
 @[reducible]def is_func' (x y f : bSet 𝔹) : 𝔹 :=
   is_func f ⊓ (⨅w₁, w₁ ∈ᴮ x ⟹ ⨆w₂, w₂ ∈ᴮ y ⊓ pair w₁ w₂ ∈ᴮ f)
 
@@ -596,7 +596,7 @@ def Ord (x : bSet 𝔹) : 𝔹 := epsilon_well_orders x ⊓ is_transitive x
 ⨅v, v ∈ᴮ y ⟹ (⨆w, w ∈ᴮ x ⊓ pair w v ∈ᴮ f)
 
 /-- x is larger than y if there exists a function f such that for every v ∈ y, there exists a w ∈ x such that (w,v) ∈ f -/
-def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func f) ⊓ (is_surj x y f)
+def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ (is_surj x y f)
 
 def injects_into (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ is_inj f
 

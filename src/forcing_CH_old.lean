@@ -4,6 +4,8 @@ import .bvm .bvm_extras .regular_open_algebra .to_mathlib data.pfun tactic .pSet
   Forcing the continuum hypothesis.
 -/
 
+local notation `⟨╯°□°⟩╯︵┻━┻` := sorry
+
 universe u
 
 open lattice bSet topological_space pSet cardinal
@@ -254,7 +256,7 @@ lemma union_of_omega_chain_spec (f : ℕ → α →. β) (H_chain : ∀ (k₁ k�
 begin
   intro k, fsplit, change _ ⊆ set.Union _,
     {/- `tidy` says -/ intros a a_1, simp at *, fsplit, work_on_goal 1 { assumption }},
-  ext1, sorry
+  ext1, exact ⟨╯°□°⟩╯︵┻━┻
 end
 
 lemma fn_mem_ran {X Y} {f : X →. Y} {x : X} {Hx : x ∈ f.dom} :
@@ -647,17 +649,17 @@ If q ∈ P satisfies q ≤ pᵢ for all i (i.e. is a witness to the ω-closed as
 and g is the function attached to the collection of pairs (i, y_i), show that q ⊩ f = ǧ.
 -/
 
-def function_reflect (g : bSet 𝔹) {Γ} (H : Γ ≤  is_func g) : pSet := sorry
+def function_reflect (x y : pSet) (g : bSet 𝔹) {Γ} (H : Γ ≤  is_func' (x̌ : bSet 𝔹) (y̌) g) : pSet := ⟨╯°□°⟩╯︵┻━┻
 
-lemma function_reflect_spec₁ {g} {Γ : 𝔹} (H : Γ ≤ _) : Γ ≤ (function_reflect g H)̌  =ᴮ g :=
-sorry
+lemma function_reflect_spec₁ {x y} {g} {Γ : 𝔹} (H : Γ ≤ _) : Γ ≤ (function_reflect x y g H)̌  =ᴮ g :=
+⟨╯°□°⟩╯︵┻━┻
 
--- lemma function_reflect_spec₂ {g} {Γ : 𝔹} (H : Γ ≤ _) : is_func (function_reflect g H) :=
--- sorry
+lemma function_reflect_spec₂ {x y} {g} {Γ : 𝔹} (H : Γ ≤ _) : is_func x y (function_reflect x y g H) :=
+⟨╯°□°⟩╯︵┻━┻
 
 lemma function_reflect_surj_of_surj {g} {x y} {Γ : 𝔹} (H : Γ ≤ _) (H_not_zero : ⊥ < Γ) (H_surj : Γ ≤ is_surj (x̌) (y̌) (g : bSet 𝔹)) :
-  pSet.is_surj x y (function_reflect g H) :=
-sorry
+  pSet.is_surj x y (function_reflect x y g H) :=
+⟨╯°□°⟩╯︵┻━┻
 
 
 --TODO(jesse) check that this proof actually works
@@ -668,10 +670,14 @@ begin
   by_contra, replace a := (bot_lt_iff_not_le_bot.mpr a),
   suffices this : ∃ f : pSet, is_func _ _ f ∧ pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f,
     by {exfalso, from pSet.ex_no_surj_omega_aleph_one this},
-  let g := (function_reflect f ‹_›), use g,
-  sorry
-  -- apply function_reflect_surj_of_surj, from ‹_›, from a_right_1_right
+  let g := (function_reflect (pSet.omega) (card_ex $ aleph 1) f sorry), use g, 
+  refine ⟨_,_⟩,
+    { apply function_reflect_spec₂ },
+    { apply function_reflect_surj_of_surj, from ‹_›, from a_right_1_right }
 end
+
+
+
 
 
 lemma aleph_one_check_universal_property (Γ : 𝔹) : Γ ≤ aleph_one_universal_property (ℵ₁̌  : bSet 𝔹) :=
@@ -687,7 +693,7 @@ begin
   bv_intro χ, bv_imp_intro H_χ,
   suffices this : ∃ S : (powerset omega).type, Γ_1 ≤  (set_of_indicator χ) =ᴮ ((powerset omega).func S)̌ ,
     by { cases this with S HS, apply bv_use S, rwa[top_inf_eq] },
-  sorry -- TODO(jesse): come up with a specialized argument for this
+  exact ⟨╯°□°⟩╯︵┻━┻ -- TODO(jesse): come up with a specialized argument for this
 end
 
 
