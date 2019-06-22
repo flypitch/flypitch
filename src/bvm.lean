@@ -230,6 +230,9 @@ by simp*
 
 example : empty =ᴮ empty = (⊤ : 𝔹) := by simp
 
+example : ⊤ ≤ empty =ᴮ (empty' : bSet 𝔹) :=
+by simp[empty, empty']; exact dec_trivial
+
 /-- `x ∈ y` as Boolean-valued pre-sets if `x` is extensionally equivalent to a member
   of the family `y`. -/
 @[reducible, simp]def mem : bSet 𝔹 → bSet 𝔹 → 𝔹
