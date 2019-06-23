@@ -492,7 +492,7 @@ begin
   dsimp at this, rw[this], intros, apply subst_congr_mem_left
 end
 
-theorem mem_ext {x y : bSet 𝔹} {Γ : 𝔹} {h₁ : Γ ≤ ⨅z, z ∈ᴮ x ⟹ z ∈ᴮ y} {h₂ : Γ ≤ ⨅z, z ∈ᴮ y ⟹ z ∈ᴮ x} : Γ ≤ x =ᴮ y :=
+theorem mem_ext {x y : bSet 𝔹} {Γ : 𝔹} (h₁ : Γ ≤ ⨅z, z ∈ᴮ x ⟹ z ∈ᴮ y) (h₂ : Γ ≤ ⨅z, z ∈ᴮ y ⟹ z ∈ᴮ x) : Γ ≤ x =ᴮ y :=
 by {refine subset_ext _ _; rw[subset_unfold']; from ‹_›}
 
 @[simp]lemma subset_self_eq_top {x : bSet 𝔹} : x ⊆ᴮ x = ⊤ :=
@@ -1706,6 +1706,37 @@ begin
   rw[<-bv_powerset_spec], apply bv_rw' (bv_symm H), simp,
   rwa[bv_powerset_spec], rw[<-bv_powerset_spec],
   apply bv_rw' H, simp, rwa[bv_powerset_spec]
+end
+
+lemma set_of_indicator_mem.mk {x : bSet 𝔹} {i : x.type} {χ : x.type → 𝔹} {Γ} (H_Γ : Γ ≤ χ i) : Γ ≤ (x.func i) ∈ᴮ (set_of_indicator χ) :=
+by {rw[mem_unfold], apply bv_use i, exact le_inf H_Γ (bv_eq_refl')}
+
+lemma set_of_indicator_subset {x : bSet 𝔹} {χ : x.type → 𝔹} {Γ} (H_χ : ∀ i, χ i ≤ x.bval i) : Γ ≤ set_of_indicator χ ⊆ᴮ x :=
+begin
+  rw[subset_unfold], bv_intro j, bv_imp_intro H,
+  simpa using le_trans (le_trans H (by solve_by_elim)) (mem.mk' _ _)
+end
+
+lemma check_set_of_indicator_subset {x : pSet} {χ : x̌.type → 𝔹} {Γ} : Γ ≤ set_of_indicator χ ⊆ᴮ x̌ :=
+set_of_indicator_subset (by simp)
+
+/--
+ For x an injective pSet and χ : x̌.type → 𝔹, ⊤ ≤ (x.func i) ∈ set_of_indicator χ iff χ i = ⊤.
+-/
+lemma check_mem_set_of_indicator_iff {x : pSet} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) (i : x.type) {χ : x̌.type → 𝔹} : (∀{Γ}, Γ ≤ (x.func i)̌  ∈ᴮ set_of_indicator χ) ↔ (∀ {Γ}, Γ ≤ χ (cast check_type'.symm i)) :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { intro Γ, have H' := @H Γ, bv_cases_at H' j, bv_split,
+
+      haveI := classical.prop_decidable, by_cases i = (cast check_type' j),
+        { subst h, convert H'_1_left, cases x, refl },
+        { replace H_inj := mt (H_inj i (cast check_type' j)) ‹_›,
+          have := check_bv_eq_bot_of_not_equiv ‹_›,
+          transitivity ⊥,
+            { rw[<-this], convert H'_1_right, cases x, refl },
+            { exact bot_le }}},
+    { intro Γ, specialize @H Γ, apply bv_use (cast check_type'.symm i),
+      cases x, exact le_inf ‹_› bv_eq_refl' }
 end
 
 lemma subset_of_pointwise_bounded {Γ : 𝔹} {x : bSet 𝔹} {p : x.type → 𝔹} {p' : x.type → 𝔹} (H_bd : ∀ i : x.type, p i ≤ p' i) : Γ ≤ set_of_indicator p ⊆ᴮ set_of_indicator p' :=

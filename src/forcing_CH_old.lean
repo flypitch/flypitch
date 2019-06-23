@@ -751,9 +751,12 @@ begin
   bv_intro χ, bv_imp_intro H_χ,
   suffices this : ∃ S : (powerset omega).type, Γ_1 ≤  (set_of_indicator χ) =ᴮ ((powerset omega).func S)̌ ,
     by { cases this with S HS, apply bv_use S, rwa[top_inf_eq] },
-    sorry -- so, H_χ gives me an (set_of_indicator χ ⊆ᴮ ω) of room
-
--- TODO(jesse): come up with a specialized argument for this
+  clear H_χ,
+  fsplit,
+    { sorry },
+    { rw[bv_eq_unfold], refine le_inf _ _,
+      { sorry },
+      { sorry }},
 end
 
 theorem CH_true : (⊤ : 𝔹) ≤ CH :=
