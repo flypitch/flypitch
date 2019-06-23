@@ -1386,6 +1386,22 @@ begin
    all_goals{intros a' H, have := check_bv_eq_dichotomy (x_A ‹x_α›) (y_A ‹y_α›), tidy}
 end
 
+lemma not_check_bv_eq_iff {x y : pSet} : ¬ pSet.equiv x y ↔ x̌ =ᴮ y̌ = (⊥ : 𝔹) :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { exact check_bv_eq_bot_of_not_equiv ‹_› },
+    { intro H_equiv, have := check_bv_eq_top_of_equiv ‹_›,
+      suffices this : ⊥ < (⊥ : 𝔹), by exact lt_irrefl' this,
+      rw[this] at H, conv{to_rhs, rw[<-H]}, simp }
+end
+
+lemma check_bv_eq_nonzero_iff_eq_top {x y : pSet} : (⊥ : 𝔹) < x̌ =ᴮ y̌  ↔ x̌ =ᴮ y̌ = (⊤ : 𝔹) :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { by_contra, finish[or.resolve_left (check_bv_eq_dichotomy x y) ‹_›] },
+    { simp* }
+end
+
 @[simp]lemma check_insert (a b : pSet) : (pSet.insert a b)̌  = (bSet.insert1 (ǎ) (b̌) : bSet 𝔹) :=
 by {induction a, induction b, simp[pSet.insert, bSet.insert1], split; ext; cases x; simp}
 
@@ -1406,9 +1422,33 @@ begin
   refine ⟨_,_⟩; intro H,
     { cases y, unfold has_mem.mem pSet.mem at H,
       cases H with b Hb, rw[<-top_le_iff], apply bv_use b,
-      refine le_inf (by refl) _, rwa[top_le_iff, <-check_bv_eq_iff] },
+      refine le_inf (by refl) (by rwa[top_le_iff, <-check_bv_eq_iff]) },
     { cases y, rw[<-top_le_iff] at H, replace H := mem_check_witness H, swap, by simp,
-      cases H with b Hb, use b, rwa[top_le_iff, <-check_bv_eq_iff] at Hb}
+      cases H with b Hb, exact ⟨b, by rwa[top_le_iff, <-check_bv_eq_iff] at Hb⟩}
+end
+
+lemma not_check_mem_iff {x y : pSet} : x ∉ y ↔ x̌ ∈ᴮ y̌ = (⊥ : 𝔹) :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { rw[<-le_bot_iff, mem_unfold], rw[supr_le_iff],
+      intro i, tidy_context, cases y, unfold has_mem.mem pSet.mem at H, push_neg at H,
+      have := check_bv_eq_bot_of_not_equiv (H i), convert a_right, exact this.symm },
+    { intro this, replace this := check_mem_iff.mp this,
+      suffices this : ⊥ < (⊥ : 𝔹), by exact lt_irrefl' this,
+      rw[this] at H, conv{to_rhs, rw[<-H]}, simp }
+end
+
+lemma check_mem_dichotomy (x y : pSet) : (x̌ ∈ᴮ y̌ = (⊤ : 𝔹)) ∨ (x̌ ∈ᴮ y̌ = (⊥ : 𝔹)) :=
+begin
+  haveI := classical.prop_decidable, by_cases (x ∈ y);
+  {[smt] eblast_using [check_mem_iff, not_check_mem_iff]}
+end
+
+lemma check_mem_nonzero_iff_eq_top {x y : pSet} : (⊥ : 𝔹) < x̌ ∈ᴮ y̌  ↔ x̌ ∈ᴮ y̌ = (⊤ : 𝔹) :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { by_contra, finish[or.resolve_left (check_mem_dichotomy x y) ‹_›] },
+    { simp* }
 end
 
 lemma instantiate_existential_over_check
