@@ -719,6 +719,16 @@ begin
   from bot_lt_iff_ne_bot.mpr ‹_›
 end
 
+lemma bot_lt_resolve_left {𝔹} [bounded_lattice 𝔹] {a b : 𝔹} (H_lt : ⊥ < a) (H_lt' : ⊥ < a ⊓ b) : ⊥ < b :=
+begin
+  haveI := classical.prop_decidable, by_contra H, rw[bot_lt_iff_not_le_bot] at H H_lt',
+  apply H_lt', simp at H, simp*
+end
+
+lemma bot_lt_resolve_right {𝔹} [bounded_lattice 𝔹] {a b : 𝔹} (H_lt : ⊥ < b)
+  (H_lt' : ⊥ < a ⊓ b) : ⊥ < a :=
+by rw[inf_comm] at H_lt'; exact bot_lt_resolve_left ‹_› ‹_›
+
 /--
   Given an indexed supremum (⨆i, s i) and (H : Γ ≤ ⨆i, s i), there exists some i such that ⊥ < Γ ⊓ s i.
 -/

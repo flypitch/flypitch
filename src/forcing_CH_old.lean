@@ -702,7 +702,17 @@ If q ∈ P satisfies q ≤ pᵢ for all i (i.e. is a witness to the ω-closed as
 and g is the function attached to the collection of pairs (i, y_i), show that q ⊩ f = ǧ.
 -/
 
-def function_reflect (y : pSet) (g : bSet 𝔹) {Γ} (H : Γ ≤  is_func' ω (y̌) g) : pSet := ⟨╯°□°⟩╯︵┻━┻
+--TODO(jesse) finish this
+-- lemma function_reflect_aux {y : pSet} (g : bSet 𝔹) (H : Γ ≤ is_func' (ω) (y̌))
+
+def function_reflect (y : pSet) (g : bSet 𝔹) {Γ} (H : Γ ≤  (is_func' (ω) (y̌) g)) : pSet :=
+mk (ulift ℕ) (λ k,
+begin
+  induction k,
+  induction k with k ih,
+    { sorry },
+    { sorry }
+end)
 
 lemma function_reflect_spec₁ {y} {g} {Γ : 𝔹} (H : Γ ≤ _) : Γ ≤ (function_reflect y g H)̌  =ᴮ g :=
 ⟨╯°□°⟩╯︵┻━┻

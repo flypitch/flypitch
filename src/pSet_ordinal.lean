@@ -436,6 +436,8 @@ end
 @[reducible]def is_weak_func (x y f : pSet.{u}) : Prop :=
   (∀ z, z ∈ ⟦x⟧ →  ∃! w, w ∈ ⟦y⟧ ∧ Set.pair z w ∈ ⟦f⟧)
 
+@[reducible]def is_extensional (f : pSet.{u}) : Prop := ∀ w₁ w₂ v₁ v₂, Set.pair ⟦w₁⟧ ⟦v₁⟧ ∈ ⟦f⟧ → Set.pair ⟦w₂⟧ ⟦v₂⟧ ∈ ⟦f⟧ → (equiv w₁ w₂) → (equiv v₁ v₂)
+
 @[reducible]def is_surj (x y f : pSet.{u}) : Prop := ∀ b : pSet.{u}, b ∈ y → ( ∃ a : pSet.{u}, a ∈ x ∧ (Set.pair ⟦a⟧ ⟦b⟧ ∈ ⟦f⟧))
 
 -- lemma mk_lt_of_lt {β₁ β₂ : ordinal.{u}} (H : β₁ < β₂) : ordinal.mk β₁ ∈ ordinal.mk β₂ :=

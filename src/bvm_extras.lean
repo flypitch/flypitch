@@ -305,6 +305,14 @@ lemma mem_prod_iff {v w x y : bSet 𝔹} {Γ} : Γ ≤ pair x y ∈ᴮ prod v w 
 @[reducible]def is_func (f : bSet 𝔹) : 𝔹 :=
   ⨅ w₁, ⨅w₂, ⨅v₁, ⨅ v₂, pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⟹ (w₁ =ᴮ w₂ ⟹ v₁ =ᴮ v₂)
 
+lemma check_is_func {g : pSet} (H_ext : pSet.is_extensional g) {Γ : 𝔹} : Γ ≤ is_func (ǧ) :=
+begin
+  unfold pSet.is_extensional at H_ext, unfold is_func,  
+  bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂,
+  bv_imp_intro H, bv_split, bv_imp_intro H_eq,
+  sorry
+end
+
 /-- f is a functional relation if for every z ∈ x, if there exists a w ∈ y such that (z,w) ∈ f, then for every w' ∈ y such that (z,w') ∈ f, w' =ᴮ w -/
 -- @[reducible] def is_functional (x y f : bSet 𝔹) : 𝔹 :=
 -- ⨅z, (z∈ᴮ x ⟹ (⨆w, w ∈ᴮ y ⊓ pair z w ∈ᴮ f ⊓ (⨅w', w' ∈ᴮ y ⟹ (pair z w' ∈ᴮ f ⟹ w =ᴮ w'))))

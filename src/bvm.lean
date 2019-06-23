@@ -351,6 +351,9 @@ end
 theorem eq_iff_subset_subset {x y : bSet 𝔹} : x =ᴮ y = x ⊆ᴮ y ⊓ y ⊆ᴮ x :=
 by apply le_antisymm; [apply subset_subset_of_eq, apply eq_of_subset_subset]
 
+lemma subset_of_eq {x y : bSet 𝔹} {Γ} (H : Γ ≤ x =ᴮ y) : Γ ≤ x ⊆ᴮ y ∧ Γ ≤ y ⊆ᴮ x :=
+by {rw[eq_iff_subset_subset] at H, bv_split, exact ⟨‹_›,‹_›⟩}
+
 @[simp]lemma subset_self {x : bSet 𝔹} {Γ : 𝔹} : Γ ≤ x ⊆ᴮ x :=
 by {apply le_trans, apply le_top, rw[show ⊤ = x =ᴮ x, by simp[bv_eq_refl]], rw[eq_iff_subset_subset], apply inf_le_left}
 
@@ -1400,23 +1403,36 @@ end
 
 lemma instantiate_existential_over_check
 {ϕ : bSet 𝔹 → 𝔹} (H_congr : B_ext ϕ) (x : pSet) {Γ} (H_nonzero : ⊥ < Γ) (H_ex : Γ ≤ ⨆y, (y ∈ᴮ (x̌) ⊓ ϕ (y))) :
-  ∃ (Γ' : 𝔹) (H : Γ' ≤ Γ) (z) (H_mem : z ∈ x), Γ' ≤ ϕ (ž) :=
+  ∃ (Γ' : 𝔹) (H_nonzero : ⊥ < Γ') (H : Γ' ≤ Γ) (z) (H_mem : z ∈ x), Γ' ≤ ϕ (ž) :=
 begin
   rw[<-@bounded_exists] at H_ex, swap, by change B_ext _; simpa,
-  cases (nonzero_inf_of_nonzero_le_supr ‹_› ‹_›) with i Hi,
-  refine ⟨_, _, _, _, _⟩,
-    { exact Γ ⊓ (x̌.bval i) ⊓ ϕ (x̌.func i) },
+  cases (nonzero_inf_of_nonzero_le_supr H_nonzero H_ex) with i Hi,
+  refine ⟨_, Hi, _, _, _, _⟩,
     { tidy_context },
     { exact (x.func (cast (by cases x; refl) i)) },
-    { convert pSet.mem.mk _ _, simp },
-    { tidy_context, convert a_right, by cases x; refl }
+    { convert pSet.mem.mk _ _, simp, },
+    { tidy_context, cases x, exact a_right_right }
+end
+
+lemma instantiate_existential_over_check'
+{ϕ : bSet 𝔹 → 𝔹} (H_congr : B_ext ϕ) (x : pSet) {Γ} (H_nonzero : ⊥ < Γ) (H_ex : Γ ≤ ⨆y, (y ∈ᴮ (x̌) ⊓ ϕ (y))) :
+∃ i : x.type, ⊥ < ϕ ((x.func i)̌ ) :=
+begin
+  suffices this : ∃ i : x.type, ⊥ < Γ ⊓ ϕ ((x.func i)̌ ),
+    by {cases this with i Hi, use i, use (bot_lt_resolve_left H_nonzero Hi)},
+
+  rw[<-@bounded_exists] at H_ex, swap, by change B_ext _; simpa,
+  cases (nonzero_inf_of_nonzero_le_supr H_nonzero H_ex) with i Hi,
+  refine ⟨cast check_type' i,_⟩, dsimp at Hi, rw[check_bval_top _, top_inf_eq] at Hi,
+  cases x, exact Hi
 end
 
 lemma eq_check_of_mem_check {Γ : 𝔹} (h_nonzero : ⊥ < Γ) (x : pSet.{u}) (y : bSet 𝔹) (H_mem : Γ ≤ y ∈ᴮ x̌) :
   ∃ Γ' (H_le : Γ' ≤ Γ) (z) (H_mem : z ∈ x), (Γ' ≤ y =ᴮ ž) :=
 begin
-  rw[mem_unfold] at H_mem, rw[@bounded_exists] at H_mem, swap, by change B_ext _; simp,
-  exact instantiate_existential_over_check (by simp) x ‹_› ‹_›
+  sorry
+  -- rw[mem_unfold] at H_mem, rw[@bounded_exists] at H_mem, swap, by change B_ext _; simp,
+  -- exact instantiate_existential_over_check (by simp) x ‹_› ‹_›
 end
 
 end check_names
@@ -1696,6 +1712,36 @@ lemma subset_of_pointwise_bounded {Γ : 𝔹} {x : bSet 𝔹} {p : x.type → �
 begin
   simp[subset_unfold], intro i, bv_imp_intro, apply bv_use i,
   from le_inf (le_trans H (by simp*)) bv_eq_refl'
+end
+
+lemma pointwise_bounded_of_check_subset_check {x : pSet} {p₁ p₂ : x̌.type → 𝔹} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂)(H_eq : ∀ {Γ}, Γ ≤ (set_of_indicator p₁ ⊆ᴮ set_of_indicator p₂)) : ∀ i, p₁ i ≤ p₂ i :=
+begin
+  intro i, have : (p₁ i) ≤ (set_of_indicator p₁ ⊆ᴮ set_of_indicator p₂) := H_eq,
+  unfold set_of_indicator at this, rw[subset_unfold] at this,
+  replace this := this i (by refl), refine le_trans this _,
+  simp, intro j, haveI := classical.prop_decidable, by_cases i = j,
+    { subst h, simp },
+    { specialize H_inj (cast check_type' i) (cast check_type' j),
+      replace H_inj := mt H_inj,
+      suffices this : ¬pSet.equiv (pSet.func x (cast check_type' i)) (pSet.func x (cast check_type' j)),
+        by {refine inf_le_right_of_le _, convert bot_le,
+            convert check_bv_eq_bot_of_not_equiv ‹_›; cases x; simp; refl},
+      exact (H_inj (by cases x; from ‹_›))}
+end
+
+lemma pointwise_eq_of_eq_set_of_indicator {x : pSet} {p₁ p₂ : x̌.type → 𝔹} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) (H_eq : ∀ {Γ}, Γ ≤ (set_of_indicator p₁ =ᴮ set_of_indicator p₂)) : ∀ i, p₁ i = p₂ i :=
+begin
+  rw[eq_iff_subset_subset] at H_eq, refine (λ i, le_antisymm _ _);
+    { apply pointwise_bounded_of_check_subset_check, from ‹_›,
+      intro Γ, specialize @H_eq Γ, bv_split, from ‹_› }
+end
+
+lemma set_of_indicator_eq_iff_pointwise_eq {x : pSet} {p₁ p₂ : x̌.type → 𝔹} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) :
+(∀ {Γ}, Γ ≤ (set_of_indicator p₁ =ᴮ set_of_indicator p₂)) ↔ (∀i, p₁ i = p₂ i)  :=
+begin
+  refine ⟨_,_⟩,
+    { intro H_eq, apply pointwise_eq_of_eq_set_of_indicator; from ‹_› },
+    { intros H_eq Γ, rw[show p₁ = p₂, from funext H_eq], simp }
 end
 
 section infinity
