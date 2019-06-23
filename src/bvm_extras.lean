@@ -570,10 +570,24 @@ begin
      { rw[subset_unfold], bv_intro j, bv_imp_intro Hj, simp,
        apply bv_use j.val,
        refine le_inf _ _,
-         { sorry }, -- show in this case it's always ⊤
-         { sorry }}, -- this should be easy
+         { have := j.property, unfold Prop_to_bot_top, simp* },
+         { exact bv_eq_refl' }}, 
      { rw[subset_unfold], bv_intro j, bv_imp_intro Hj, simp,
-       sorry  } -- for this, case on whether or not the bval is ⊥ 
+       let Q := bval (set_of_indicator (λ (i : type $ (pSet.mk α A)̌  ), Prop_to_bot_top (s i))) j,              
+       haveI := classical.prop_decidable, by_cases H: ⊥ < Q,
+         { suffices : s j,
+             by { refine bv_use ⟨j, this⟩, swap,
+                  simp*, transitivity ⊤,
+                    { exact le_top },
+                    { exact bv_eq_refl' }},
+           by_contra, suffices this : Q = ⊥,
+             by {rw[this] at H, simpa using H},
+           dsimp[Q, Prop_to_bot_top], simp* },
+           
+         { rw[bot_lt_iff_not_le_bot] at H, push_neg at H,
+           transitivity ⊥,
+             { exact le_trans Hj H },
+             { exact bot_le }}}
 end
 
 @[simp]lemma check_mem' {y : pSet} {i : y.type} : ((y.func i)̌ ) ∈ᴮ y̌ = (⊤ : 𝔹) :=
