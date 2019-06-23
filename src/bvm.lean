@@ -1401,6 +1401,16 @@ begin
     { contradiction }    
 end
 
+lemma check_mem_iff {x y : pSet} : x ∈ y ↔ x̌ ∈ᴮ y̌ = (⊤ : 𝔹) :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { cases y, unfold has_mem.mem pSet.mem at H,
+      cases H with b Hb, rw[<-top_le_iff], apply bv_use b,
+      refine le_inf (by refl) _, rwa[top_le_iff, <-check_bv_eq_iff] },
+    { cases y, rw[<-top_le_iff] at H, replace H := mem_check_witness H, swap, by simp,
+      cases H with b Hb, use b, rwa[top_le_iff, <-check_bv_eq_iff] at Hb}
+end
+
 lemma instantiate_existential_over_check
 {ϕ : bSet 𝔹 → 𝔹} (H_congr : B_ext ϕ) (x : pSet) {Γ} (H_nonzero : ⊥ < Γ) (H_ex : Γ ≤ ⨆y, (y ∈ᴮ (x̌) ⊓ ϕ (y))) :
   ∃ (Γ' : 𝔹) (H_nonzero : ⊥ < Γ') (H : Γ' ≤ Γ) (z) (H_mem : z ∈ x), Γ' ≤ ϕ (ž) :=

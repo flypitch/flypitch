@@ -755,8 +755,14 @@ begin
   fsplit,
     { sorry },
     { rw[bv_eq_unfold], refine le_inf _ _,
-      { sorry },
-      { sorry }},
+      { sorry }, -- this condition says that says for ∀ i, χ i ≤ ω.func i ∈ᴮ Š
+                 -- note that S, being a subtype, also satisfies a 0-1 property,
+                 -- so that ∀ i, (⊥ < (ω.func i ∈ᴮ Š) ↔ ⊤ = ω.func i ∈ᴮ Š ↔ (S i))
+                 -- so, in case that ⊥ < χ i, we must have that i ∈ S.
+      
+      { sorry } -- this condition, combined some easy facts and check_mem_set_of_indicator_iff,
+                -- says that S ⊆ {i | χ i = ⊤}
+},
 end
 
 theorem CH_true : (⊤ : 𝔹) ≤ CH :=

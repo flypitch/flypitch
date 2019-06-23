@@ -29,6 +29,8 @@ open ordinal
 
 namespace pSet
 
+lemma powerset_type {x : pSet} : (powerset x).type = set (x.type) := by cases x; refl
+
 @[simp]lemma mem.mk' {x : pSet} {i} : x.func i ∈ x :=
 by {cases x; apply pSet.mem.mk}
 

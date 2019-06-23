@@ -548,6 +548,14 @@ end
 lemma check_subset {x y : pSet} {Γ : 𝔹} (h_subset : x ⊆ y) : Γ ≤ x̌ ⊆ᴮ y̌ :=
   le_trans le_top (check_subset_of_subset ‹_›)
 
+lemma mem_check_mem_powerset_nonzero_iff {x : pSet} {S : (pSet.powerset x).type} {i : x.type} :
+  (⊥ : 𝔹) < (x.func i)̌  ∈ᴮ ((pSet.powerset x).func S)̌  ↔ (cast pSet.powerset_type S) i := 
+begin
+  refine ⟨_,_⟩; intro H,
+    { sorry },
+    { sorry }
+end
+
 example {x : bSet 𝔹} {i : x.type} {χ : x.type → 𝔹} : χ i ≤ (x.func i) ∈ᴮ (set_of_indicator χ) :=
 by {rw[mem_unfold], tidy_context, apply bv_use i, bv_split_goal}
 
