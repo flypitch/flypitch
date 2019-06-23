@@ -150,7 +150,7 @@ begin
                    by {clear_except H_not_bot_lt, finish[bot_lt_iff_not_le_bot]},
                  clear_except H_inj h, intro H, from absurd (H_inj _ _ H) ‹_›},
           bv_split,
-          refine ⟨eq_of_eq_pair_left' H_mem_left_1_right,
+          exact ⟨eq_of_eq_pair_left' H_mem_left_1_right,
                    bv_context_trans (bv_symm H_eq) (eq_of_eq_pair_left' this_1_right)⟩}}
 end
 
@@ -681,12 +681,14 @@ rel_of_array_surj _ _ _ (by simp) (by simp) (π_af_wide)
 
 lemma π_spec {Γ : 𝔹} : Γ ≤ (is_func π) ⊓ ⨅v, v ∈ᴮ (powerset omega)̌  ⟹ (⨆w, w ∈ᴮ (ℵ₁̌ ) ⊓ pair w v ∈ᴮ π) := le_inf π_is_func π_is_surj
 
+lemma π_spec' {Γ : 𝔹} : Γ ≤ (is_func' ((card_ex $ aleph 1)̌ ) ((powerset omega)̌ ) π) ⊓ is_surj ((card_ex $ aleph 1)̌ ) ((powerset omega)̌ ) π:=  le_inf π_is_func' π_is_surj
+
+
 -- lemma π_spec' {Γ : 𝔹} : Γ ≤ (is_func π) ⊓ ⨅v, v ∈ᴮ (powerset omega)̌  ⟹ (⨆w, w ∈ᴮ (ℵ₁̌ ) ⊓ pair w v ∈ᴮ π) := sorry
 -- le_inf π_is_func' π_is_surj
 
 lemma ℵ₁_larger_than_continuum {Γ : 𝔹} : Γ ≤ larger_than (ℵ₁ ̌) ((powerset omega)̌ ) :=
-sorry
--- by apply bv_use π; from π_spec
+by apply bv_use π; from π_spec'
 
 -- for these two lemmas, need 2.17 (iv) in Bell, which follows from (i) ⟹ (ii)
 -- i.e. If 𝔹 has a dense subset P which is ω-closed, then for any η < ℵ₁, and any x,
@@ -700,18 +702,17 @@ If q ∈ P satisfies q ≤ pᵢ for all i (i.e. is a witness to the ω-closed as
 and g is the function attached to the collection of pairs (i, y_i), show that q ⊩ f = ǧ.
 -/
 
-def function_reflect (x y : pSet) (g : bSet 𝔹) {Γ} (H : Γ ≤  is_func' (x̌ : bSet 𝔹) (y̌) g) : pSet := ⟨╯°□°⟩╯︵┻━┻
+def function_reflect (y : pSet) (g : bSet 𝔹) {Γ} (H : Γ ≤  is_func' ω (y̌) g) : pSet := ⟨╯°□°⟩╯︵┻━┻
 
-lemma function_reflect_spec₁ {x y} {g} {Γ : 𝔹} (H : Γ ≤ _) : Γ ≤ (function_reflect x y g H)̌  =ᴮ g :=
+lemma function_reflect_spec₁ {y} {g} {Γ : 𝔹} (H : Γ ≤ _) : Γ ≤ (function_reflect y g H)̌  =ᴮ g :=
 ⟨╯°□°⟩╯︵┻━┻
 
-lemma function_reflect_spec₂ {x y} {g} {Γ : 𝔹} (H : Γ ≤ _) : is_func x y (function_reflect x y g H) :=
+lemma function_reflect_spec₂ {y} {g} {Γ : 𝔹} (H : Γ ≤ _) : is_func pSet.omega y (function_reflect y g H) :=
 ⟨╯°□°⟩╯︵┻━┻
 
-lemma function_reflect_surj_of_surj {g} {x y} {Γ : 𝔹} (H : Γ ≤ _) (H_not_zero : ⊥ < Γ) (H_surj : Γ ≤ is_surj (x̌) (y̌) (g : bSet 𝔹)) :
-  pSet.is_surj x y (function_reflect x y g H) :=
+lemma function_reflect_surj_of_surj {g} {y} {Γ : 𝔹} (H : Γ ≤ _) (H_not_zero : ⊥ < Γ) (H_surj : Γ ≤ is_surj ((omega)̌ ) (y̌) (g : bSet 𝔹)) :
+  pSet.is_surj ((omega)) y (function_reflect y g H) :=
 ⟨╯°□°⟩╯︵┻━┻
-
 
 --TODO(jesse) check that this proof actually works
 lemma omega_lt_aleph_one {Γ : 𝔹} : Γ ≤ bSet.omega ≺ (ℵ₁̌ ) :=
@@ -721,7 +722,7 @@ begin
   by_contra, replace a := (bot_lt_iff_not_le_bot.mpr a),
   suffices this : ∃ f : pSet, is_func _ _ f ∧ pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f,
     by {exfalso, from pSet.ex_no_surj_omega_aleph_one this},
-  let g := (function_reflect (pSet.omega) (card_ex $ aleph 1) f sorry), use g, 
+  let g := (function_reflect (card_ex $ aleph 1) f sorry), use g, 
   refine ⟨_,_⟩,
     { apply function_reflect_spec₂ },
     { apply function_reflect_surj_of_surj, from ‹_›, from a_right_1_right }
@@ -742,7 +743,6 @@ begin
     by { cases this with S HS, apply bv_use S, rwa[top_inf_eq] },
   exact ⟨╯°□°⟩╯︵┻━┻ -- TODO(jesse): come up with a specialized argument for this
 end
-
 
 theorem CH_true : (⊤ : 𝔹) ≤ CH :=
 begin
