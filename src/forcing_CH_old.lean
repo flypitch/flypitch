@@ -497,9 +497,7 @@ collapse_poset.is_regular_principal_open _
 
 @[simp]lemma is_regular_one_point_regular_open' {x : X} {y : Y} :
   is_regular {g : X → Y | g x = y} :=
-begin
-  rw[<-one_point_collapse_poset_principal_open], from is_regular_one_point_regular_open
-end
+by {rw[<-one_point_collapse_poset_principal_open], from is_regular_one_point_regular_open}
 
 /--
 Given a partial function f : X →. Y and a point y : Y, define an extension g of f to X such that g(x) = y whenever x ∉ f.dom
@@ -683,7 +681,6 @@ lemma π_spec {Γ : 𝔹} : Γ ≤ (is_func π) ⊓ ⨅v, v ∈ᴮ (powerset ome
 
 lemma π_spec' {Γ : 𝔹} : Γ ≤ (is_func' ((card_ex $ aleph 1)̌ ) ((powerset omega)̌ ) π) ⊓ is_surj ((card_ex $ aleph 1)̌ ) ((powerset omega)̌ ) π:=  le_inf π_is_func' π_is_surj
 
-
 -- lemma π_spec' {Γ : 𝔹} : Γ ≤ (is_func π) ⊓ ⨅v, v ∈ᴮ (powerset omega)̌  ⟹ (⨆w, w ∈ᴮ (ℵ₁̌ ) ⊓ pair w v ∈ᴮ π) := sorry
 -- le_inf π_is_func' π_is_surj
 
@@ -745,25 +742,45 @@ begin
   { from aleph_one_satisfies_universal_property }
 end
 
+-- lemma continuum_is_continuum : (⊤ : 𝔹) ≤ (pSet.powerset omega)̌  =ᴮ (bv_powerset bSet.omega) := sorry
+
+lemma distributive {x : pSet} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) (af : pSet.omega.type → x.type → 𝔹) :
+   ⨅ i : pSet.omega.type, (⨆ j : x.type, af i j) = ⨆(f : pSet.omega.type → x.type), ⨅(i : pSet.omega.type), af i (f i)
+ := sorry
+
+lemma functions_eq {x : pSet} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) : sorry := sorry
+
 lemma continuum_is_continuum {Γ : 𝔹} : Γ ≤ (pSet.powerset omega)̌  =ᴮ (bv_powerset bSet.omega) :=
 begin
   refine subset_ext (check_powerset_subset_powerset _) _,
   bv_intro χ, bv_imp_intro H_χ,
-  suffices this : ∃ S : (powerset omega).type, Γ_1 ≤  (set_of_indicator χ) =ᴮ ((powerset omega).func S)̌ ,
-    by { cases this with S HS, apply bv_use S, rwa[top_inf_eq] },
-  clear H_χ,
-  fsplit,
-    { sorry },
-    { rw[bv_eq_unfold], refine le_inf _ _,
-      { sorry }, -- this condition says that says for ∀ i, χ i ≤ ω.func i ∈ᴮ Š
-                 -- note that S, being a subtype, also satisfies a 0-1 property,
-                 -- so that ∀ i, (⊥ < (ω.func i ∈ᴮ Š) ↔ ⊤ = ω.func i ∈ᴮ Š ↔ (S i))
-                 -- so, in case that ⊥ < χ i, we must have that i ∈ S.
-      
-      { sorry } -- this condition, combined some easy facts and check_mem_set_of_indicator_iff,
-                -- says that S ⊆ {i | χ i = ⊤}
-},
+  refine le_trans le_top _, rw[bSet.mem_unfold], simp only [check_bval_top, top_inf_eq],
+  simp only [bv_eq_unfold], 
+  sorry 
+-- TOOD(jesse) show that this simplifies to ⨆_S ⨅ i, σ_S(i) (χ i), where σ_S(i) is the ¬-indicator function o S
+
+-- then an inductively-defined version of S := {i | ¬ χ i ⊓ principal_open p = ⊥} should work
 end
+
+-- lemma continuum_is_continuum {Γ : 𝔹} : Γ ≤ (pSet.powerset omega)̌  =ᴮ (bv_powerset bSet.omega) :=
+-- begin
+--   refine subset_ext (check_powerset_subset_powerset _) _,
+--   bv_intro χ, bv_imp_intro H_χ,
+--   suffices this : ∃ S : (powerset omega).type, Γ_1 ≤  (set_of_indicator χ) =ᴮ ((powerset omega).func S)̌ ,
+--     by { cases this with S HS, apply bv_use S, rwa[top_inf_eq] },
+--   clear H_χ,
+--   fsplit,
+--     { sorry },
+--     { rw[bv_eq_unfold], refine le_inf _ _,
+--       { sorry }, -- this condition says that says for ∀ i, χ i ≤ ω.func i ∈ᴮ Š
+--                  -- note that S, being a subtype, also satisfies a 0-1 property,
+--                  -- so that ∀ i, (⊥ < (ω.func i ∈ᴮ Š) ↔ ⊤ = ω.func i ∈ᴮ Š ↔ (S i))
+--                  -- so, in case that ⊥ < χ i, we must have that i ∈ S.
+      
+--       { sorry } -- this condition, combined some easy facts and check_mem_set_of_indicator_iff,
+--                 -- says that S ⊆ {i | χ i = ⊤}
+-- }
+-- end
 
 theorem CH_true : (⊤ : 𝔹) ≤ CH :=
 begin

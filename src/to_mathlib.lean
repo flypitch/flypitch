@@ -672,6 +672,12 @@ class nontrivial_complete_boolean_algebra (α : Type*) extends complete_boolean_
 @[simp]lemma nontrivial.bot_lt_top {α : Type*} [H : nontrivial_complete_boolean_algebra α] : (⊥ : α) < ⊤ :=
 H.bot_lt_top
 
+@[simp]lemma nontrivial.bot_neq_top {α : Type*} [H : nontrivial_complete_boolean_algebra α] : ¬ (⊥ = (⊤ : α)) :=
+by {change _ ≠ _, rw[lt_top_iff_ne_top.symm], simp}
+
+@[simp]lemma nontrivial.top_neq_bot {α : Type*} [H : nontrivial_complete_boolean_algebra α] : ¬ (⊤ = (⊥ : α)) :=
+λ _, nontrivial.bot_neq_top $ eq.symm ‹_›
+
 def antichain {β : Type*} [bounded_lattice β] (s : set β) :=
   ∀ x ∈ s, ∀ y ∈ s, x ≠ y → x ⊓ y = (⊥ : β)
 
@@ -712,12 +718,10 @@ by {rw[sup_comm], conv{to_rhs, simp[sup_comm]}, apply sup_infi_eq}
   sup_idem
 
 lemma bot_lt_iff_not_le_bot {α} [bounded_lattice α] {a : α} : ⊥ < a ↔ (¬ a ≤ ⊥) :=
-begin
-  rw[le_bot_iff],
-  split; intro,
-    from bot_lt_iff_ne_bot.mp ‹_›,
-  from bot_lt_iff_ne_bot.mpr ‹_›
-end
+by rw[le_bot_iff]; exact bot_lt_iff_ne_bot
+
+lemma lt_top_iff_not_top_le {α} [bounded_lattice α] {a : α} : a < ⊤ ↔ (¬ ⊤ ≤ a) :=
+by rw[top_le_iff]; exact lt_top_iff_ne_top
 
 lemma bot_lt_resolve_left {𝔹} [bounded_lattice 𝔹] {a b : 𝔹} (H_lt : ⊥ < a) (H_lt' : ⊥ < a ⊓ b) : ⊥ < b :=
 begin
@@ -1003,7 +1007,7 @@ begin
   apply split_context, intros, simp only [le_inf_iff] at a, auto.split_hyps, from ‹_›
 end
 
-lemma context_Or_elim {β : Type*} [complete_boolean_algebra β] {ι : Type*} {s : ι → β} {Γ b : β}
+lemma context_Or_elim {β : Type*} [complete_boolean_algebra β] {ι} {s : ι → β} {Γ b : β}
   (h : Γ ≤ ⨆(i:ι), s i) {h' : ∀ i, s i ⊓ Γ ≤ s i → s i ⊓ Γ ≤ b} : Γ ≤ b :=
 begin
   apply le_trans' h, rw[inf_comm], rw[deduction], apply supr_le, intro i, rw[<-deduction],
@@ -1062,11 +1066,11 @@ end
 lemma context_imp_intro {β : Type*} [complete_boolean_algebra β] {a b Γ : β} (H : a ⊓ Γ ≤ a → a ⊓ Γ ≤ b) : Γ ≤ a ⟹ b :=
 by {rw[<-deduction, inf_comm], from H (inf_le_left)}
 
-instance imp_to_pi {β : Type*} [complete_boolean_algebra β] {Γ a b : β} : has_coe_to_fun (Γ ≤ a ⟹ b) :=
+instance imp_to_pi {β } [complete_boolean_algebra β] {Γ a b : β} : has_coe_to_fun (Γ ≤ a ⟹ b) :=
 { F := λ x, Γ ≤ a → Γ ≤ b,
   coe := λ H₁ H₂, by {apply context_imp_elim; from ‹_›}}
 
-instance infi_to_pi {ι β : Type*} [complete_boolean_algebra β] {Γ : β} {ϕ : ι → β} : has_coe_to_fun (Γ ≤ infi ϕ) :=
+instance infi_to_pi {ι β} [complete_boolean_algebra β] {Γ : β} {ϕ : ι → β} : has_coe_to_fun (Γ ≤ infi ϕ) :=
 { F := λ x, Π i : ι, Γ ≤ ϕ i,
   coe := λ H₁ i, by {change Γ ≤ ϕ i, change Γ ≤ _ at H₁, finish}}
 

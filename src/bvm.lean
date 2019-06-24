@@ -116,13 +116,16 @@ by {rw[(inf_self.symm : a = _)], apply le_trans, apply inf_le_inf, refl, exact h
 lemma bv_have_true {a b c : 𝔹} (h₁ : ⊤ ≤ b) (h₂ : a ⊓ b ≤ c) : a ≤ c :=
 by {rw[top_le_iff] at h₁, rw[h₁] at h₂, from le_trans (by rw[inf_top_eq]) h₂}
 
-lemma bv_use {ι : Type*} (i : ι) {s : ι → 𝔹} {b : 𝔹}  {h : b ≤ s i} : b ≤ ⨆(j:ι), s j :=
+lemma bv_use {ι} (i : ι) {s : ι → 𝔹} {b : 𝔹}  {h : b ≤ s i} : b ≤ ⨆(j:ι), s j :=
   le_supr_of_le i h
 
 lemma bv_context_apply {β : Type*} [complete_boolean_algebra β] {Γ a₁ a₂ : β}
   (h₁ : Γ ≤ a₁ ⟹ a₂) (h₂ : Γ ≤ a₁) : Γ ≤ a₂ := h₁ ‹_›
 
 lemma bv_by_contra {Γ b : 𝔹} {H : Γ ≤ (-b) ⟹ ⊥} : Γ ≤ b := by simpa using H
+
+lemma bv_Or_imp {Γ : 𝔹} {ι} {ϕ₁ ϕ₂ : ι → 𝔹} (H_sub : Γ ≤ ⨅ x, ϕ₁ x ⟹ ϕ₂ x) (H : Γ ≤ ⨆x, ϕ₁ x)  : Γ ≤ ⨆x, ϕ₂ x :=
+by {bv_cases_at H x, apply bv_use x, from H_sub x ‹_›}
 
 end natded
 end lattice
@@ -245,7 +248,6 @@ infix ` ∈ᴮ `:80 := mem
 
 lemma mem_unfold {u v : bSet 𝔹} : u ∈ᴮ v = ⨆(i : v.type), v.bval i ⊓ u =ᴮ v.func i :=
 by cases v; simp
-
 
 /-- ∅ appears in empty'' with probability 0 and 1, with the higher probability winning the
     vote of membership. This demonstrates why the inequality in the following theorem is
@@ -486,6 +488,11 @@ begin
       apply inf_le_inf, refl, apply h_congr}
 end
 
+lemma mem_unfold' {u v : bSet 𝔹} : u ∈ᴮ v = ⨆z, z ∈ᴮ v ⊓ u =ᴮ z :=
+by {rw[<-bounded_exists, mem_unfold], intros x y,
+    ac_change' y =ᴮ x ⊓ x =ᴮ u ≤ y =ᴮ u,
+    simp[bv_eq_symm], exact bv_eq_symm, exact bv_eq_trans }
+
 lemma subset_unfold' {x u : bSet 𝔹} : x ⊆ᴮ u = ⨅(w : bSet 𝔹), w ∈ᴮ x ⟹ w ∈ᴮ u :=
 begin
   simp only [subset_unfold], have := @bounded_forall 𝔹 _ x (λ y, y∈ᴮ u),
@@ -587,10 +594,10 @@ end
   B_ext (λ x, ϕ₁ x ⊓ ϕ₂ x) :=
 begin
   intros x y, dsimp, apply le_inf,
-  fapply le_trans, exact x =ᴮ y ⊓ ϕ₁ x,
+  transitivity x =ᴮ y ⊓ ϕ₁ x,
     by {apply inf_le_inf, refl, apply inf_le_left},
     apply h₁,
-  fapply le_trans, exact x =ᴮ y ⊓ ϕ₂ x,
+  transitivity x =ᴮ y ⊓ ϕ₂ x,
     by {apply inf_le_inf, refl, apply inf_le_right},
     apply h₂
 end
@@ -1451,38 +1458,72 @@ begin
     { simp* }
 end
 
-lemma instantiate_existential_over_check
-{ϕ : bSet 𝔹 → 𝔹} (H_congr : B_ext ϕ) (x : pSet) {Γ} (H_nonzero : ⊥ < Γ) (H_ex : Γ ≤ ⨆y, (y ∈ᴮ (x̌) ⊓ ϕ (y))) :
-  ∃ (Γ' : 𝔹) (H_nonzero : ⊥ < Γ') (H : Γ' ≤ Γ) (z) (H_mem : z ∈ x), Γ' ≤ ϕ (ž) :=
-begin
-  rw[<-@bounded_exists] at H_ex, swap, by change B_ext _; simpa,
-  cases (nonzero_inf_of_nonzero_le_supr H_nonzero H_ex) with i Hi,
-  refine ⟨_, Hi, _, _, _, _⟩,
-    { tidy_context },
-    { exact (x.func (cast (by cases x; refl) i)) },
-    { convert pSet.mem.mk _ _, simp, },
-    { tidy_context, cases x, exact a_right_right }
-end
 
-lemma instantiate_existential_over_check'
-{ϕ : bSet 𝔹 → 𝔹} (H_congr : B_ext ϕ) (x : pSet) {Γ} (H_nonzero : ⊥ < Γ) (H_ex : Γ ≤ ⨆y, (y ∈ᴮ (x̌) ⊓ ϕ (y))) :
-∃ i : x.type, ⊥ < ϕ ((x.func i)̌ ) :=
-begin
-  suffices this : ∃ i : x.type, ⊥ < Γ ⊓ ϕ ((x.func i)̌ ),
-    by {cases this with i Hi, use i, use (bot_lt_resolve_left H_nonzero Hi)},
+-- note(jesse): this lemma is not true; one also requires that x is a check-name
+-- lemma definite_mem_definite_iff_of_subset_check {x y : bSet 𝔹} (H_definite₁ : is_definite x) (H_definite₂ : is_definite y) (H_sub : ∃ z : pSet, ⊤ ≤ y ⊆ᴮ ž)  : ⊤ ≤ x ∈ᴮ y ↔ ∃ j : y.type, ⊤ ≤ x =ᴮ y.func j :=
+-- begin
+--   refine ⟨_,_⟩; intro H,
+--     { rw[mem_unfold] at H, haveI := classical.prop_decidable, by_contra H', push_neg at H',
+--       simp only [lt_top_iff_not_top_le.symm] at H',
+--       suffices this : (⨆ (i : type y), bval y i ⊓ x =ᴮ func y i) ≤ ⊥,
+--         by {rw[le_bot_iff] at this, rw[this] at H, convert H, simp, },
+--       replace H := (by refl : (⨆ (i : type y), bval y i ⊓ x =ᴮ func y i) ≤ ⨆ (i : type y), bval y i ⊓ x =ᴮ func y i),
+--       bv_cases_at H j, specialize H' j,
+--       suffices this : x =ᴮ func y j ≤ ⊥,
+--         by {transitivity bval y j ⊓ x =ᴮ func y j, from ‹_›, rw[le_bot_iff] at this, simp[this]},
+--       sorry
+--     },
+--     { cases H with j Hj, rw[mem_unfold], apply bv_use j, exact le_inf (by {unfold is_definite at H_definite₂, simp* }) (Hj) }
+-- end
 
+-- lemma instantiate_existential_over_check
+-- {ϕ : bSet 𝔹 → 𝔹} (H_congr : B_ext ϕ) (x : pSet) {Γ} (H_nonzero : ⊥ < Γ) (H_ex : Γ ≤ ⨆y, (y ∈ᴮ (x̌) ⊓ ϕ (y))) :
+--   ∃ (Γ' : 𝔹) (H_nonzero : ⊥ < Γ') (H : Γ' ≤ Γ) (z) (H_mem : z ∈ x), Γ' ≤ ϕ (ž) :=
+-- begin
+--   rw[<-@bounded_exists] at H_ex, swap, by change B_ext _; simpa,
+--   cases (nonzero_inf_of_nonzero_le_supr H_nonzero H_ex) with i Hi,
+--   refine ⟨_, Hi, _, _, _, _⟩,
+--     { tidy_context },
+--     { exact (x.func (cast (by cases x; refl) i)) },
+--     { convert pSet.mem.mk _ _, simp, },
+--     { tidy_context, cases x, exact a_right_right }
+-- end
+
+lemma instantiate_existential_over_check_aux {ϕ : bSet 𝔹 → 𝔹} (H_congr : B_ext ϕ) (x : pSet) {Γ} (H_nonzero : ⊥ < Γ) (H_ex : Γ ≤ ⨆y, (y ∈ᴮ (x̌) ⊓ ϕ (y))) : ∃ i : x.type, ⊥ < (ϕ ((x.func i)̌ ) ⊓ Γ) :=
+begin
+  simp only [inf_comm],
   rw[<-@bounded_exists] at H_ex, swap, by change B_ext _; simpa,
   cases (nonzero_inf_of_nonzero_le_supr H_nonzero H_ex) with i Hi,
   refine ⟨cast check_type' i,_⟩, dsimp at Hi, rw[check_bval_top _, top_inf_eq] at Hi,
   cases x, exact Hi
 end
 
-lemma eq_check_of_mem_check {Γ : 𝔹} (h_nonzero : ⊥ < Γ) (x : pSet.{u}) (y : bSet 𝔹) (H_mem : Γ ≤ y ∈ᴮ x̌) :
-  ∃ Γ' (H_le : Γ' ≤ Γ) (z) (H_mem : z ∈ x), (Γ' ≤ y =ᴮ ž) :=
+noncomputable def instantiate_existential_over_check
+{ϕ : bSet 𝔹 → 𝔹} (H_congr : B_ext ϕ) (x : pSet) {Γ} (H_nonzero : ⊥ < Γ) (H_ex : Γ ≤ ⨆y, (y ∈ᴮ (x̌) ⊓ ϕ (y))) : x.type :=
 begin
-  sorry
-  -- rw[mem_unfold] at H_mem, rw[@bounded_exists] at H_mem, swap, by change B_ext _; simp,
-  -- exact instantiate_existential_over_check (by simp) x ‹_› ‹_›
+  apply @classical.some _ (λ i : x.type, ⊥ < ϕ ((x.func i)̌ ) ⊓ Γ),
+  apply instantiate_existential_over_check_aux; from ‹_›
+end
+
+lemma instantiate_existential_over_check_spec {ϕ : bSet 𝔹 → 𝔹} (H_congr : B_ext ϕ) (x : pSet) {Γ} (H_nonzero : ⊥ < Γ) (H_ex : Γ ≤ ⨆y, (y ∈ᴮ (x̌) ⊓ ϕ (y))) :
+ ⊥ < (ϕ ((x.func $ instantiate_existential_over_check ‹_› x ‹_› ‹_›)̌ ) ⊓ Γ) :=
+   by {unfold instantiate_existential_over_check, exact classical.some_spec (instantiate_existential_over_check_aux H_congr x H_nonzero ‹_›)}
+
+lemma instantiate_existential_over_check_spec₂ (ϕ : bSet 𝔹 → 𝔹) (H_congr : B_ext ϕ) (x : pSet) {Γ} (H_nonzero : ⊥ < Γ) (H_ex : Γ ≤ ⨆y, (y ∈ᴮ (x̌) ⊓ ϕ (y))) :
+  ⊥ < (ϕ ((x.func $ instantiate_existential_over_check ‹_› x ‹_› ‹_›)̌ )) :=
+bot_lt_resolve_right H_nonzero (instantiate_existential_over_check_spec ‹_› x ‹_› ‹_›)
+
+/--
+  This corresponds to Property 4 in Moore's The method of forcing
+-/
+lemma eq_check_of_mem_check {Γ : 𝔹} (h_nonzero : ⊥ < Γ) (x : pSet.{u}) (y : bSet 𝔹) (H_mem : Γ ≤ y ∈ᴮ x̌) :
+  ∃ i : x.type, ⊥ < y =ᴮ (x.func i)̌  :=
+  -- ∃ Γ' (H_le : Γ' ≤ Γ) (z) (H_mem : z ∈ x), (Γ' ≤ y =ᴮ ž) :=
+begin
+  refine ⟨_,_⟩,
+    { refine instantiate_existential_over_check _ x ‹_› _,
+      exact λ z, y =ᴮ z, simp, apply bv_use y, exact le_inf ‹_› bv_eq_refl' },
+    { apply instantiate_existential_over_check_spec₂ }
 end
 
 end check_names

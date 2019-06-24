@@ -8,3 +8,4 @@ auto/*
 /_target
 /leanpkg.path
 test.org
+src/scratch.lean

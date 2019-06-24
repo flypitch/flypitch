@@ -294,7 +294,7 @@ end
 lemma mem_prod_iff {v w x y : bSet 𝔹} {Γ} : Γ ≤ pair x y ∈ᴮ prod v w ↔ (Γ ≤ x ∈ᴮ v ∧ Γ ≤ y ∈ᴮ w) :=
 ⟨λ _, ⟨mem_left_of_prod_mem ‹_›, mem_right_of_prod_mem ‹_›⟩, λ ⟨_,_⟩, prod_mem ‹_› ‹_›⟩
 
-
+-- lemma check_pair {x y : pSet} : sorry (x y) = bSet.pair (x̌) (y̌ : bSet 𝔹) := sorry
 
 -- /-- f is =ᴮ-extensional on x if for every w₁ and w₂ ∈ x, if w₁ =ᴮ w₂, then for every v₁ and v₂, if (w₁,v₁) ∈ f and (w₂,v₂) ∈ f, then v₁ =ᴮ v₂ -/
 -- @[reducible]def is_extensional (x f : bSet 𝔹) : 𝔹 :=
@@ -333,6 +333,51 @@ end
 /-- f is (more precisely, contains) a function from x to y if for every element of x, there exists an element of y such that the pair is in f, and f is a function -/
 @[reducible]def is_func' (x y f : bSet 𝔹) : 𝔹 :=
   is_func f ⊓ (⨅w₁, w₁ ∈ᴮ x ⟹ ⨆w₂, w₂ ∈ᴮ y ⊓ pair w₁ w₂ ∈ᴮ f)
+
+/-- f is a function x → y if it is extensional, total, and is a subset of the product of x and y -/
+@[reducible]def is_function (x y f : bSet 𝔹) : 𝔹 :=
+  is_func f ⊓ (⨅w₁, w₁ ∈ᴮ x ⟹ ⨆w₂, w₂ ∈ᴮ y ⊓ pair w₁ w₂ ∈ᴮ f) ⊓ (f ⊆ᴮ prod x y)
+
+def functions (x y : bSet 𝔹) : bSet 𝔹 :=
+  set_of_indicator (λ s : (bv_powerset (prod x y) : bSet 𝔹).type, is_function x y ((bv_powerset (prod x y)).func s))
+
+-- TODO(jesse) this should be a more general lemma about a sep operator, as in zfc.lean
+lemma mem_functions_iff {g x y : bSet 𝔹} {Γ : 𝔹} : (Γ ≤ g ∈ᴮ functions x y) ↔ (Γ ≤ is_function x y g) :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { rw[mem_unfold] at H, bv_cases_at H s, bv_split,
+      apply bv_rw' H_1_right, simp,
+        dsimp[functions] at H_1_left, from ‹_›},
+    { rw[mem_unfold], unfold is_function at H, bv_split, bv_split,
+      have H_right' := bv_powerset_spec.mp H_right, rw[mem_unfold] at H_right',
+      bv_cases_at H_right' s, apply bv_use s, bv_split, refine le_inf _ ‹_›,
+      refine le_inf (le_inf _ _) ‹_›,
+        {apply bv_rw' (bv_symm ‹_ ≤ g =ᴮ func (𝒫 prod x y) s›), simp, from ‹_›},
+      -- TODO(jesse) why does apply fail to generate a motive for bv_rw'?
+      bv_intro w₁, bv_imp_intro Hw₁, replace H_left_right := H_left_right w₁ ‹_›,
+      bv_cases_at H_left_right w₂, apply bv_use w₂, bv_split, refine le_inf ‹_› _,
+      apply bv_rw' (bv_symm ‹_ ≤ g =ᴮ func (𝒫 prod x y) s›), simp, from ‹_› }
+end
+
+-- lemma function_reflect_AE {x y : pSet} {f : bSet 𝔹} (H : ⊤ ≤ is_function (x̌) (y̌) f) : ∀ i : x̌.type, ∃ j : y̌.type, ⊤ ≤ pair (x̌.func i) (y̌.func j) ∈ᴮ f :=
+-- begin
+--   bv_split, bv_split, rw[<-@bounded_forall] at H_left_right,
+--   intro i, replace H_left_right := H_left_right i, simp at H_left_right,
+--   rw[<-@bounded_exists] at H_left_right, simp at H_left_right,
+--     { have this : ⊤ ≤ (⨆ i_x, pair (x̌.func i) (y̌.func i_x) ∈ᴮ (prod (x̌) (y̌))),
+--         by {rw[<-top_le_iff] at H_left_right, apply bv_Or_imp,
+--             show _ → _,
+--               exact λ i_x, pair (x̌.func i) (y̌.func i_x) ∈ᴮ f,
+--             rw[subset_unfold'] at H_right, dsimp,
+--             bv_intro x_1, bv_imp_intro Hx_1,
+--             replace H_right := H_right (pair (x̌.func i) (y̌.func x_1)) ‹_›,
+--             apply bv_use (i, x_1), refine le_inf (by simp) bv_eq_refl',
+--             exact H_left_right},
+--           sorry
+--  },
+--     { sorry },
+--     { sorry }
+-- end
 
 /-- f is an injective function on x if it is a function and for every w₁ and w₂ ∈ x, if there exist v₁ and v₂ such that (w₁, v₁) ∈ f and (w₂, v₂) ∈ f,
   then v₁ = v₂ implies  w₁ = w₂ -/
