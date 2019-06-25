@@ -57,6 +57,8 @@ begin
   from bSet_lt_of_lt_of_le _ y _ (bSet_lt_of_le_of_lt _ x _ ‹_› ‹_›) ‹_›
 end
 
+noncomputable def CH₂ : 𝔹 := (-(ℵ₁̌  ≺ 𝒫(ω))) ⊓ (ω ≺ ℵ₁̌ )
+
 def rel_of_array
   (x y : bSet 𝔹) (af : x.type → y.type → 𝔹)
   : bSet 𝔹 :=
@@ -702,14 +704,14 @@ and g is the function attached to the collection of pairs (i, y_i), show that q 
 --TODO(jesse) finish this
 -- lemma function_reflect_aux {y : pSet} (g : bSet 𝔹) (H : Γ ≤ is_func' (ω) (y̌))
 
+lemma distributive {x : pSet} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) (af : pSet.omega.type → x.type → 𝔹) :
+   ⨅ i : pSet.omega.type, (⨆ j : x.type, af i j) = ⨆(f : pSet.omega.type → x.type), ⨅(i : pSet.omega.type), af i (f i)
+ := sorry
+
+lemma functions_eq {x : pSet} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) : sorry := sorry
+
 def function_reflect (y : pSet) (g : bSet 𝔹) {Γ} (H : Γ ≤  (is_func' (ω) (y̌) g)) : pSet :=
-mk (ulift ℕ) (λ k,
-begin
-  induction k,
-  induction k with k ih,
-    { sorry },
-    { sorry }
-end)
+mk (ulift ℕ) (λ k, ⟨╯°□°⟩╯︵┻━┻)
 
 lemma function_reflect_spec₁ {y} {g} {Γ : 𝔹} (H : Γ ≤ _) : Γ ≤ (function_reflect y g H)̌  =ᴮ g :=
 ⟨╯°□°⟩╯︵┻━┻
@@ -729,7 +731,7 @@ begin
   by_contra, replace a := (bot_lt_iff_not_le_bot.mpr a),
   suffices this : ∃ f : pSet, is_func _ _ f ∧ pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f,
     by {exfalso, from pSet.ex_no_surj_omega_aleph_one this},
-  let g := (function_reflect (card_ex $ aleph 1) f sorry), use g, 
+  let g := (function_reflect (card_ex $ aleph 1) f ‹_›), use g, 
   refine ⟨_,_⟩,
     { apply function_reflect_spec₂ },
     { apply function_reflect_surj_of_surj, from ‹_›, from a_right_1_right }
@@ -741,14 +743,6 @@ begin
   { simp },
   { from aleph_one_satisfies_universal_property }
 end
-
--- lemma continuum_is_continuum : (⊤ : 𝔹) ≤ (pSet.powerset omega)̌  =ᴮ (bv_powerset bSet.omega) := sorry
-
-lemma distributive {x : pSet} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) (af : pSet.omega.type → x.type → 𝔹) :
-   ⨅ i : pSet.omega.type, (⨆ j : x.type, af i j) = ⨆(f : pSet.omega.type → x.type), ⨅(i : pSet.omega.type), af i (f i)
- := sorry
-
-lemma functions_eq {x : pSet} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) : sorry := sorry
 
 lemma continuum_is_continuum {Γ : 𝔹} : Γ ≤ (pSet.powerset omega)̌  =ᴮ (bv_powerset bSet.omega) :=
 begin
@@ -782,17 +776,21 @@ end
 -- }
 -- end
 
-theorem CH_true : (⊤ : 𝔹) ≤ CH :=
+lemma aleph_one_not_lt_powerset_omega : ∀ {Γ : 𝔹}, Γ ≤ - (ℵ₁̌ ≺ 𝒫(ω)) :=
 begin
-  refine CH_true_aux _ _,
-    { from aleph_one_check_universal_property },
-    { intro Γ, rw[<-imp_bot],
-      bv_imp_intro,
-      suffices ex_surj : Γ_1 ≤ larger_than (ℵ₁̌ ) (𝒫 ω),
-        by {dsimp [Γ_1] at H ex_surj ⊢, bv_contradiction},
+ intro Γ, rw[<-imp_bot], bv_imp_intro H,
+ suffices ex_surj : Γ_1 ≤ larger_than (ℵ₁̌ ) (𝒫 ω),
+     by {dsimp [Γ_1] at H ex_surj ⊢, from bv_absurd _ ex_surj ‹_› },
+ 
       apply bv_rw' (bv_symm continuum_is_continuum),
         { from B_ext_larger_than_right },
-        { from ℵ₁_larger_than_continuum }}
+        { from ℵ₁_larger_than_continuum }
 end
+
+theorem CH_true : (⊤ : 𝔹) ≤ CH :=
+CH_true_aux aleph_one_check_universal_property (by apply aleph_one_not_lt_powerset_omega)
+
+theorem CH₂_true : (⊤ : 𝔹) ≤ CH₂ :=
+le_inf (by apply aleph_one_not_lt_powerset_omega) (omega_lt_aleph_one)
 
 end collapse_algebra
