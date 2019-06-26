@@ -721,7 +721,7 @@ lemma function_reflect_spec₂ {y} {g} {Γ : 𝔹} (H : Γ ≤ _) : is_func pSet
 
 lemma function_reflect_surj_of_surj {g} {y} {Γ : 𝔹} (H : Γ ≤ _) (H_not_zero : ⊥ < Γ) (H_surj : Γ ≤ is_surj ((omega)̌ ) (y̌) (g : bSet 𝔹)) :
   pSet.is_surj ((omega)) y (function_reflect y g H) :=
-⟨╯°□°⟩╯︵┻━┻
+⟨╯°□°⟩╯︵┻━┻ -- TODO(jesse) this should be easy because surjectivity is Δ₀, so prove a general lemma for this
 
 --TODO(jesse) check that this proof actually works
 lemma omega_lt_aleph_one {Γ : 𝔹} : Γ ≤ bSet.omega ≺ (ℵ₁̌ ) :=

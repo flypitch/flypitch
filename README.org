@@ -1,11 +1,11 @@
-* Flypitch
-** Goals
+#+TITLE: Flypitch
+*** Goals
 The Flypitch project aims to produce a formal proof of the [[https://en.wikipedia.org/wiki/Continuum_hypothesis#Independence_from_ZFC][independence of the continuum hypothesis]].
 
-** Documentation
+*** Documentation
 A conventional human-readable account of the proof written in type-theoretic foundations, upon which some parts of the formalization will be based, is [[https://www.github.com/flypitch/flypitch-notes/][located here]].
 
-** Compilation
+*** Compilation
 To compile the Flypitch project, you will need [[https://leanprover.github.io/][Lean 3.4.2]]. Installation instructions for Lean can be found [[https://github.com/leanprover-community/mathlib/blob/master/README.md][here]].
 
 Since the project is under active development, we recommend using [[https://github.com/flypitch/flypitch/releases][the latest release]].
@@ -25,14 +25,14 @@ update-mathlib
 leanpkg build
 #+END_SRC
 
-** Viewing and navigating the project
+*** Viewing and navigating the project
 To view the project, we recommend the use of a Lean-aware editor like [[https://github.com/leanprover/lean-mode][Emacs]] or [[https://github.com/leanprover/vscode-lean][VSCode]]. Among other things, like type information, such editors can display the /proof state/ inside a tactic block, making it easier to understand how theorems are being proved.
 
 A summary of the main results can be found in ~/src/summary.lean~, containing ~#print~ statements of important definitions and duplicated proofs of the main theorems. From there, one may use their editor's jump-to-definition feature to trace the dependencies of the definitions and proofs.
 
 We also have a formula pretty-printer which prints de Bruijn indexed-formulas as their named representations. Code and examples for the pretty-printer can be found in ~/src/print_formula.lean~.
 
-** Contributors
+*** Contributors
  - [[https://www.pitt.edu/~jmh288][Jesse Han]]
  - [[http://florisvandoorn.com/][Floris van Doorn]]
  - [[https://github.com/AlmostNever][Andrew Tindall]]

@@ -708,7 +708,8 @@ end
 
 lemma bSet_lt_of_le_of_lt (x y z : bSet 𝔹) {Γ} (H₁ : Γ ≤ x ≼ y) (H₂ : Γ ≤ y ≺ z) : Γ ≤ x ≺ z :=
 begin
-  sorry
+  unfold larger_than at ⊢ H₂, rw[<-imp_bot], bv_imp_intro H, unfold injects_into at H₁,
+  rw[<-imp_bot] at H₂, refine H₂ _, sorry
 end
 
 lemma bSet_le_of_subset {x y : bSet 𝔹} {Γ} (H : Γ ≤ x ⊆ᴮ y) : Γ ≤ x ≼ y :=
