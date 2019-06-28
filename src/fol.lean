@@ -2338,6 +2338,9 @@ infix ` ⊢ `:51 := fol.all_sprovable -- input: \|- or \vdash
 def all_realize_sentence (S : Structure L) (T : Theory L) := ∀{{f}}, f ∈ T → S ⊨ f
 infix ` ⊨ `:51 := fol.all_realize_sentence -- input using \|= or \vDash, but not using \models
 
+lemma all_realize_sentence_of_subset {S} {T₁ T₂ : Theory L} (H : S ⊨ T₂) (H_sub : T₁ ⊆ T₂) : S ⊨ T₁ :=
+λ _ _, H (H_sub ‹_›)
+
 lemma all_realize_sentence_axm {S : Structure L} {f : sentence L} {T : Theory L} : ∀ (H : S ⊨ insert f T), S ⊨ f ∧ S ⊨ T :=
 λ H, ⟨by {apply H, exact or.inl rfl}, by {intros ψ hψ, apply H, exact or.inr hψ}⟩
 
@@ -2350,6 +2353,8 @@ end
 
 @[simp] lemma all_realize_sentence_singleton {S : Structure L} {f : sentence L} : S ⊨ {f} ↔ S ⊨ f :=
 ⟨by{intro H, apply H, exact or.inl rfl}, by {intros H g Hg, repeat{cases Hg}, assumption}⟩
+
+@[simp]lemma realize_sentence_of_mem {S} {T : Theory L} {f : sentence L} (H : S ⊨ T) (H_mem : f ∈ T) : S ⊨ f := H H_mem
 
 def ssatisfied (T : Theory L) (f : sentence L) :=
 ∀{{S : Structure L}}, nonempty S → S ⊨ T → S ⊨ f
@@ -2392,6 +2397,8 @@ def Model (T : Theory L) : Type (u+1) := Σ' (S : Structure L), S ⊨ T
 @[reducible] def Model_ssatisfied {T : Theory L} (M : Model T) (ψ : sentence L) := M.fst ⊨ ψ
 
 infix ` ⊨ `:51 := fol.Model_ssatisfied -- input using \|= or \vDash, but not using \models
+
+@[simp]lemma Model_ssatisfied_of_fst_ssatisfied {T : Theory L} {M : Model T} {ψ : sentence L} : M ⊨ ψ ↔ M.fst ⊨ ψ := by refl
 
 @[simp] lemma false_of_Model_absurd {T : Theory L} (M : Model T) {ψ : sentence L} (h : M ⊨ ψ)
   (h' : M ⊨ ∼ψ) : false :=

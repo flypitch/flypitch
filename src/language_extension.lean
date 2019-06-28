@@ -293,23 +293,21 @@ end
       function.comp (@on_relation L2 L3 g n) (@on_relation L1 L2 f n)
       := by refl
 
-/- The next two tidy proofs are unperformant, so maybe refactor later -/
-/- Can't tag this as simp lemma for some reason -/
-@[tidy]lemma comp_on_term {L1} {L2} {L3} {n l : ℕ}(g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
+@[simp]lemma comp_on_term {L1} {L2} {L3} {l : ℕ} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
 @on_term L1 L3 (g ∘ f) l = function.comp (@on_term L2 L3 g l) (@on_term L1 L2 f l) :=
 by {fapply funext, intro x, induction x, tidy}
 
-@[tidy]lemma comp_on_formula {L1} {L2} {L3} {n l : ℕ}(g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
+@[simp]lemma comp_on_formula {L1} {L2} {L3} {l : ℕ}(g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
 @on_formula L1 L3 (g ∘ f) l = function.comp (@on_formula L2 L3 g l) (@on_formula L1 L2 f l) :=
-by {fapply funext, intro x, induction x, tidy, all_goals{rw[comp_on_term], exact l}}
+by {fapply funext, intro x, induction x, tidy, all_goals{rw[comp_on_term]} }
 
 @[simp]lemma comp_on_bounded_term {L1} {L2} {L3} {n l : ℕ}(g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
 @on_bounded_term L1 L3 (g ∘ f) n l = function.comp (@on_bounded_term L2 L3 g n l) (@on_bounded_term L1 L2 f n l) :=
-by {fapply funext, intro x, tidy, induction x, tidy, all_goals{rw[comp_on_term], exact l}}
+funext $ λ _, by tidy
 
 @[simp]lemma comp_on_bounded_formula {L1} {L2} {L3} {n l : ℕ}(g : L2 →ᴸ L3) (f : L1 →ᴸ L2) :
 @on_bounded_formula L1 L3 (g ∘ f) n l = function.comp (@on_bounded_formula L2 L3 g n l) (@on_bounded_formula L1 L2 f n l) :=
-by {fapply funext, intro x, tidy, induction x, tidy, all_goals{rw[comp_on_term], exact l}}
+by {apply funext, intro x, ext, induction x; simp}
 
 lemma id_term {L} : Πl, Π f, (@on_term L L (Lhom.id L) l) f = f
 | _ &k          := by refl
@@ -373,16 +371,13 @@ lemma reflect_term_apps_pos [has_decidable_range ϕ] {l} {f : L'.functions l}
   (hf : f ∈ range (@on_function _ _ ϕ l)) (ts : dvector (term L') l) (m : ℕ) :
   ϕ.reflect_term (apps (func f) ts) m =
   apps (func (classical.some hf)) (ts.map (λt, ϕ.reflect_term t m)) :=
-begin
-  refine (term.elim_apps _ _ f ts).trans _, rw [dif_pos hf], refl
-end
+(term.elim_apps _ _ f ts).trans $ by rw [dif_pos hf]; refl
 
 lemma reflect_term_apps_neg [has_decidable_range ϕ] {l} {f : L'.functions l}
   (hf : f ∉ range (@on_function _ _ ϕ l)) (ts : dvector (term L') l) (m : ℕ) :
   ϕ.reflect_term (apps (func f) ts) m = &m :=
-begin
-  refine (term.elim_apps _ _ f ts).trans _, rw [dif_neg hf]
-end
+(term.elim_apps _ _ f ts).trans $ by rw [dif_neg hf]
+
 
 lemma reflect_term_const_pos [has_decidable_range ϕ] {c : L'.constants}
   (hf : c ∈ range (@on_function _ _ ϕ 0)) (m : ℕ) :
@@ -749,7 +744,7 @@ lemma is_consistent_Theory_induced (hϕ : ϕ.is_injective) {T : Theory L} (hT : 
 
 /- we could generalize this, replacing set.univ by any set s, but then we cannot use set.image
   anymore (since the domain of g would be s), and things would be more annoying -/
-def is_consistent_extend {T : Theory L} (hT : is_consistent T) (hϕ : ϕ.is_injective)
+lemma is_consistent_extend {T : Theory L} (hT : is_consistent T) (hϕ : ϕ.is_injective)
   (h : bounded_formula L 1 → bounded_formula L 1)
   (hT' : ∀(f : bounded_formula L 1), T ⊢ ∃' (h f))
   (g : bounded_formula L 1 → L'.constants) (hg : injective g)

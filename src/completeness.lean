@@ -56,16 +56,10 @@ end
 
 theorem completeness {L : Language} (T : Theory L) (ψ : sentence L) : T ⊢' ψ ↔ T ⊨ ψ :=
 begin
-  suffices : T ⊨ ψ → T ⊢' ψ, by exact ⟨(by apply satisfied_of_provable), this⟩,
-  intro hψ, by_contra,
-  suffices : ¬ T ⊨ ψ, by contradiction,
-  have := nonempty_model_of_consis (consis_not_of_not_provable a),
-  rcases this with ⟨⟨M,hM⟩, nonempty_M⟩;
-  fapply not_satisfied_of_model_not,
-  refine ⟨M,_⟩,
-  intros f hf, apply hM, simp[hf],
-  unfold Model_ssatisfied, dsimp, apply hM _,
-  simpa only [set.mem_insert_iff, true_or, eq_self_iff_true, set.union_singleton]
+  refine ⟨λ _, satisfied_of_provable _ _ ‹_›, _⟩, by_contra H, push_neg at H,
+  rcases nonempty_model_of_consis (consis_not_of_not_provable H.right) with ⟨⟨M,HM⟩, H_nonempty⟩,
+  refine absurd H.left (not_satisfied_of_model_not _ _ _), swap,
+  exact ((by simp at HM; simp*) : (⟨M, by tidy⟩ : Model T) ⊨ _), from ‹_›
 end
 
 theorem compactness {L : Language} {T : Theory L} {f : sentence L} : 

@@ -378,7 +378,7 @@ begin
   {intros x y z f1 f2 f3, dsimp only [*],
    have : (henkin_language_chain_maps L x z f3) =
    (henkin_language_chain_maps L y z f2) ∘ (henkin_language_chain_maps L x y f1),
-   fapply henkin_language_chain.h_mor, rw[this, Lhom.comp_on_term], exact l}
+   fapply henkin_language_chain.h_mor, simp*}
 end
 
 def henkin_formula_chain {L : Language} (l : ℕ) : directed_diagram ℕ' :=
@@ -388,7 +388,7 @@ begin
   {intros x y z f1 f2 f3, dsimp only [*],
    have : (henkin_language_chain_maps L x z f3) =
    (henkin_language_chain_maps L y z f2) ∘ (henkin_language_chain_maps L x y f1),
-   fapply henkin_language_chain.h_mor, rw[this, Lhom.comp_on_formula], exact l}
+   fapply henkin_language_chain.h_mor, simp*}
 end
 
 def henkin_bounded_term_chain {L : Language} (n l : ℕ) : directed_diagram ℕ' :=
@@ -426,7 +426,7 @@ begin
   {intros i j H, dsimp[henkin_term_chain],
   rw[<-Lhom.comp_on_term],
   have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L i j H), swap, rw[this],
-  {have := (@cocone_of_L_infty L).h_compat, tidy}, exact l}
+  {have := (@cocone_of_L_infty L).h_compat, tidy}}
 end
 
 def cocone_of_formula_L_infty {L : Language } (l : ℕ) : cocone (@henkin_formula_chain L l) :=
@@ -436,7 +436,7 @@ begin
   {intros i j H, dsimp[henkin_formula_chain],
   rw[<-Lhom.comp_on_formula],
   have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L i j H), swap, rw[this],
-  {have := (@cocone_of_L_infty L).h_compat, tidy}, exact l}
+  {have := (@cocone_of_L_infty L).h_compat, tidy}}
 end
 
 def cocone_of_bounded_term_L_infty {L : Language } (n l : ℕ) : cocone (@henkin_bounded_term_chain L n l) :=
@@ -848,15 +848,13 @@ def henkin_theory_schain {L} (T : Theory L) (hT : is_consistent T): set (Theory_
 /- (T ∪ set.sUnion (subtype.val '' Ts)) actually is (henkinization hT) -/
 lemma iota_union_rw {L} (T : Theory L) (hT : is_consistent T) : (@ι _ T 0) ∪ ⋃₀(subtype.val '' henkin_theory_schain T hT) = henkinization hT :=
 begin
-  ext, split, all_goals{intro, auto_cases},
---`tidy` alone suffices to close both these goals, but it's giving me that "type mismatch at application" bug afterwards...
-  {simp[henkinization, set.mem_image], refine ⟨0,_⟩,
-  unfold ι, tidy}, {repeat {auto_cases}, simp[henkinization, set.mem_image], refine ⟨a_h_w_h_left_w,_⟩, simp*},
-  simp only [*, exists_prop, set.mem_Union, set.sUnion_image, exists_and_distrib_right, subtype.exists, set.mem_union_eq],
-  auto_cases, auto_cases, auto_cases,
-  apply or.inr, refine ⟨ι a_h_w_w,⟨⟨_,_⟩,_⟩, a_h_h⟩,
-  {simp only [*, iota_inclusion_of_le, zero_le]}, {simp only [*, is_consistent_iota]},
-  simp only [*, henkin_theory_schain], tidy
+  ext, split; intros; auto_cases,
+    {tidy},
+    {tidy},
+    {right, cases a_h with H₁ H₂, use a_w, refine ⟨_,‹_›⟩,
+      { unfold henkin_theory_schain, rw[set.mem_range] at H₁,
+        cases H₁ with n Hn, rw[set.mem_image], refine ⟨_,_⟩,
+        use a_w, tidy, apply is_consistent_iota; from ‹_› }}, recover
 end
 
 /- henkin_theory_chain satisfies the chain condition -/

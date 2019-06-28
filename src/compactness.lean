@@ -5,7 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jesse Han, Floris van Doorn
 -/
 import .fol
---local attribute [instance, priority 0] classical.prop_decidable
+
 open fol set
 
 universes u v
