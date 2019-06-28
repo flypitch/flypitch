@@ -10,24 +10,22 @@ local attribute [instance, priority 0] classical.prop_decidable
 
 open fol fol.Lhom
 
-lemma completeness_for_inconsistent_theories {L : Language} (T : Theory L) (ψ : sentence L) (h_inconsis : ¬ is_consistent T) : T ⊢' ψ ↔ T ⊨ ψ :=
- ⟨by {intro H, fapply soundness, exact classical.choice H}, (by {intro H, exact exfalso' (classical.by_contradiction h_inconsis)})⟩
-
 lemma satisfied_of_provable {L : Language} (T : Theory L) (ψ : sentence L) : T ⊢' ψ → T ⊨ ψ :=
-by {intro H, exact soundness (classical.choice H)}
+λ _, soundness $ classical.choice ‹_›
+
+lemma completeness_for_inconsistent_theories {L : Language} (T : Theory L) (ψ : sentence L) (h_inconsis : ¬ is_consistent T) : T ⊢' ψ ↔ T ⊨ ψ :=
+⟨satisfied_of_provable _ _, λ _, exfalso' $ classical.by_contradiction ‹_›⟩ 
 
 /- T is consistent iff there is a nonempty model of T -/
 theorem model_existence {L : Language} (T : Theory L) : is_consistent T ↔ (∃ M : Structure L, (nonempty M) ∧ M ⊨ T) :=
 begin
-split, swap,
-  {intro H, rcases H with ⟨M,⟨h_nonempty, hM⟩⟩, intro,
-   apply false_of_satisfied_false, repeat{assumption},
-   apply satisfied_of_provable T ⊥ a, repeat{assumption}},
-  {intro hT, refine ⟨_,_⟩,
-   apply reduct, exact @henkin_language_over L T hT,
-   apply term_model, exact completion_of_henkinization hT,
-   refine ⟨_,_,⟩, fapply Lhom.reduct_nonempty_of_nonempty, simp[fol.nonempty_term_model],
-   apply reduct_of_complete_henkinization_models_T}
+  refine ⟨_,_⟩; intro H,
+    { refine ⟨reduct (@henkin_language_over L T H)
+        (term_model $ completion_of_henkinization H), ⟨_,_⟩⟩,
+      { exact reduct_nonempty_of_nonempty (by simp[fol.nonempty_term_model]) },
+      { exact reduct_of_complete_henkinization_models_T _ } },
+    { rcases H with ⟨M, ⟨H_nonempty, H_sat⟩⟩,
+      exact λ _, false_of_satisfied_false (satisfied_of_provable _ _ ‹_› ‹_› ‹_›) }
 end
 
 noncomputable def nonempty_model_of_consis {L : Language} {T : Theory L} (hT : is_consistent T) : Σ' M : Model T, nonempty M.fst.carrier :=
@@ -40,18 +38,10 @@ end
 /-- model_existence is implied by completeness --/
 theorem model_existence_of_completeness {L : Language} (T : Theory L) (h_completeness : ∀ (T : Theory L) (ψ : sentence L), T ⊢' ψ ↔ T ⊨ ψ) : is_consistent T ↔ (∃ M : Structure L, (nonempty M) ∧ M ⊨ T) :=
 begin
-  split, swap,
-  {intros H1 H2, cases H1 with M hM, cases hM with h_nonempty hM,
-  have inconsis : M ⊨ (⊥ : sentence L),
-    fapply soundness,
-    repeat{assumption},
-    exact classical.choice H2},
-
-  {by_contra, simp only [*, -a, not_exists, not_imp, not_and, nonempty.forall] at a, cases a,
-  have  : ¬ T ⊢' (⊥ : sentence L) → ¬ T ⊨ (⊥ : sentence L), 
-  by simp only [@h_completeness T ⊥, imp_self], have H := this a_left, unfold ssatisfied at H,
-  simp only [*, -H, fol.realize_sentence_false, nonempty.forall] at H,
-  fapply absurd, exact ∀ ⦃S : Structure L⦄, S.carrier → S ⊨ T → false, repeat{assumption}}
+  refine ⟨_,_⟩; intro H,
+    { by_contra H', push_neg at H', apply H, finish },
+    { intro H', rcases H with ⟨_,_,_⟩, rw[h_completeness] at H',
+      exact false_of_satisfied_false (H' ‹_› ‹_›) }
 end
 
 theorem completeness {L : Language} (T : Theory L) (ψ : sentence L) : T ⊢' ψ ↔ T ⊨ ψ :=
