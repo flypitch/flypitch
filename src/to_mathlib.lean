@@ -459,7 +459,7 @@ variables {α : Type u} {β : Type v} {γ : Type w}
 lemma ne_empty_of_exists_mem {s : set α} : ∀(h : ∃x, x ∈ s), s ≠ ∅
 | ⟨x, hx⟩ := ne_empty_of_mem hx
 
-@[simp]lemma mem_image_univ {f : α → β} {x} : f x ∈ f '' set.univ := ⟨x, ⟨trivial, rfl⟩⟩ 
+@[simp]lemma mem_image_univ {f : α → β} {x} : f x ∈ f '' set.univ := ⟨x, ⟨trivial, rfl⟩⟩
 
 -- todo: only use image_preimage_eq_of_subset
 lemma image_preimage_eq_of_subset_image {f : α → β} {s : set β}
@@ -522,7 +522,7 @@ open nat
 
 
 namespace nonempty
-variables {α : Type u} {β : Type v} {γ : Type w}
+variables {α : Sort u} {β : Sort v} {γ : Sort w}
 
 protected def iff (mp : α → β) (mpr : β → α) : nonempty α ↔ nonempty β :=
 ⟨nonempty.map mp, nonempty.map mpr⟩
@@ -1409,7 +1409,7 @@ Succeeds on `e` iff `e` can be matched to the pattern x ≤ - y
 -/
 private meta def is_le_neg (e : expr) : tactic (expr × expr) :=
 do `(%%x ≤ - %%y) <- pure e, return (x,y)
-   
+
 -- private meta def le_not (lhs : expr) (rhs : expr) : expr → tactic expr := λ e,
 -- do `(%%x ≤ - %%y) <- pure e,
 --    is_def_eq x lhs >> is_def_eq y rhs >> return e
@@ -1424,7 +1424,7 @@ do `(%%y₁ ≤ - %%y₂) <- (infer_type e),
    | hd :: tl := do b <- (succeeds (do `(%%x₁ ≤ %%x₂) <- (infer_type hd),
                                        is_def_eq x₁ y₁, is_def_eq x₂ y₂)),
                     if b then return hd else by exact _match tl
-   end                 
+   end
 
 private meta def find_dual (xs : list expr) : tactic (expr × expr) :=
 do xs' <- (xs.mfilter (λ x, succeeds (do `(- %%y) <- ((infer_type x) >>= (rhs_of_le)), skip))),
