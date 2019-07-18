@@ -1,3 +1,11 @@
+/-
+Copyright (c) 2019 The Flypitch Project. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Author(s): Jesse Michael Han, Floris van Doorn
+
+Parsing formulas from Lean expressions.
+-/
+
 import .abel .fol tactic data.list
 
 universe u
@@ -107,7 +115,7 @@ def my_larger_formula : preformula L_empty _ :=
 by parse_formula (∀ x y : ℕ, (x = y))
 
 -- #reduce my_little_formula -- it works!
--- -- ∀'(&0 ≃ &0)
+-- ∀'(&0 ≃ &0)
 
 -- #reduce my_larger_formula -- it still works!
 -- ∀'∀'(&1 ≃ &0)
