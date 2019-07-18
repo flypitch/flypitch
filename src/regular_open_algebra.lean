@@ -45,9 +45,9 @@ concat_tags (do h ← i_to_expr_for_apply q, tactic.apply' h)
 
 end interactive
 
-local attribute [instance] classical.prop_decidable
-
 end tactic
+
+local attribute [instance] classical.prop_decidable
 
 
 open set
