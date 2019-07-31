@@ -609,14 +609,13 @@ begin
   apply this, simp only [mem_image],
   use (A ⊔ b'), split, apply mem_range.mpr,
   use b', apply shift_neg_right, clear this,
-  apply le_antisymm,
-  apply @Sup_le (regular_opens α) _ (has_neg.neg '' range (λ (H : b' ∈ 𝒜), A ⊔ b')) (-(A ⊔ b')),
+  refine le_antisymm _ _, apply' Sup_le,
   intros b'' Hb'',
   simp at Hb'', rcases Hb'' with ⟨w, ⟨⟨Hw₁, Hw₂⟩, ⟨Hw₃, Hw₄⟩⟩⟩,
     rw[<-Hw₄], replace Hw₂ := (congr_arg perp Hw₂).symm,
     simp only [Hw₂], apply le_of_eq _, refl,
 
-  apply @le_Sup (regular_opens α) _ (has_neg.neg '' range (λ (H : b' ∈ 𝒜), A ⊔ b')), simp only [mem_range, mem_image], use (A ⊔ b'), use H'',
+  apply' le_Sup, simp only [mem_range, mem_image], use (A ⊔ b'), use H'',
   refl, refl
 end
 
