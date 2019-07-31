@@ -57,6 +57,7 @@ begin
   from bSet_lt_of_lt_of_le _ y _ (bSet_lt_of_le_of_lt _ x _ ‹_› ‹_›) ‹_›
 end
 
+-- note: CH₂ assumes that ℵ₁̌  ≼ ℵ₁, but this is always true for general 𝔹 (see 1.42ii in Bell)
 noncomputable def CH₂ : 𝔹 := (-(ℵ₁̌  ≺ 𝒫(ω))) ⊓ (ω ≺ ℵ₁̌ )
 
 def rel_of_array
@@ -94,7 +95,7 @@ begin
   unfold rel_of_array at H_mem_left, dsimp at H_mem_left,
   bv_cases_at H_mem_left p, cases p with i j, dsimp at H_mem_left_1,
   bv_split_at H_mem_left_1, have := eq_of_eq_pair_left' ‹_›,
-  apply bv_rw' this, simp, apply mem.mk'', simp only [H_bval₁ _, le_top]
+  apply bv_rw' this, simp, from mem.mk'' (by simp only [H_bval₁ _, le_top])
 end
 
 lemma mem_right_of_mem_rel_of_array {x y w₁ w₂ : bSet 𝔹} {af : x.type → y.type → 𝔹}
@@ -113,9 +114,9 @@ local attribute [instance] classical.prop_decidable
 lemma rel_of_array_extensional (x y : bSet 𝔹) (af : x.type → y.type → 𝔹)
   (H_bval₁ : ∀ i, x.bval i = ⊤)
   (H_bval₂ : ∀ i, y.bval i = ⊤)
-  (H_wide : ∀ j, (⨆ i, af i j) = ⊤)
+  (H_wide : ∀ j, (⨆ i, af i j) = ⊤) -- TODO(floris): remove this
   (H_anti : ∀ i, (∀ j₁ j₂, j₁ ≠ j₂ → af i j₁ ⊓ af i j₂ ≤ ⊥))
-  (H_inj  : ∀ i₁ i₂, ⊥ < (func x i₁) =ᴮ (func x i₂) → i₁ = i₂)
+  (H_inj  : ∀ i₁ i₂, ⊥ < (func x i₁) =ᴮ (func x i₂) → i₁ = i₂) -- can probably be removed also
   {Γ}
   : Γ ≤ (is_func (rel_of_array x y af)) :=
 begin
@@ -175,7 +176,9 @@ begin
         { conv { to_rhs, funext, congr, funext,rw[bv_eq_refl] }, simp[H_tall]},
         { exact diagonal_supr_le_supr (by refl) }},
     { change B_ext _, from B_ext_term (B_ext_mem_left) (by simp) },
-    { change B_ext _, apply B_ext_supr, intro, apply B_ext_inf, simp, from B_ext_term (B_ext_mem_left) (by simp) }
+    { change B_ext _, apply B_ext_supr, intro, apply B_ext_inf,
+      { simp },
+      { from B_ext_term (B_ext_mem_left) (by simp) }}
 end
 
 end lemmas
@@ -186,7 +189,7 @@ section pfun_lemmas
 
 /- Two partial functions are equal if their graphs are equal -/
 lemma ext_graph {α β : Type*} (f g : α →. β) (h_graph : f.graph = g.graph) : f = g :=
-  pfun.ext $ λ _ _, iff_of_eq (congr_fun h_graph (_,_))
+  pfun.ext $ λ _ _, iff_of_eq $ congr_fun h_graph (_,_)
 
 lemma graph_empty_iff_dom_empty {α β : Type*} (f : α →. β) : f.graph = ∅ ↔ f.dom = ∅ :=
 begin
@@ -749,7 +752,7 @@ begin
   refine subset_ext (check_powerset_subset_powerset _) _,
   bv_intro χ, bv_imp_intro H_χ,
   refine le_trans le_top _, rw[bSet.mem_unfold], simp only [check_bval_top, top_inf_eq],
-  simp only [bv_eq_unfold], 
+  simp only [bv_eq_unfold],
   sorry 
 -- TOOD(jesse) show that this simplifies to ⨆_S ⨅ i, σ_S(i) (χ i), where σ_S(i) is the ¬-indicator function o S
 
