@@ -280,7 +280,7 @@ lemma union_of_omega_chain_spec (f : ℕ → α →. β) (H_chain : ∀ (k₁ k�
 begin
   intro k, fsplit, change _ ⊆ set.Union _,
     {/- `tidy` says -/ intros a a_1, simp at *, fsplit, work_on_goal 1 { assumption }},
-  ext1, exact ⟨╯°□°⟩╯︵┻━┻
+  ext1, sorry
 end
 
 lemma fn_mem_ran {X Y} {f : X →. Y} {x : X} {Hx : x ∈ f.dom} :
@@ -711,17 +711,17 @@ lemma distributive {x : pSet} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.fun
 lemma functions_eq {x : pSet} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) : sorry := sorry
 
 def function_reflect (y : pSet) (g : bSet 𝔹) {Γ} (H : Γ ≤  (is_func' (ω) (y̌) g)) : pSet :=
-mk (ulift ℕ) (λ k, ⟨╯°□°⟩╯︵┻━┻)
+mk (ulift ℕ) (λ k, sorry)
 
 lemma function_reflect_spec₁ {y} {g} {Γ : 𝔹} (H : Γ ≤ _) : Γ ≤ (function_reflect y g H)̌  =ᴮ g :=
-⟨╯°□°⟩╯︵┻━┻
+sorry
 
 lemma function_reflect_spec₂ {y} {g} {Γ : 𝔹} (H : Γ ≤ _) : is_func pSet.omega y (function_reflect y g H) :=
-⟨╯°□°⟩╯︵┻━┻
+sorry
 
 lemma function_reflect_surj_of_surj {g} {y} {Γ : 𝔹} (H : Γ ≤ _) (H_not_zero : ⊥ < Γ) (H_surj : Γ ≤ is_surj ((omega)̌ ) (y̌) (g : bSet 𝔹)) :
   pSet.is_surj ((omega)) y (function_reflect y g H) :=
-⟨╯°□°⟩╯︵┻━┻ -- TODO(jesse) this should be easy because surjectivity is Δ₀, so prove a general lemma for this
+sorry -- TODO(jesse) this should be easy because surjectivity is Δ₀, so prove a general lemma for this
 
 --TODO(jesse) check that this proof actually works
 lemma omega_lt_aleph_one {Γ : 𝔹} : Γ ≤ bSet.omega ≺ (ℵ₁̌ ) :=
