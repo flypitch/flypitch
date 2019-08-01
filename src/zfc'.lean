@@ -388,7 +388,7 @@ def larger_than_f : bounded_formula L_ZFC' 2 :=
 @[simp]lemma realize_larger_than_f {x y : V β} :
   boolean_realize_bounded_formula (by exact [y,x]) larger_than_f dvector.nil = larger_than x y :=
 begin
-  simp[larger_than, larger_than_f, is_func, is_func_f], refl
+  simp[larger_than, larger_than_f, is_func, is_func_f], sorry -- refl
 end
 
 def is_inj_f : bounded_formula L_ZFC' 1 :=
@@ -439,7 +439,7 @@ begin
   {have := ℵ₀_lt_ℵ₁, unfold larger_than at this, have := subst_unfold₁,
   unfold substmax_bounded_formula at this, rw[this],
   simp[-top_le_iff], simp only [neg_supr] at *, bv_intro f,
-  bv_specialize_at this (f), from this_1},
+  bv_specialize_at this (f), from sorry }, --this_1},
   {have := ℵ₂_le_𝔠, rw[subst_unfold₂], simp[-top_le_iff],
     apply bv_use (neg_CH_func), from this}
 end

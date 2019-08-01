@@ -386,7 +386,7 @@ end
 
 lemma not_mem_of_not_mem {p : 𝒞} {ν} {n} (H : (ν,n) ∈ p.out) : ι p ≤ -( (of_nat n) ∈ᴮ (mk ν)) :=
 begin
-rw[mem_unfold, neg_supr], bv_intro k, rw[neg_inf], simp,
+rw[bSet.mem_unfold, neg_supr], bv_intro k, rw[neg_inf], simp,
        by_cases n = k.down, swap, rw[bSet.of_nat_inj ‹_›],
        from le_sup_right_of_le (by simp),
        refine le_sup_left_of_le _, rw[<-h],
@@ -420,7 +420,7 @@ begin
     from 𝒞_anti (by {dsimp[p'], from λ i _, by {simp, from or.inr ‹_›}})
                 (by {dsimp[p'], from λ i _, by {simp, from or.inr ‹_›}}),
   have this₁ : ι p' ≤ (ñ̌) ∈ᴮ (cohen_real.mk ν₁),
-    by {rw[mem_unfold], apply bv_use (ulift.up n), refine le_inf _ bv_eq_refl',
+    by {rw[bSet.mem_unfold], apply bv_use (ulift.up n), refine le_inf _ bv_eq_refl',
          {simp [le_iff_subset', χ, _root_.principal_open, ι, cantor_space.principal_open],
          have : (ν₁, n) ∈ p'.ins,
            by simp[p'], intros S H_S _, specialize H_S this,
@@ -467,41 +467,43 @@ end
 
 lemma cardinal_inequality_of_regular (κ₁ κ₂ : cardinal) (H_reg₁ : cardinal.is_regular κ₁) (H_reg₂ : cardinal.is_regular κ₂) (H_inf : (omega : cardinal) ≤ κ₁) (H_lt : κ₁ < κ₂) : (⊤ : 𝔹) ≤ (pSet.ordinal.mk (ord κ₁))̌  ≺ (pSet.ordinal.mk (ord κ₂))̌  :=
 begin
-  simp[larger_than, -top_le_iff], rw[<-imp_bot],
-  bv_imp_intro, bv_cases_at' H f, by_contra,
-  have := classical.axiom_of_choice
-            (AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
-  cases this with g g_spec,
-  suffices : ¬ CCC 𝔹, from absurd 𝔹_CCC this,
-  apply not_CCC_of_uncountable_fiber; try{assumption},
-    {have := (@cardinal.exists_aleph κ₁).mp ‹_›, cases this with k' H_k', subst H_k', simp*},
-    {have := (@cardinal.exists_aleph κ₁).mp ‹_›, cases this with k' H_k', subst H_k', simp*,
-     have := (@exists_aleph κ₂).mp (le_of_lt (lt_of_le_of_lt ‹_› ‹_›)), cases this with k₂ h,
-     subst h, simp*},
-    {intros i₁ i₂ H_neq, from ordinal.mk_inj _ _ _ ‹_›},
-    {dsimp at g,
-     apply uncountable_fiber_of_regular' κ₁ κ₂; try{simp*},
-     from H_reg₂.right,
-     have := (@exists_aleph κ₂).mp (le_of_lt (lt_of_le_of_lt ‹_› ‹_›)), cases this with k₂ h,
-     subst h; apply mk_type_mk_eq, from ‹_›, apply mk_type_mk_eq,
-     from le_of_lt (lt_of_le_of_lt ‹_› ‹_›)}
+  sorry
+  -- simp[larger_than, -top_le_iff], rw[<-imp_bot],
+  -- bv_imp_intro, bv_cases_at' H f, by_contra,
+  -- have := classical.axiom_of_choice
+  --           (AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
+  -- cases this with g g_spec,
+  -- suffices : ¬ CCC 𝔹, from absurd 𝔹_CCC this,
+  -- apply not_CCC_of_uncountable_fiber; try{assumption},
+  --   {have := (@cardinal.exists_aleph κ₁).mp ‹_›, cases this with k' H_k', subst H_k', simp*},
+  --   {have := (@cardinal.exists_aleph κ₁).mp ‹_›, cases this with k' H_k', subst H_k', simp*,
+  --    have := (@exists_aleph κ₂).mp (le_of_lt (lt_of_le_of_lt ‹_› ‹_›)), cases this with k₂ h,
+  --    subst h, simp*},
+  --   {intros i₁ i₂ H_neq, from ordinal.mk_inj _ _ _ ‹_›},
+  --   {dsimp at g,
+  --    apply uncountable_fiber_of_regular' κ₁ κ₂; try{simp*},
+  --    from H_reg₂.right,
+  --    have := (@exists_aleph κ₂).mp (le_of_lt (lt_of_le_of_lt ‹_› ‹_›)), cases this with k₂ h,
+  --    subst h; apply mk_type_mk_eq, from ‹_›, apply mk_type_mk_eq,
+  --    from le_of_lt (lt_of_le_of_lt ‹_› ‹_›)}
 end
 
 lemma ℵ₀_lt_ℵ₁ : (⊤ : 𝔹)  ≤ ℵ₀ ≺ ℵ₁̌  :=
 begin
-  simp[larger_than, -top_le_iff], rw[<-imp_bot],
-  bv_imp_intro, bv_cases_at' H f, by_contra,
-  have := classical.axiom_of_choice
-            (AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
-  cases this with g g_spec,
-  suffices : ¬ CCC 𝔹, from absurd 𝔹_CCC this,
-  apply not_CCC_of_uncountable_fiber; try{assumption},
-    {from le_of_eq (by simp)},
-    {simp},
-    {intros i₁ i₂ H_neq, from ordinal.mk_inj _ _ _ ‹_›},
-    {dsimp at g,
-     apply uncountable_fiber_of_regular' (aleph 0) (aleph 1); try{simp*},
-     from is_regular_aleph_one.right}
+  sorry
+  -- simp[larger_than, -top_le_iff], rw[<-imp_bot],
+  -- bv_imp_intro, bv_cases_at' H f, by_contra,
+  -- have := classical.axiom_of_choice
+  --           (AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
+  -- cases this with g g_spec,
+  -- suffices : ¬ CCC 𝔹, from absurd 𝔹_CCC this,
+  -- apply not_CCC_of_uncountable_fiber; try{assumption},
+  --   {from le_of_eq (by simp)},
+  --   {simp},
+  --   {intros i₁ i₂ H_neq, from ordinal.mk_inj _ _ _ ‹_›},
+  --   {dsimp at g,
+  --    apply uncountable_fiber_of_regular' (aleph 0) (aleph 1); try{simp*},
+  --    from is_regular_aleph_one.right}
 end
 
 
@@ -535,10 +537,10 @@ begin
 refine le_inf _ _,
 
   {unfold neg_CH_func, refine le_inf _ _, refine mk_is_func _ _,
-    bv_intro w₁, bv_imp_intro, rw[mem_unfold] at H,
+    bv_intro w₁, bv_imp_intro, rw[bSet.mem_unfold] at H,
     bv_cases_at' H ν, apply bv_use (cohen_real.mk ν),
     refine le_inf cohen_real.definite' _, swap,
-    rw[mem_unfold], apply bv_use ν, bv_split,
+    rw[bSet.mem_unfold], apply bv_use ν, bv_split,
     from le_inf ‹_› (by apply le_trans H_1_right; from subst_congr_pair_left)},
 
   {refine mk_inj_of_inj _ _, from λ _ _ _, cohen_real.inj ‹_›},
