@@ -749,7 +749,8 @@ begin
            refine bv_context_trans _ (bv_and.right H_1), apply bv_symm,
            exact bv_context_trans (bv_and.right w₁_mem_x_1) (bv_eq_refl'),
            exact bv_and.left w₁_mem_x_1, exact bv_and.left H_1,
-           refine pair_congr _ _, exact bv_and.right w₁_mem_x_1, exact bv_and.right H_1},
+           refine pair_congr _ _, exact bv_and.right w₁_mem_x_1, exact bv_and.right H_1}},
+
         { bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂, simp,
           bv_imp_intro, bv_split, bv_split,
             bv_cases_at H_1_left_left i, bv_cases_at H_1_left_right j,
@@ -768,7 +769,8 @@ begin
             -- without bv_symm, fails to recognize the motive
             apply bv_symm, apply bv_rw' H'.left.left, {simp},
             apply bv_symm, apply bv_rw' (bv_symm $ this₂), {simp},
-            apply bv_symm, apply bv_rw' (bv_symm $ this₄), {simp}, from ‹_›}}}
+            apply bv_symm, apply bv_rw' (bv_symm $ this₄), {simp}, from ‹_›}}
+
 end
 
 def Card (y : bSet 𝔹) : 𝔹 := Ord(y) ⊓ ⨅x, x ∈ᴮ y ⟹ (- larger_than y x)
