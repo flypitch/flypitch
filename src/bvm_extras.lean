@@ -136,7 +136,7 @@ by unfold pair; simp*
 lemma subst_congr_pair_right' {Γ} {x y z : bSet 𝔹} (H : Γ ≤ y =ᴮ z) : Γ ≤ pair x y =ᴮ pair x z :=
 poset_yoneda_inv Γ (@subst_congr_pair_right _ _ x y z) ‹_›
 
-lemma pair_congr {x₁ x₂ y₁ y₂ : bSet 𝔹} {Γ : 𝔹} {H₁ : Γ ≤ x₁ =ᴮ y₁} {H₂ : Γ ≤ x₂ =ᴮ y₂} : Γ ≤ pair x₁ x₂ =ᴮ pair y₁ y₂ :=
+lemma pair_congr {x₁ x₂ y₁ y₂ : bSet 𝔹} {Γ : 𝔹} (H₁ : Γ ≤ x₁ =ᴮ y₁) (H₂ : Γ ≤ x₂ =ᴮ y₂) : Γ ≤ pair x₁ x₂ =ᴮ pair y₁ y₂ :=
 begin
   apply bv_rw' H₁,
     {intros v₁ v₂, tidy_context,
@@ -207,7 +207,6 @@ begin
      apply le_trans, apply inf_le_inf; apply eq_inserted_of_eq_singleton, rw[bv_eq_symm], apply bv_eq_trans}
 end
 
-
 run_cmd do mk_simp_attr `dnf, mk_simp_attr `cnf
 
 attribute [dnf] inf_sup_left inf_sup_right
@@ -243,6 +242,10 @@ end
 
 lemma eq_of_eq_pair_right' {x y v w : bSet 𝔹} {Γ} : Γ ≤ pair x y =ᴮ pair v w → Γ ≤ y =ᴮ w :=
 poset_yoneda_inv Γ eq_of_eq_pair_right
+
+lemma eq_of_eq_pair {x y z w : bSet 𝔹} {Γ : 𝔹} (H_eq : Γ ≤ pair x y =ᴮ pair z w) :
+  Γ ≤ x =ᴮ z ∧ Γ ≤ y =ᴮ w :=
+⟨eq_of_eq_pair_left' ‹_›, eq_of_eq_pair_right' ‹_›⟩ 
 
 @[reducible]def prod (v w : bSet 𝔹) : bSet 𝔹 := ⟨v.type × w.type, λ a, pair (v.func a.1) (w.func a.2), λ a, (v.bval a.1) ⊓ (w.bval a.2)⟩
 
@@ -714,7 +717,58 @@ end
 
 lemma bSet_le_of_subset {x y : bSet 𝔹} {Γ} (H : Γ ≤ x ⊆ᴮ y) : Γ ≤ x ≼ y :=
 begin
-  sorry
+  refine bv_use _,
+    {refine set_of_indicator _, show bSet 𝔹, exact prod x y,
+     rintro ⟨a,b⟩, exact (x.func a) =ᴮ (y.func b) ⊓ x.bval a ⊓ y.bval b  },
+    { refine le_inf _ _,
+        { rw[is_func', is_func],
+          refine le_inf _ _,
+          { bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂,
+            bv_imp_intro H', bv_imp_intro H_eq,
+            bv_split, bv_cases_at H'_left p₁, bv_cases_at H'_right p₂,
+            cases p₁ with i₁ i₂, cases p₂ with j₁ j₂, 
+            rename H'_left_1 H₁, rename H'_right_1 H₂,
+            clear_except H₁ H₂ H_eq, simp only [le_inf_iff]  at H₁ H₂,
+            repeat{auto_cases},
+            replace H₁_right := eq_of_eq_pair H₁_right,
+            replace H₂_right := eq_of_eq_pair H₂_right,
+            cases H₁_right with H₁₀ H₁₁, cases H₂_right with H₂₀ H₂₁,
+            apply bv_rw' H₁₁, {simp}, apply bv_rw' H₂₁, {simp},
+            apply bv_symm, apply bv_rw' (bv_symm H₁_left_left_left), {simp},
+            apply bv_symm, apply bv_rw' (bv_symm H₂_left_left_left), {simp},
+            apply bv_symm, apply bv_rw' (bv_symm H₁₀), {simp},
+            apply bv_symm, apply bv_rw' (bv_symm H₂₀), {simp},
+            from ‹_›
+          },
+          {bv_intro w₁, bv_imp_intro w₁_mem_x, apply bv_use w₁,
+           rw[subset_unfold'] at H, replace H := H w₁ ‹_›, refine le_inf ‹_› _,
+           dsimp, rw[mem_unfold] at w₁_mem_x, rw[mem_unfold] at H,
+           bv_cases_at w₁_mem_x i, bv_cases_at H j,
+           apply bv_use (i,j), simp only [le_inf_iff],
+           refine ⟨⟨⟨_,_⟩,_⟩,_⟩,
+           refine bv_context_trans _ (bv_and.right H_1), apply bv_symm,
+           exact bv_context_trans (bv_and.right w₁_mem_x_1) (bv_eq_refl'),
+           exact bv_and.left w₁_mem_x_1, exact bv_and.left H_1,
+           refine pair_congr _ _, exact bv_and.right w₁_mem_x_1, exact bv_and.right H_1},
+        { bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂, simp,
+          bv_imp_intro, bv_split, bv_split,
+            bv_cases_at H_1_left_left i, bv_cases_at H_1_left_right j,
+            rcases i with ⟨i₁,i₂⟩, rcases j with ⟨j₁,j₂⟩,
+            clear H_1_left_left H_1_left_right,
+            bv_split, dsimp at *,
+            have this₁ :=  (eq_of_eq_pair_left' H_1_left_left_1_right),
+            have this₂ :=  (eq_of_eq_pair_right' H_1_left_left_1_right),
+            have this₃ := (eq_of_eq_pair_left' H_1_left_right_1_right),
+            have this₄ := (eq_of_eq_pair_right' H_1_left_right_1_right),
+            rename H_1_left_right_1_left H', rename H_1_left_left_1_left H'',
+            simp only [le_inf_iff] at H' H'',
+            -- now just equality reasoning. we need a 𝔹-valued congruence closure tactic
+            apply bv_rw' this₁, {simp}, apply bv_rw' this₃, {simp},
+            apply bv_symm, apply bv_rw' H''.left.left, {simp},
+            -- without bv_symm, fails to recognize the motive
+            apply bv_symm, apply bv_rw' H'.left.left, {simp},
+            apply bv_symm, apply bv_rw' (bv_symm $ this₂), {simp},
+            apply bv_symm, apply bv_rw' (bv_symm $ this₄), {simp}, from ‹_›}}}
 end
 
 def Card (y : bSet 𝔹) : 𝔹 := Ord(y) ⊓ ⨅x, x ∈ᴮ y ⟹ (- larger_than y x)

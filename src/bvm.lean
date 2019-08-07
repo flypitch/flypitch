@@ -104,6 +104,12 @@ lemma bv_or_left {a b₁ b₂ : 𝔹} (h₁ : a ≤ b₁) : a ≤ b₁ ⊔ b₂ 
 
 lemma bv_or_right {a b₁ b₂ : 𝔹} (h₂ : a ≤ b₂) : a ≤ b₁ ⊔ b₂ := le_sup_right_of_le h₂
 
+lemma bv_and.left {a b : 𝔹} {Γ} (H : Γ ≤ a ⊓ b) : Γ ≤ a :=
+le_trans H inf_le_left
+
+lemma bv_and.right {a b : 𝔹} {Γ} (H : Γ ≤ a ⊓ b) : Γ ≤ b :=
+le_trans H inf_le_right
+
 lemma from_empty_context {a b : 𝔹} (h : ⊤ ≤ b) : a ≤ b :=
   by refine le_trans _ h; apply le_top
 
@@ -631,6 +637,15 @@ lemma bv_rw' {x y : bSet 𝔹} {Γ : 𝔹} (H : Γ ≤ x =ᴮ y) {ϕ : bSet 𝔹
 begin
   have : Γ ≤ y =ᴮ x ⊓ ϕ y,
     by {apply le_inf, rw[bv_eq_symm], from ‹_›, from ‹_›},
+  from (poset_yoneda_inv _ (h_congr _ _) this)
+end
+
+meta def H_congr_handler : tactic unit := `[simp]
+
+lemma bv_rw'' {x y : bSet 𝔹} {Γ : 𝔹} (H : Γ ≤ x =ᴮ y) {ϕ : bSet 𝔹 → 𝔹} (H_new : Γ ≤ ϕ x) (h_congr : B_ext ϕ . H_congr_handler) : Γ ≤ ϕ y :=
+begin
+  have : Γ ≤ x =ᴮ y ⊓ ϕ x,
+    by {apply le_inf, from ‹_›, from ‹_›},
   from (poset_yoneda_inv _ (h_congr _ _) this)
 end
 
