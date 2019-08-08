@@ -9,7 +9,7 @@ import .bvm .pSet_ordinal
 open lattice
 
 universe u
-
+#check tactic.cc
 local infix ` ⟹ `:65 := lattice.imp
 
 local infix ` ⇔ `:50 := lattice.biimp

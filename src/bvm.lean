@@ -214,6 +214,8 @@ element of the first family is extensionally equivalent to
 
 infix ` =ᴮ `:80 := bv_eq
 
+def bv_eq' (Γ : 𝔹) : bSet 𝔹 → bSet 𝔹 → Prop := λ x y, Γ ≤ x=ᴮ y
+
 theorem bv_eq_refl_empty : (@bv_eq 𝔹 _) (empty) (empty) = ⊤ :=
   by unfold empty bv_eq;
   {simp only [lattice.inf_eq_top_iff, lattice.infi_eq_top], fsplit; intros i; cases i; cases i}
@@ -227,8 +229,11 @@ begin
     apply le_supr_of_le i, have := x_ih i, simp[this]}
 end
 
+-- deprecated, do not use
 theorem bv_eq_refl' {Γ : 𝔹} {x} : Γ ≤ x =ᴮ x :=
 le_trans le_top (by simp)
+
+lemma bv_refl {Γ : 𝔹} {x} : Γ ≤ x =ᴮ x := bv_eq_refl' -- can't tag this refl because it messes up (by refl : x ≤ x)
 
 @[simp]lemma bv_eq_top_of_eq {x y : bSet 𝔹} (h_eq : x = y) : x =ᴮ y = ⊤ :=
 by simp*
@@ -321,8 +326,6 @@ begin
   suffices : ∀ a : α, ∀ a' : α', A' a' =ᴮ A a = A a =ᴮ A' a',
     by {simp[bv_eq, this, inf_comm]}, from λ _ _, by simp[x_ih ‹α›]
 end
-
-def bv_symm {Γ} {x y : bSet 𝔹} (H : Γ ≤ x =ᴮ y) : Γ ≤ y =ᴮ x := by rwa[bv_eq_symm]
 
 theorem bv_eq_unfold (x y : bSet 𝔹) :
   x =ᴮ y = (⨅(a : x.type), x.bval a ⟹ (x.func a ∈ᴮ y))
@@ -431,16 +434,39 @@ begin
         ac_refl}
 end
 
+-- deprecated, do not use
 lemma bv_context_trans {Γ : 𝔹} {a₁ a₂ a₃ : bSet 𝔹} (H₁ : Γ ≤ a₁ =ᴮ a₂) (H₂ : Γ ≤ a₂ =ᴮ a₃) :
   Γ ≤ a₁ =ᴮ a₃ :=
 by {have := inf_le_inf H₁ H₂, rw[inf_self] at this, apply le_trans this, apply bv_eq_trans}
 
-@[symm]lemma bv_context_symm {Γ : 𝔹} {a₁ a₂ : bSet 𝔹} (H : Γ ≤ a₁ =ᴮ a₂) : Γ ≤ a₂ =ᴮ a₁ := by rwa[bv_eq_symm]
+-- deprecated, do not use
+lemma bv_context_symm {Γ : 𝔹} {a₁ a₂ : bSet 𝔹} (H : Γ ≤ a₁ =ᴮ a₂) : Γ ≤ a₂ =ᴮ a₁ := by rwa[bv_eq_symm]
+
+lemma bv_trans {Γ : 𝔹} {a₁ a₂ a₃ : bSet 𝔹} (H₁ : Γ ≤ a₁ =ᴮ a₂) (H₂ : Γ ≤ a₂ =ᴮ a₃) :
+  Γ ≤ a₁ =ᴮ a₃ := bv_context_trans ‹_› ‹_›
+
+@[symm]lemma bv_symm {Γ} {x y : bSet 𝔹} (H : Γ ≤ x =ᴮ y) : Γ ≤ y =ᴮ x := by rwa[bv_eq_symm]
 
 lemma bv_rw {x y : bSet 𝔹} (H : x =ᴮ y = ⊤) (ϕ : bSet 𝔹 → 𝔹) {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} : ϕ y = ϕ x :=
 begin
   apply le_antisymm, swap, rw[show ϕ x = ϕ x ⊓ ⊤, by simp], rw[<-H, inf_comm], apply h_congr,
   rw[show ϕ y = ϕ y ⊓ ⊤, by simp], rw[<-H, inf_comm, bv_eq_symm], apply h_congr
+end
+
+@[instance]def b_setoid (Γ : 𝔹) : setoid (bSet 𝔹) :=
+{ r := bv_eq' Γ,
+  iseqv := ⟨λ _, bv_refl, λ _ _, bv_symm, λ _ _ _, bv_trans⟩ }
+
+lemma bv_cc.mk_iff {Γ} {x y : bSet 𝔹} : Γ ≤ x =ᴮ y ↔ (@quotient.mk _ (b_setoid Γ) x) = (@quotient.mk _ (b_setoid Γ) y) := by rw [quotient.eq]; refl
+
+lemma bv_cc.mk {Γ} {x y : bSet 𝔹} (H : Γ ≤ x =ᴮ y) : (@quotient.mk _ (b_setoid Γ) x) = (@quotient.mk _ (b_setoid Γ) y) := bv_cc.mk_iff.mp ‹_›
+
+-- TODO(jesse): bundle this into a bv_cc tactic
+example {x y z : bSet 𝔹} {Γ : 𝔹} (H1 : Γ ≤ x =ᴮ y) (H2 : Γ ≤ y =ᴮ z) : Γ ≤ x =ᴮ z :=
+begin
+  replace H1 := bv_cc.mk H1,
+  replace H2 := bv_cc.mk H2,
+  rw[bv_cc.mk_iff], cc
 end
 
 /-- If u = v and u ∈ w, then this implies that v ∈ w -/
@@ -633,6 +659,7 @@ by {intros x y, dsimp, apply bv_cases_right, intro i, apply bv_use i, apply h}
 
 example {y : bSet 𝔹} : B_ext (λ x : bSet 𝔹, x ∈ᴮ y ⊔ y ∈ᴮ x) := by change B_ext _; simp
 
+-- use for rewriting the goal with the first argument
 lemma bv_rw' {x y : bSet 𝔹} {Γ : 𝔹} (H : Γ ≤ x =ᴮ y) {ϕ : bSet 𝔹 → 𝔹} {h_congr : B_ext ϕ} {H_new : Γ ≤ ϕ y} : Γ ≤ ϕ x :=
 begin
   have : Γ ≤ y =ᴮ x ⊓ ϕ y,
@@ -642,6 +669,7 @@ end
 
 meta def H_congr_handler : tactic unit := `[simp]
 
+-- use for rewriting in the second argument using the first
 lemma bv_rw'' {x y : bSet 𝔹} {Γ : 𝔹} (H : Γ ≤ x =ᴮ y) {ϕ : bSet 𝔹 → 𝔹} (H_new : Γ ≤ ϕ x) (h_congr : B_ext ϕ . H_congr_handler) : Γ ≤ ϕ y :=
 begin
   have : Γ ≤ x =ᴮ y ⊓ ϕ x,

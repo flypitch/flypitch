@@ -99,8 +99,6 @@ attribute [instance] coproduct_setoid
 def colimit {D : (directed_type : Type (u+1)) } (F : (directed_diagram D :  Type (max (u+1) (v+1)))) : Type (max u v) :=
   @quotient (coproduct_of_directed_diagram F) (by fapply coproduct_setoid)
 
-
-
 def canonical_map {D : directed_type} {F : directed_diagram D} (i : D.carrier) :
                   F.obj i → colimit F := (by apply quotient.mk) ∘ canonical_inclusion_coproduct i
 
@@ -240,18 +238,16 @@ refine ⟨F, by {apply diagram.mk.map, assumption}, _⟩,
     dsimp[diagram.mk.map], refl,
      by {exfalso, fapply nat.succ_ne_zero, exact x_n, apply (nat.le_zero_iff).mp, assumption},
      by {exfalso, fapply nat.succ_ne_zero, exact y_n, apply (nat.le_zero_iff).mp, assumption},
-     by_cases y = z_n+1, subst h;
+     by_cases h : y = z_n+1, subst h;
        by_cases x = z_n+1;
        {repeat{dsimp[diagram.mk.map], simp*, refl}},
-     by_cases x = z_n+1,
-       {exfalso, have : y < z_n+1, by {fapply nat.lt_of_le_and_ne,
-         repeat{assumption}}, dsimp at *, linarith},
+     by_cases h' : x = z_n+1,
+       {exfalso, have : y < z_n+1 := lt_of_le_of_ne H2 h, dsimp at *, linarith},
        {have h_x : x ≤ z_n; have h_y : y ≤ z_n,
          all_goals{try{apply nat.le_of_le_and_ne_succ, repeat{assumption}}},
         have := @z_ih h_y h_x,
-        dsimp[diagram.mk.map], dedup,
-        simp only [h, h_1, dif_neg, not_false_iff, colimit.nat.le_of_le_and_ne_succ],
-        rw[this]}
+        dsimp[diagram.mk.map],
+        simp only [h, h', dif_neg, not_false_iff, colimit.nat.le_of_le_and_ne_succ, this]}
 end
 
 -- TODO refactor henkin_language_chain et al in terms of diagram.mk
