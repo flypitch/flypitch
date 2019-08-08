@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 Authors: Jesse Han, Floris van Doorn
 -/
-import .fol tactic.abel tactic.ring .completeness .zfc .abel
+import fol tactic.abel tactic.ring completeness abel
 
 open fol
 

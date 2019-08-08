@@ -18,7 +18,7 @@ local infix `≺`:70 := (λ x y, -(larger_than x y))
 
 local infix `≼`:70 := (λ x y, injects_into x y)
 
-@[reducible]private noncomputable definition ℵ₁ := (card_ex $ aleph 1)
+@[reducible]private noncomputable definition ℵ₁ : pSet := (card_ex $ aleph 1)
 
 local notation `ω` := (bSet.omega)
 
@@ -304,13 +304,14 @@ structure collapse_poset : Type u :=
 (Hc       : #f.dom ≤ (aleph 0))
 
 def collapse_poset.empty {α β : Type u} : collapse_poset α β :=
-{ f := λ x, { dom := false, get := λ H, false.elim ‹_› },
+{ f := λ x, roption.none,
   Hc := by { change # (∅ : set α) ≤ _, simp } }
 
 open pfun
 
 variables {X Y}
 
+/- TODO: separate out the lemma `#f.ran ≤ #f.dom` -/
 lemma collapse_poset.ran_ctbl (p : collapse_poset X Y) : # p.f.ran ≤ aleph 0 :=
 begin
   suffices : #p.f.ran ≤ #p.f.dom,
@@ -347,7 +348,7 @@ noncomputable def collapse_poset.join (p₁ p₂ : collapse_poset X Y)
 by finish[collapse_poset.join]
 
 @[simp]lemma mem_dom_join_of_mem_right {p₁ p₂ : collapse_poset X Y} {x} (Hx : p₂.f.dom x)
-  (H_compat : collapse_poset.compatible p₁ p₂) : (collapse_poset.join p₁ p₂ H_compat).f.dom x := 
+  (H_compat : collapse_poset.compatible p₁ p₂) : (collapse_poset.join p₁ p₂ H_compat).f.dom x :=
 by finish[collapse_poset.join]
 
 lemma exists_mem_compl_dom_of_unctbl (p : collapse_poset X Y) (H_card : (aleph 0) < #X) :
@@ -387,8 +388,6 @@ generate_open.basic _ ⟨p, trivial, rfl⟩
 
 open collapse_poset
 
-open collapse_poset
-
 def one_point_pfun (x : X) (y : Y) : X →. Y :=
 λ a, { dom := a = x,
        get := λ _, y }
@@ -407,10 +406,10 @@ end
 
 lemma collapse_poset.compl_principal_open_is_Union (p : collapse_poset X Y) : ∃ {ι : Type u} (s : ι → (collapse_poset X Y)), set.Union (λ i : ι, (principal_open $ s i)) = - (principal_open p) :=
 begin
-  use ({pr : X × Y // ∃ (H_mem : pr.1 ∈ p.f.dom), pr.2 ≠ (fn p.f pr.1 H_mem)}),  
+  use ({pr : X × Y // ∃ (H_mem : pr.1 ∈ p.f.dom), pr.2 ≠ (fn p.f pr.1 H_mem)}),
   use (λ s, one_point_collapse_poset s.1.1 s.1.2),
   ext f, split; intro H,
-    { change _ ∉ _, intro H_mem, 
+    { change _ ∉ _, intro H_mem,
       rcases H with ⟨P, ⟨⟨⟨x',y'⟩, ⟨H_mem₁, H_neq⟩⟩, Hpr⟩, H_mem₂⟩, subst Hpr,
       suffices this : y' = (fn p.f x' ‹_›),
         by { exact H_neq ‹_› },
@@ -436,7 +435,7 @@ by simp[is_clopen]
 -- end
 
 lemma inter_principal_open {p₁ p₂ : collapse_poset X Y} (H : compatible p₁ p₂) : principal_open p₁ ∩ principal_open p₂ = principal_open (join p₁ p₂ H) :=
-begin 
+begin
   ext f; split; intro H_mem,
     { rw mem_principal_open_iff, intros x H_x, simp[join] at H_x ⊢,
       cases H_x, cases H_mem,
@@ -455,7 +454,7 @@ end
 
 def collapse_space_basis : set $ set (X → Y) := insert (∅ : set (X → Y)) (collapse_poset.principal_open '' set.univ)
 
-def collapse_space_basis_spec : @is_topological_basis (X → Y) collapse_space collapse_space_basis := 
+def collapse_space_basis_spec : @is_topological_basis (X → Y) collapse_space collapse_space_basis :=
 begin
   refine ⟨λ P HP P' HP' f H_mem_inter, _,_,_⟩,
     { rw[collapse_space_basis] at HP HP',
@@ -565,7 +564,7 @@ end
 private def 𝔹 : Type u := collapse_algebra ((ℵ₁ : pSet.{u}).type) (powerset omega : pSet.{u}).type
 
 instance nonempty_aleph_one_powerset_omega : nonempty $ ((ℵ₁).type) → (powerset omega).type :=
-⟨λ _, by {unfold pSet.omega, from λ _, false}⟩ 
+⟨λ _, by {unfold pSet.omega, from λ _, false}⟩
 
 instance 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 :=
 by unfold 𝔹; apply_instance
@@ -734,7 +733,7 @@ begin
   by_contra, replace a := (bot_lt_iff_not_le_bot.mpr a),
   suffices this : ∃ f : pSet, is_func _ _ f ∧ pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f,
     by {exfalso, from pSet.ex_no_surj_omega_aleph_one this},
-  let g := (function_reflect (card_ex $ aleph 1) f ‹_›), use g, 
+  let g := (function_reflect (card_ex $ aleph 1) f ‹_›), use g,
   refine ⟨_,_⟩,
     { apply function_reflect_spec₂ },
     { apply function_reflect_surj_of_surj, from ‹_›, from a_right_1_right }
@@ -744,7 +743,7 @@ lemma aleph_one_check_universal_property (Γ : 𝔹) : Γ ≤ aleph_one_universa
 begin
   apply bv_rw' (aleph_one_check_is_aleph_one_of_omega_lt (omega_lt_aleph_one)),
   { simp },
-  { from aleph_one_satisfies_universal_property }
+  { exact aleph_one_satisfies_universal_property }
 end
 
 lemma continuum_is_continuum {Γ : 𝔹} : Γ ≤ (pSet.powerset omega)̌  =ᴮ (bv_powerset bSet.omega) :=
@@ -753,7 +752,7 @@ begin
   bv_intro χ, bv_imp_intro H_χ,
   refine le_trans le_top _, rw[bSet.mem_unfold], simp only [check_bval_top, top_inf_eq],
   simp only [bv_eq_unfold],
-  sorry 
+  sorry
 -- TOOD(jesse) show that this simplifies to ⨆_S ⨅ i, σ_S(i) (χ i), where σ_S(i) is the ¬-indicator function o S
 
 -- then an inductively-defined version of S := {i | ¬ χ i ⊓ principal_open p = ⊥} should work
@@ -773,7 +772,7 @@ end
 --                  -- note that S, being a subtype, also satisfies a 0-1 property,
 --                  -- so that ∀ i, (⊥ < (ω.func i ∈ᴮ Š) ↔ ⊤ = ω.func i ∈ᴮ Š ↔ (S i))
 --                  -- so, in case that ⊥ < χ i, we must have that i ∈ S.
-      
+
 --       { sorry } -- this condition, combined some easy facts and check_mem_set_of_indicator_iff,
 --                 -- says that S ⊆ {i | χ i = ⊤}
 -- }
@@ -784,7 +783,7 @@ begin
  intro Γ, rw[<-imp_bot], bv_imp_intro H,
  suffices ex_surj : Γ_1 ≤ larger_than (ℵ₁̌ ) (𝒫 ω),
      by {dsimp [Γ_1] at H ex_surj ⊢, from bv_absurd _ ex_surj ‹_› },
- 
+
       apply bv_rw' (bv_symm continuum_is_continuum),
         { from B_ext_larger_than_right },
         { from ℵ₁_larger_than_continuum }

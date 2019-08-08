@@ -97,7 +97,7 @@ lemma succ_eq_binary_union {x : bSet 𝔹} {Γ} : Γ ≤ succ x =ᴮ binary_unio
 begin
   simp[succ, binary_union], apply mem_ext,
   {bv_intro z, simp, bv_imp_intro, bv_or_elim_at H, apply bv_rw' H_left, simp,
-   apply (bv_union_spec_split _ x).mpr, apply bv_use ({x} : bSet 𝔹), 
+   apply (bv_union_spec_split _ x).mpr, apply bv_use ({x} : bSet 𝔹),
    refine le_inf _ (le_trans (le_top) mem_singleton), change _ ≤ _ ∈ᴮ insert _ _,
    simp, apply le_sup_right_of_le, from le_trans (le_top) mem_singleton,
    apply (bv_union_spec_split _ z).mpr, apply bv_use x, refine le_inf _ ‹_›,
@@ -245,7 +245,7 @@ poset_yoneda_inv Γ eq_of_eq_pair_right
 
 lemma eq_of_eq_pair {x y z w : bSet 𝔹} {Γ : 𝔹} (H_eq : Γ ≤ pair x y =ᴮ pair z w) :
   Γ ≤ x =ᴮ z ∧ Γ ≤ y =ᴮ w :=
-⟨eq_of_eq_pair_left' ‹_›, eq_of_eq_pair_right' ‹_›⟩ 
+⟨eq_of_eq_pair_left' ‹_›, eq_of_eq_pair_right' ‹_›⟩
 
 @[reducible]def prod (v w : bSet 𝔹) : bSet 𝔹 := ⟨v.type × w.type, λ a, pair (v.func a.1) (w.func a.2), λ a, (v.bval a.1) ⊓ (w.bval a.2)⟩
 
@@ -310,7 +310,7 @@ lemma mem_prod_iff {v w x y : bSet 𝔹} {Γ} : Γ ≤ pair x y ∈ᴮ prod v w 
 
 lemma check_is_func {g : pSet} (H_ext : pSet.is_extensional g) {Γ : 𝔹} : Γ ≤ is_func (ǧ) :=
 begin
-  unfold pSet.is_extensional at H_ext, unfold is_func,  
+  unfold pSet.is_extensional at H_ext, unfold is_func,
   bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂,
   bv_imp_intro H, bv_split, bv_imp_intro H_eq,
   sorry
@@ -597,7 +597,7 @@ lemma check_subset {x y : pSet} {Γ : 𝔹} (h_subset : x ⊆ y) : Γ ≤ x̌ �
   le_trans le_top (check_subset_of_subset ‹_›)
 
 lemma mem_check_mem_powerset_nonzero_iff {x : pSet} {S : (pSet.powerset x).type} {i : x.type} :
-  (⊥ : 𝔹) < (x.func i)̌  ∈ᴮ ((pSet.powerset x).func S)̌  ↔ (cast pSet.powerset_type S) i := 
+  (⊥ : 𝔹) < (x.func i)̌  ∈ᴮ ((pSet.powerset x).func S)̌  ↔ (cast pSet.powerset_type S) i :=
 begin
   refine ⟨_,_⟩; intro H,
     { sorry },
@@ -621,15 +621,15 @@ begin
             by {convert check_subset this, cases x, refl},
           from pSet.mem_powerset.mp (by convert pSet.mem.mk (p𝒫 x).func _; from pSet.mk_eq)}},
    cases x with α A,
-     use (λ i, Prop_to_bot_top (s i)), 
+     use (λ i, Prop_to_bot_top (s i)),
    refine subset_ext _ _,
      { rw[subset_unfold], bv_intro j, bv_imp_intro Hj, simp,
        apply bv_use j.val,
        refine le_inf _ _,
          { have := j.property, unfold Prop_to_bot_top, simp* },
-         { exact bv_eq_refl' }}, 
+         { exact bv_eq_refl' }},
      { rw[subset_unfold], bv_intro j, bv_imp_intro Hj, simp,
-       let Q := bval (set_of_indicator (λ (i : type $ (pSet.mk α A)̌  ), Prop_to_bot_top (s i))) j,              
+       let Q := bval (set_of_indicator (λ (i : type $ (pSet.mk α A)̌  ), Prop_to_bot_top (s i))) j,
        haveI := classical.prop_decidable, by_cases H: ⊥ < Q,
          { suffices : s j,
              by { refine bv_use ⟨j, this⟩, swap,
@@ -639,7 +639,7 @@ begin
            by_contra, suffices this : Q = ⊥,
              by {rw[this] at H, simpa using H},
            dsimp[Q, Prop_to_bot_top], simp* },
-           
+
          { rw[bot_lt_iff_not_le_bot] at H, push_neg at H,
            transitivity ⊥,
              { exact le_trans Hj H },
@@ -726,7 +726,7 @@ begin
           { bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂,
             bv_imp_intro H', bv_imp_intro H_eq,
             bv_split, bv_cases_at H'_left p₁, bv_cases_at H'_right p₂,
-            cases p₁ with i₁ i₂, cases p₂ with j₁ j₂, 
+            cases p₁ with i₁ i₂, cases p₂ with j₁ j₂,
             rename H'_left_1 H₁, rename H'_right_1 H₂,
             clear_except H₁ H₂ H_eq, simp only [le_inf_iff]  at H₁ H₂,
             repeat{auto_cases},
@@ -955,7 +955,7 @@ by simp[pSet.card_ex]
 
 def closed_under_successor (Γ) (x : bSet 𝔹) := Γ ≤ ⨅y, y ∈ᴮ x ⟹ succ y ∈ᴮ x
 
-def omega_spec (ω : bSet 𝔹) := ∀ (x : bSet 𝔹) {Γ} (H₁ : Γ ≤ ∅ ∈ᴮ x) (H₂ : closed_under_successor Γ x), Γ ≤ bSet.omega ⊆ᴮ x
+def omega_spec (ω : bSet 𝔹) := ∀ (x : bSet 𝔹) {Γ} (H₁ : Γ ≤ ∅ ∈ᴮ x) (H₂ : closed_under_successor Γ x), Γ ≤ ω ⊆ᴮ x
 
 lemma check_succ_eq_succ_check {n : ℕ} : (of_nat (n.succ) : bSet 𝔹) = bSet.succ (of_nat n) :=
 by simp[of_nat, succ, pSet.of_nat]
@@ -984,12 +984,11 @@ le_inf (check_ewo pSet.is_ewo_omega) (check_is_transitive pSet.is_transitive_ome
 /--
 The universal property of ℵ₁ is that it injects into any set which is larger than ω
 -/
-@[reducible]def aleph_one_universal_property (x : bSet 𝔹) : 𝔹 := ⨅ z, (bSet.omega ≺ z) ⟹ (x ≼ z)
+@[reducible]def aleph_one_universal_property (x : bSet 𝔹) : 𝔹 := ⨅ z, (bSet.omega ≺ z) ⇔ (x ≼ z)
 
-@[simp]lemma B_ext_aleph_one_universal_property : B_ext (aleph_one_universal_property : bSet 𝔹 → 𝔹) :=
-begin
-  intros x y, unfold aleph_one_universal_property, revert x y, change B_ext _, simp
-end
+@[simp] lemma B_ext_aleph_one_universal_property :
+  B_ext (aleph_one_universal_property : bSet 𝔹 → 𝔹) :=
+by { delta aleph_one_universal_property, simp }
 
 lemma aleph_one_exists {Γ : 𝔹} : Γ ≤ ⨆x, aleph_one_Ord_spec x := sorry
 
