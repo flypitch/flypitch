@@ -733,12 +733,7 @@ begin
             replace H₁_right := eq_of_eq_pair H₁_right,
             replace H₂_right := eq_of_eq_pair H₂_right,
             cases H₁_right with H₁₀ H₁₁, cases H₂_right with H₂₀ H₂₁,
-            apply bv_rw' H₁₁, {simp}, apply bv_rw' H₂₁, {simp},
-            apply bv_symm, apply bv_rw' (bv_symm H₁_left_left_left), {simp},
-            apply bv_symm, apply bv_rw' (bv_symm H₂_left_left_left), {simp},
-            apply bv_symm, apply bv_rw' (bv_symm H₁₀), {simp},
-            apply bv_symm, apply bv_rw' (bv_symm H₂₀), {simp},
-            from ‹_›
+            bv_cc
           },
           {bv_intro w₁, bv_imp_intro w₁_mem_x, apply bv_use w₁,
            rw[subset_unfold'] at H, replace H := H w₁ ‹_›, refine le_inf ‹_› _,
@@ -762,14 +757,7 @@ begin
             have this₃ := (eq_of_eq_pair_left' H_1_left_right_1_right),
             have this₄ := (eq_of_eq_pair_right' H_1_left_right_1_right),
             rename H_1_left_right_1_left H', rename H_1_left_left_1_left H'',
-            simp only [le_inf_iff] at H' H'',
-            -- now just equality reasoning. we need a 𝔹-valued congruence closure tactic
-            apply bv_rw' this₁, {simp}, apply bv_rw' this₃, {simp},
-            apply bv_symm, apply bv_rw' H''.left.left, {simp},
-            -- without bv_symm, fails to recognize the motive
-            apply bv_symm, apply bv_rw' H'.left.left, {simp},
-            apply bv_symm, apply bv_rw' (bv_symm $ this₂), {simp},
-            apply bv_symm, apply bv_rw' (bv_symm $ this₄), {simp}, from ‹_›}}
+            simp only [le_inf_iff] at H' H'', repeat{auto_cases}, bv_cc}}
 
 end
 

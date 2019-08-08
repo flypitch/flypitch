@@ -468,6 +468,49 @@ begin
   replace H2 := bv_cc.mk H2,
   rw[bv_cc.mk_iff], cc
 end
+end bSet
+
+namespace tactic
+namespace interactive
+section bv_cc
+open lean.parser lean interactive.types interactive
+local postfix `?`:9001 := optional
+
+
+/--
+`apply_at (H : α) F` assumes that F's first explicit argument is of type `α`
+and replaces the assumption H with F H.
+-/
+meta def apply_at (H_tgt : parse ident) (H : parse texpr) : tactic unit :=
+ do e_tgt <- resolve_name H_tgt,
+    tactic.replace H_tgt ``(%%H %%e_tgt)
+
+meta def apply_all (H : parse texpr) : tactic unit :=
+do ctx <- local_context,
+   let mk_new_hyp (e : expr) : tactic unit :=
+       tactic.try (do n <- get_unused_name, to_expr ``(%%H %%e) >>= note n none)
+   in (list.mmap' mk_new_hyp ctx)
+
+meta def bv_cc : tactic unit :=
+apply_all ``(bSet.bv_cc.mk) *> `[rw[bSet.bv_cc.mk_iff]] *> cc
+   
+end bv_cc
+end interactive
+end tactic
+
+example {α β : Type} (f : α → β) (P : α → Prop) (Q : β → Prop) {a : α} (H : P a) (H' : P a) (C : ∀ {a}, P a → Q (f a)) : true :=
+begin
+  apply_at H C,
+  apply_all C, triv
+end
+
+namespace bSet
+variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
+
+example {x y z x₁ y₁ z₁: bSet 𝔹} {Γ : 𝔹} (H1 : Γ ≤ x =ᴮ y) (H2 : Γ ≤ y =ᴮ z)
+  (H3 : Γ ≤ z =ᴮ z₁) (H4 : Γ ≤ z₁ =ᴮ y₁) (H5 : Γ ≤ y₁ =ᴮ x₁)
+: Γ ≤ x =ᴮ x₁ :=
+by bv_cc -- :^)
 
 /-- If u = v and u ∈ w, then this implies that v ∈ w -/
 lemma subst_congr_mem_left {u v w : bSet 𝔹} : u =ᴮ v ⊓ u ∈ᴮ w ≤ v ∈ᴮ w :=
