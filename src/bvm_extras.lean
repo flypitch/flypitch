@@ -9,7 +9,7 @@ import .bvm .pSet_ordinal
 open lattice
 
 universe u
-#check tactic.cc
+
 local infix ` ⟹ `:65 := lattice.imp
 
 local infix ` ⇔ `:50 := lattice.biimp
@@ -984,7 +984,7 @@ le_inf (check_ewo pSet.is_ewo_omega) (check_is_transitive pSet.is_transitive_ome
 /--
 The universal property of ℵ₁ is that it injects into any set which is larger than ω
 -/
-@[reducible]def aleph_one_universal_property (x : bSet 𝔹) : 𝔹 := ⨅ z, (bSet.omega ≺ z) ⇔ (x ≼ z)
+@[reducible]def aleph_one_universal_property (x : bSet 𝔹) : 𝔹 := ⨅ z, (bSet.omega ≺ z) ⟹ (x ≼ z)
 
 @[simp] lemma B_ext_aleph_one_universal_property :
   B_ext (aleph_one_universal_property : bSet 𝔹 → 𝔹) :=
