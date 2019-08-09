@@ -708,17 +708,19 @@ local infix `≼`:70 := (λ x y, injects_into x y)
 
 def CH {𝔹} [nontrivial_complete_boolean_algebra 𝔹] : 𝔹 := - ⨆ x, ⨆y, (omega ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(omega))
 
+-- TODO(jesse): use χ_A := (i,j) ↦ ⨆ₖ (i,k) ∈ᴮ Γ(f) ⊓ (j,k) ∈ᴮ Γ(g)
 lemma bSet_lt_of_lt_of_le (x y z : bSet 𝔹) {Γ} (H₁ : Γ ≤ x ≺ y) (H₂ : Γ ≤ y ≼ z) : Γ ≤ x ≺ z :=
 begin
   dsimp only [larger_than, injects_into] at ⊢ H₁ H₂,
-  rw[<-imp_bot] at ⊢ H₁,
-  bv_imp_intro, sorry
+  rw[<-imp_bot] at ⊢ H₁, bv_imp_intro H, refine H₁ _,
+  bv_cases_at H f H_f, bv_cases_at H₂ g H_g, sorry
 end
 
 lemma bSet_lt_of_le_of_lt (x y z : bSet 𝔹) {Γ} (H₁ : Γ ≤ x ≼ y) (H₂ : Γ ≤ y ≺ z) : Γ ≤ x ≺ z :=
 begin
   unfold larger_than at ⊢ H₂, rw[<-imp_bot], bv_imp_intro H, unfold injects_into at H₁,
-  rw[<-imp_bot] at H₂, refine H₂ _, sorry
+  rw[<-imp_bot] at H₂, refine H₂ _,
+  bv_cases_at H f H_f, bv_cases_at H₁ g H_g, sorry
 end
 
 lemma bSet_le_of_subset {x y : bSet 𝔹} {Γ} (H : Γ ≤ x ⊆ᴮ y) : Γ ≤ x ≼ y :=

@@ -1202,13 +1202,16 @@ by {specialize_context (⊤ : β), assumption}
 meta def bv_exfalso : tactic unit :=
   `[refine le_trans _ (bot_le)]
 
-meta def bv_cases_at (H : parse ident) (i : parse ident_)  : tactic unit :=
+meta def bv_cases_at (H : parse ident) (i : parse ident_) (H_i : parse ident?)  : tactic unit :=
 do
   e₀ <- resolve_name H,
   e₀' <- to_expr e₀,
   Γ_old <- target >>= lhs_of_le,
   `[refine lattice.context_Or_elim %%e₀'],
-  tactic.intro i >> ((get_unused_name H) >>= tactic.intro) >>
+  match H_i with
+  | none :=  tactic.intro i >> ((get_unused_name H) >>= tactic.intro)
+  | (some n) := tactic.intro i >> (tactic.intro n)
+  end,
   specialize_context_core Γ_old
 
 meta def bv_cases_at' (H : parse ident) (i : parse ident_)  : tactic unit :=
