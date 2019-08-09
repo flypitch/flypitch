@@ -4,11 +4,13 @@ import .regular_open_algebra .pSet_ordinal
   Defining the collapsing poset/topology/boolean algebra and proving properties about them
 -/
 
-universe u
+universe variable u
 
 open lattice topological_space cardinal pSet
 
-@[reducible]private noncomputable definition ℵ₁ : pSet := (card_ex $ aleph 1)
+noncomputable theory
+
+local notation `ℵ₁` := (card_ex $ aleph 1 : pSet)
 
 local infix ` ⟹ `:65 := lattice.imp
 
@@ -16,9 +18,54 @@ local infix ` ⇔ `:50 := lattice.biimp
 
 local attribute [instance, priority 0] classical.prop_decidable
 
+/- to_mathlib -/
+@[simp] lemma iff_or_self_left {p q : Prop} : (p ↔ p ∨ q) ↔ (q → p) :=
+⟨ λ h hq, h.2 (or.inr hq), λ h, ⟨or.inl, λ h', h'.elim id h⟩⟩
+
+@[simp] lemma iff_or_self_right {p q : Prop} : (p ↔ q ∨ p) ↔ (q → p) :=
+by simp [or.comm]
+
+@[simp] lemma and_iff_self_right {p q : Prop} : (p ∧ q ↔ p) ↔ (p → q) :=
+⟨ λ h hp, (h.mpr hp).2, λ h, ⟨and.left, λ hp, ⟨hp, h hp⟩⟩⟩
+
+@[simp] lemma and_iff_self_left {p q : Prop} : (p ∧ q ↔ q) ↔ (q → p) :=
+by { rw [and.comm], exact and_iff_self_right }
+
+lemma and_or_and_not {p q r : Prop} : p ∧ (q ∨ (r ∧ ¬ p)) ↔ p ∧ q :=
+by simp [and_or_distrib_left, and.comm, and.assoc.symm]
+
+lemma or_and_iff_or {p q r : Prop} : (p ∨ (q ∧ r) ↔ p ∨ q) ↔ (q → p ∨ r) :=
+⟨ λ h hq, (h.2 (or.inr hq)).imp id and.right,
+  λ h, ⟨λ h', h'.imp id and.left, λ h', h'.elim or.inl $ λ hq, (h hq).imp id $ λ hr, ⟨hq, hr⟩⟩⟩
+
+lemma and_or_iff_and {p q r : Prop} : (p ∧ (q ∨ r) ↔ p ∧ r) ↔ (p → q → r) :=
+⟨ λ h hp hq, (h.mp ⟨hp, or.inl hq⟩).2,
+  λ h, ⟨λ h', ⟨h'.1, h'.2.elim (h h'.1) id⟩, and.imp id or.inr⟩⟩
+
+lemma or_not_iff (p q : Prop) [decidable q] : (p ∨ ¬ q) ↔ (q → p) :=
+by { rw [imp_iff_not_or, or_comm] }
+
+lemma eq_iff_eq_of_eq_left {α} {x y z : α} (h : x = y) : x = z ↔ y = z :=
+by rw [h]
+
+lemma eq_iff_eq_of_eq_right {α} {x y z : α} (h : x = y) : z = x ↔ z = y :=
+by rw [h]
+
 namespace pfun
 
 section pfun_lemmas
+
+variables {ι : Sort*} {α : Type*} {β : Type*} {f f₁ f₂ : α →. β}
+
+/- to mathlib -/
+lemma mem_dom_iff_dom (f : α →. β) (x : α) : x ∈ dom f ↔ (f x).dom :=
+by simp [dom, set.mem_def]
+
+lemma mem_dom_of_mem {f : α →. β} {x : α} {y : β} (h : y ∈ f x) : x ∈ dom f :=
+(mem_dom f x).2 ⟨y, h⟩
+
+lemma some_fn {f : α →. β} {x : α} (h : x ∈ f.dom) : roption.some (f.fn x h) = f x :=
+roption.some_get h
 
 /- Two partial functions are equal if their graphs are equal -/
 lemma ext_graph {α β : Type*} (f g : α →. β) (h_graph : f.graph = g.graph) : f = g :=
@@ -92,32 +139,136 @@ lemma in_dom_of_in_graph {α β : Type*} {f : α →. β} : ∀ {a} {b}, (a,b) �
 
 lemma lift_graph' {α β : Type*} {f : α →. β} {a : α} {b : β} (h_a : a ∈ f.dom) : (a,b) ∈ f.graph ↔ pfun.fn f a h_a = b := by tidy
 
-variables {α β : Type u}
+def subset (f₁ f₂ : α →. β) : Prop := ∀ x y, y ∈ f₁ x → y ∈ f₂ x
 
-def is_extension_of (f₁ f₂ : α →. β) : Prop := ∃ (H : f₁.dom ⊆ f₂.dom), restrict f₂ H = f₁
+instance : has_subset (α →. β) := ⟨pfun.subset⟩
 
-/-
-TODO(jesse) avoid tactic mode and use classical.indefinite_description explicitly
--/
-noncomputable def union_of_omega_chain (f : ℕ → α →. β) : α →. β :=
-λ x, { dom := x ∈ (set.Union (λ k, (f k).dom) : set α),
-  get := λ H,
-  begin
-    choose some_dom H_mem₁ H_mem₂ using H,
-    choose k Hk₁ using H_mem₁, subst Hk₁,
-    from fn (f k) x ‹_›
-  end}
-/-
-TODO(jesse) rework this in terms of graphs of pfuns instead
-(take a union of the graphs, extract a pfun)
--/
-lemma union_of_omega_chain_spec (f : ℕ → α →. β) (H_chain : ∀ (k₁ k₂) (H_le : k₁ ≤ k₂), is_extension_of (f k₁) (f k₂)) :
-∀ k, is_extension_of (f k) (union_of_omega_chain f):=
+-- TODO:  subset -> doms subset; subset -> compatible
+
+def compatible (f₁ f₂ : α →. β) : Prop :=
+∀(x : α), x ∈ f₁.dom → x ∈ f₂.dom → f₁ x = f₂ x
+
+lemma compatible_def : compatible f₁ f₂ ↔ ∀(x : α), x ∈ f₁.dom → x ∈ f₂.dom → f₁ x = f₂ x :=
+by refl
+
+lemma mem_of_compatible (h : compatible f₁ f₂) {x : α} {y : β} (h1 : y ∈ f₁ x) (h2 : x ∈ f₂.dom) :
+  y ∈ f₂ x :=
+by { convert h1, symmetry, exact h x (mem_dom_of_mem h1) h2 }
+
+@[refl] lemma compatible_refl : compatible f f := λ x h1x h2x, rfl
+
+lemma compatible_comm : compatible f₁ f₂ ↔ compatible f₂ f₁ :=
+by { simp [compatible_def, eq_comm, imp.swap] }
+
+/- we make it classical so that we can define a has_union instance -/
+def union (f₁ f₂ : α →. β) : α →. β :=
+λ a, if a ∈ f₁.dom then f₁ a else f₂ a
+
+instance : has_union (α →. β) := ⟨pfun.union⟩
+
+@[simp] lemma union_eq_of_mem {x : α} (h : x ∈ f₁.dom) : (f₁ ∪ f₂) x = f₁ x :=
+by { dsimp [pfun.has_union, pfun.union], simp [h] }
+
+@[simp] lemma union_eq_of_nmem {x : α} (h : x ∉ f₁.dom) : (f₁ ∪ f₂) x = f₂ x :=
+by { dsimp [pfun.has_union, pfun.union], simp [h] }
+
+@[simp] lemma dom_union (f₁ f₂ : α →. β) : (f₁ ∪ f₂).dom = f₁.dom ∪ f₂.dom :=
+by { ext x, by_cases hx : x ∈ f₁.dom; simp [mem_dom_iff_dom] at hx; simp [mem_dom_iff_dom, hx] }
+
+lemma subset_dom_union_left (f₁ f₂ : α →. β) : f₁.dom ⊆ (f₁ ∪ f₂).dom := by simp
+lemma subset_dom_union_right (f₁ f₂ : α →. β) : f₂.dom ⊆ (f₁ ∪ f₂).dom := by simp
+
+lemma mem_union {x : α} {y : β} : y ∈ (f₁ ∪ f₂) x ↔ y ∈ f₁ x ∨ (y ∈ f₂ x ∧ x ∉ f₁.dom) :=
 begin
-  intro k, fsplit, change _ ⊆ set.Union _,
-    {/- `tidy` says -/ intros a a_1, simp at *, fsplit, work_on_goal 1 { assumption }},
-  ext1, sorry
+  by_cases hx : x ∈ f₁.dom, { simp [hx] },
+  have := hx, rw [mem_dom] at this, push_neg at this, simp [hx, this]
 end
+
+lemma mem_union_of_compatible {x : α} {y : β} (h : compatible f₁ f₂) :
+  y ∈ (f₁ ∪ f₂) x ↔ y ∈ f₁ x ∨ y ∈ f₂ x :=
+begin
+  rw [mem_union, or_and_iff_or, or_not_iff],
+  intros hy hx, convert hy, exact h x hx (mem_dom_of_mem hy),
+end
+
+lemma union_restrict_left {f₁ f₂ : α →. β} :
+  (f₁ ∪ f₂).restrict (subset_dom_union_left f₁ f₂) = f₁ :=
+begin
+  apply pfun.ext, intros x y, simp [mem_union, and_or_and_not],
+  show y ∈ f₁ x → x ∈ dom f₁, rw [mem_dom], intro hy, exact ⟨y, hy⟩
+end
+
+lemma union_restrict_right {f₁ f₂ : α →. β} (h : compatible f₁ f₂) :
+  (f₁ ∪ f₂).restrict (subset_dom_union_right f₁ f₂) = f₂ :=
+begin
+  apply pfun.ext, intros x y, simp [mem_union_of_compatible h],
+  rw [and_or_iff_and.2, and_iff_self_left], apply mem_dom_of_mem,
+  intros hx hy, convert hy, symmetry, exact h x (mem_dom_of_mem hy) hx
+end
+
+lemma subset_union_left (f₁ f₂ : α →. β) : f₁ ⊆ f₁ ∪ f₂ :=
+sorry
+
+lemma subset_union_right (f₁ f₂ : α →. β) : f₁ ⊆ f₁ ∪ f₂ :=
+sorry
+
+def Union (f : ι → α →. β) : α →. β :=
+λ x, if h : ∃ i, x ∈ dom (f i) then f (classical.some h) x else roption.none
+
+lemma Union_helper {f : ι → α →. β} {x : α} :
+  (∃i, x ∈ (f i).dom) ↔ (∃i, x ∈ (f i).dom ∧ Union f x = f i x) :=
+⟨λ h, ⟨classical.some h, classical.some_spec h, dif_pos h⟩, λ⟨i, h, _⟩, ⟨i, h⟩⟩
+
+lemma Union_helper2 {f : ι → α →. β} {x : α} :
+  (∃i, x ∈ (f i).dom) ↔ (∃i (h : x ∈ (f i).dom), Union f x = roption.some ((f i).fn x h)) :=
+begin
+  rw [Union_helper], apply exists_congr, intro i,
+  rw [← exists_prop], apply exists_congr, intro hi,
+  apply eq_iff_eq_of_eq_right, rw [some_fn hi]
+end
+
+@[simp] lemma dom_Union (f : ι → α →. β) : (Union f).dom = set.Union (λ (i : ι), (f i).dom) :=
+begin
+  ext x, rw [set.mem_Union], by_cases hx : ∃i, x ∈ (f i).dom,
+  { simp only [hx, iff_true], rw [Union_helper2] at hx, rcases hx with ⟨i, hx, h⟩,
+    rw [mem_dom_iff_dom, h], trivial },
+  { simp only [hx, iff_false], rw [mem_dom_iff_dom], dsimp [Union], rw [dif_neg hx], exact id }
+end
+
+lemma subset_dom_Union (f : ι → α →. β) (i : ι) : (f i).dom ⊆ (Union f).dom :=
+by { rw [dom_Union], apply set.subset_Union (λ i, (f i).dom) }
+
+lemma Union_eq_of_mem {f : ι → α →. β} {x : α} {i : ι} (hf : ∀i j, compatible (f i) (f j))
+  (h : x ∈ (f i).dom) : Union f x = f i x :=
+begin
+  have : ∃ i, x ∈ (f i).dom := ⟨i, h⟩, rw [Union_helper] at this, rcases this with ⟨j, hj, h2j⟩,
+  rw [h2j], exact hf j i x hj h
+end
+
+lemma Union_eq_of_nmem {f : ι → α →. β} {x : α} (h : ∀ i, x ∉ (f i).dom) :
+  Union f x = roption.none :=
+by { dsimp [pfun.Union], simp [h] }
+
+lemma mem_Union {f : ι → α →. β} {x : α} {y : β} (hf : ∀i j, compatible (f i) (f j)) :
+  y ∈ Union f x ↔ ∃ i, y ∈ f i x :=
+begin
+  split,
+  { intro hy, have := mem_dom_of_mem hy, rw [dom_Union, set.mem_Union] at this,
+    cases this with i hi, use i, rwa [Union_eq_of_mem hf hi] at hy },
+  { rintro ⟨i, hi⟩, rwa [Union_eq_of_mem hf (mem_dom_of_mem hi)] }
+end
+
+lemma Union_restrict {f : ι → α →. β} (hf : ∀i j, compatible (f i) (f j)) (i : ι) :
+  (Union f).restrict (subset_dom_Union f i) = f i :=
+begin
+  apply pfun.ext, intros x y, simp [mem_Union hf],
+  split,
+  { rintro ⟨hx, j, hj⟩, exact mem_of_compatible (hf j i) hj hx },
+  { intro hy, exact ⟨mem_dom_of_mem hy, i, hy⟩ }
+end
+
+lemma subset_Union (f : ι → α →. β) (i : ι) : f i ⊆ Union f :=
+sorry
 
 lemma fn_mem_ran {X Y} {f : X →. Y} {x : X} {Hx : x ∈ f.dom} :
   (fn f x Hx) ∈ f.ran :=
