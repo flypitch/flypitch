@@ -79,15 +79,14 @@ end
 lemma binary_union_symm {x y : bSet 𝔹} {Γ} : Γ ≤ binary_union x y =ᴮ binary_union y x :=
 begin
   simp[binary_union], apply mem_ext; bv_intro z; bv_imp_intro,
-  have := (bv_union_spec_split {x, y}z).mp ‹_›, rw[bv_union_spec_split],
+  have := (bv_union_spec_split {x, y} z).mp ‹_›, rw[bv_union_spec_split],
   bv_cases_at this w, bv_split_at this_1, apply bv_use w,
   refine le_inf _ ‹_›, apply bv_rw' (unordered_pair_symm _ _), simp, from ‹_›,
   have := unordered_pair_symm x y, show 𝔹, from Γ_1,
-  have := @bv_rw' 𝔹 _ {x,y} {y,x} Γ_1 this (λ w, z ∈ᴮ bv_union w) (by {simp[B_ext],
-  intros x y, tidy_context, have := bv_union_congr a_left,
-  change Γ_2 ≤ (λ w, z ∈ᴮ w) (bv_union y),
-  convert bv_rw' (bv_symm this) using 1, simp, from ‹_›}),
-  apply this, from ‹_›
+  let a := _, let b := _, change Γ_1 ≤ a =ᴮ b at this, change Γ_1 ≤ z ∈ᴮ bv_union a,
+  suffices : Γ_1 ≤ bv_union a =ᴮ bv_union b,
+    by {apply bv_rw' this, simpa},
+  exact B_congr_bv_union ‹_›
 end
 
 /-- The successor operation on sets (in particular von Neumman ordinals) -/
@@ -151,26 +150,16 @@ begin
   from bv_refl
 end
 
-@[reducible]def B_congr (t : bSet 𝔹 → bSet 𝔹) : Prop := ∀ x₁ x₂, x₁ =ᴮ x₂ ≤ t x₁ =ᴮ t x₂
-
-@[simp]lemma B_ext_term {ϕ : bSet 𝔹 → 𝔹} (H : B_ext ϕ) {t : bSet 𝔹 → bSet 𝔹} (H' : B_congr t) : B_ext (λ z, ϕ ((λ w, t w) z) ) :=
-begin
-  intros x y, tidy_context,
-  suffices : Γ ≤ t x =ᴮ t y,
-    by {apply bv_rw' (bv_symm this), from ‹_›, from ‹_›},
-  from le_trans ‹_› (H' x y)
-end
-
 @[simp]lemma B_congr_insert1_left {y : bSet 𝔹} : B_congr (λ x, bSet.insert1 x y) :=
-λ _ _, subst_congr_insert1_left
+λ _ _ _, poset_yoneda_inv _ subst_congr_insert1_left
 
 @[simp]lemma B_congr_insert1_right {y : bSet 𝔹} : B_congr (λ x, bSet.insert1 y x) :=
-λ _ _, subst_congr_insert1_right
+λ _ _ _, poset_yoneda_inv _ subst_congr_insert1_right
 
 @[simp]lemma B_congr_succ : B_congr (succ : bSet 𝔹 → bSet 𝔹) :=
 λ x y,
   begin
-    unfold succ, tidy_context, rename a H,
+    unfold succ, intros,
     have : Γ ≤ bSet.insert1 x x =ᴮ bSet.insert1 x y,
       by {simp*},
     have : Γ ≤ bSet.insert1 x y =ᴮ bSet.insert1 y y,
@@ -179,10 +168,10 @@ end
   end
 
 @[simp]lemma B_congr_pair_left {y : bSet 𝔹} : B_congr (λ x, pair x y) :=
-  by {intros x₁ x₂, from @subst_congr_pair_left _ _ _ _ _}
+λ _ _ _, poset_yoneda_inv _ subst_congr_pair_left
 
 @[simp]lemma B_congr_pair_right {y : bSet 𝔹} : B_congr (λ x, pair y x) :=
-  by {intros x₁ x₂, from @subst_congr_pair_right _ _ _ _ _}
+λ _ _ _, poset_yoneda_inv _ subst_congr_pair_right
 
 @[simp]lemma B_ext_pair_left {ϕ : bSet 𝔹 → 𝔹} {H : B_ext ϕ} {x} : B_ext (λ z, ϕ ((λ w, pair w x) z)) :=
 by simp[H]
@@ -973,7 +962,7 @@ begin
   unfold closed_under_successor, bv_intro y, bv_imp_intro H_mem,
   bv_cases_at H_mem k, cases k with k, simp at H_mem_1, refine bv_use _,
   exact (ulift.up $ k + 1), simp, apply bv_rw' H_mem_1,
-    { exact @B_ext_term 𝔹 _ (λ z, z =ᴮ ((k+1)̃ ̌)) (by simp) succ B_congr_succ },
+    { refine @B_ext_term 𝔹 _ (λ z, z =ᴮ ((k+1)̃ ̌)) (by simp) succ (by simp) },
       -- TODO(jesse): automate calculation of the motive
     { simp[pSet.of_nat, succ] },
 end

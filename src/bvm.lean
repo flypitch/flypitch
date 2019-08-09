@@ -702,12 +702,23 @@ by {intros x y, dsimp, apply bv_cases_right, intro i, apply bv_use i, apply h}
 
 example {y : bSet 𝔹} : B_ext (λ x : bSet 𝔹, x ∈ᴮ y ⊔ y ∈ᴮ x) := by change B_ext _; simp
 
--- use for rewriting the goal with the first argument
+-- use `apply bv_rw' (H : Γ ≤ x =ᴮ y)` for rewriting the `x` to `y` in the goal
+-- if Lean is able to infer the motive, this will generate a B_ext proof obligation which will usually be `by simp`
 lemma bv_rw' {x y : bSet 𝔹} {Γ : 𝔹} (H : Γ ≤ x =ᴮ y) {ϕ : bSet 𝔹 → 𝔹} {h_congr : B_ext ϕ} {H_new : Γ ≤ ϕ y} : Γ ≤ ϕ x :=
 begin
   have : Γ ≤ y =ᴮ x ⊓ ϕ y,
     by {apply le_inf, rw[bv_eq_symm], from ‹_›, from ‹_›},
   from (poset_yoneda_inv _ (h_congr _ _) this)
+end
+
+@[reducible]def B_congr (t : bSet 𝔹 → bSet 𝔹) : Prop := ∀ {x₁ x₂}, ∀ {Γ : 𝔹}, Γ ≤ x₁ =ᴮ x₂ → Γ ≤ t x₁ =ᴮ t x₂
+
+@[simp]lemma B_ext_term {ϕ : bSet 𝔹 → 𝔹} (H : B_ext ϕ) {t : bSet 𝔹 → bSet 𝔹} (H' : B_congr t) : B_ext (λ z, ϕ ((λ w, t w) z) ) :=
+begin
+  intros x y, tidy_context,
+  suffices : Γ ≤ t x =ᴮ t y,
+    by {apply bv_rw' (bv_symm this), from ‹_›, from ‹_›},
+  exact H' ‹_›
 end
 
 meta def H_congr_handler : tactic unit := `[simp]
@@ -1735,6 +1746,9 @@ begin
     from ‹_›, change B_ext _, simp, change B_ext _, simp
 end
 
+@[simp]lemma B_congr_bv_union : B_congr (bv_union : bSet 𝔹 → bSet 𝔹) :=
+by apply bv_union_congr
+
 theorem bSet_axiom_of_union : (⨅ (u : bSet 𝔹), (⨆v, ⨅x,
   (x ∈ᴮ v ⇔ (⨆(y : u.type), u.bval y ⊓ x ∈ᴮ u.func y)))) = ⊤ :=
 begin
@@ -2053,7 +2067,7 @@ begin
     rw[mem_unfold] at H_right_1_right, bv_cases_at H_right_1_right a,
     bv_split, have H_in : Γ_4 ≤ (func x a) ∈ᴮ u,
     rw[bv_eq_symm] at H_right_1_right_1_right,
-    apply @bv_rw' 𝔹 _ _ _ _  H_right_1_right_1_right (λ z, z ∈ᴮ u), simp, from ‹_›,
+    apply @bv_rw' 𝔹 _ _ _ _  H_right_1_right_1_right (λ z, z ∈ᴮ u) (by simp) _, from ‹_›,
     from (le_trans (by {dsimp*, simp[inf_le_right_of_le]} : Γ_4 ≤ Γ) (IH a u)) ‹_›
 end
 
