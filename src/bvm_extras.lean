@@ -124,7 +124,7 @@ by {apply bv_rw' (@binary_union_symm 𝔹 _ x {x} Γ), simp, from succ_eq_binary
 begin
   unfold pair, have this₁ : x =ᴮ z ≤ {{x},{x,y}} =ᴮ {{z},{x,y}} := by simp*,
   have this₂ : x =ᴮ z ≤ {{z},{x,y}} =ᴮ {{z},{z,y}} := by simp*,
-  apply bv_context_trans; from ‹_›
+  apply bv_trans; from ‹_›
 end
 
 @[simp]lemma subst_congr_pair_left' {x z y : bSet 𝔹} {Γ : 𝔹} :
@@ -142,13 +142,13 @@ begin
     {intros v₁ v₂, tidy_context,
       have : Γ_1 ≤ pair v₂ x₂ =ᴮ pair v₁ x₂,
         by {apply subst_congr_pair_left', rwa[bv_eq_symm]},
-      from bv_context_trans this a_right,},
+      from bv_trans this a_right,},
   apply bv_rw' H₂,
     {intros v₁ v₂, tidy_context,
        have : Γ_1 ≤ pair y₁ v₂ =ᴮ pair y₁ v₁,
          by {apply subst_congr_pair_right', rwa[bv_eq_symm]},
-       from bv_context_trans this a_right},
-  from bv_eq_refl'
+       from bv_trans this a_right},
+  from bv_refl
 end
 
 @[reducible]def B_congr (t : bSet 𝔹 → bSet 𝔹) : Prop := ∀ x₁ x₂, x₁ =ᴮ x₂ ≤ t x₁ =ᴮ t x₂
@@ -160,6 +160,23 @@ begin
     by {apply bv_rw' (bv_symm this), from ‹_›, from ‹_›},
   from le_trans ‹_› (H' x y)
 end
+
+@[simp]lemma B_congr_insert1_left {y : bSet 𝔹} : B_congr (λ x, bSet.insert1 x y) :=
+λ _ _, subst_congr_insert1_left
+
+@[simp]lemma B_congr_insert1_right {y : bSet 𝔹} : B_congr (λ x, bSet.insert1 y x) :=
+λ _ _, subst_congr_insert1_right
+
+@[simp]lemma B_congr_succ : B_congr (succ : bSet 𝔹 → bSet 𝔹) :=
+λ x y,
+  begin
+    unfold succ, tidy_context, rename a H,
+    have : Γ ≤ bSet.insert1 x x =ᴮ bSet.insert1 x y,
+      by {simp*},
+    have : Γ ≤ bSet.insert1 x y =ᴮ bSet.insert1 y y,
+      by {simp*},
+    bv_cc
+  end
 
 @[simp]lemma B_congr_pair_left {y : bSet 𝔹} : B_congr (λ x, pair x y) :=
   by {intros x₁ x₂, from @subst_congr_pair_left _ _ _ _ _}
@@ -268,11 +285,11 @@ begin
      have : a ⊓ b ≤ {{func v i}, {x,y}} =ᴮ {{func v i}, {func v i, func w j}},
        by {apply subst_congr_insert1_left'', have this₁ : a ⊓ b ≤ {x,y} =ᴮ {func v i, y}, by simp*,
        have this₂ : a ⊓ b ≤ {func v i, y} =ᴮ {func v i, func w j}, by simp*,
-       from bv_context_trans ‹_› ‹_›},
+       from bv_trans ‹_› ‹_›},
 
      apply le_trans, show 𝔹, from a ⊓ b,
        by {ac_change' (bval v i ⊓ bval w j) ⊓ (a ⊓ b) ≤ a ⊓ b, from inf_le_right},
-     from bv_context_trans ‹_› ‹_›}
+     from bv_trans ‹_› ‹_›}
 end
 
 lemma prod_mem {v w x y : bSet 𝔹} {Γ} : Γ ≤ x ∈ᴮ v → Γ ≤ y ∈ᴮ w → Γ ≤ pair x y ∈ᴮ prod v w :=
@@ -330,7 +347,7 @@ begin
   bv_cases_at w_spec w, clear w_spec,
   replace H := H z z, apply bv_use w,
   bv_intro w', bv_imp_intro Hw',
-  from H w w' (le_inf ‹_› ‹_›) (bv_eq_refl')
+  from H w w' (le_inf ‹_› ‹_›) (bv_refl)
 end
 
 /-- f is (more precisely, contains) a function from x to y if for every element of x, there exists an element of y such that the pair is in f, and f is a function -/
@@ -374,7 +391,7 @@ end
 --             rw[subset_unfold'] at H_right, dsimp,
 --             bv_intro x_1, bv_imp_intro Hx_1,
 --             replace H_right := H_right (pair (x̌.func i) (y̌.func x_1)) ‹_›,
---             apply bv_use (i, x_1), refine le_inf (by simp) bv_eq_refl',
+--             apply bv_use (i, x_1), refine le_inf (by simp) bv_refl,
 --             exact H_left_right},
 --           sorry
 --  },
@@ -393,7 +410,7 @@ end
 
 lemma funext (f x y z : bSet 𝔹) {Γ : 𝔹} (H_func : Γ ≤ is_func f) (H : Γ ≤ (pair x y) ∈ᴮ f)
   (H' : Γ ≤ (pair x z) ∈ᴮ f) : Γ ≤ y =ᴮ z :=
-H_func x x y z (le_inf ‹_› ‹_›) (bv_eq_refl')
+H_func x x y z (le_inf ‹_› ‹_›) (bv_refl)
 
 def function.mk {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : bSet 𝔹 :=
 ⟨u.type, λ a, pair (u.func a) (F a), u.bval⟩
@@ -432,8 +449,8 @@ begin
   change Γ_2 ≤ (λ z, z =ᴮ v₂) _, apply bv_rw' a_left_right_left_1_1_1_2,
   simp, change _ ≤ (λ z, (F i) =ᴮ z) _, apply bv_rw' a_left_right_right_1_1_1_2,
   simp, apply le_trans, swap, apply h_congr,
-  apply bv_context_trans, rw[bv_eq_symm], from ‹_›,
-  apply bv_context_trans, from ‹_›, from ‹_›
+  apply bv_trans, rw[bv_eq_symm], from ‹_›,
+  apply bv_trans, from ‹_›, from ‹_›
 end
 
 --TODO(jesse) finish this
@@ -458,11 +475,11 @@ lemma mk_is_func' {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j,
 --    bv_mp a_right_right_1_1_1 (eq_of_eq_pair_right), -- TODO(jesse) generate sane variable names
 --    bv_mp a_right_left_1_1_1 (eq_of_eq_pair_left),
 --    bv_mp a_right_left_1_1_1 (eq_of_eq_pair_right),
---    have : Γ_2 ≤ func u i =ᴮ func u j, apply bv_context_trans, rw[bv_eq_symm],
---    assumption, rw[bv_eq_symm], apply bv_context_trans, rw[bv_eq_symm],
+--    have : Γ_2 ≤ func u i =ᴮ func u j, apply bv_trans, rw[bv_eq_symm],
+--    assumption, rw[bv_eq_symm], apply bv_trans, rw[bv_eq_symm],
 --    assumption, assumption, -- TODO(jesse) write a cc-like tactic to automate this
 --    suffices : Γ_2 ≤ F i =ᴮ F j,
---     by {apply bv_context_trans, assumption, rw[bv_eq_symm], apply bv_context_trans,
+--     by {apply bv_trans, assumption, rw[bv_eq_symm], apply bv_trans,
 --        assumption, from this},
 --    apply le_trans this, apply h_congr}, -- the tactics are a success!
 --   {bv_intro z, rw[<-deduction], rw[top_inf_eq], rw[mem_unfold], apply bv_Or_elim,
@@ -483,8 +500,8 @@ lemma mk_is_func' {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j,
 --      bv_split_at a_left_right_1, clear a_right_1_1 a_right_1 a_left_right_1_1 a_left_right_1_2 a_right_1_1_1,
 --      clear a_left_right_1 a_left_right a_left_left_left a_right,
 --      have : Γ_2 ≤ F i_z =ᴮ F i_pair,
---        by {apply le_trans _ (h_congr _ _), apply bv_context_trans, rw[bv_eq_symm], from ‹_›, from ‹_›},
---      apply bv_context_trans, exact this, apply bv_context_trans, rw[bv_eq_symm], from ‹_›, from ‹_›}
+--        by {apply le_trans _ (h_congr _ _), apply bv_trans, rw[bv_eq_symm], from ‹_›, from ‹_›},
+--      apply bv_trans, exact this, apply bv_trans, rw[bv_eq_symm], from ‹_›, from ‹_›}
 -- end
 
 lemma mk_inj_of_inj {u : bSet 𝔹} {F : u.type → bSet 𝔹} (h_inj : ∀ i j, i ≠ j → F i =ᴮ F j ≤ ⊥) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) :
@@ -497,7 +514,7 @@ begin
   tidy_context,
     haveI : decidable (i = j) := classical.prop_decidable _,
     by_cases i = j,
-      {subst h, have : Γ ≤ pair w₁ v₁ =ᴮ pair w₂ v₂, by apply bv_context_trans; {tidy},
+      {subst h, have : Γ ≤ pair w₁ v₁ =ᴮ pair w₂ v₂, by apply bv_trans; {tidy},
        bv_mp this eq_of_eq_pair_left, from ‹_›},
     have := h_inj i j h, by_cases Γ = ⊥, rw[h], apply bot_le,
     suffices : Γ = ⊥, by contradiction,
@@ -505,7 +522,7 @@ begin
     suffices : Γ ≤ F i =ᴮ F j, by {apply le_trans this ‹_›},
     bv_mp a_left_left_right eq_of_eq_pair_right,
     bv_mp a_left_right_right eq_of_eq_pair_right,
-    from bv_context_trans (bv_context_symm ‹_›) (bv_context_trans a_right ‹_›)
+    from bv_trans (bv_context_symm ‹_›) (bv_trans a_right ‹_›)
 end
 
 -- lemma mk_inj_of_inj {u : bSet 𝔹} {F : u.type → bSet 𝔹} (h_inj : ∀ i j, i ≠ j → F i =ᴮ F j ≤ ⊥) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) :
@@ -519,7 +536,7 @@ end
 --   tidy_context,
 --     haveI : decidable (i = j) := by apply classical.prop_decidable,
 --     by_cases i = j,
---       { subst h, apply bv_context_trans, tidy},
+--       { subst h, apply bv_trans, tidy},
 --     have := h_inj i j h,
 --     by_cases Γ = ⊥, rw[h], apply bot_le,
 --     suffices : Γ = ⊥, by contradiction,
@@ -587,10 +604,10 @@ end
 
 lemma check_subset_of_subset {x y : pSet} (h_subset : x ⊆ y) : (⊤ : 𝔹) ≤ x̌ ⊆ᴮ y̌ :=
 begin
-  rw[subset_unfold], cases x, cases y, unfold has_subset.subset pSet.subset at h_subset,
-  bv_intro x_j, apply bv_imp_intro, rw[top_inf_eq], apply le_trans, apply mem.mk',
-  simp[-top_le_iff], specialize h_subset x_j, cases h_subset with b H_b,
-  apply bv_use b, from check_bv_eq ‹_›
+  rw[subset_unfold], unfold has_subset.subset pSet.subset at h_subset,
+  bv_intro x_j, bv_imp_intro H_x_j, cases x with α A, cases y with β B,
+  rcases (h_subset ‹_›) with ⟨b , Hb⟩,
+  apply bv_use b, convert (check_bv_eq ‹_›), simpa[check_func]
 end
 
 lemma check_subset {x y : pSet} {Γ : 𝔹} (h_subset : x ⊆ y) : Γ ≤ x̌ ⊆ᴮ y̌ :=
@@ -627,7 +644,7 @@ begin
        apply bv_use j.val,
        refine le_inf _ _,
          { have := j.property, unfold Prop_to_bot_top, simp* },
-         { exact bv_eq_refl' }},
+         { exact bv_refl }}, 
      { rw[subset_unfold], bv_intro j, bv_imp_intro Hj, simp,
        let Q := bval (set_of_indicator (λ (i : type $ (pSet.mk α A)̌  ), Prop_to_bot_top (s i))) j,
        haveI := classical.prop_decidable, by_cases H: ⊥ < Q,
@@ -635,7 +652,7 @@ begin
              by { refine bv_use ⟨j, this⟩, swap,
                   simp*, transitivity ⊤,
                     { exact le_top },
-                    { exact bv_eq_refl' }},
+                    { exact bv_refl }},
            by_contra, suffices this : Q = ⊥,
              by {rw[this] at H, simpa using H},
            dsimp[Q, Prop_to_bot_top], simp* },
@@ -729,20 +746,17 @@ begin
             cases p₁ with i₁ i₂, cases p₂ with j₁ j₂,
             rename H'_left_1 H₁, rename H'_right_1 H₂,
             clear_except H₁ H₂ H_eq, simp only [le_inf_iff]  at H₁ H₂,
-            repeat{auto_cases},
-            replace H₁_right := eq_of_eq_pair H₁_right,
-            replace H₂_right := eq_of_eq_pair H₂_right,
-            cases H₁_right with H₁₀ H₁₁, cases H₂_right with H₂₀ H₂₁,
-            bv_cc
-          },
+            repeat{auto_cases}, have := eq_of_eq_pair H₁_right, have := eq_of_eq_pair H₂_right,
+            repeat{auto_cases}, bv_cc },
+
           {bv_intro w₁, bv_imp_intro w₁_mem_x, apply bv_use w₁,
            rw[subset_unfold'] at H, replace H := H w₁ ‹_›, refine le_inf ‹_› _,
            dsimp, rw[mem_unfold] at w₁_mem_x, rw[mem_unfold] at H,
            bv_cases_at w₁_mem_x i, bv_cases_at H j,
            apply bv_use (i,j), simp only [le_inf_iff],
            refine ⟨⟨⟨_,_⟩,_⟩,_⟩,
-           refine bv_context_trans _ (bv_and.right H_1), apply bv_symm,
-           exact bv_context_trans (bv_and.right w₁_mem_x_1) (bv_eq_refl'),
+           refine bv_trans _ (bv_and.right H_1), apply bv_symm,
+           exact bv_trans (bv_and.right w₁_mem_x_1) (bv_refl),
            exact bv_and.left w₁_mem_x_1, exact bv_and.left H_1,
            refine pair_congr _ _, exact bv_and.right w₁_mem_x_1, exact bv_and.right H_1}},
 
@@ -751,14 +765,8 @@ begin
             bv_cases_at H_1_left_left i, bv_cases_at H_1_left_right j,
             rcases i with ⟨i₁,i₂⟩, rcases j with ⟨j₁,j₂⟩,
             clear H_1_left_left H_1_left_right,
-            bv_split, dsimp at *,
-            have this₁ :=  (eq_of_eq_pair_left' H_1_left_left_1_right),
-            have this₂ :=  (eq_of_eq_pair_right' H_1_left_left_1_right),
-            have this₃ := (eq_of_eq_pair_left' H_1_left_right_1_right),
-            have this₄ := (eq_of_eq_pair_right' H_1_left_right_1_right),
-            rename H_1_left_right_1_left H', rename H_1_left_left_1_left H'',
-            simp only [le_inf_iff] at H' H'', repeat{auto_cases}, bv_cc}}
-
+            bv_split, simp only [le_inf_iff] at H_1_left_right_1_left H_1_left_left_1_left,
+            apply_all eq_of_eq_pair, repeat{auto_cases}, bv_cc }}
 end
 
 def Card (y : bSet 𝔹) : 𝔹 := Ord(y) ⊓ ⨅x, x ∈ᴮ y ⟹ (- larger_than y x)
@@ -955,18 +963,29 @@ by simp[pSet.card_ex]
 
 def closed_under_successor (Γ) (x : bSet 𝔹) := Γ ≤ ⨅y, y ∈ᴮ x ⟹ succ y ∈ᴮ x
 
-def omega_spec (ω : bSet 𝔹) := ∀ (x : bSet 𝔹) {Γ} (H₁ : Γ ≤ ∅ ∈ᴮ x) (H₂ : closed_under_successor Γ x), Γ ≤ ω ⊆ᴮ x
+def omega_spec (ω : bSet 𝔹) := (∀ {Γ : 𝔹}, closed_under_successor Γ ω) ∧ ∀ (x : bSet 𝔹) {Γ} (H₁ : Γ ≤ ∅ ∈ᴮ x) (H₂ : closed_under_successor Γ x), Γ ≤ bSet.omega ⊆ᴮ x
 
 lemma check_succ_eq_succ_check {n : ℕ} : (of_nat (n.succ) : bSet 𝔹) = bSet.succ (of_nat n) :=
 by simp[of_nat, succ, pSet.of_nat]
 
+lemma omega_closed_under_succ {Γ : 𝔹} : closed_under_successor Γ (bSet.omega) := 
+begin
+  unfold closed_under_successor, bv_intro y, bv_imp_intro H_mem,
+  bv_cases_at H_mem k, cases k with k, simp at H_mem_1, refine bv_use _,
+  exact (ulift.up $ k + 1), simp, apply bv_rw' H_mem_1,
+    { exact @B_ext_term 𝔹 _ (λ z, z =ᴮ ((k+1)̃ ̌)) (by simp) succ B_congr_succ },
+      -- TODO(jesse): automate calculation of the motive
+    { simp[pSet.of_nat, succ] },
+end
+
 lemma omega_is_omega : omega_spec (bSet.omega : bSet 𝔹) :=
 begin
-  intros x Γ H₁ H₂, unfold closed_under_successor at H₂, rw[subset_unfold],
-  simp, intro k, cases k, induction k, convert H₁,
-  {change (∅̌) = _, simp},
-  {let A := _, change Γ ≤ A ∈ᴮ x at k_ih,
-   convert H₂ A ‹_›, from check_succ_eq_succ_check}
+  refine ⟨by apply omega_closed_under_succ, _⟩, 
+    {intros x Γ H₁ H₂, unfold closed_under_successor at H₂, rw[subset_unfold],
+     simp, intro k, cases k, induction k, convert H₁,
+     {change (∅̌) = _, simp},
+     {let A := _, change Γ ≤ A ∈ᴮ x at k_ih,
+      convert H₂ A ‹_›, from check_succ_eq_succ_check}}
 end
 
 lemma of_nat_mem_of_lt {k₁ k₂ : ℕ} (H_lt : k₁ < k₂) {Γ} : Γ ≤ (bSet.of_nat k₁ : bSet 𝔹) ∈ᴮ (bSet.of_nat k₂) :=

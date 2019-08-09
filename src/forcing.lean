@@ -420,7 +420,7 @@ begin
     from 𝒞_anti (by {dsimp[p'], from λ i _, by {simp, from or.inr ‹_›}})
                 (by {dsimp[p'], from λ i _, by {simp, from or.inr ‹_›}}),
   have this₁ : ι p' ≤ (ñ̌) ∈ᴮ (cohen_real.mk ν₁),
-    by {rw[bSet.mem_unfold], apply bv_use (ulift.up n), refine le_inf _ bv_eq_refl',
+    by {rw[bSet.mem_unfold], apply bv_use (ulift.up n), refine le_inf _ bv_refl,
          {simp [le_iff_subset', χ, _root_.principal_open, ι, cantor_space.principal_open],
          have : (ν₁, n) ∈ p'.ins,
            by simp[p'], intros S H_S _, specialize H_S this,

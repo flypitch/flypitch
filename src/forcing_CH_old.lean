@@ -129,13 +129,13 @@ begin
   dsimp[rel_of_array] at H_mem_left this,
   bv_cases_at H_mem_left p₁, cases p₁ with i₁ j₁,
   suffices : Γ_3 ≤ v₂ =ᴮ (y.func j₁),
-    by {refine bv_context_trans _ (bv_symm this), bv_split,
+    by {refine bv_trans _ (bv_symm this), bv_split,
          from eq_of_eq_pair_right' ‹_›},
   bv_cases_at this p₂, cases p₂ with i₂ j₂,
   suffices : Γ_4 ≤ (y.func j₂) =ᴮ (func y j₁),
-    by {exact bv_context_trans (by bv_split; from eq_of_eq_pair_right' ‹_›) (this)},
+    by {exact bv_trans (by bv_split; from eq_of_eq_pair_right' ‹_›) (this)},
   by_cases j₁ = j₂,
-    { subst h, from bv_eq_refl'},
+    { subst h, from bv_refl},
     { bv_exfalso, by_cases i₁ = i₂,
         { subst h, specialize H_anti i₁ j₁ j₂ ‹_›, refine le_trans _ H_anti,
           bv_split, bv_split_goal},
@@ -152,7 +152,7 @@ begin
                  clear_except H_inj h, intro H, from absurd (H_inj _ _ H) ‹_›},
           bv_split,
           exact ⟨eq_of_eq_pair_left' H_mem_left_1_right,
-                   bv_context_trans (bv_symm H_eq) (eq_of_eq_pair_left' this_1_right)⟩}}
+                   bv_trans (bv_symm H_eq) (eq_of_eq_pair_left' this_1_right)⟩}}
 end
 
 lemma rel_of_array_is_func'  (x y : bSet 𝔹) (af : x.type → y.type → 𝔹)

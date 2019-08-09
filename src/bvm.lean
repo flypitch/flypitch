@@ -229,11 +229,7 @@ begin
     apply le_supr_of_le i, have := x_ih i, simp[this]}
 end
 
--- deprecated, do not use
-theorem bv_eq_refl' {Γ : 𝔹} {x} : Γ ≤ x =ᴮ x :=
-le_trans le_top (by simp)
-
-lemma bv_refl {Γ : 𝔹} {x} : Γ ≤ x =ᴮ x := bv_eq_refl' -- can't tag this refl because it messes up (by refl : x ≤ x)
+@[simp]theorem bv_refl {Γ : 𝔹} {x} : Γ ≤ x =ᴮ x := le_trans le_top (by simp)
 
 @[simp]lemma bv_eq_top_of_eq {x y : bSet 𝔹} (h_eq : x = y) : x =ᴮ y = ⊤ :=
 by simp*
@@ -272,6 +268,7 @@ theorem mem.mk {α : Type*} (A : α → bSet 𝔹) (B : α → 𝔹) (a : α) : 
 theorem mem.mk' (x : bSet 𝔹) (a : x.type) : x.bval a ≤ x.func a ∈ᴮ x :=
 by {cases x, apply le_supr_of_le a, simp}
 
+-- the Γ-generalized version of mem.mk uses two primes because mem.mk' already existed
 theorem mem.mk'' {x : bSet 𝔹} {a : x.type} {Γ} : Γ ≤ x.bval a → Γ ≤ x.func a ∈ᴮ x :=
 poset_yoneda_inv Γ (mem.mk' x a)
 
@@ -435,15 +432,11 @@ begin
 end
 
 -- deprecated, do not use
-lemma bv_context_trans {Γ : 𝔹} {a₁ a₂ a₃ : bSet 𝔹} (H₁ : Γ ≤ a₁ =ᴮ a₂) (H₂ : Γ ≤ a₂ =ᴮ a₃) :
-  Γ ≤ a₁ =ᴮ a₃ :=
-by {have := inf_le_inf H₁ H₂, rw[inf_self] at this, apply le_trans this, apply bv_eq_trans}
-
--- deprecated, do not use
 lemma bv_context_symm {Γ : 𝔹} {a₁ a₂ : bSet 𝔹} (H : Γ ≤ a₁ =ᴮ a₂) : Γ ≤ a₂ =ᴮ a₁ := by rwa[bv_eq_symm]
 
 lemma bv_trans {Γ : 𝔹} {a₁ a₂ a₃ : bSet 𝔹} (H₁ : Γ ≤ a₁ =ᴮ a₂) (H₂ : Γ ≤ a₂ =ᴮ a₃) :
-  Γ ≤ a₁ =ᴮ a₃ := bv_context_trans ‹_› ‹_›
+  Γ ≤ a₁ =ᴮ a₃ :=
+le_trans (le_inf_iff.mpr ⟨H₁,H₂⟩) bv_eq_trans
 
 @[symm]lemma bv_symm {Γ} {x y : bSet 𝔹} (H : Γ ≤ x =ᴮ y) : Γ ≤ y =ᴮ x := by rwa[bv_eq_symm]
 
@@ -515,16 +508,19 @@ by bv_cc -- :^)
 /-- If u = v and u ∈ w, then this implies that v ∈ w -/
 lemma subst_congr_mem_left {u v w : bSet 𝔹} : u =ᴮ v ⊓ u ∈ᴮ w ≤ v ∈ᴮ w :=
 begin
-  simp only [mem_unfold], apply bv_cases_right, intro i,
-  apply bv_use i, ac_change' bval w i ⊓ (u =ᴮ v ⊓ (u =ᴮ func w i)) ≤ bval w i ⊓ v =ᴮ func w i,
-  apply inf_le_inf, refl, rw[bv_eq_symm], apply bv_eq_trans
+  simp only [mem_unfold], tidy_context,
+  bv_cases_at a_right i, apply bv_use i, bv_split, from le_inf ‹_› (by bv_cc)
 end
+
+-- to derive primed versions of lemmas, use poset_yoneda_inv
+@[simp]lemma subst_congr_mem_left' {Γ : 𝔹} {u v w : bSet 𝔹} : Γ ≤ u =ᴮ v → Γ ≤ u ∈ᴮ w → Γ ≤ v ∈ᴮ w :=
+  λ _ _, poset_yoneda_inv _ subst_congr_mem_left $ le_inf ‹_› ‹_›
 
 -- example {u v w : bSet 𝔹} : u =ᴮ v ⊓ u ∈ᴮ w ≤ v ∈ᴮ w :=
 -- begin
 --   simp only [mem_unfold], tidy_context,
 --   bv_cases_at a_right i, apply bv_use i, bv_split, refine le_inf ‹_› _,
---   from bv_context_trans (bv_symm a_left) ‹_›
+--   from bv_trans (bv_symm a_left) ‹_›
 -- end
 
 /-- If v = w and u ∈ v, then this implies that u ∈ w -/
@@ -538,6 +534,10 @@ begin
   rw[deduction], cases w, apply inf_le_left_of_le, apply infi_le
 end
 
+@[simp]lemma subst_congr_mem_right' {Γ : 𝔹} {u v w : bSet 𝔹} : Γ ≤ w =ᴮ v → Γ ≤ u ∈ᴮ w → Γ ≤ u ∈ᴮ v :=
+  λ _ _, poset_yoneda_inv _ subst_congr_mem_right $ le_inf ‹_› ‹_›
+
+/- Use rw[bounded_forall] and rw[bounded_exists] to pass from restricted quantifiers to the FOL interpretation of the quantifiers -/
 lemma bounded_forall {v : bSet 𝔹} {ϕ : bSet 𝔹 → 𝔹 } {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} :
   (⨅(i_x : v.type), (v.bval i_x ⟹ ϕ (v.func i_x))) = (⨅(x : bSet 𝔹), x ∈ᴮ v ⟹ ϕ x)  :=
 begin
@@ -563,6 +563,7 @@ begin
       apply inf_le_inf, refl, apply h_congr}
 end
 
+-- foo_unfold' means that the definition foo will be unfolded using global quantifiers
 lemma mem_unfold' {u v : bSet 𝔹} : u ∈ᴮ v = ⨆z, z ∈ᴮ v ⊓ u =ᴮ z :=
 by {rw[<-bounded_exists, mem_unfold], intros x y,
     ac_change' y =ᴮ x ⊓ x =ᴮ u ≤ y =ᴮ u,
@@ -575,7 +576,8 @@ begin
 end
 
 theorem mem_ext {x y : bSet 𝔹} {Γ : 𝔹} (h₁ : Γ ≤ ⨅z, z ∈ᴮ x ⟹ z ∈ᴮ y) (h₂ : Γ ≤ ⨅z, z ∈ᴮ y ⟹ z ∈ᴮ x) : Γ ≤ x =ᴮ y :=
-by {refine subset_ext _ _; rw[subset_unfold']; from ‹_›}
+by {[smt] eblast_using [subset_ext, subset_unfold']}
+
 
 @[simp]lemma subset_self_eq_top {x : bSet 𝔹} : x ⊆ᴮ x = ⊤ :=
 top_unique subset_self
@@ -590,12 +592,15 @@ begin
   apply le_trans, apply bv_imp_elim, refl
 end
 
-lemma subset_trans_context {x y z : bSet 𝔹} {c : 𝔹} {h₁ : c ≤ x ⊆ᴮ y} {h₂ : c ≤ y ⊆ᴮ z} : c ≤ x ⊆ᴮ z :=
-begin
-  apply bv_have h₂, rw[deduction], apply bv_have h₁, rw[<-deduction],
-  ac_change' c ⊓ (x ⊆ᴮ y ⊓ y ⊆ᴮ z) ≤ x ⊆ᴮ z, apply inf_le_right_of_le,
-  apply subset_trans
-end
+lemma subset_trans' {x y z : bSet 𝔹} {Γ : 𝔹} (H₁ : Γ ≤ x ⊆ᴮ y) (H₂ : Γ ≤ y ⊆ᴮ z) : Γ ≤ x ⊆ᴮ z :=
+poset_yoneda_inv Γ subset_trans $ le_inf ‹_› ‹_›
+
+-- lemma subset_trans_context {x y z : bSet 𝔹} {c : 𝔹} {h₁ : c ≤ x ⊆ᴮ y} {h₂ : c ≤ y ⊆ᴮ z} : c ≤ x ⊆ᴮ z :=
+-- begin
+--   apply bv_have h₂, rw[deduction], apply bv_have h₁, rw[<-deduction],
+--   ac_change' c ⊓ (x ⊆ᴮ y ⊓ y ⊆ᴮ z) ≤ x ⊆ᴮ z, apply inf_le_right_of_le,
+--   apply subset_trans
+-- end
 
 lemma mem_of_mem_subset {x y z : bSet 𝔹} {Γ} (H₂ : Γ ≤ y ⊆ᴮ z) (H₁ : Γ ≤ x ∈ᴮ y) : Γ ≤ x ∈ᴮ z :=
 by {rw[subset_unfold'] at H₂, from H₂ x ‹_›}
@@ -719,12 +724,6 @@ begin
     by {apply le_inf, from ‹_›, from ‹_›},
   from (poset_yoneda_inv _ (h_congr _ _) this)
 end
-
-@[simp]lemma subst_congr_mem_left' {Γ : 𝔹} {u v w : bSet 𝔹} : Γ ≤ u =ᴮ v → Γ ≤ u ∈ᴮ w → Γ ≤ v ∈ᴮ w :=
-by {intros H₁ H₂, rw[bv_eq_symm] at H₁, apply bv_rw' H₁, simp, from ‹_›}
-
-lemma subst_congr_mem_right' {Γ : 𝔹} {u v w : bSet 𝔹} : Γ ≤ w =ᴮ v → Γ ≤ u ∈ᴮ w → Γ ≤ u ∈ᴮ v :=
-by {intros H₁ H₂, rw[bv_eq_symm] at H₁, apply bv_rw' H₁, simp, from ‹_›}
 
 lemma mem_congr {Γ : 𝔹} {x₁ x₂ y₁ y₂ : bSet 𝔹} {H₁ : Γ ≤ x₁ =ᴮ y₁} {H₂ : Γ ≤ x₂ =ᴮ y₂} {H₃ : Γ ≤ x₁ ∈ᴮ x₂} :
   Γ ≤ y₁ ∈ᴮ y₂ :=
@@ -1214,7 +1213,7 @@ begin
   intros h₁ h₂ H, unfold core.mk_ϕ at H, replace H := congr_fun H,
   apply top_unique,
   have : ∀ i_z : u.type, u.bval i_z ⊓ x =ᴮ u.func i_z ⊓ u.bval i_z ⊓ u.func i_z =ᴮ y  ≤ x =ᴮ y :=
-    λ i_z, by {tidy_context, from bv_context_trans (‹_› : Γ ≤ x =ᴮ func u i_z) ‹_›},
+    λ i_z, by {tidy_context, from bv_trans (‹_› : Γ ≤ x =ᴮ func u i_z) ‹_›},
     dsimp at H, simp[H] at this, rw[<-supr_le_iff] at this, rw[eq_top_iff] at h₂,
     refine le_trans _ this, convert h₂, rw[mem_unfold], congr' 1, ext,
     refine le_antisymm _ _; tidy_context, from ⟨⟨⟨‹_›,‹_›⟩,‹_›⟩, bv_context_symm ‹_›⟩
@@ -1289,7 +1288,7 @@ begin
    split, refine ⟨H₁, _⟩, intros i H_y''',
    suffices : core.mk_aux u i =ᴮ y' = ⊤,
      by {have : core.mk_aux u i =ᴮ y'' = ⊤, by {apply top_unique, rw[eq_top_iff] at *,
-         apply bv_context_trans this, convert H_y'' using 1, apply bv_eq_symm},
+         apply bv_trans this, convert H_y'' using 1, apply bv_eq_symm},
          dsimp[y''] at this, unfold core.mk_aux at this_1,
          have : ⟦quotient.out i⟧ = ⟦quotient.out ⟦⟨image.mk y, H_y'2⟩⟧⟧,
            by {apply quotient.sound, exact this_1},
@@ -1326,15 +1325,20 @@ def subset'_partial_order {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} (
   lt := λ a₁ a₂, (subset' h a₁ a₂) ∧ a₁ ≠ a₂,
   le_refl := by {simp[subset']},
   le_trans := by {intros a b c, simp only [subset'], intros, rw[eq_top_iff] at a_1 a_2 ⊢,
-                   apply subset_trans_context, repeat{assumption}},
+                   from subset_trans' ‹_› ‹_›},
   lt_iff_le_not_le :=
     begin
-      tidy, dsimp[subset'] at *,
+      /- `tidy` says -/ intros a b, cases h, dsimp at *, fsplit,
+      work_on_goal 0 { intros a_1, cases a_1, fsplit,
+        work_on_goal 0 { assumption }, intros a_1 },
+      work_on_goal 1 { intros a_1, cases a_1, fsplit,
+        work_on_goal 0 { assumption }, intros a_1, induction a_1, solve_by_elim },
+      dsimp[subset'] at *,
       suffices : S a = S b,
         by {have := core_inj u _ ⟨h_left, h_right⟩ this, contradiction},
       suffices : a = b, by rw[this]; refl, apply core_inj' ⟨h_left, h_right⟩, dsimp,
       rw[eq_top_iff] at a_1_left a_1 ⊢, from subset_ext ‹_› ‹_›
-      end,
+    end,
   le_antisymm :=
     begin
       intros a b H₁ H₂, apply core_inj' h, unfold subset' at H₁ H₂, rw[eq_top_iff] at H₁ H₂ ⊢,
@@ -1365,7 +1369,7 @@ begin
     specialize H_right y H₁, cases H_right with y' H_y',
     use S y', specialize H_left y', split, use y', finish,
     dsimp at H₁ H₂, rw[H₂], cases H_y', have := bv_rw H_y'_left (λ z, x =ᴮ z),
-    simpa[bv_eq_symm] using this, intros x₁ y₁, dsimp, rw[inf_comm], apply bv_eq_trans
+    simpa[bv_eq_symm] using this, intros x₁ y₁, dsimp, rw[inf_comm], exact bv_eq_trans
 end
 
 lemma core_mem_of_mem_image {u y} {α : Type u} {S : α → bSet 𝔹} (h_core : core u S) :
@@ -1608,7 +1612,7 @@ lemma eq_check_of_mem_check {Γ : 𝔹} (h_nonzero : ⊥ < Γ) (x : pSet.{u}) (y
 begin
   refine ⟨_,_⟩,
     { refine instantiate_existential_over_check _ x ‹_› _,
-      exact λ z, y =ᴮ z, simp, apply bv_use y, exact le_inf ‹_› bv_eq_refl' },
+      exact λ z, y =ᴮ z, simp, apply bv_use y, exact le_inf ‹_› bv_refl },
     { apply instantiate_existential_over_check_spec₂ }
 end
 
@@ -1886,7 +1890,7 @@ begin
 end
 
 lemma set_of_indicator_mem.mk {x : bSet 𝔹} {i : x.type} {χ : x.type → 𝔹} {Γ} (H_Γ : Γ ≤ χ i) : Γ ≤ (x.func i) ∈ᴮ (set_of_indicator χ) :=
-by {rw[mem_unfold], apply bv_use i, exact le_inf H_Γ (bv_eq_refl')}
+by {rw[mem_unfold], apply bv_use i, exact le_inf H_Γ (bv_refl)}
 
 lemma set_of_indicator_subset {x : bSet 𝔹} {χ : x.type → 𝔹} {Γ} (H_χ : ∀ i, χ i ≤ x.bval i) : Γ ≤ set_of_indicator χ ⊆ᴮ x :=
 begin
@@ -1913,13 +1917,13 @@ begin
             { rw[<-this], convert H'_1_right, cases x, refl },
             { exact bot_le }}},
     { intro Γ, specialize @H Γ, apply bv_use (cast check_type'.symm i),
-      cases x, exact le_inf ‹_› bv_eq_refl' }
+      cases x, exact le_inf ‹_› bv_refl }
 end
 
 lemma subset_of_pointwise_bounded {Γ : 𝔹} {x : bSet 𝔹} {p : x.type → 𝔹} {p' : x.type → 𝔹} (H_bd : ∀ i : x.type, p i ≤ p' i) : Γ ≤ set_of_indicator p ⊆ᴮ set_of_indicator p' :=
 begin
   simp[subset_unfold], intro i, bv_imp_intro, apply bv_use i,
-  from le_inf (le_trans H (by simp*)) bv_eq_refl'
+  from le_inf (le_trans H (by simp*)) bv_refl
 end
 
 lemma pointwise_bounded_of_check_subset_check {x : pSet} {p₁ p₂ : x̌.type → 𝔹} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂)(H_eq : ∀ {Γ}, Γ ≤ (set_of_indicator p₁ ⊆ᴮ set_of_indicator p₂)) : ∀ i, p₁ i ≤ p₂ i :=
