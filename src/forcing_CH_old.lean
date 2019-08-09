@@ -42,13 +42,13 @@ begin
 end
 
 theorem CH_true_aux
-  (H_aleph_one : ∀{Γ : 𝔹}, Γ ≤ aleph_one_universal_property (ℵ₁̌ ))
+  (H_aleph_one : ∀{Γ : 𝔹}, Γ ≤ aleph_one_weak_universal_property (ℵ₁̌ ))
   (H_not_lt    : ∀{Γ : 𝔹}, Γ ≤ - ((ℵ₁)̌  ≺ 𝒫(ω)))
   : ∀{Γ : 𝔹}, Γ ≤ CH :=
 begin
   intro Γ, unfold CH, rw[<-imp_bot], bv_imp_intro,
   bv_cases_at H x, bv_cases_at H_1 y, clear H H_1, bv_split, bv_split,
-  unfold aleph_one_universal_property at H_aleph_one,
+  unfold aleph_one_weak_universal_property at H_aleph_one,
   replace H_aleph_one := @H_aleph_one Γ_3 x ‹_›,
   suffices H_aleph_one_lt_continuum : Γ_3 ≤ (ℵ₁)̌  ≺ 𝒫(ω),
     from bv_absurd _ H_aleph_one_lt_continuum H_not_lt,
@@ -355,7 +355,7 @@ begin
     { apply function_reflect_surj_of_surj, from ‹_›, from a_right_1_right }
 end
 
-lemma aleph_one_check_universal_property (Γ : 𝔹) : Γ ≤ aleph_one_universal_property (ℵ₁̌  : bSet 𝔹) :=
+lemma aleph_one_check_universal_property (Γ : 𝔹) : Γ ≤ aleph_one_weak_universal_property (ℵ₁̌  : bSet 𝔹) :=
 begin
   apply bv_rw' (aleph_one_check_is_aleph_one_of_omega_lt (omega_lt_aleph_one)),
   { simp },
