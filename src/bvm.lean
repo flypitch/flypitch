@@ -216,7 +216,7 @@ infix ` =ᴮ `:80 := bv_eq
 
 def bv_eq' (Γ : 𝔹) : bSet 𝔹 → bSet 𝔹 → Prop := λ x y, Γ ≤ x=ᴮ y
 
-theorem bv_eq_refl_empty : (@bv_eq 𝔹 _) (empty) (empty) = ⊤ :=
+example : (@bv_eq 𝔹 _) (empty) (empty) = ⊤ :=
   by unfold empty bv_eq;
   {simp only [lattice.inf_eq_top_iff, lattice.infi_eq_top], fsplit; intros i; cases i; cases i}
 
@@ -229,7 +229,7 @@ begin
     apply le_supr_of_le i, have := x_ih i, simp[this]}
 end
 
-@[simp]theorem bv_refl {Γ : 𝔹} {x} : Γ ≤ x =ᴮ x := le_trans le_top (by simp)
+@[simp]lemma bv_refl {Γ : 𝔹} {x} : Γ ≤ x =ᴮ x := le_trans le_top (by simp)
 
 @[simp]lemma bv_eq_top_of_eq {x y : bSet 𝔹} (h_eq : x = y) : x =ᴮ y = ⊤ :=
 by simp*
@@ -266,7 +266,7 @@ theorem mem.mk {α : Type*} (A : α → bSet 𝔹) (B : α → 𝔹) (a : α) : 
   le_supr_of_le a $ by simp
 
 theorem mem.mk' (x : bSet 𝔹) (a : x.type) : x.bval a ≤ x.func a ∈ᴮ x :=
-by {cases x, apply le_supr_of_le a, simp}
+by cases x; from mem.mk _ _ _
 
 -- the Γ-generalized version of mem.mk uses two primes because mem.mk' already existed
 theorem mem.mk'' {x : bSet 𝔹} {a : x.type} {Γ} : Γ ≤ x.bval a → Γ ≤ x.func a ∈ᴮ x :=
@@ -431,9 +431,6 @@ begin
         ac_refl}
 end
 
--- deprecated, do not use
-lemma bv_context_symm {Γ : 𝔹} {a₁ a₂ : bSet 𝔹} (H : Γ ≤ a₁ =ᴮ a₂) : Γ ≤ a₂ =ᴮ a₁ := by rwa[bv_eq_symm]
-
 lemma bv_trans {Γ : 𝔹} {a₁ a₂ a₃ : bSet 𝔹} (H₁ : Γ ≤ a₁ =ᴮ a₂) (H₂ : Γ ≤ a₂ =ᴮ a₃) :
   Γ ≤ a₁ =ᴮ a₃ :=
 le_trans (le_inf_iff.mpr ⟨H₁,H₂⟩) bv_eq_trans
@@ -454,7 +451,6 @@ lemma bv_cc.mk_iff {Γ} {x y : bSet 𝔹} : Γ ≤ x =ᴮ y ↔ (@quotient.mk _ 
 
 lemma bv_cc.mk {Γ} {x y : bSet 𝔹} (H : Γ ≤ x =ᴮ y) : (@quotient.mk _ (b_setoid Γ) x) = (@quotient.mk _ (b_setoid Γ) y) := bv_cc.mk_iff.mp ‹_›
 
--- TODO(jesse): bundle this into a bv_cc tactic
 example {x y z : bSet 𝔹} {Γ : 𝔹} (H1 : Γ ≤ x =ᴮ y) (H2 : Γ ≤ y =ᴮ z) : Γ ≤ x =ᴮ z :=
 begin
   replace H1 := bv_cc.mk H1,
@@ -468,7 +464,6 @@ namespace interactive
 section bv_cc
 open lean.parser lean interactive.types interactive
 local postfix `?`:9001 := optional
-
 
 /--
 `apply_at (H : α) F` assumes that F's first explicit argument is of type `α`
@@ -972,29 +967,6 @@ begin
   specialize asymm a b H'', contradiction
 end
 
---TODO(jesse) clean this up later, maybe write ac_transpose?
--- run_cmd mk_simp_attr `reassoc
--- @[reassoc]lemma sup_reassoc {a b c : 𝔹} : a ⊔ (b ⊔ c) = a ⊔ b ⊔ c :=
--- by ac_refl
-
--- @[reassoc]lemma inf_reassoc {a b c : 𝔹} : a ⊓ (b ⊓ c) = a ⊓ b ⊓ c :=
--- by ac_refl
-
--- @[reassoc]lemma abcd_reassoc_sup {a b c d : 𝔹} : (a ⊔ b) ⊔ (c ⊔ d) = a ⊔ b ⊔ c ⊔ d :=
--- by rw[sup_reassoc]
-
--- @[reassoc]lemma abcd_reassoc_inf {a b c d : 𝔹} : (a ⊓ b) ⊓ (c ⊓ d) = a ⊓ b ⊓ c ⊓ d :=
--- by rw[inf_reassoc]
-
--- lemma abcd_rw_cabd_sup {a b c d : 𝔹} : a ⊔ b ⊔ c ⊔ d = c ⊔ b ⊔ a ⊔ d :=
--- by ac_refl
-
--- lemma abcd_rw_cabd_inf {a b c d : 𝔹} : a ⊓ b ⊓ c ⊓ d = c ⊓ b ⊓ a ⊓ d :=
--- by ac_refl
-
--- lemma abcd_rw_bcad_inf {a b c d : 𝔹} : a ⊓ b ⊓ c ⊓ d = b ⊓ c ⊓ a ⊓ d :=
--- by ac_refl
-
 def witness_antichain_index : ∀ {i j}, i ≠ j → (@witness_antichain _ _ ϕ r _) i ⊓ (@witness_antichain _ _ ϕ r _) j = ⊥ :=
 λ x y h_neq,
 begin
@@ -1216,7 +1188,7 @@ begin
     λ i_z, by {tidy_context, from bv_trans (‹_› : Γ ≤ x =ᴮ func u i_z) ‹_›},
     dsimp at H, simp[H] at this, rw[<-supr_le_iff] at this, rw[eq_top_iff] at h₂,
     refine le_trans _ this, convert h₂, rw[mem_unfold], congr' 1, ext,
-    refine le_antisymm _ _; tidy_context, from ⟨⟨⟨‹_›,‹_›⟩,‹_›⟩, bv_context_symm ‹_›⟩
+    refine le_antisymm _ _; tidy_context, from ⟨⟨⟨‹_›,‹_›⟩,‹_›⟩, bv_symm ‹_›⟩
 end
 
 noncomputable def core.S' (u : bSet 𝔹) : (core.mk_ϕ u '' set.univ) → bSet 𝔹 :=

@@ -522,7 +522,7 @@ begin
     suffices : Γ ≤ F i =ᴮ F j, by {apply le_trans this ‹_›},
     bv_mp a_left_left_right eq_of_eq_pair_right,
     bv_mp a_left_right_right eq_of_eq_pair_right,
-    from bv_trans (bv_context_symm ‹_›) (bv_trans a_right ‹_›)
+    from bv_trans (bv_symm ‹_›) (bv_trans a_right ‹_›)
 end
 
 -- lemma mk_inj_of_inj {u : bSet 𝔹} {F : u.type → bSet 𝔹} (h_inj : ∀ i j, i ≠ j → F i =ᴮ F j ≤ ⊥) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) :
@@ -630,7 +630,7 @@ begin
   rw[subset_unfold], bv_intro s, simp only [mem, bval, top_imp, func, check, check_bval_top],
   suffices : ∃ χ : (x̌).type → 𝔹, Γ ≤ ((pSet.powerset x)̌ .func s) =ᴮ (set_of_indicator χ),
     by {cases this with χ Hχ, rw[mem_unfold], apply bv_use χ, refine le_inf _ ‹_›,
-        { change _ ≤ _ ⊆ᴮ _, have := bv_rw' (bv_context_symm Hχ), show bSet 𝔹 → 𝔹,
+        { change _ ≤ _ ⊆ᴮ _, have := bv_rw' (bv_symm Hχ), show bSet 𝔹 → 𝔹,
           from λ z, z ⊆ᴮ x̌, from this, by simp,
           have eq_check_type : type ((p𝒫 x)̌ ) = pSet.type (p𝒫 x) :=
             by {simp, recover, all_goals{from ‹_›} },
