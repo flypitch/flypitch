@@ -295,18 +295,23 @@ open pfun
 
 variables {X Y}
 
-/- TODO: separate out the lemma `#f.ran ≤ #f.dom` -/
-lemma collapse_poset.ran_ctbl (p : collapse_poset X Y) : # p.f.ran ≤ aleph 0 :=
+section to_mathlib
+
+lemma card_ran_le_card_dom {X Y : Type*} (p : X →. Y) : #(ran (p)) ≤ #(dom (p)) :=
 begin
-  suffices : #p.f.ran ≤ #p.f.dom,
-    by {exact le_trans this p.Hc},
   refine mk_le_of_surjective _,
-    { exact λ ⟨x,H⟩, ⟨fn p.f x H, by apply fn_mem_ran⟩},
+    { exact λ ⟨x,H⟩, ⟨fn p x H, by apply fn_mem_ran⟩},
     { intros y, by_contra, push_neg at a,
     /- `tidy` says -/ cases y, cases y_property, cases y_property_h,
       induction y_property_h_h, simp at *, dsimp at *,
       specialize a ‹_› ‹_›, finish }
 end
+
+
+end to_mathlib
+
+lemma collapse_poset.ran_ctbl (p : collapse_poset X Y) : # p.f.ran ≤ aleph 0 :=
+le_trans (card_ran_le_card_dom _) p.Hc
 
 def collapse_poset.inter (p₁ p₂ : collapse_poset X Y) : collapse_poset X Y :=
 { f := λ x, { dom := ∃ (H₁ : p₁.f.dom x) (H₂ : p₂.f.dom x), (fn p₁.f x H₁ = fn p₂.f x H₂), get := λ H, by {refine fn p₁.f x (by tidy)}},
