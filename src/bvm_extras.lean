@@ -68,6 +68,41 @@ by {apply bv_have_true (insert1_symm y z), apply le_trans, apply bv_eq_trans, ap
 
 def binary_union (x y : bSet 𝔹) : bSet 𝔹 := bv_union {x,y}
 
+-- note: maybe it's better to define this as a fiber product with a coherency condition?
+def binary_inter (x y : bSet 𝔹) : bSet 𝔹 := ⟨x.type, x.func, λ i, x.bval i ⊓ (x.func i) ∈ᴮ y⟩
+
+infix ` ∩ᴮ `:81 := binary_inter
+
+@[simp, cleanup] lemma binary_inter_bval {x y : bSet 𝔹} {i : x.type} : (x ∩ᴮ y).bval i = x.bval i ⊓ (x.func i) ∈ᴮ y := rfl
+
+@[simp, cleanup] lemma binary_inter_type {x y : bSet 𝔹} : (x ∩ᴮ y).type = x.type := rfl
+
+@[simp, cleanup] lemma binary_inter_func {x y : bSet 𝔹} {i} : (x ∩ᴮ y).func i = x.func i := rfl
+
+lemma binary_inter_spec (x y z : bSet 𝔹) {Γ} : Γ ≤ z ∈ᴮ (x ∩ᴮ y) ↔ (Γ ≤ z ∈ᴮ x ∧ Γ ≤ z ∈ᴮ y) :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { rw[mem_unfold] at H, refine ⟨_,_⟩,
+        {bv_cases_at H i H_i, rw[mem_unfold], apply bv_use i,
+        refine le_inf _ _,
+          { exact bv_and.left (bv_and.left ‹_›) },
+          { exact bv_and.right ‹_› }},
+        { simp only with cleanup at *, bv_cases_at H i H_i, rw[mem_unfold],
+          bv_split, bv_split, rw[mem_unfold] at H_i_left_right,
+          bv_cases_at H_i_left_right j H_j, apply bv_use j,
+          bv_split, from le_inf ‹_› (by bv_cc) } },
+
+    { rcases H with ⟨H₁,H₂⟩, rw mem_unfold at H₁ ⊢,
+      bv_cases_at H₁ i H_i, apply bv_use i, rw[binary_inter_bval],
+      bv_split, bv_split_goal, bv_cc },
+end
+
+lemma binary_inter_symm {x y : bSet 𝔹} {Γ} : Γ ≤ x ∩ᴮ y =ᴮ y ∩ᴮ x :=
+begin
+  apply mem_ext;
+    {bv_intro z, bv_imp_intro H_mem, simp[binary_inter_spec] at H_mem ⊢, simp*}
+end
+
 lemma unordered_pair_symm (x y : bSet 𝔹) {Γ : 𝔹} : Γ ≤ {x,y} =ᴮ {y,x} :=
 begin
   apply mem_ext; unfold has_insert.insert bSet.insert1; bv_intro; bv_imp_intro;
@@ -346,6 +381,10 @@ end
 /-- f is a function x → y if it is extensional, total, and is a subset of the product of x and y -/
 @[reducible]def is_function (x y f : bSet 𝔹) : 𝔹 :=
   is_func f ⊓ (⨅w₁, w₁ ∈ᴮ x ⟹ ⨆w₂, w₂ ∈ᴮ y ⊓ pair w₁ w₂ ∈ᴮ f) ⊓ (f ⊆ᴮ prod x y)
+
+def function_of_func' {x y f : bSet 𝔹} {Γ} (H_is_func' : Γ ≤ is_func' x y f) : bSet 𝔹 := sorry
+
+lemma function_of_func'_is_function {x y f : bSet 𝔹} {Γ} (H_is_func' : Γ ≤ is_func' x y f) : Γ ≤ is_function x y (function_of_func' H_is_func') := sorry
 
 def functions (x y : bSet 𝔹) : bSet 𝔹 :=
   set_of_indicator (λ s : (bv_powerset (prod x y) : bSet 𝔹).type, is_function x y ((bv_powerset (prod x y)).func s))

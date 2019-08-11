@@ -264,7 +264,7 @@ begin
         suffices this₁ : func (ℵ₁̌ ) i₁ =ᴮ func (ℵ₁̌ ) i₂ = ⊥,
           by {exfalso, rw[eq_bot_iff] at this₀, rw[bot_lt_iff_not_le_bot] at H,
               suffices : func (ℵ₁̌  : bSet 𝔹) i₁ =ᴮ func (ℵ₁ ̌) i₂ ≤ ⊥, by contradiction,
-              change_congr (func ℵ₁ (cast eq₀ i₁))̌   =ᴮ (func ℵ₁ (cast eq₀ i₂)) ̌ ≤ ⊥,
+              convert_to (func ℵ₁ (cast eq₀ i₁))̌   =ᴮ (func ℵ₁ (cast eq₀ i₂)) ̌ ≤ ⊥,
               apply check_func, apply check_func, from ‹_›},
         convert this₀; apply check_func},
   exact λ _ _ _, ordinal.mk_inj _ _ _ ‹_›
@@ -328,7 +328,7 @@ lemma distributive {x : pSet} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.fun
 
 lemma functions_eq {x : pSet} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) : sorry := sorry
 
-def function_reflect (y : pSet) (g : bSet 𝔹) {Γ} (H : Γ ≤  (is_func' (ω) (y̌) g)) : pSet :=
+def function_reflect (y : pSet) (g : bSet 𝔹) {Γ} (H : Γ ≤  (is_function (ω) (y̌) g)) : pSet :=
 mk (ulift ℕ) (λ k, sorry)
 
 lemma function_reflect_spec₁ {y} {g} {Γ : 𝔹} (H : Γ ≤ _) : Γ ≤ (function_reflect y g H)̌  =ᴮ g :=
