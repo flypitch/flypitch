@@ -478,7 +478,7 @@
 -- lemma cardinal_inequality_of_regular (κ₁ κ₂ : cardinal) (H_reg₁ : cardinal.is_regular κ₁) (H_reg₂ : cardinal.is_regular κ₂) (H_inf : (omega : cardinal) ≤ κ₁) (H_lt : κ₁ < κ₂) : (⊤ : (cohen_algebra κ₂)) ≤ (pSet.ordinal.mk (ord κ₁))̌  ≺ (pSet.ordinal.mk (ord κ₂))̌  :=
 -- begin
 --   simp[larger_than, -top_le_iff], rw[<-imp_bot],
---   bv_imp_intro, bv_cases_at' H f, by_contra,
+--   bv_imp_intro, bv_cases_at'' H f, by_contra,
 --   have := classical.axiom_of_choice
 --             (AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
 --   cases this with g g_spec,
@@ -527,7 +527,7 @@
 -- lemma ℵ₀_lt_κ₁ : (⊤ : (cohen_algebra κ₂))  ≤ ℵ₀ ≺ (card_ex κ₁)̌  :=
 -- begin
 --   simp[larger_than, -top_le_iff], rw[<-imp_bot],
---   bv_imp_intro, bv_cases_at' H f, by_contra,
+--   bv_imp_intro, bv_cases_at'' H f, by_contra,
 --   have := classical.axiom_of_choice
 --             (AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
 --   cases this with g g_spec,
@@ -548,7 +548,7 @@
 
 --   {unfold neg_CH_func, refine le_inf _ _, refine mk_is_func _ _,
 --     bv_intro w₁, bv_imp_intro, rw[mem_unfold] at H,
---     bv_cases_at' H ν, apply bv_use (cohen_real.mk κ₂ ν),
+--     bv_cases_at'' H ν, apply bv_use (cohen_real.mk κ₂ ν),
 --     refine le_inf cohen_real.definite' _, swap,
 --     rw[mem_unfold], apply bv_use ν, bv_split,
 --     from le_inf ‹_› (by apply le_trans H_1_right; from subst_congr_pair_left), refl},

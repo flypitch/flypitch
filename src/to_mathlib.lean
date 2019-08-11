@@ -1188,6 +1188,27 @@ do  v_a <- target >>= lhs_of_le,
                          succeeds (unify Γ_new e'') >>
                    tactic.replace (get_name H) ``(_ : %%Γ_new ≤ _) >> swap >> assumption)
 
+meta def specialize_context_core' (Γ_old : expr) : tactic unit :=
+do  v_a <- target >>= lhs_of_le,
+    tp <- infer_type Γ_old,
+    Γ_name <- get_unused_name "Γ",
+    v <- mk_mvar, v' <- mk_mvar,
+    Γ_new <- pose Γ_name none v,
+    -- TODO(jesse) try replacing to_expr with an expression via mk_app instead
+    new_goal <- to_expr ``((%%Γ_new : %%tp) ≤ %%v'),
+    tactic.change new_goal,
+    ctx <- local_context,
+    ctx' <- ctx.mfilter
+      (λ e, (do infer_type e >>= lhs_of_le >>= λ e', succeeds $ is_def_eq Γ_old e') <|> return ff),
+      ctx'.mmap' (λ H, to_expr ``(le_trans (by apply inf_le_right <|> simp : %%Γ_new ≤ _) %%H) >>= λ foo, tactic.note (get_name H) none foo),
+    ctx2 <- local_context,
+    ctx2' <- ctx.mfilter (λ e, (do infer_type e >>= lhs_of_le >>= instantiate_mvars >>= λ e', succeeds $ is_def_eq Γ_new e') <|> return ff),
+    -- trace ctx2',
+    ctx2'.mmap' (λ H, do H_tp <- infer_type H,
+                         e'' <- lhs_of_le H_tp,
+                         succeeds (unify Γ_new e'') >>
+                   tactic.replace (get_name H) ``(_ : %%Γ_new ≤ _) >> swap >> assumption)
+
 
 /-- If the goal is an inequality `a ≤ b`, extracts `a` and attempts to specialize all
   facts in context of the form `Γ ≤ d` to `a ≤ d` (this requires a ≤ Γ) -/
@@ -1195,6 +1216,11 @@ meta def specialize_context (Γ : parse texpr) : tactic unit :=
 do
   Γ_old <- i_to_expr Γ,
   specialize_context_core Γ_old
+
+meta def specialize_context' (Γ : parse texpr) : tactic unit :=
+do
+  Γ_old <- i_to_expr Γ,
+  specialize_context_core' Γ_old
 
 example {β : Type u} [lattice.bounded_lattice β] {a b : β} {H : ⊤ ≤ b} : a ≤ b :=
 by {specialize_context (⊤ : β), assumption}
@@ -1214,7 +1240,20 @@ do
   end,
   specialize_context_core Γ_old
 
-meta def bv_cases_at' (H : parse ident) (i : parse ident_)  : tactic unit :=
+
+meta def bv_cases_at' (H : parse ident) (i : parse ident_) (H_i : parse ident?)  : tactic unit :=
+do
+  e₀ <- resolve_name H,
+  e₀' <- to_expr e₀,
+  Γ_old <- target >>= lhs_of_le,
+  `[refine lattice.context_Or_elim %%e₀'],
+  match H_i with
+  | none :=  tactic.intro i >> ((get_unused_name H) >>= tactic.intro)
+  | (some n) := tactic.intro i >> (tactic.intro n)
+  end,
+  specialize_context_core' Γ_old
+
+meta def bv_cases_at'' (H : parse ident) (i : parse ident_)  : tactic unit :=
 do
   e₀ <- resolve_name H,
   e₀' <- to_expr e₀,
@@ -1330,6 +1369,16 @@ match nm with
 | (some n) := do Γ_old <- target >>= lhs_of_le,
   `[refine lattice.context_imp_intro _] >> (tactic.intro n) >> skip,
   specialize_context_core Γ_old
+end
+
+meta def bv_imp_intro' (nm : parse $ optional ident_) : tactic unit :=
+match nm with
+| none := do Γ_old <- target >>= lhs_of_le,
+  `[refine lattice.context_imp_intro _] >> (get_unused_name "H" >>= tactic.intro) >> skip,
+  specialize_context_core' Γ_old
+| (some n) := do Γ_old <- target >>= lhs_of_le,
+  `[refine lattice.context_imp_intro _] >> (tactic.intro n) >> skip,
+  specialize_context_core' Γ_old
 end
 
 /-- `ac_change g' changes the current goal `tgt` to `g` by
