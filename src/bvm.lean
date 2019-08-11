@@ -212,7 +212,7 @@ element of the first family is extensionally equivalent to
              (⨅a : α, B a ⟹ ⨆a', B' a' ⊓ bv_eq (A a) (A' a')) ⊓
                (⨅a' : α', B' a' ⟹ ⨆a, B a ⊓ bv_eq (A a) (A' a'))
 
-infix ` =ᴮ `:80 := bv_eq
+infix ` =ᴮ `:79 := bv_eq
 
 def bv_eq' (Γ : 𝔹) : bSet 𝔹 → bSet 𝔹 → Prop := λ x y, Γ ≤ x=ᴮ y
 
@@ -443,68 +443,11 @@ begin
   rw[show ϕ y = ϕ y ⊓ ⊤, by simp], rw[<-H, inf_comm, bv_eq_symm], apply h_congr
 end
 
-@[instance]def b_setoid (Γ : 𝔹) : setoid (bSet 𝔹) :=
-{ r := bv_eq' Γ,
-  iseqv := ⟨λ _, bv_refl, λ _ _, bv_symm, λ _ _ _, bv_trans⟩ }
-
-lemma bv_cc.mk_iff {Γ} {x y : bSet 𝔹} : Γ ≤ x =ᴮ y ↔ (@quotient.mk _ (b_setoid Γ) x) = (@quotient.mk _ (b_setoid Γ) y) := by rw [quotient.eq]; refl
-
-lemma bv_cc.mk {Γ} {x y : bSet 𝔹} (H : Γ ≤ x =ᴮ y) : (@quotient.mk _ (b_setoid Γ) x) = (@quotient.mk _ (b_setoid Γ) y) := bv_cc.mk_iff.mp ‹_›
-
-example {x y z : bSet 𝔹} {Γ : 𝔹} (H1 : Γ ≤ x =ᴮ y) (H2 : Γ ≤ y =ᴮ z) : Γ ≤ x =ᴮ z :=
-begin
-  replace H1 := bv_cc.mk H1,
-  replace H2 := bv_cc.mk H2,
-  rw[bv_cc.mk_iff], cc
-end
-end bSet
-
-namespace tactic
-namespace interactive
-section bv_cc
-open lean.parser lean interactive.types interactive
-local postfix `?`:9001 := optional
-
-/--
-`apply_at (H : α) F` assumes that F's first explicit argument is of type `α`
-and replaces the assumption H with F H.
--/
-meta def apply_at (H_tgt : parse ident) (H : parse texpr) : tactic unit :=
- do e_tgt <- resolve_name H_tgt,
-    tactic.replace H_tgt ``(%%H %%e_tgt)
-
-meta def apply_all (H : parse texpr) : tactic unit :=
-do ctx <- local_context,
-   let mk_new_hyp (e : expr) : tactic unit :=
-       tactic.try (do n <- get_unused_name, to_expr ``(%%H %%e) >>= note n none)
-   in (list.mmap' mk_new_hyp ctx)
-
-meta def bv_cc : tactic unit :=
-apply_all ``(bSet.bv_cc.mk) *> `[rw[bSet.bv_cc.mk_iff]] *> cc
-   
-end bv_cc
-end interactive
-end tactic
-
-example {α β : Type} (f : α → β) (P : α → Prop) (Q : β → Prop) {a : α} (H : P a) (H' : P a) (C : ∀ {a}, P a → Q (f a)) : true :=
-begin
-  apply_at H C,
-  apply_all C, triv
-end
-
-namespace bSet
-variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
-
-example {x y z x₁ y₁ z₁: bSet 𝔹} {Γ : 𝔹} (H1 : Γ ≤ x =ᴮ y) (H2 : Γ ≤ y =ᴮ z)
-  (H3 : Γ ≤ z =ᴮ z₁) (H4 : Γ ≤ z₁ =ᴮ y₁) (H5 : Γ ≤ y₁ =ᴮ x₁)
-: Γ ≤ x =ᴮ x₁ :=
-by bv_cc -- :^)
-
 /-- If u = v and u ∈ w, then this implies that v ∈ w -/
 lemma subst_congr_mem_left {u v w : bSet 𝔹} : u =ᴮ v ⊓ u ∈ᴮ w ≤ v ∈ᴮ w :=
 begin
   simp only [mem_unfold], tidy_context,
-  bv_cases_at a_right i, apply bv_use i, bv_split, from le_inf ‹_› (by bv_cc)
+  bv_cases_at a_right i, apply bv_use i, bv_split, from le_inf ‹_› (by sorry)
 end
 
 -- to derive primed versions of lemmas, use poset_yoneda_inv
@@ -731,9 +674,94 @@ begin
   from (poset_yoneda_inv _ (h_congr _ _) this)
 end
 
-lemma mem_congr {Γ : 𝔹} {x₁ x₂ y₁ y₂ : bSet 𝔹} {H₁ : Γ ≤ x₁ =ᴮ y₁} {H₂ : Γ ≤ x₂ =ᴮ y₂} {H₃ : Γ ≤ x₁ ∈ᴮ x₂} :
+lemma mem_congr {Γ : 𝔹} {x₁ x₂ y₁ y₂ : bSet 𝔹} (H₁ : Γ ≤ x₁ =ᴮ y₁) (H₂ : Γ ≤ x₂ =ᴮ y₂) (H₃ : Γ ≤ x₁ ∈ᴮ x₂) :
   Γ ≤ y₁ ∈ᴮ y₂ :=
 by {rw[bv_eq_symm] at H₁ H₂, apply bv_rw' H₁, simp, apply bv_rw' H₂, simpa}
+
+@[instance]def b_setoid (Γ : 𝔹) : setoid (bSet 𝔹) :=
+{ r := bv_eq' Γ,
+  iseqv := ⟨λ _, bv_refl, λ _ _, bv_symm, λ _ _ _, bv_trans⟩ }
+
+lemma bv_cc.mk_iff {Γ} {x y : bSet 𝔹} : Γ ≤ x =ᴮ y ↔ (@quotient.mk _ (b_setoid Γ) x) = (@quotient.mk _ (b_setoid Γ) y) := by rw [quotient.eq]; refl
+
+lemma bv_cc.mk {Γ} {x y : bSet 𝔹} (H : Γ ≤ x =ᴮ y) : (@quotient.mk _ (b_setoid Γ) x) = (@quotient.mk _ (b_setoid Γ) y) := bv_cc.mk_iff.mp ‹_›
+
+-- TODO(jesse): automate the generation of these lemmas with typeclasses
+def b_setoid_mem (Γ : 𝔹) : quotient (b_setoid Γ) → quotient (b_setoid Γ) → Prop :=
+@quotient.lift₂ (bSet 𝔹) (bSet 𝔹) Prop (b_setoid Γ) (b_setoid Γ) (λ x y, Γ ≤ x ∈ᴮ y)
+  begin
+    intros a₁ a₂ b₁ b₂ H_eqv₁ H_eqv₂, dsimp, apply propext,
+    refine ⟨_,_⟩; intro H,
+      all_goals { rw[<-quotient.eq, <-bv_cc.mk_iff] at H_eqv₁ H_eqv₂},
+      { exact mem_congr ‹_› ‹_› ‹_› },
+      { exact mem_congr (bv_symm H_eqv₁) (bv_symm H_eqv₂) ‹_› }
+  end
+
+lemma bv_cc.mk_mem_iff {Γ} {x y : bSet 𝔹} :
+  Γ ≤ x ∈ᴮ y ↔ b_setoid_mem Γ (@quotient.mk _ (b_setoid Γ) x) (@quotient.mk _ (b_setoid Γ) y) :=
+by rw b_setoid_mem; refl
+
+lemma bv_cc.mk_mem {Γ} {x y : bSet 𝔹} (H : Γ ≤ x ∈ᴮ y) :
+  b_setoid_mem Γ (@quotient.mk _ (b_setoid Γ) x) (@quotient.mk _ (b_setoid Γ) y) :=
+bv_cc.mk_mem_iff.mp ‹_›
+
+example {x y z : bSet 𝔹} {Γ : 𝔹} (H1 : Γ ≤ x =ᴮ y) (H2 : Γ ≤ y =ᴮ z) : Γ ≤ x =ᴮ z :=
+begin
+  replace H1 := bv_cc.mk H1,
+  replace H2 := bv_cc.mk H2,
+  rw[bv_cc.mk_iff], cc
+end
+
+end bSet
+
+namespace tactic
+namespace interactive
+section bv_cc
+open lean.parser lean interactive.types interactive
+local postfix `?`:9001 := optional
+
+/--
+`apply_at (H : α) F` assumes that F's first explicit argument is of type `α`
+and replaces the assumption H with F H.
+-/
+meta def apply_at (H_tgt : parse ident) (H : parse texpr) : tactic unit :=
+ do e_tgt <- resolve_name H_tgt,
+    tactic.replace H_tgt ``(%%H %%e_tgt)
+
+meta def apply_all (H : parse texpr) : tactic unit :=
+do ctx <- local_context,
+   let mk_new_hyp (e : expr) : tactic unit :=
+       tactic.try (do n <- get_unused_name, to_expr ``(%%H %%e) >>= note n none)
+   in (list.mmap' mk_new_hyp ctx)
+
+meta def bv_cc : tactic unit := do
+   apply_all ``(bSet.bv_cc.mk),
+   try `[rw[bSet.bv_cc.mk_iff]],
+   apply_all ``(bSet.bv_cc.mk_mem),
+   try `[rw[bSet.bv_cc.mk_mem_iff]],
+   cc
+   
+end bv_cc
+end interactive
+end tactic
+
+example {α β : Type} (f : α → β) (P : α → Prop) (Q : β → Prop) {a : α} (H : P a) (H' : P a) (C : ∀ {a}, P a → Q (f a)) : true :=
+begin
+  apply_at H C,
+  apply_all C, triv
+end
+
+namespace bSet
+
+variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
+
+example {x y z x₁ y₁ z₁: bSet 𝔹} {Γ : 𝔹} (H1 : Γ ≤ x =ᴮ y) (H2 : Γ ≤ y =ᴮ z)
+  (H3 : Γ ≤ z =ᴮ z₁) (H4 : Γ ≤ z₁ =ᴮ y₁) (H5 : Γ ≤ y₁ =ᴮ x₁)
+: Γ ≤ x =ᴮ x₁ :=
+by bv_cc -- :^)
+
+example {x₁ y₁ x₂ y₂ : bSet 𝔹} {Γ} (H₁ : Γ ≤ x₁ ∈ᴮ y₁) (H₂ : Γ ≤ x₁ =ᴮ x₂) (H₂ : Γ ≤ y₁ =ᴮ y₂) : Γ ≤ x₂ ∈ᴮ y₂ :=
+by bv_cc -- :^)
 
 def is_definite (u : bSet 𝔹) : Prop := ∀ i : u.type, u.bval i = ⊤
 
