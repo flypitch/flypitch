@@ -79,7 +79,7 @@ infix ` ∩ᴮ `:81 := binary_inter
 
 @[simp, cleanup] lemma binary_inter_func {x y : bSet 𝔹} {i} : (x ∩ᴮ y).func i = x.func i := rfl
 
-lemma binary_inter_spec (x y z : bSet 𝔹) {Γ} : Γ ≤ z ∈ᴮ (x ∩ᴮ y) ↔ (Γ ≤ z ∈ᴮ x ∧ Γ ≤ z ∈ᴮ y) :=
+lemma binary_inter_mem_iff {x y z : bSet 𝔹} {Γ} : Γ ≤ z ∈ᴮ (x ∩ᴮ y) ↔ (Γ ≤ z ∈ᴮ x ∧ Γ ≤ z ∈ᴮ y) :=
 begin
   refine ⟨_,_⟩; intro H,
     { rw[mem_unfold] at H, refine ⟨_,_⟩,
@@ -100,7 +100,33 @@ end
 lemma binary_inter_symm {x y : bSet 𝔹} {Γ} : Γ ≤ x ∩ᴮ y =ᴮ y ∩ᴮ x :=
 begin
   apply mem_ext;
-    {bv_intro z, bv_imp_intro H_mem, simp[binary_inter_spec] at H_mem ⊢, simp*}
+    {bv_intro z, bv_imp_intro H_mem, simp[binary_inter_mem_iff] at H_mem ⊢, simp*}
+end
+
+lemma B_congr_binary_inter_left {y : bSet 𝔹} : B_congr (λ x, x ∩ᴮ y) :=
+begin
+  intros x₁ x₂ Γ H_eq, dsimp, apply mem_ext;
+    {bv_intro z, bv_imp_intro H_mem, simp[binary_inter_mem_iff] at *,
+    cases H_mem, exact ⟨by bv_cc, ‹_›⟩}
+end
+
+lemma B_congr_binary_inter_right {y : bSet 𝔹} : B_congr (λ x, y ∩ᴮ x) :=
+begin
+  intros x₁ x₂ Γ H_eq, dsimp, apply mem_ext;
+    {bv_intro z, bv_imp_intro H_mem, simp[binary_inter_mem_iff] at *,
+    cases H_mem, exact ⟨‹_›, by bv_cc⟩}
+end
+
+lemma binary_inter_subset_left {x y : bSet 𝔹} {Γ} : Γ ≤ x ∩ᴮ y ⊆ᴮ x :=
+by { rw[subset_unfold'], bv_intro z, bv_imp_intro Hz,
+       from (binary_inter_mem_iff.mp Hz).left }
+
+lemma binary_inter_subset_right {x y : bSet 𝔹} {Γ} : Γ ≤ x ∩ᴮ y ⊆ᴮ y :=
+begin -- TODO(jesse): why isn't the motive being computed correctly here?
+  suffices this : ∀ z (H : Γ ≤ y ∩ᴮ x ⊆ᴮ z), Γ ≤ x ∩ᴮ y ⊆ᴮ z,
+    from this _ binary_inter_subset_left,
+  exact λ z _,
+    @bv_rw' 𝔹 _ (x ∩ᴮ y) (y ∩ᴮ x) _ (binary_inter_symm) (λ w, w ⊆ᴮ z) (by simp) ‹_›
 end
 
 lemma unordered_pair_symm (x y : bSet 𝔹) {Γ : 𝔹} : Γ ≤ {x,y} =ᴮ {y,x} :=
@@ -335,8 +361,12 @@ begin
   simp only [le_inf_iff] at *, simp*
 end
 
-lemma mem_prod_iff {v w x y : bSet 𝔹} {Γ} : Γ ≤ pair x y ∈ᴮ prod v w ↔ (Γ ≤ x ∈ᴮ v ∧ Γ ≤ y ∈ᴮ w) :=
+@[simp]lemma mem_prod_iff {v w x y : bSet 𝔹} {Γ} : Γ ≤ pair x y ∈ᴮ prod v w ↔ (Γ ≤ x ∈ᴮ v ∧ Γ ≤ y ∈ᴮ w) :=
 ⟨λ _, ⟨mem_left_of_prod_mem ‹_›, mem_right_of_prod_mem ‹_›⟩, λ ⟨_,_⟩, prod_mem ‹_› ‹_›⟩
+
+@[simp]lemma mem_prod {v w x y : bSet 𝔹} {Γ} (H_mem₁ : Γ ≤ x ∈ᴮ v) (H_mem₂ : Γ ≤ y ∈ᴮ w) :
+ Γ ≤ pair x y ∈ᴮ prod v w :=
+by simp*
 
 -- lemma check_pair {x y : pSet} : sorry (x y) = bSet.pair (x̌) (y̌ : bSet 𝔹) := sorry
 
@@ -348,6 +378,18 @@ lemma mem_prod_iff {v w x y : bSet 𝔹} {Γ} : Γ ≤ pair x y ∈ᴮ prod v w 
     w₁ =ᴮ w₂, then v₁ =ᴮ v₂ -/
 @[reducible]def is_func (f : bSet 𝔹) : 𝔹 :=
   ⨅ w₁, ⨅w₂, ⨅v₁, ⨅ v₂, pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⟹ (w₁ =ᴮ w₂ ⟹ v₁ =ᴮ v₂)
+
+-- TODO(jesse): automate this argument with simp lemmas
+-- for restricting universally quantifier statements to subsets
+@[simp] lemma is_func_subset_of_is_func {f g : bSet 𝔹} {Γ} (H : Γ ≤ is_func f) (H_sub : Γ ≤ g ⊆ᴮ f) : Γ ≤ is_func g :=
+begin
+  bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂, bv_imp_intro H',
+  replace H := H w₁ w₂ v₁ v₂,
+  suffices this : Γ_1 ≤ pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f,
+    by {exact H ‹_›},
+  bv_split, refine le_inf _ _; rw[subset_unfold'] at H_sub,
+  exact H_sub (pair w₁ v₁) ‹_›, exact H_sub (pair w₂ v₂) ‹_›
+end
 
 lemma check_is_func {g : pSet} (H_ext : pSet.is_extensional g) {Γ : 𝔹} : Γ ≤ is_func (ǧ) :=
 begin
@@ -378,13 +420,36 @@ end
 @[reducible]def is_func' (x y f : bSet 𝔹) : 𝔹 :=
   is_func f ⊓ (⨅w₁, w₁ ∈ᴮ x ⟹ ⨆w₂, w₂ ∈ᴮ y ⊓ pair w₁ w₂ ∈ᴮ f)
 
+lemma is_func_of_is_func' {x y f : bSet 𝔹} {Γ} (H : Γ ≤ is_func' x y f) : Γ ≤ is_func f :=
+bv_and.left ‹_›
+
 /-- f is a function x → y if it is extensional, total, and is a subset of the product of x and y -/
 @[reducible]def is_function (x y f : bSet 𝔹) : 𝔹 :=
   is_func f ⊓ (⨅w₁, w₁ ∈ᴮ x ⟹ ⨆w₂, w₂ ∈ᴮ y ⊓ pair w₁ w₂ ∈ᴮ f) ⊓ (f ⊆ᴮ prod x y)
 
-def function_of_func' {x y f : bSet 𝔹} {Γ} (H_is_func' : Γ ≤ is_func' x y f) : bSet 𝔹 := sorry
+def function_of_func' {x y f : bSet 𝔹} {Γ} (H_is_func' : Γ ≤ is_func' x y f) : bSet 𝔹 :=
+f ∩ᴮ (prod x y)
 
-lemma function_of_func'_is_function {x y f : bSet 𝔹} {Γ} (H_is_func' : Γ ≤ is_func' x y f) : Γ ≤ is_function x y (function_of_func' H_is_func') := sorry
+lemma function_of_func'_subset {x y f : bSet 𝔹} {Γ} {H_is_func' : Γ ≤ is_func' x y f} :
+  Γ ≤ function_of_func' H_is_func' ⊆ᴮ f :=
+binary_inter_subset_left
+
+lemma mem_function_of_func'_iff {x y f : bSet 𝔹} {Γ} {H_is_func' : Γ ≤ is_func' x y f} {z} :
+Γ ≤ z ∈ᴮ (function_of_func' H_is_func') ↔ Γ ≤ z ∈ᴮ f ∧ Γ ≤ z ∈ᴮ (prod x y) := binary_inter_mem_iff
+
+-- TODO(jesse): have specialize_context optionally not replace obsolete hypotheses, only note the updated versions
+lemma function_of_func'_is_function {x y f : bSet 𝔹} {Γ} (H_is_func' : Γ ≤ is_func' x y f) : Γ ≤ is_function x y (function_of_func' H_is_func') :=
+begin
+  refine le_inf (le_inf _ _) _,
+    { exact is_func_subset_of_is_func (is_func_of_is_func' ‹_›) function_of_func'_subset },
+    { bv_intro w₁, rw[<-deduction, inf_comm], let Γ_1 := w₁ ∈ᴮ x ⊓ Γ,
+      change Γ_1 ≤ _, have H : Γ_1 ≤ w₁ ∈ᴮ x := by simp[Γ_1, inf_le_right],
+      have : Γ_1 ≤ is_func' x y f := le_trans inf_le_right H_is_func',
+      have H_total := bv_and.right this w₁ H, bv_cases_at H_total w₂ H_w₂,
+      apply bv_use w₂, bv_split, refine le_inf ‹_› _,
+      erw[binary_inter_mem_iff], simp* },
+    { exact binary_inter_subset_right }
+end
 
 def functions (x y : bSet 𝔹) : bSet 𝔹 :=
   set_of_indicator (λ s : (bv_powerset (prod x y) : bSet 𝔹).type, is_function x y ((bv_powerset (prod x y)).func s))

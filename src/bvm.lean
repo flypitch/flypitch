@@ -447,7 +447,8 @@ end
 lemma subst_congr_mem_left {u v w : bSet 𝔹} : u =ᴮ v ⊓ u ∈ᴮ w ≤ v ∈ᴮ w :=
 begin
   simp only [mem_unfold], tidy_context,
-  bv_cases_at a_right i, apply bv_use i, bv_split, from le_inf ‹_› (by sorry)
+  bv_cases_at a_right i, apply bv_use i, bv_split,
+  from le_inf ‹_› (bv_trans (bv_symm ‹_›) ‹_›)
 end
 
 -- to derive primed versions of lemmas, use poset_yoneda_inv
@@ -656,7 +657,8 @@ end
 
 @[reducible]def B_congr (t : bSet 𝔹 → bSet 𝔹) : Prop := ∀ {x₁ x₂}, ∀ {Γ : 𝔹}, Γ ≤ x₁ =ᴮ x₂ → Γ ≤ t x₁ =ᴮ t x₂
 
-@[simp]lemma B_ext_term {ϕ : bSet 𝔹 → 𝔹} (H : B_ext ϕ) {t : bSet 𝔹 → bSet 𝔹} (H' : B_congr t) : B_ext (λ z, ϕ ((λ w, t w) z) ) :=
+@[simp]lemma B_ext_term {ϕ : bSet 𝔹 → 𝔹} (H : B_ext ϕ) {t : bSet 𝔹 → bSet 𝔹} (H' : B_congr t) :
+  B_ext (λ z, ϕ ((λ w, t w) z) ) :=
 begin
   intros x y, tidy_context,
   suffices : Γ ≤ t x =ᴮ t y,
