@@ -341,18 +341,18 @@ lemma function_reflect_surj_of_surj {g} {y} {Γ : 𝔹} (H : Γ ≤ _) (H_not_ze
   pSet.is_surj ((omega)) y (function_reflect y g H) :=
 sorry -- TODO(jesse) this should be easy because surjectivity is Δ₀, so prove a general lemma for this
 
---TODO(jesse) update this proof with new is_function_of_is_func' lemmas
 lemma omega_lt_aleph_one {Γ : 𝔹} : Γ ≤ bSet.omega ≺ (ℵ₁̌ ) :=
 begin
   unfold larger_than, rw[<-imp_bot], rw[<-deduction], /- `tidy_context` says -/ refine poset_yoneda _, intros Γ_1 a, simp only [le_inf_iff] at *, cases a,
   bv_cases_at a_right f, rw[le_inf_iff] at a_right_1, cases a_right_1,
   by_contra, replace a := (bot_lt_iff_not_le_bot.mpr a),
   suffices this : ∃ f : pSet, is_func _ _ f ∧ pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f,
-    by {exfalso, from pSet.ex_no_surj_omega_aleph_one this},
-  let g := (function_reflect (card_ex $ aleph 1) f sorry), use g,
+    by {exfalso, from pSet.ex_no_surj_omega_aleph_one this}, 
+  let g := (function_reflect (card_ex $ aleph 1) (function_of_func' a_right_1_left) (function_of_func'_is_function a_right_1_left)), use g,
   refine ⟨_,_⟩,
     { apply function_reflect_spec₂ },
-    { apply function_reflect_surj_of_surj, from ‹_›, from a_right_1_right }
+    { apply function_reflect_surj_of_surj,
+        from ‹_›, from (function_of_func'_surj_of_surj _ ‹_›) }
 end
 
 lemma aleph_one_check_universal_property (Γ : 𝔹) : Γ ≤ aleph_one_weak_universal_property (ℵ₁̌  : bSet 𝔹) :=

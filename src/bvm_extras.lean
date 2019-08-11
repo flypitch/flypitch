@@ -437,6 +437,54 @@ binary_inter_subset_left
 lemma mem_function_of_func'_iff {x y f : bSet 𝔹} {Γ} {H_is_func' : Γ ≤ is_func' x y f} {z} :
 Γ ≤ z ∈ᴮ (function_of_func' H_is_func') ↔ Γ ≤ z ∈ᴮ f ∧ Γ ≤ z ∈ᴮ (prod x y) := binary_inter_mem_iff
 
+@[reducible]def is_inj (f : bSet 𝔹) : 𝔹 :=
+  ⨅w₁, ⨅ w₂, ⨅v₁, ⨅ v₂, (pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⊓ v₁ =ᴮ v₂) ⟹ w₁ =ᴮ w₂
+
+lemma funext (f x y z : bSet 𝔹) {Γ : 𝔹} (H_func : Γ ≤ is_func f) (H : Γ ≤ (pair x y) ∈ᴮ f)
+  (H' : Γ ≤ (pair x z) ∈ᴮ f) : Γ ≤ y =ᴮ z :=
+H_func x x y z (le_inf ‹_› ‹_›) (bv_refl)
+
+@[reducible]def is_surj (x y : bSet 𝔹) (f : bSet 𝔹) : 𝔹 :=
+⨅v, v ∈ᴮ y ⟹ (⨆w, w ∈ᴮ x ⊓ pair w v ∈ᴮ f)
+
+/-- x is larger than y if there exists a function f such that for every v ∈ y, there exists a w ∈ x such that (w,v) ∈ f -/
+def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ (is_surj x y f)
+
+def injects_into (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ is_inj f
+
+@[simp]lemma B_ext_larger_than_right {y : bSet 𝔹} : B_ext (λ z, larger_than y z) :=
+by simp[larger_than]
+
+@[simp]lemma B_ext_larger_than_left {y : bSet 𝔹} : B_ext (λ z, larger_than z y) :=
+by simp[larger_than]
+
+@[simp]lemma B_ext_injects_into_left {y : bSet 𝔹} : B_ext (λ z, injects_into z y) :=
+by simp[injects_into]
+
+@[simp]lemma B_ext_injects_into_right {y : bSet 𝔹} : B_ext (λ z, injects_into y z) :=
+by simp[injects_into]
+
+local infix `≺`:70 := (λ x y, -(larger_than x y))
+
+local infix `≼`:70 := (λ x y, injects_into x y)
+
+def CH {𝔹} [nontrivial_complete_boolean_algebra 𝔹] : 𝔹 := - ⨆ x, ⨆y, (omega ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(omega))
+
+-- TODO(jesse): use χ_A := (i,j) ↦ ⨆ₖ (i,k) ∈ᴮ Γ(f) ⊓ (j,k) ∈ᴮ Γ(g)
+lemma bSet_lt_of_lt_of_le (x y z : bSet 𝔹) {Γ} (H₁ : Γ ≤ x ≺ y) (H₂ : Γ ≤ y ≼ z) : Γ ≤ x ≺ z :=
+begin
+  dsimp only [larger_than, injects_into] at ⊢ H₁ H₂,
+  rw[<-imp_bot] at ⊢ H₁, bv_imp_intro H, refine H₁ _,
+  bv_cases_at H f H_f, bv_cases_at H₂ g H_g, sorry
+end
+
+lemma bSet_lt_of_le_of_lt (x y z : bSet 𝔹) {Γ} (H₁ : Γ ≤ x ≼ y) (H₂ : Γ ≤ y ≺ z) : Γ ≤ x ≺ z :=
+begin
+  unfold larger_than at ⊢ H₂, rw[<-imp_bot], bv_imp_intro H, unfold injects_into at H₁,
+  rw[<-imp_bot] at H₂, refine H₂ _,
+  bv_cases_at H f H_f, bv_cases_at H₁ g H_g, sorry
+end
+
 -- TODO(jesse): have specialize_context optionally not replace obsolete hypotheses, only note the updated versions
 lemma function_of_func'_is_function {x y f : bSet 𝔹} {Γ} (H_is_func' : Γ ≤ is_func' x y f) : Γ ≤ is_function x y (function_of_func' H_is_func') :=
 begin
@@ -449,6 +497,14 @@ begin
       apply bv_use w₂, bv_split, refine le_inf ‹_› _,
       erw[binary_inter_mem_iff], simp* },
     { exact binary_inter_subset_right }
+end
+
+lemma function_of_func'_surj_of_surj {x y f : bSet 𝔹} {Γ} (H_is_func' : Γ ≤ is_func' x y f) (H_is_surj : Γ ≤ is_surj x y f) : Γ ≤ is_surj x y (function_of_func' H_is_func')  :=
+begin
+  bv_intro z, bv_imp_intro' Hz,
+  have := H_is_surj z Hz, bv_cases_at' this w Hw,
+  apply bv_use w, bv_split, refine le_inf ‹_› _,
+  erw[binary_inter_mem_iff], simp*
 end
 
 def functions (x y : bSet 𝔹) : bSet 𝔹 :=
@@ -497,13 +553,6 @@ end
 -- def is_inj_func (x y) (f : bSet 𝔹) : 𝔹 :=
 --   is_func x y f ⊓ (⨅w₁ w₂, w₁ ∈ᴮ x ⊓ w₂ ∈ᴮ x ⟹
 --     (⨆v₁ v₂, (pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⊓ v₁ =ᴮ v₂ ⟹ w₁ =ᴮ w₂)))
-
-@[reducible]def is_inj (f : bSet 𝔹) : 𝔹 :=
-  ⨅w₁, ⨅ w₂, ⨅v₁, ⨅ v₂, (pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⊓ v₁ =ᴮ v₂) ⟹ w₁ =ᴮ w₂
-
-lemma funext (f x y z : bSet 𝔹) {Γ : 𝔹} (H_func : Γ ≤ is_func f) (H : Γ ≤ (pair x y) ∈ᴮ f)
-  (H' : Γ ≤ (pair x z) ∈ᴮ f) : Γ ≤ y =ᴮ z :=
-H_func x x y z (le_inf ‹_› ‹_›) (bv_refl)
 
 def function.mk {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : bSet 𝔹 :=
 ⟨u.type, λ a, pair (u.func a) (F a), u.bval⟩
@@ -786,46 +835,9 @@ by {intros x y, unfold is_transitive, revert x y, change B_ext _, simp}
 
 def Ord (x : bSet 𝔹) : 𝔹 := epsilon_well_orders x ⊓ is_transitive x
 
-@[reducible]def is_surj (x y : bSet 𝔹) (f : bSet 𝔹) : 𝔹 :=
-⨅v, v ∈ᴮ y ⟹ (⨆w, w ∈ᴮ x ⊓ pair w v ∈ᴮ f)
-
-/-- x is larger than y if there exists a function f such that for every v ∈ y, there exists a w ∈ x such that (w,v) ∈ f -/
-def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ (is_surj x y f)
-
-def injects_into (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ is_inj f
-
-@[simp]lemma B_ext_larger_than_right {y : bSet 𝔹} : B_ext (λ z, larger_than y z) :=
-by simp[larger_than]
-
-@[simp]lemma B_ext_larger_than_left {y : bSet 𝔹} : B_ext (λ z, larger_than z y) :=
-by simp[larger_than]
-
-@[simp]lemma B_ext_injects_into_left {y : bSet 𝔹} : B_ext (λ z, injects_into z y) :=
-by simp[injects_into]
-
-@[simp]lemma B_ext_injects_into_right {y : bSet 𝔹} : B_ext (λ z, injects_into y z) :=
-by simp[injects_into]
-
 local infix `≺`:70 := (λ x y, -(larger_than x y))
 
 local infix `≼`:70 := (λ x y, injects_into x y)
-
-def CH {𝔹} [nontrivial_complete_boolean_algebra 𝔹] : 𝔹 := - ⨆ x, ⨆y, (omega ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(omega))
-
--- TODO(jesse): use χ_A := (i,j) ↦ ⨆ₖ (i,k) ∈ᴮ Γ(f) ⊓ (j,k) ∈ᴮ Γ(g)
-lemma bSet_lt_of_lt_of_le (x y z : bSet 𝔹) {Γ} (H₁ : Γ ≤ x ≺ y) (H₂ : Γ ≤ y ≼ z) : Γ ≤ x ≺ z :=
-begin
-  dsimp only [larger_than, injects_into] at ⊢ H₁ H₂,
-  rw[<-imp_bot] at ⊢ H₁, bv_imp_intro H, refine H₁ _,
-  bv_cases_at H f H_f, bv_cases_at H₂ g H_g, sorry
-end
-
-lemma bSet_lt_of_le_of_lt (x y z : bSet 𝔹) {Γ} (H₁ : Γ ≤ x ≼ y) (H₂ : Γ ≤ y ≺ z) : Γ ≤ x ≺ z :=
-begin
-  unfold larger_than at ⊢ H₂, rw[<-imp_bot], bv_imp_intro H, unfold injects_into at H₁,
-  rw[<-imp_bot] at H₂, refine H₂ _,
-  bv_cases_at H f H_f, bv_cases_at H₁ g H_g, sorry
-end
 
 lemma bSet_le_of_subset {x y : bSet 𝔹} {Γ} (H : Γ ≤ x ⊆ᴮ y) : Γ ≤ x ≼ y :=
 begin
