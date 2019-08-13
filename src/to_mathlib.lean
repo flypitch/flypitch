@@ -813,32 +813,14 @@ by rw [←inf_eq_of_le h, inf_comm, inf_assoc, inf_neg_eq_bot, inf_bot_eq]
 lemma inf_eq_bot_of_le_neg {α : Type*} [boolean_algebra α] {a b : α} (h : a ≤ - b) : b ⊓ a = ⊥ :=
 by { rw [←@neg_neg _ b], exact sub_eq_bot_of_le h }
 
-
 /-- the deduction theorem in β -/
 @[simp]lemma imp_top_iff_le {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⟹ a₂ = ⊤) ↔ a₁ ≤ a₂ :=
 begin
- split; intro H,
-  {have : a₁ ⊓ a₂ = a₁, from
-    calc a₁ ⊓ a₂ = ⊥ ⊔ (a₁ ⊓ a₂) : by simp
-             ... = (a₁ ⊓ - a₁) ⊔ (a₁ ⊓ a₂) : by simp
-             ... = a₁ ⊓ (- a₁ ⊔ a₂) : by {rw[inf_sup_left]}
-             ... = a₁ ⊓ ⊤ : by {rw[<-H], refl}
-             ... = a₁ : by {simp},
-   finish},
- {have : a₁ ⊓ a₂ = a₁, from inf_eq_of_le H, apply top_unique,
-  have this' : ⊤ = - a₁ ⊔ a₁, by rw[lattice.neg_sup_eq_top],
-  rw[this', <-this, imp], simp only [lattice.neg_inf, lattice.sup_le_iff],
-  repeat{split},
-    suffices : (- a₁ ≤ - a₁ ⊔ - a₂ ⊔ a₂) = (- a₁ ≤ - a₁ ⊔ (- a₂ ⊔ a₂)),
-      by rw[this]; apply le_sup_left, ac_refl,
-    suffices : (-a₂ ≤ -a₁ ⊔ -a₂ ⊔ a₂) = (- a₂ ≤ - a₂ ⊔ (-a₁ ⊔ a₂)),
-      by rw[this]; apply le_sup_left, ac_refl,
-    suffices : - a₁ ⊔ - a₂ ⊔ a₂ = ⊤,
-      by rw[this]; simp, apply top_unique,
-      suffices : - a₁ ⊔ - a₂ ⊔ a₂ = - a₁ ⊔ (- a₂ ⊔ a₂),
-        by simp[this], ac_refl}
+  unfold imp, refine ⟨_,_⟩; intro H,
+    { have := congr_arg (λ x, x ⊓ a₁) H, rw[sup_comm] at this,
+      finish[inf_sup_right] },
+    { have := sup_le_sup_right H (-a₁), finish }
 end
-
 /- ∀ {α : Type u_1} [_inst_1 : boolean_algebra α] {a₁ a₂ : α}, a₁ ⟹ a₂ = ⊤ ↔ a₁ ≤ a₂ -/
 
 lemma curry_uncurry {α : Type*} [boolean_algebra α] {a b c : α} : ((a ⊓ b) ⟹ c) = (a ⟹ (b ⟹ c)) :=
