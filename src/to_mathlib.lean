@@ -1161,7 +1161,7 @@ do  v_a <- target >>= lhs_of_le,
     ctx <- local_context,
     ctx' <- ctx.mfilter
       (λ e, (do infer_type e >>= lhs_of_le >>= λ e', succeeds $ is_def_eq Γ_old e') <|> return ff),
-      ctx'.mmap' (λ H, tactic.replace (get_name H) ``(le_trans (by apply inf_le_right <|> simp : %%Γ_new ≤ _) %%H)),
+      ctx'.mmap' (λ H, tactic.replace (get_name H) ``(le_trans (by exact inf_le_right <|> simp : %%Γ_new ≤ _) %%H)),
     ctx2 <- local_context,
     ctx2' <- ctx.mfilter (λ e, (do infer_type e >>= lhs_of_le >>= instantiate_mvars >>= λ e', succeeds $ is_def_eq Γ_new e') <|> return ff),
     -- trace ctx2',
@@ -1182,7 +1182,7 @@ do  v_a <- target >>= lhs_of_le,
     ctx <- local_context,
     ctx' <- ctx.mfilter
       (λ e, (do infer_type e >>= lhs_of_le >>= λ e', succeeds $ is_def_eq Γ_old e') <|> return ff),
-      ctx'.mmap' (λ H, to_expr ``(le_trans (by apply inf_le_right <|> simp : %%Γ_new ≤ _) %%H) >>= λ foo, tactic.note (get_name H) none foo),
+      ctx'.mmap' (λ H, to_expr ``(le_trans (by exact inf_le_right <|> simp : %%Γ_new ≤ _) %%H) >>= λ foo, tactic.note (get_name H) none foo),
     ctx2 <- local_context,
     ctx2' <- ctx.mfilter (λ e, (do infer_type e >>= lhs_of_le >>= instantiate_mvars >>= λ e', succeeds $ is_def_eq Γ_new e') <|> return ff),
     -- trace ctx2',
@@ -1305,14 +1305,10 @@ do ctx <- (local_context >>= (λ l, l.mfilter hyp_is_ineq)),
      tactic.replace (get_name e) ``(lattice.context_imp_elim %%e))))
 
 meta def bv_split_at (H : parse ident) : tactic unit :=
-do n₁ <- get_unused_name H,
-   n₂ <- get_unused_name H,
-   e_H <- resolve_name H,
-   e <- to_expr ``(lattice.context_split_inf_left %%e_H),
-   note n₁ none e >>= λ h, dsimp_hyp h none [] eta_beta_cfg,
-   e <- to_expr ``(lattice.context_split_inf_right %%e_H),
-   note n₂ none e >>= λ h, dsimp_hyp h none [] eta_beta_cfg
-
+do e_H <- resolve_name H,
+   tactic.replace H ``(lattice.le_inf_iff.mp %%e_H),
+   resolve_name H >>= to_expr >>= cases_core
+    
 meta def bv_split : tactic unit :=
 do ctx <- (local_context >>= (λ l, l.mfilter hyp_is_ineq)),
    ctx.mmap' (λ e, try (tactic.replace (get_name e) ``(lattice.le_inf_iff.mp %%e))),

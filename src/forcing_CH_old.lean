@@ -1,4 +1,4 @@
-import .bvm_extras .collapse
+import .bvm_extras .collapse tactic.elide
 
 /-
   Forcing the continuum hypothesis.
@@ -82,7 +82,7 @@ begin
         clear_except, tidy_context,
         bv_cases_at a j, refine bv_use (j,i),
         refine bv_use j, from ‹_›}},
-    { change B_ext _, from B_ext_term (B_ext_mem_left) (by simp) }
+    { change B_ext _, from B_ext_term _ _ (B_ext_mem_left) (by simp) }
 end
 
 lemma mem_left_of_mem_rel_of_array {x y w₁ w₂ : bSet 𝔹} {af : x.type → y.type → 𝔹}
@@ -123,7 +123,7 @@ begin
   bv_imp_intro H_eq,
   have this : Γ_2 ≤ pair w₁ v₂ ∈ᴮ rel_of_array x y af,
     by {apply bv_rw' H_eq,
-          { exact B_ext_term (B_ext_mem_left) (by simp) },
+          { exact B_ext_term _ _ (B_ext_mem_left) (by simp) },
           { from ‹_› }},
   clear_except H_mem_left this H_anti H_inj H_eq,
   dsimp[rel_of_array] at H_mem_left this,
@@ -165,7 +165,7 @@ lemma rel_of_array_is_func'  (x y : bSet 𝔹) (af : x.type → y.type → 𝔹)
   {Γ}
   : Γ ≤ is_func' x y (rel_of_array x y af) :=
 begin
-  refine le_inf (by apply rel_of_array_extensional; assumption) _,
+  refine le_inf (by apply rel_of_array_extensional; assumption) _, rw bSet.is_total,
   rw[<-bounded_forall], bv_intro i_x, bv_imp_intro Hi_x, rw[<-bounded_exists],
     { simp[*,rel_of_array, -Γ_1], rw[supr_comm, supr_prod],
       apply bv_use i_x,
@@ -173,21 +173,22 @@ begin
       af ((i_x, j).fst) ((i_x, j).snd) ⊓ pair (func x i_x) (func y j) =ᴮ pair (func x ((i_x, j).fst)) (func y ((i_x, j).snd)),
         { conv { to_rhs, funext, congr, funext,rw[bv_eq_refl] }, simp[H_tall]},
         { exact diagonal_supr_le_supr (by refl) }},
-    { change B_ext _, from B_ext_term (B_ext_mem_left) (by simp) },
+    { change B_ext _, from B_ext_term _ _ (B_ext_mem_left) (by simp) },
     { change B_ext _, apply B_ext_supr, intro, apply B_ext_inf,
       { simp },
-      { from B_ext_term (B_ext_mem_left) (by simp) }}
+      { from B_ext_term _ _ (B_ext_mem_left) (by simp) }}
 end
 
 end lemmas
 
 namespace collapse_algebra
 
-local notation `𝔹` := collapse_algebra ((ℵ₁ : pSet).type) (powerset omega : pSet).type
 local prefix `#`:50 := cardinal.mk
 local attribute [instance, priority 9001] collapse_space
 
 open collapse_poset
+
+local notation `𝔹` := collapse_algebra ((ℵ₁ : pSet).type) (powerset omega : pSet).type
 
 lemma π_χ_regular (p : type (card_ex (aleph 1)) × (powerset omega).type) : @topological_space.is_regular _ collapse_space {g : type (card_ex (aleph 1)) → type (powerset omega) | g (p.fst) = p.snd} :=
 by simp
@@ -305,7 +306,8 @@ lemma π_spec' {Γ : 𝔹} : Γ ≤ (is_func' ((card_ex $ aleph 1)̌ ) ((powerse
 -- le_inf π_is_func' π_is_surj
 
 lemma ℵ₁_larger_than_continuum {Γ : 𝔹} : Γ ≤ larger_than (ℵ₁ ̌) ((powerset omega)̌ ) :=
-by apply bv_use π; from π_spec'
+by {apply bv_use (ℵ₁ ̌), apply bv_use π, rw[inf_assoc], from le_inf subset_self π_spec' }
+
 
 -- for these two lemmas, need 2.17 (iv) in Bell, which follows from (i) ⟹ (ii)
 -- i.e. If 𝔹 has a dense subset P which is ω-closed, then for any η < ℵ₁, and any x,
@@ -322,37 +324,56 @@ and g is the function attached to the collection of pairs (i, y_i), show that q 
 --TODO(jesse) finish this
 -- lemma function_reflect_aux {y : pSet} (g : bSet 𝔹) (H : Γ ≤ is_func' (ω) (y̌))
 
+-- def 𝔹 := collapse_algebra ((ℵ₁ : pSet).type) (powerset omega : pSet).type
+
+-- instance 𝔹_nonempty : nonempty (type ℵ₁ → type (powerset omega)) := sorry
+
+-- @[instance, priority 9001] def 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 :=
+-- regular_open_algebra $ by apply_instance
+
+-- local attribute [irreducible] 𝔹
+
 lemma distributive {x : pSet} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) (af : pSet.omega.type → x.type → 𝔹) :
    ⨅ i : pSet.omega.type, (⨆ j : x.type, af i j) = ⨆(f : pSet.omega.type → x.type), ⨅(i : pSet.omega.type), af i (f i)
  := sorry
 
 lemma functions_eq {x : pSet} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) : sorry := sorry
 
+-- TODO: needs to be fixed to accept an arbitrary subset of ω
 def function_reflect (y : pSet) (g : bSet 𝔹) {Γ} (H : Γ ≤  (is_function (ω) (y̌) g)) : pSet :=
 mk (ulift ℕ) (λ k, sorry)
 
+-- TODO: needs to be fixed to accept an arbitrary subset of ω
 lemma function_reflect_spec₁ {y} {g} {Γ : 𝔹} (H : Γ ≤ _) : Γ ≤ (function_reflect y g H)̌  =ᴮ g :=
 sorry
 
+-- TODO: needs to be fixed to accept an arbitrary subset of ω
 lemma function_reflect_spec₂ {y} {g} {Γ : 𝔹} (H : Γ ≤ _) : is_func pSet.omega y (function_reflect y g H) :=
 sorry
 
+-- TODO: needs to be fixed to accept an arbitrary subset of ω
 lemma function_reflect_surj_of_surj {g} {y} {Γ : 𝔹} (H : Γ ≤ _) (H_not_zero : ⊥ < Γ) (H_surj : Γ ≤ is_surj ((omega)̌ ) (y̌) (g : bSet 𝔹)) :
   pSet.is_surj ((omega)) y (function_reflect y g H) :=
 sorry -- TODO(jesse) this should be easy because surjectivity is Δ₀, so prove a general lemma for this
 
+
 lemma omega_lt_aleph_one {Γ : 𝔹} : Γ ≤ bSet.omega ≺ (ℵ₁̌ ) :=
 begin
-  unfold larger_than, rw[<-imp_bot], rw[<-deduction], /- `tidy_context` says -/ refine poset_yoneda _, intros Γ_1 a, simp only [le_inf_iff] at *, cases a,
-  bv_cases_at a_right f, rw[le_inf_iff] at a_right_1, cases a_right_1,
-  by_contra, replace a := (bot_lt_iff_not_le_bot.mpr a),
-  suffices this : ∃ f : pSet, is_func _ _ f ∧ pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f,
-    by {exfalso, from pSet.ex_no_surj_omega_aleph_one this}, 
-  let g := (function_reflect (card_ex $ aleph 1) (function_of_func' a_right_1_left) (function_of_func'_is_function a_right_1_left)), use g,
-  refine ⟨_,_⟩,
-    { apply function_reflect_spec₂ },
-    { apply function_reflect_surj_of_surj,
-        from ‹_›, from (function_of_func'_surj_of_surj _ ‹_›) }
+  unfold larger_than, rw[<-imp_bot, <-deduction],
+  /- `tidy_context` says -/ refine poset_yoneda _, intros Γ_1 a, simp only [le_inf_iff] at *, cases a,
+  bv_cases_at a_right S HS, apply lattice.context_Or_elim HS,
+  intros f Hf, specialize_context Γ_2,
+  simp only [le_inf_iff] at Hf, repeat{auto_cases}, by_contra H,
+  replace H := (bot_lt_iff_not_le_bot.mpr H),
+  -- assuming we can reflect functions from a subset of omega to functions from a subset of omega, it is easy to extend them to omega in pSet
+  suffices : ∃ f : pSet, is_func pSet.omega (ordinal.mk (aleph 1).ord) f ∧ pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f,
+    by {exfalso, from ex_no_surj_omega_aleph_one ‹_›}, sorry
+  -- TODO(jesse): fix the definition of g
+  -- let g := (function_reflect (card_ex $ aleph 1) sorry sorry), use g,
+  -- refine ⟨_,_⟩,
+  --   { apply function_reflect_spec₂ },
+  --   { apply function_reflect_surj_of_surj,
+  --       from ‹_›, from (function_of_func'_surj_of_surj _ ‹_›) }
 end
 
 lemma aleph_one_check_universal_property (Γ : 𝔹) : Γ ≤ aleph_one_weak_universal_property (ℵ₁̌  : bSet 𝔹) :=

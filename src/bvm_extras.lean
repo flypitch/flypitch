@@ -242,6 +242,12 @@ by simp[H]
 
 example {y z : bSet 𝔹} : ⊤ ≤ ({y,z} : bSet 𝔹) =ᴮ ({z,y}) := insert1_symm _ _
 
+lemma B_ext_pair_mem_left {x y : bSet 𝔹} : B_ext (λ z, pair z x ∈ᴮ y) :=
+B_ext_term (λ w, w ∈ᴮ y) (λ z, pair z x)
+
+lemma B_ext_pair_mem_right {x y : bSet 𝔹} : B_ext (λ z, pair x z ∈ᴮ y) :=
+B_ext_term (λ w, w ∈ᴮ y) (λ z, pair x z)
+
 lemma eq_of_eq_pair'_left {x z y : bSet 𝔹} : pair x y =ᴮ pair z y ≤ x =ᴮ z :=
 begin
   unfold pair, unfold has_insert.insert, rw[bv_eq_unfold], fapply bv_specialize_left,
@@ -314,6 +320,10 @@ poset_yoneda_inv Γ eq_of_eq_pair_right
 lemma eq_of_eq_pair {x y z w : bSet 𝔹} {Γ : 𝔹} (H_eq : Γ ≤ pair x y =ᴮ pair z w) :
   Γ ≤ x =ᴮ z ∧ Γ ≤ y =ᴮ w :=
 ⟨eq_of_eq_pair_left' ‹_›, eq_of_eq_pair_right' ‹_›⟩
+
+lemma pair_eq_pair_iff {x y x' y' : bSet 𝔹} {Γ : 𝔹} 
+  : Γ ≤ pair x y =ᴮ pair x' y' ↔ Γ ≤ x =ᴮ x' ∧ Γ ≤ y =ᴮ y' :=
+iff.intro (λ _, eq_of_eq_pair ‹_›) (λ ⟨_,_⟩, pair_congr ‹_› ‹_›)
 
 @[reducible]def prod (v w : bSet 𝔹) : bSet 𝔹 := ⟨v.type × w.type, λ a, pair (v.func a.1) (w.func a.2), λ a, (v.bval a.1) ⊓ (w.bval a.2)⟩
 
@@ -417,12 +427,19 @@ begin
   from H w w' (le_inf ‹_› ‹_›) (bv_refl)
 end
 
+@[reducible]def is_total (x y f : bSet 𝔹) : 𝔹 :=
+(⨅w₁, w₁ ∈ᴮ x ⟹ ⨆w₂, w₂ ∈ᴮ y ⊓ pair w₁ w₂ ∈ᴮ f)
+
 /-- f is (more precisely, contains) a function from x to y if for every element of x, there exists an element of y such that the pair is in f, and f is a function -/
 @[reducible]def is_func' (x y f : bSet 𝔹) : 𝔹 :=
-  is_func f ⊓ (⨅w₁, w₁ ∈ᴮ x ⟹ ⨆w₂, w₂ ∈ᴮ y ⊓ pair w₁ w₂ ∈ᴮ f)
+  is_func f ⊓ is_total x y f
 
 lemma is_func_of_is_func' {x y f : bSet 𝔹} {Γ} (H : Γ ≤ is_func' x y f) : Γ ≤ is_func f :=
 bv_and.left ‹_›
+
+lemma is_total_of_is_func' {x y f : bSet 𝔹} {Γ : 𝔹} (H_is_func' : Γ ≤ is_func' x y f)
+  : Γ ≤ is_total x y f :=
+bv_and.right ‹_›
 
 /-- f is a function x → y if it is extensional, total, and is a subset of the product of x and y -/
 @[reducible]def is_function (x y f : bSet 𝔹) : 𝔹 :=
@@ -474,69 +491,116 @@ def CH : 𝔹 := - ⨆ x, ⨆y, (omega ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(omeg
 
 section 
 parameter {Γ : 𝔹}
-def lift_surj_inj {x y f g : bSet 𝔹} (z : bSet 𝔹) (H_surj : Γ ≤ is_surj x y f) (H_inj : Γ ≤ is_inj g) : bSet 𝔹 :=
-@set_of_indicator _ _ (prod x y)
-    (λ p, ⨆(k : z.type), (pair (x.func p.fst) (z.func k)) ∈ᴮ f ⊓
-                             (pair (y.func p.snd) (z.func k) ∈ᴮ g) ⊓ (prod x y).bval p)
+def lift_surj_inj {x z f g : bSet 𝔹} (y : bSet 𝔹) (H_surj : Γ ≤ is_surj x z f) (H_inj : Γ ≤ is_inj g) : bSet 𝔹 :=
+@subset.mk _ _ (prod x y)
+    (λ p, (⨆w, w ∈ᴮ z ⊓ (pair (x.func p.fst) w) ∈ᴮ f ⊓
+                             (pair (y.func p.snd) w ∈ᴮ g)))
 
 local notation `𝓛` := lift_surj_inj
 
-lemma mem_codomain_of_mem_image {x y f v w : bSet 𝔹} {Γ : 𝔹} (H_is_func' : Γ ≤ is_func' x y f)
-  (H_mem₁ : Γ ≤ pair v w ∈ᴮ f) (H_mem₂ : Γ ≤ v ∈ᴮ x) : Γ ≤ w ∈ᴮ y := sorry
-
-
-lemma mem_lift_surj_inj_iff {x y z f g : bSet 𝔹} {w₁ w₂ : bSet 𝔹} {H_surj : Γ ≤ is_surj x y f} {H_inj : Γ ≤ is_inj g} (H_is_func'_f : Γ ≤ is_func' x z f) : Γ ≤ pair w₁ w₂ ∈ᴮ (lift_surj_inj z H_surj H_inj) ↔ Γ ≤ ⨆ w, (w ∈ᴮ z ⊓ (pair w₁ w ∈ᴮ f) ⊓ (pair w₂ w ∈ᴮ g)) :=
+lemma mem_left_surj_inj_iff_aux {x y z f g : bSet 𝔹} {w₁ w₂ : bSet 𝔹} {H_surj : Γ ≤ is_surj x z f}
+  {H_inj : Γ ≤ is_inj g} (H_is_func'_f : Γ ≤ is_func' x z f) (H : Γ ≤ pair w₁ w₂ ∈ᴮ (lift_surj_inj y H_surj H_inj))
+  : Γ ≤ ⨆ w, (w ∈ᴮ z ⊓ (pair w₁ w ∈ᴮ f) ⊓ (pair w₂ w ∈ᴮ g)) :=
 begin
-  refine ⟨_,_⟩; intro H,
-    { unfold lift_surj_inj at H, rw[mem_unfold] at H, bv_cases_at H i Hi, dsimp at *,
-      bv_split, bv_cases_at Hi_left k Hk, apply bv_use (z.func k),
-      refine le_inf (le_inf _ _) _,
-        { apply mem_codomain_of_mem_image, exact le_inf H_is_func'_f_left ‹_›,
-          exact (bv_and.left $ bv_and.left Hk), clear_except Hk,
-          exact mem.mk'' (by simp at Hk; simp*) },
-        { apply_at Hi_right eq_of_eq_pair,
-          simp only [le_inf_iff] at Hk, apply bv_rw' Hi_right.left,
-          by {sorry}, exact Hk.left.left },
-        { apply_at Hi_right eq_of_eq_pair, simp only [le_inf_iff] at Hk,
-          apply bv_rw' Hi_right.right, by sorry, exact Hk.left.right },
-        },
-    { bv_cases_at' H w Hw, unfold lift_surj_inj, sorry
-      
-
-    }
+  bv_cases_at' H pr Hi, bv_split_at Hi, bv_split_at Hi_left,
+    bv_cases_at' Hi_left_left w Hw, apply bv_use w, bv_split_at Hw, bv_split_at Hw_left,
+    simp[pair_eq_pair_iff] at Hi_right, cases Hi_right with H₁ H₂,
+    refine le_inf (le_inf ‹_› _) _,
+    apply bv_rw' H₁, exact B_ext_pair_mem_left, from ‹_›,
+    apply bv_rw' H₂, exact B_ext_pair_mem_left, from ‹_›
 end
 
-lemma lift_surj_inj_is_func {x y z f g : bSet 𝔹} {w₁ w₂ : bSet 𝔹} {H_surj : Γ ≤ is_surj x y f} {H_inj : Γ ≤ is_inj g} (H_is_func_f : Γ ≤ is_func' x z f) : Γ ≤ is_func (lift_surj_inj z H_surj H_inj) :=
+lemma mem_lift_surj_inj_iff {x y z f g : bSet 𝔹} {w₁ w₂ : bSet 𝔹} {H_surj : Γ ≤ is_surj x z f}
+  {H_inj : Γ ≤ is_inj g} (H_is_func'_f : Γ ≤ is_func' x z f) {H_mem₁ : Γ ≤ w₁ ∈ᴮ x} {H_mem₂ : Γ ≤ w₂ ∈ᴮ y}
+    : Γ ≤ pair w₁ w₂ ∈ᴮ (lift_surj_inj y H_surj H_inj) ↔ Γ ≤ ⨆ w, (w ∈ᴮ z ⊓ (pair w₁ w ∈ᴮ f) ⊓ (pair w₂ w ∈ᴮ g)) :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { apply mem_left_surj_inj_iff_aux _ _, from x, from y, repeat {assumption} },
+
+    { unfold lift_surj_inj, rw[mem_subset.mk_iff], bv_cases_at H w Hw, bv_split_at Hw, bv_split_at Hw_left, 
+      rw[mem_unfold] at H_mem₁, bv_cases_at H_mem₁ i Hi, rw[mem_unfold] at H_mem₂, bv_cases_at H_mem₂ j Hj,
+      apply bv_use (i,j), refine le_inf _ _,
+        { bv_split, simp[pair_congr, *] },
+        { refine le_inf _ _,
+          { apply bv_use w, refine le_inf (le_inf ‹_› _) _,
+            bv_split_at Hi, apply @bv_rw' _ _ _ _ _ (bv_symm $ Hi_right) (λ x, pair x w ∈ᴮ f),
+            exact B_ext_pair_mem_left, from ‹_›,
+            bv_split_at Hj, apply @bv_rw' _ _ _ _ _ (bv_symm $ Hj_right) (λ x, pair x w ∈ᴮ g),
+            exact B_ext_pair_mem_left, from ‹_› },
+          { bv_split, simp* }}}
+end
+  -- refine ⟨_,_⟩; intro H,
+  --   { unfold lift_surj_inj at H, rw[mem_unfold] at H, bv_cases_at H i Hi, dsimp at *,
+  --     have Hi' := (bv_and.left $ bv_and.left Hi), bv_cases_at Hi' k Hk, apply bv_use (z.func k),
+  --     refine le_inf (le_inf _ _) _,
+  --       { sorry },
+  --       { sorry },
+  --       { sorry }},
+  --  { sorry },
+
+lemma lift_surj_inj_is_func {x y z f g : bSet 𝔹} {w₁ w₂ : bSet 𝔹} {H_surj : Γ ≤ is_surj x z f} {H_inj : Γ ≤ is_inj g} (H_is_func_f : Γ ≤ is_func' x z f) : Γ ≤ is_func (lift_surj_inj y H_surj H_inj) :=
 begin
   bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂,
         bv_imp_intro' H_graph, rw[le_inf_iff] at H_graph, cases H_graph with H_gr₁ H_gr₂,
         bv_imp_intro H_eq, have H_inj₂ := H_inj, rw[is_inj] at H_inj₂,
-        apply_at H_gr₁ (mem_lift_surj_inj_iff H_is_func_f).mp,
-        apply_at H_gr₂ (mem_lift_surj_inj_iff H_is_func_f).mp,
+        apply_at H_gr₁ (mem_left_surj_inj_iff_aux H_is_func_f),
+        apply_at H_gr₂ (mem_left_surj_inj_iff_aux H_is_func_f),
         bv_cases_at H_gr₁ c₁ Hc₁, bv_cases_at H_gr₂ c₂ Hc₂,
         suffices c₁_eq_c₂ : _ ≤ c₁ =ᴮ c₂,
           by {clear_except H_inj Hc₁ Hc₂ c₁_eq_c₂,
               refine H_inj v₁ v₂ c₁ c₂ _, bv_split, bv_split,
               from le_inf (le_inf ‹_› ‹_›) ‹_› },
         refine (bv_and.left H_is_func_f) w₁ w₂ c₁ c₂ _ ‹_›,
-        bv_split, bv_split, from le_inf ‹_› ‹_›, repeat {assumption}
+        bv_split, bv_split, from le_inf ‹_› ‹_›, repeat {assumption},
+end
+
+lemma lift_surj_inj_is_total {y z f g S : bSet 𝔹} (H_surj : Γ ≤ is_surj S z f) (H_inj : Γ ≤ is_inj g) (H_is_func_f : Γ ≤ is_func' S z f)
+  : Γ ≤ is_total (subset.mk (λ i : S.type, ⨆ b, b ∈ᴮ y ⊓ ⨆ c, c ∈ᴮ z ⊓ pair (S.func i) c ∈ᴮ f ⊓ pair b c ∈ᴮ g)) y (lift_surj_inj y H_surj H_inj) :=
+begin
+  bv_intro w₁, bv_imp_intro' Hw₁,
+  rw[mem_subset.mk_iff] at Hw₁, bv_cases_at Hw₁ i Hi, have Hi' := (bv_and.left $ bv_and.right Hi),
+  bv_cases_at Hi' b Hb, apply bv_use b, refine le_inf (bv_and.left Hb) _,
+  apply (mem_lift_surj_inj_iff H_is_func_f).mpr, apply bv_rw' (bv_and.left Hi),
+  {apply B_ext_supr, intro i, apply B_ext_inf, swap, simp, apply B_ext_inf, simp,
+   exact B_ext_term (λ z, z ∈ᴮ f) (λ x, pair x i) },
+  exact (bv_and.right Hb), from ‹_›, from ‹_›, rw[mem_unfold], apply bv_use i,
+  exact le_inf (bv_and.right $ bv_and.right Hi) (bv_and.left Hi), exact bv_and.left Hb
+end
+
+lemma lift_surj_inj_is_surj {y z f g S : bSet 𝔹} (H_surj : Γ ≤ is_surj S z f) (H_inj : Γ ≤ is_inj g)
+  (H_is_func_f : Γ ≤ is_func' S z f) (H_is_func_g : Γ ≤ is_func' y z g)
+  : Γ ≤ is_surj (subset.mk (λ i : S.type, ⨆ b, b ∈ᴮ y ⊓ ⨆ c, c ∈ᴮ z ⊓ pair (S.func i) c ∈ᴮ f ⊓ pair b c ∈ᴮ g)) y (lift_surj_inj y H_surj H_inj) :=
+begin
+  bv_intro b, bv_imp_intro' Hb_mem, have := is_total_of_is_func' H_is_func_g b ‹_›,
+  bv_cases_at this w₂ Hw₂, have := H_surj w₂ (bv_and.left Hw₂), bv_cases_at' this v Hv,
+    bv_split_at Hv, rw[mem_unfold] at Hv_left, apply bv_use v,
+    refine le_inf _ _,
+      { rw[mem_subset.mk_iff], bv_cases_at' Hv_left i Hi, apply bv_use i,
+        refine le_inf (bv_and.right Hi) (le_inf _ (bv_and.left Hi)),
+          { apply bv_use b, refine le_inf ‹_› _, apply bv_use w₂,
+            refine le_inf (le_inf (bv_and.left ‹_›) _) (bv_and.right ‹_›),
+            have := (bv_symm $ bv_and.right Hi),
+            apply @bv_rw' _ _ (func S i) v _ this (λ z, pair z w₂ ∈ᴮ f),
+            swap, from ‹_›, apply B_ext_pair_mem_left }},
+      { apply (mem_lift_surj_inj_iff H_is_func_f).mpr, apply bv_use w₂,
+        exact le_inf (le_inf (bv_and.left Hw₂) ‹_›) (bv_and.right ‹_›),
+        repeat {assumption}, dsimp [Γ_3], exact inf_le_left_of_le inf_le_left }
 end
 
 end 
 
--- todo(jesse): use χ_A := (i,j) ↦ ⨆ₖ (i,k) ∈ᴮ Γ(f) ⊓ (j,k) ∈ᴮ Γ(g)
 lemma bSet_lt_of_lt_of_le (x y z : bSet 𝔹) {Γ} (H₁ : Γ ≤ x ≺ y) (H₂ : Γ ≤ y ≼ z) : Γ ≤ x ≺ z :=
 begin
   dsimp only [larger_than, injects_into] at ⊢ H₁ H₂,
   rw[<-imp_bot] at ⊢ H₁, bv_imp_intro H, refine H₁ _,
-  bv_cases_at H f H_f, bv_cases_at H₂ g H_g, bv_split, sorry
-  -- let f' : bSet 𝔹 := lift_surj_inj z ‹_› ‹_›,
-  -- apply bv_use f',
-  --   { rw[is_func', is_func], refine le_inf (le_inf _ _) _,
-  --     { apply lift_surj_inj_is_func H_f_left, repeat{assumption} },
-  --   { sorry },
-  --   { unfold is_surj, sorry }}, -- for every j, take (g j) and lift along surjection, then verify the postcondition
-    
+  bv_cases_at H S H_S, bv_cases_at H₂ g H_g,
+  bv_cases_at H_S f Hf, bv_split, bv_split,
+  apply bv_use (subset.mk (λ i : S.type, ⨆ b, b ∈ᴮ y ⊓ ⨆ c, c ∈ᴮ z ⊓ pair (S.func i) c ∈ᴮ f ⊓ pair b c ∈ᴮ g)),
+  apply bv_use (lift_surj_inj y ‹_› ‹_›),
+  refine le_inf (le_inf (subset_trans' subset.mk_subset ‹_›) (le_inf _ _)) _,
+    { apply lift_surj_inj_is_func, repeat {assumption} },
+    { exact lift_surj_inj_is_total Hf_right ‹_› ‹_› },
+    { exact lift_surj_inj_is_surj Hf_right ‹_› ‹_› (le_inf ‹_› ‹_›) }
 end
 
 lemma bSet_lt_of_le_of_lt (x y z : bSet 𝔹) {Γ} (H₁ : Γ ≤ x ≼ y) (H₂ : Γ ≤ y ≺ z) : Γ ≤ x ≺ z :=
@@ -640,20 +704,14 @@ def check' {α : Type u} (A : α → bSet 𝔹) : bSet 𝔹 := ⟨α, A, λ x, �
 lemma mk_is_func {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : ⊤ ≤ is_func (function.mk F h_congr) :=
 begin
   bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂,
-  apply bv_imp_intro, apply bv_imp_intro, tidy_context,
-  bv_cases_at a_left_right_left i,
-  bv_cases_at a_left_right_right j,
-  clear a_left_right_left a_left_right_right a_left_left,
-  bv_split_at a_left_right_left_1, bv_split_at a_left_right_right_1,
-  bv_mp a_left_right_left_1_1_1 eq_of_eq_pair_left,
-  bv_mp a_left_right_left_1_1_1 eq_of_eq_pair_right,
-  bv_mp a_left_right_right_1_1_1 eq_of_eq_pair_left,
-  bv_mp a_left_right_right_1_1_1 eq_of_eq_pair_right,
-  change Γ_2 ≤ (λ z, z =ᴮ v₂) _, apply bv_rw' a_left_right_left_1_1_1_2,
-  simp, change _ ≤ (λ z, (F i) =ᴮ z) _, apply bv_rw' a_left_right_right_1_1_1_2,
-  simp, apply le_trans, swap, apply h_congr,
-  apply bv_trans, rw[bv_eq_symm], from ‹_›,
-  apply bv_trans, from ‹_›, from ‹_›
+  bv_imp_intro H, bv_imp_intro H_eq,
+  unfold function.mk at H, bv_split_at H,
+  rw[mem_unfold] at H_left H_right,
+  bv_cases_at H_left i Hi, bv_cases_at H_right j Hj,
+  clear_except H_eq Hi Hj,
+  simp[pair_eq_pair_iff] at Hi Hj, repeat{auto_cases},
+  suffices : Γ_3 ≤ F i =ᴮ F j, by bv_cc,
+  refine le_trans _ (h_congr i j), bv_cc
 end
 
 --TODO(jesse) finish this
@@ -963,8 +1021,8 @@ begin
   rw[mem_unfold] at a_left_right, bv_cases_at a_left_right i_w, bv_split_at a_left_right_1,
   specialize y_ih i_w, rw[deduction] at y_ih,
   have := le_trans (le_inf ‹_› ‹_› : Γ_3 ≤ Ord x) ‹_›,
-  have this' : Γ_3 ≤ func y i_w ∈ᴮ x,  rw[bv_eq_symm] at a_left_right_1_1_1,
-  change Γ_3 ≤ (λ z, z ∈ᴮ x) (func y i_w), apply bv_rw' a_left_right_1_1_1,
+  have this' : Γ_3 ≤ func y i_w ∈ᴮ x,  rw[bv_eq_symm] at a_left_right_1_right,
+  change Γ_3 ≤ (λ z, z ∈ᴮ x) (func y i_w), apply bv_rw' a_left_right_1_right,
   simp, from H_2, bv_imp_elim_at this ‹_›,
   have : Γ_3 ≤ is_transitive w, apply bv_rw' ‹_›, simp, from ‹_›,
   unfold is_transitive at this, have H_8 := this z ‹_›,
@@ -1143,7 +1201,7 @@ begin
   unfold closed_under_successor, bv_intro y, bv_imp_intro H_mem,
   bv_cases_at H_mem k, cases k with k, simp at H_mem_1, refine bv_use _,
   exact (ulift.up $ k + 1), simp, apply bv_rw' H_mem_1,
-    { refine @B_ext_term 𝔹 _ (λ z, z =ᴮ ((k+1)̃ ̌)) (by simp) succ (by simp) },
+    { exact @B_ext_term 𝔹 _ (λ z, z =ᴮ ((k+1)̃ ̌)) succ (by simp) (by simp) },
       -- TODO(jesse): automate calculation of the motive
     { simp[pSet.of_nat, succ] },
 end

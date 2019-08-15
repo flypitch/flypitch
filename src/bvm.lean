@@ -657,7 +657,9 @@ end
 
 @[reducible]def B_congr (t : bSet 𝔹 → bSet 𝔹) : Prop := ∀ {x₁ x₂}, ∀ {Γ : 𝔹}, Γ ≤ x₁ =ᴮ x₂ → Γ ≤ t x₁ =ᴮ t x₂
 
-@[simp]lemma B_ext_term {ϕ : bSet 𝔹 → 𝔹} (H : B_ext ϕ) {t : bSet 𝔹 → bSet 𝔹} (H' : B_congr t) :
+meta def H_congr_handler : tactic unit := `[simp]
+
+@[simp]lemma B_ext_term (ϕ : bSet 𝔹 → 𝔹) (t : bSet 𝔹 → bSet 𝔹) (H : B_ext ϕ . H_congr_handler) (H' : B_congr t . H_congr_handler) :
   B_ext (λ z, ϕ ((λ w, t w) z) ) :=
 begin
   intros x y, tidy_context,
@@ -665,8 +667,6 @@ begin
     by {apply bv_rw' (bv_symm this), from ‹_›, from ‹_›},
   exact H' ‹_›
 end
-
-meta def H_congr_handler : tactic unit := `[simp]
 
 -- use for rewriting in the second argument using the first
 lemma bv_rw'' {x y : bSet 𝔹} {Γ : 𝔹} (H : Γ ≤ x =ᴮ y) {ϕ : bSet 𝔹 → 𝔹} (H_new : Γ ≤ ϕ x) (h_congr : B_ext ϕ . H_congr_handler) : Γ ≤ ϕ y :=
@@ -1705,12 +1705,12 @@ begin
   have := bv_union_spec u,
   bv_intro x, apply le_inf,
     replace this := this x, bv_split_at this,
-    from le_trans (le_top) (by {bv_imp_intro, replace this_1 := this_1 ‹_›,
-    bv_cases_at this_1 i_y, apply bv_use (u.func i_y), bv_split,
+    from le_trans (le_top) (by {bv_imp_intro, replace this_left := this_left ‹_›,
+    bv_cases_at this_left i_y, apply bv_use (u.func i_y), bv_split,
     from le_inf (mem.mk'' ‹_›) ‹_›}),
   replace this := this x, bv_split_at this,
-  bv_imp_intro, specialize_context_at this_1_1 Γ_1,
-  replace this_1_1 := this_1_1 _, from ‹_›,
+  bv_imp_intro, specialize_context_at this_right Γ_1,
+  replace this_1_1 := this_right _, from ‹_›,
   rw[@bounded_exists 𝔹 _ u (λ z, x ∈ᴮ z)], from ‹_›,
   change B_ext _, simp
 end
@@ -1718,8 +1718,8 @@ end
 lemma bv_union_spec_split (u : bSet 𝔹) {Γ} (x : bSet 𝔹) : (Γ ≤ x ∈ᴮ bv_union u) ↔ (Γ ≤ ⨆ y, y ∈ᴮ u ⊓ x ∈ᴮ y) :=
 begin
   have := bv_union_spec' u, show 𝔹, from Γ, replace this := this x,
-  dsimp at this, bv_split_at this, split; intro, from this_1 ‹_›,
-  from this_1_1 ‹_›
+  dsimp at this, bv_split_at this, split; intro, from this_left ‹_›,
+  from this_right ‹_›
 end
 
 /-- For every x ∈ u, x ⊆ᴮ ⋃ u.-/
@@ -1798,16 +1798,16 @@ end
 @[simp, cleanup]lemma set_of_indicator.bval {u} {f} {i} :
   (@set_of_indicator 𝔹 _ u f).bval i = f i := rfl
 
-@[reducible, simp]def set_of_indicator' {u : bSet 𝔹} (f : u.type → 𝔹) : bSet 𝔹 :=
-  ⟨u.type, u.func, λ i, f i ⊓ u.bval i⟩
+-- @[reducible, simp]def set_of_indicator' {u : bSet 𝔹} (f : u.type → 𝔹) : bSet 𝔹 :=
+--   ⟨u.type, u.func, λ i, f i ⊓ u.bval i⟩
 
 def bv_powerset (u : bSet 𝔹) : bSet 𝔹 :=
 ⟨u.type → 𝔹, λ f, set_of_indicator f, λ f, set_of_indicator f ⊆ᴮ u⟩
 
 prefix `𝒫`:80 := bv_powerset
 
-def bv_powerset' (u : bSet 𝔹) : bSet 𝔹 :=
-⟨u.type → 𝔹, λ f, set_of_indicator' f, λ f, ⊤⟩
+-- def bv_powerset' (u : bSet 𝔹) : bSet 𝔹 :=
+-- ⟨u.type → 𝔹, λ f, set_of_indicator' f, λ f, ⊤⟩
 
 --TODO (jesse) try proving bv_powerset and bv_powerset' are equivalent
 
@@ -1905,32 +1905,45 @@ begin
   apply bv_rw' H, simp, rwa[bv_powerset_spec]
 end
 
-lemma set_of_indicator_mem.mk {x : bSet 𝔹} {i : x.type} {χ : x.type → 𝔹} {Γ} (H_Γ : Γ ≤ χ i) : Γ ≤ (x.func i) ∈ᴮ (set_of_indicator χ) :=
+@[simp]lemma set_of_indicator_mem.mk {x : bSet 𝔹} {i : x.type} {χ : x.type → 𝔹} {Γ} (H_Γ : Γ ≤ χ i) : Γ ≤ (x.func i) ∈ᴮ (set_of_indicator χ) :=
 by {rw[mem_unfold], apply bv_use i, exact le_inf H_Γ (bv_refl)}
 
-lemma set_of_indicator_subset {x : bSet 𝔹} {χ : x.type → 𝔹} {Γ} (H_χ : ∀ i, χ i ≤ x.bval i) : Γ ≤ set_of_indicator χ ⊆ᴮ x :=
+@[simp]lemma set_of_indicator_subset {x : bSet 𝔹} {χ : x.type → 𝔹} {Γ} (H_χ : ∀ i, χ i ≤ x.bval i) : Γ ≤ set_of_indicator χ ⊆ᴮ x :=
 begin
   rw[subset_unfold], bv_intro j, bv_imp_intro H,
   simpa using le_trans (le_trans H (by solve_by_elim)) (mem.mk' _ _)
 end
 
-lemma check_set_of_indicator_subset {x : pSet} {χ : x̌.type → 𝔹} {Γ} : Γ ≤ set_of_indicator χ ⊆ᴮ x̌ :=
-set_of_indicator_subset (by simp)
+@[reducible, simp]def subset.mk {u : bSet 𝔹} (χ : u.type → 𝔹) : bSet 𝔹 :=
+set_of_indicator (λ i, χ i ⊓ (u.bval i))
+
+@[simp]lemma subset.mk_subset {u : bSet 𝔹} {χ : u.type → 𝔹} {Γ : 𝔹} : Γ ≤ subset.mk χ ⊆ᴮ u :=
+set_of_indicator_subset $ by simp
+
+lemma check_set_of_indicator_subset {x : pSet} {χ : x̌.type → 𝔹} {Γ} :
+  Γ ≤ set_of_indicator χ ⊆ᴮ x̌ :=
+set_of_indicator_subset $ by simp
 
 instance subset_to_pi {z x y : bSet 𝔹} {Γ : 𝔹} : has_coe_to_fun (Γ ≤ x ⊆ᴮ y) :=
 { F := λ H, (Γ ≤ z ∈ᴮ x → Γ ≤ z ∈ᴮ y),
   coe := λ H₁ H₂, mem_of_mem_subset H₁ H₂ }
 
 lemma mem_set_of_indicator_iff {x : bSet 𝔹} {χ : x.type → 𝔹} {z : bSet 𝔹} {Γ : 𝔹} (H_χ : ∀ i, χ i ≤ x.bval i)
- : Γ ≤ z ∈ᴮ set_of_indicator χ  ↔ Γ ≤ z ∈ᴮ x ∧ Γ ≤ ⨆(i : x.type), z =ᴮ (x.func i) ⊓ χ i :=
+ : Γ ≤ z ∈ᴮ set_of_indicator χ  ↔ Γ ≤ ⨆(i : x.type), z =ᴮ (x.func i) ⊓ χ i :=
 begin
   refine ⟨_,_⟩; intro H,
-    { refine ⟨mem_of_mem_subset (set_of_indicator_subset ‹_› : Γ ≤ _) H,_⟩,
-      rw[mem_unfold] at H, bv_cases_at H i Hi, apply bv_use i,
+    { rw[mem_unfold] at H, bv_cases_at H i Hi, apply bv_use i,
       exact le_inf (bv_and.right Hi) (bv_and.left Hi) },
-    { cases H with H₁ H₂, rw[mem_unfold] at H₁, bv_cases_at H₂ i Hi,
+    { bv_cases_at H i Hi,
       bv_split, apply bv_rw' Hi_left, simp, apply set_of_indicator_mem.mk, from ‹_› }
 end
+
+lemma mem_subset.mk_iff {x : bSet 𝔹} {χ : x .type → 𝔹} {z : bSet 𝔹} {Γ : 𝔹}
+  : Γ ≤ z ∈ᴮ subset.mk χ ↔ Γ ≤ ⨆ (i : x.type), z =ᴮ (x.func i) ⊓ (χ i ⊓ (x.bval i)) :=
+mem_set_of_indicator_iff $ by simp
+
+lemma mem_of_mem_subset.mk {x : bSet 𝔹} {χ : x.type → 𝔹} {z} {Γ} (Hz : Γ ≤ z ∈ᴮ subset.mk χ) : Γ ≤ z ∈ᴮ x :=
+mem_of_mem_subset (subset.mk_subset) ‹_›
 
 /--
  For x an injective pSet and χ : x̌.type → 𝔹, ⊤ ≤ (x.func i) ∈ set_of_indicator χ iff χ i = ⊤.

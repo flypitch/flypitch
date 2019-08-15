@@ -32,7 +32,7 @@ lemma AE_of_check_larger_than_check (x y : pSet.{u}) {f : bSet 𝔹} {Γ}
   (H : Γ ≤ (is_func f) ⊓ ⨅v, v ∈ᴮ y̌ ⟹ ⨆w, w ∈ᴮ x̌ ⊓ pair w v ∈ᴮ f) (h_nonzero : ⊥ < Γ) :
   ∀ i : y.type, ∃ j : x.type, ⊥ < (is_func f) ⊓ (pair ((x.func j)̌ ) ((y.func i)̌ )) ∈ᴮ f :=
 begin
-  intro i_v, bv_split_at H, replace H_1_1 := H_1_1 ((y.func i_v)̌ ), simp[check_mem'] at H_1_1,
+  intro i_v, bv_split_at H, replace H_right := H_right ((y.func i_v)̌ ), simp[check_mem'] at H_right,
   have H' : Γ ≤ is_func f ⊓ ⨆ (w : bSet 𝔹), w ∈ᴮ x̌  ⊓ pair w (pSet.func y i_v̌)  ∈ᴮ f,
     from context_and_intro ‹_› ‹_›,
   rw[inf_supr_eq] at H',
@@ -44,7 +44,7 @@ begin
   rw[<-this] at H', swap,
     {intros x' y',
     apply poset_yoneda, intros Γ_1 a,
-    simp only [le_inf_iff] at a H ⊢, cases a, cases H, cases a_right, refine ⟨‹_›, _⟩,
+    simp only [le_inf_iff] at a ⊢, cases a, cases a_right, refine ⟨‹_›, _⟩,
     have : Γ_1 ≤ pair x' ((y.func i_v)̌ ) =ᴮ pair y' ((y.func i_v)̌ ),
      from subst_congr_pair_left' ‹_›, apply subst_congr_mem_left'; from ‹_›},
     {cases x, cases y, convert nonzero_wit H', ext1,
