@@ -17,8 +17,9 @@ local infix ` ⇔ `:50 := lattice.biimp
 local prefix `p𝒫`:65 := pSet.powerset
 
 namespace bSet
-variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
+
 section extras
+parameters {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 
 @[simp, cleanup]lemma insert1_bval_none {u v : bSet 𝔹} : (bSet.insert1 u ({v})).bval none  = ⊤ :=
 by refl
@@ -71,7 +72,7 @@ def binary_union (x y : bSet 𝔹) : bSet 𝔹 := bv_union {x,y}
 -- note: maybe it's better to define this as a fiber product with a coherency condition?
 def binary_inter (x y : bSet 𝔹) : bSet 𝔹 := ⟨x.type, x.func, λ i, x.bval i ⊓ (x.func i) ∈ᴮ y⟩
 
-infix ` ∩ᴮ `:81 := binary_inter
+infix ` ∩ᴮ `:81 := _root_.bSet.binary_inter
 
 @[simp, cleanup] lemma binary_inter_bval {x y : bSet 𝔹} {i : x.type} : (x ∩ᴮ y).bval i = x.bval i ⊓ (x.func i) ∈ᴮ y := rfl
 
@@ -188,13 +189,13 @@ begin
 end
 
 @[simp]lemma subst_congr_pair_left' {x z y : bSet 𝔹} {Γ : 𝔹} :
-  Γ ≤ x=ᴮ z → Γ ≤ pair x y =ᴮ pair z y := poset_yoneda_inv Γ (@subst_congr_pair_left _ _ x z y)
+  Γ ≤ x=ᴮ z → Γ ≤ pair x y =ᴮ pair z y := poset_yoneda_inv Γ (@subst_congr_pair_left x z y)
 
 lemma subst_congr_pair_right {x y z : bSet 𝔹} : y =ᴮ z ≤ pair x y =ᴮ pair x z :=
 by unfold pair; simp*
 
 lemma subst_congr_pair_right' {Γ} {x y z : bSet 𝔹} (H : Γ ≤ y =ᴮ z) : Γ ≤ pair x y =ᴮ pair x z :=
-poset_yoneda_inv Γ (@subst_congr_pair_right _ _ x y z) ‹_›
+poset_yoneda_inv Γ (@subst_congr_pair_right x y z) ‹_›
 
 lemma pair_congr {x₁ x₂ y₁ y₂ : bSet 𝔹} {Γ : 𝔹} (H₁ : Γ ≤ x₁ =ᴮ y₁) (H₂ : Γ ≤ x₂ =ᴮ y₂) : Γ ≤ pair x₁ x₂ =ᴮ pair y₁ y₂ :=
 begin
@@ -468,14 +469,70 @@ local infix `≺`:70 := (λ x y, -(larger_than x y))
 
 local infix `≼`:70 := (λ x y, injects_into x y)
 
-def CH {𝔹} [nontrivial_complete_boolean_algebra 𝔹] : 𝔹 := - ⨆ x, ⨆y, (omega ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(omega))
+def CH : 𝔹 := - ⨆ x, ⨆y, (omega ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(omega))
 
--- TODO(jesse): use χ_A := (i,j) ↦ ⨆ₖ (i,k) ∈ᴮ Γ(f) ⊓ (j,k) ∈ᴮ Γ(g)
+section 
+parameter {Γ : 𝔹}
+def lift_surj_inj {x y f g : bSet 𝔹} (z : bSet 𝔹) (H_surj : Γ ≤ is_surj x y f) (H_inj : Γ ≤ is_inj g) : bSet 𝔹 :=
+@set_of_indicator _ _ (prod x y)
+    (λ p, ⨆(k : z.type), (pair (x.func p.fst) (z.func k)) ∈ᴮ f ⊓
+                             (pair (y.func p.snd) (z.func k) ∈ᴮ g) ⊓ (prod x y).bval p)
+
+local notation `𝓛` := lift_surj_inj
+
+lemma mem_codomain_of_mem_image {x y f v w : bSet 𝔹} {Γ : 𝔹} (H_is_func' : Γ ≤ is_func' x y f)
+  (H_mem₁ : Γ ≤ pair v w ∈ᴮ f) (H_mem₂ : Γ ≤ v ∈ᴮ x) : Γ ≤ w ∈ᴮ y := sorry
+
+
+lemma mem_lift_surj_inj_iff {x y z f g : bSet 𝔹} {w₁ w₂ : bSet 𝔹} {H_surj : Γ ≤ is_surj x y f} {H_inj : Γ ≤ is_inj g} (H_is_func'_f : Γ ≤ is_func' x z f) : Γ ≤ pair w₁ w₂ ∈ᴮ (lift_surj_inj z H_surj H_inj) ↔ Γ ≤ ⨆ w, (w ∈ᴮ z ⊓ (pair w₁ w ∈ᴮ f) ⊓ (pair w₂ w ∈ᴮ g)) :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { unfold lift_surj_inj at H, rw[mem_unfold] at H, bv_cases_at H i Hi, dsimp at *,
+      bv_split, bv_cases_at Hi_left k Hk, apply bv_use (z.func k),
+      refine le_inf (le_inf _ _) _,
+        { apply mem_codomain_of_mem_image, exact le_inf H_is_func'_f_left ‹_›,
+          exact (bv_and.left $ bv_and.left Hk), clear_except Hk,
+          exact mem.mk'' (by simp at Hk; simp*) },
+        { apply_at Hi_right eq_of_eq_pair,
+          simp only [le_inf_iff] at Hk, apply bv_rw' Hi_right.left,
+          by {sorry}, exact Hk.left.left },
+        { apply_at Hi_right eq_of_eq_pair, simp only [le_inf_iff] at Hk,
+          apply bv_rw' Hi_right.right, by sorry, exact Hk.left.right },
+        },
+    { sorry }
+end
+
+lemma lift_surj_inj_is_func {x y z f g : bSet 𝔹} {w₁ w₂ : bSet 𝔹} {H_surj : Γ ≤ is_surj x y f} {H_inj : Γ ≤ is_inj g} (H_is_func_f : Γ ≤ is_func' x z f) : Γ ≤ is_func (lift_surj_inj z H_surj H_inj) :=
+begin
+  bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂,
+        bv_imp_intro' H_graph, rw[le_inf_iff] at H_graph, cases H_graph with H_gr₁ H_gr₂,
+        bv_imp_intro H_eq, have H_inj₂ := H_inj, rw[is_inj] at H_inj₂,
+        apply_at H_gr₁ (mem_lift_surj_inj_iff H_is_func_f).mp,
+        apply_at H_gr₂ (mem_lift_surj_inj_iff H_is_func_f).mp,
+        bv_cases_at H_gr₁ c₁ Hc₁, bv_cases_at H_gr₂ c₂ Hc₂,
+        suffices c₁_eq_c₂ : _ ≤ c₁ =ᴮ c₂,
+          by {clear_except H_inj Hc₁ Hc₂ c₁_eq_c₂,
+              refine H_inj v₁ v₂ c₁ c₂ _, bv_split, bv_split,
+              from le_inf (le_inf ‹_› ‹_›) ‹_› },
+        refine (bv_and.left H_is_func_f) w₁ w₂ c₁ c₂ _ ‹_›,
+        bv_split, bv_split, from le_inf ‹_› ‹_›, repeat {assumption}
+end
+
+end 
+
+-- todo(jesse): use χ_A := (i,j) ↦ ⨆ₖ (i,k) ∈ᴮ Γ(f) ⊓ (j,k) ∈ᴮ Γ(g)
 lemma bSet_lt_of_lt_of_le (x y z : bSet 𝔹) {Γ} (H₁ : Γ ≤ x ≺ y) (H₂ : Γ ≤ y ≼ z) : Γ ≤ x ≺ z :=
 begin
   dsimp only [larger_than, injects_into] at ⊢ H₁ H₂,
   rw[<-imp_bot] at ⊢ H₁, bv_imp_intro H, refine H₁ _,
-  bv_cases_at H f H_f, bv_cases_at H₂ g H_g, sorry
+  bv_cases_at H f H_f, bv_cases_at H₂ g H_g, bv_split,
+  let f' : bSet 𝔹 := lift_surj_inj z ‹_› ‹_›,
+  apply bv_use f',
+    { rw[is_func', is_func], refine le_inf (le_inf _ _) _,
+      { apply lift_surj_inj_is_func H_f_left, repeat{assumption} },
+    { sorry },
+    { sorry }},
+    
 end
 
 lemma bSet_lt_of_le_of_lt (x y z : bSet 𝔹) {Γ} (H₁ : Γ ≤ x ≼ y) (H₂ : Γ ≤ y ≺ z) : Γ ≤ x ≺ z :=
@@ -736,6 +793,7 @@ end
 end extras
 
 section check
+parameters {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 
 lemma check_mem {x y : pSet} {Γ} (h_mem : x ∈ y) : (Γ : 𝔹) ≤ x̌ ∈ᴮ y̌ :=
 begin
@@ -814,6 +872,7 @@ check_bv_eq_bot_of_not_equiv (pSet.of_nat_inj ‹_›)
 end check
 
 section ordinals
+parameters {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 def epsilon_well_orders (x : bSet 𝔹) : 𝔹 :=
 (⨅y, y∈ᴮ x ⟹ (⨅z, z ∈ᴮ x ⟹ (y =ᴮ z ⊔ y ∈ᴮ z ⊔ z ∈ᴮ y))) ⊓
   (⨅u, u ⊆ᴮ x ⟹ (- (u =ᴮ ∅) ⟹ ⨆y, y∈ᴮ u ⊓ (⨅z', z' ∈ᴮ u ⟹ (- (z' ∈ᴮ y)))))
@@ -1136,6 +1195,8 @@ lemma aleph_one_satisfies_Ord_spec {Γ : 𝔹} : Γ ≤ aleph_one_Ord_spec (alep
 -- lemma check_aleph_one_le_aleph_one {Γ : 𝔹} : Γ ≤ ⨅(x : bSet 𝔹), (aleph_one_spec_internal x ⟹ ((pSet.ordinal.mk (aleph 1).ord)̌  ⊆ᴮ  x)) := sorry
 
 end ordinals
+
+variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 
 theorem bSet_zorns_lemma' {Γ : 𝔹} : Γ  ≤ ⨅(X : bSet 𝔹), -(X =ᴮ ∅) ⟹ ((⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
   w₁ ∈ᴮ y ⊓ w₂ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X)) ⟹ (⨆c, c ∈ᴮ X ⊓ (⨅z, z ∈ᴮ X ⟹ (c ⊆ᴮ z ⟹ c =ᴮ z)))) :=
