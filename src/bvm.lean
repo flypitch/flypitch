@@ -1786,7 +1786,7 @@ begin
   apply top_unique, apply bv_use (bv_union u), exact @bv_union_spec 𝔹 _ u
 end
 
-@[reducible, simp]def set_of_indicator {u : bSet 𝔹} (f : u.type → 𝔹) : bSet 𝔹 :=
+@[simp]def set_of_indicator {u : bSet 𝔹} (f : u.type → 𝔹) : bSet 𝔹 :=
   ⟨u.type, u.func, f⟩
 
 @[simp, cleanup]lemma set_of_indicator.type {u} {f} :
@@ -1876,7 +1876,7 @@ begin
    apply inf_le_left_of_le, refl}},
 
    {have := @bounded_forall _ _ (set_of_indicator (λ y, func _ y ∈ᴮ x)) (λ y, y ∈ᴮ x),
-   rw[this], swap, simp[subst_congr_mem_left],
+   erw[this], swap, simp[subst_congr_mem_left],
    bv_intro a₁, apply infi_le_of_le a₁,
    unfold set_of_indicator, dsimp, rw[supr_imp_eq],
    bv_intro i, apply from_empty_context,
@@ -1916,6 +1916,21 @@ end
 
 lemma check_set_of_indicator_subset {x : pSet} {χ : x̌.type → 𝔹} {Γ} : Γ ≤ set_of_indicator χ ⊆ᴮ x̌ :=
 set_of_indicator_subset (by simp)
+
+instance subset_to_pi {z x y : bSet 𝔹} {Γ : 𝔹} : has_coe_to_fun (Γ ≤ x ⊆ᴮ y) :=
+{ F := λ H, (Γ ≤ z ∈ᴮ x → Γ ≤ z ∈ᴮ y),
+  coe := λ H₁ H₂, mem_of_mem_subset H₁ H₂ }
+
+lemma mem_set_of_indicator_iff {x : bSet 𝔹} {χ : x.type → 𝔹} {z : bSet 𝔹} {Γ : 𝔹} (H_χ : ∀ i, χ i ≤ x.bval i)
+ : Γ ≤ z ∈ᴮ set_of_indicator χ  ↔ Γ ≤ z ∈ᴮ x ∧ Γ ≤ ⨆(i : x.type), z =ᴮ (x.func i) ⊓ χ i :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { refine ⟨mem_of_mem_subset (set_of_indicator_subset ‹_› : Γ ≤ _) H,_⟩,
+      rw[mem_unfold] at H, bv_cases_at H i Hi, apply bv_use i,
+      exact le_inf (bv_and.right Hi) (bv_and.left Hi) },
+    { cases H with H₁ H₂, rw[mem_unfold] at H₁, bv_cases_at H₂ i Hi,
+      bv_split, apply bv_rw' Hi_left, simp, apply set_of_indicator_mem.mk, from ‹_› }
+end
 
 /--
  For x an injective pSet and χ : x̌.type → 𝔹, ⊤ ≤ (x.func i) ∈ set_of_indicator χ iff χ i = ⊤.

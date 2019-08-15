@@ -445,11 +445,12 @@ lemma funext (f x y z : bSet 𝔹) {Γ : 𝔹} (H_func : Γ ≤ is_func f) (H : 
   (H' : Γ ≤ (pair x z) ∈ᴮ f) : Γ ≤ y =ᴮ z :=
 H_func x x y z (le_inf ‹_› ‹_›) (bv_refl)
 
+/-- A relation f is surjective if for every w ∈ y there is a v ∈ x such that (v,w) ∈ f. -/
 @[reducible]def is_surj (x y : bSet 𝔹) (f : bSet 𝔹) : 𝔹 :=
 ⨅v, v ∈ᴮ y ⟹ (⨆w, w ∈ᴮ x ⊓ pair w v ∈ᴮ f)
 
-/-- x is larger than y if there exists a function f such that for every v ∈ y, there exists a w ∈ x such that (w,v) ∈ f -/
-def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ (is_surj x y f)
+/-- x is larger than y if there is a subset S ⊆ X which surjects onto y. -/
+def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆ S, ⨆f, S ⊆ᴮ x ⊓ (is_func' S y f) ⊓ (is_surj S y f)
 
 def injects_into (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ is_inj f
 
@@ -499,7 +500,10 @@ begin
         { apply_at Hi_right eq_of_eq_pair, simp only [le_inf_iff] at Hk,
           apply bv_rw' Hi_right.right, by sorry, exact Hk.left.right },
         },
-    { sorry }
+    { bv_cases_at' H w Hw, unfold lift_surj_inj, sorry
+      
+
+    }
 end
 
 lemma lift_surj_inj_is_func {x y z f g : bSet 𝔹} {w₁ w₂ : bSet 𝔹} {H_surj : Γ ≤ is_surj x y f} {H_inj : Γ ≤ is_inj g} (H_is_func_f : Γ ≤ is_func' x z f) : Γ ≤ is_func (lift_surj_inj z H_surj H_inj) :=
@@ -525,13 +529,13 @@ lemma bSet_lt_of_lt_of_le (x y z : bSet 𝔹) {Γ} (H₁ : Γ ≤ x ≺ y) (H₂
 begin
   dsimp only [larger_than, injects_into] at ⊢ H₁ H₂,
   rw[<-imp_bot] at ⊢ H₁, bv_imp_intro H, refine H₁ _,
-  bv_cases_at H f H_f, bv_cases_at H₂ g H_g, bv_split,
-  let f' : bSet 𝔹 := lift_surj_inj z ‹_› ‹_›,
-  apply bv_use f',
-    { rw[is_func', is_func], refine le_inf (le_inf _ _) _,
-      { apply lift_surj_inj_is_func H_f_left, repeat{assumption} },
-    { sorry },
-    { unfold is_surj, sorry }}, -- for every j, take (g j) and lift along surjection, then verify the postcondition
+  bv_cases_at H f H_f, bv_cases_at H₂ g H_g, bv_split, sorry
+  -- let f' : bSet 𝔹 := lift_surj_inj z ‹_› ‹_›,
+  -- apply bv_use f',
+  --   { rw[is_func', is_func], refine le_inf (le_inf _ _) _,
+  --     { apply lift_surj_inj_is_func H_f_left, repeat{assumption} },
+  --   { sorry },
+  --   { unfold is_surj, sorry }}, -- for every j, take (g j) and lift along surjection, then verify the postcondition
     
 end
 
