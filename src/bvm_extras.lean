@@ -531,7 +531,7 @@ begin
     { rw[is_func', is_func], refine le_inf (le_inf _ _) _,
       { apply lift_surj_inj_is_func H_f_left, repeat{assumption} },
     { sorry },
-    { sorry }},
+    { unfold is_surj, sorry }}, -- for every j, take (g j) and lift along surjection, then verify the postcondition
     
 end
 
