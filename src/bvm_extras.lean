@@ -441,6 +441,9 @@ lemma is_total_of_is_func' {x y f : bSet 𝔹} {Γ : 𝔹} (H_is_func' : Γ ≤ 
   : Γ ≤ is_total x y f :=
 bv_and.right ‹_›
 
+-- bounded image
+def image (x y f : bSet 𝔹) : bSet 𝔹 := subset.mk (λ j : y.type, ⨆ z, z ∈ᴮ x ⊓ pair z (y.func j) ∈ᴮ f)
+
 /-- f is a function x → y if it is extensional, total, and is a subset of the product of x and y -/
 @[reducible]def is_function (x y f : bSet 𝔹) : 𝔹 :=
   is_func f ⊓ (⨅w₁, w₁ ∈ᴮ x ⟹ ⨆w₂, w₂ ∈ᴮ y ⊓ pair w₁ w₂ ∈ᴮ f) ⊓ (f ⊆ᴮ prod x y)
@@ -491,12 +494,14 @@ def CH : 𝔹 := - ⨆ x, ⨆y, (omega ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(omeg
 
 section 
 parameter {Γ : 𝔹}
+
+/--
+  Given a surjection f : x ↠ z and an injection g : y ↪ z, lift f along g to a surjection f' : x ↠ y.
+-/
 def lift_surj_inj {x z f g : bSet 𝔹} (y : bSet 𝔹) (H_surj : Γ ≤ is_surj x z f) (H_inj : Γ ≤ is_inj g) : bSet 𝔹 :=
 @subset.mk _ _ (prod x y)
     (λ p, (⨆w, w ∈ᴮ z ⊓ (pair (x.func p.fst) w) ∈ᴮ f ⊓
                              (pair (y.func p.snd) w ∈ᴮ g)))
-
-local notation `𝓛` := lift_surj_inj
 
 lemma mem_left_surj_inj_iff_aux {x y z f g : bSet 𝔹} {w₁ w₂ : bSet 𝔹} {H_surj : Γ ≤ is_surj x z f}
   {H_inj : Γ ≤ is_inj g} (H_is_func'_f : Γ ≤ is_func' x z f) (H : Γ ≤ pair w₁ w₂ ∈ᴮ (lift_surj_inj y H_surj H_inj))
@@ -589,6 +594,35 @@ end
 
 end 
 
+section 
+parameter {Γ : 𝔹}
+variables {x z f g : bSet 𝔹} (y : bSet 𝔹) (H_surj : Γ ≤ is_surj x z f)
+variables (H_inj : Γ ≤ is_inj g) (H_f_is_func' : Γ ≤ is_func' x z f) (H_g_is_func' : Γ ≤ is_func' x y g)
+-- extends a surjection f : x ↠ z along an injection g : x ↪ y to a surjection
+-- f' : y ↠ z
+def extend_surj_inj {x z f g : bSet 𝔹} (y : bSet 𝔹) (H_surj : Γ ≤ is_surj x z f)
+  (H_inj : Γ ≤ is_inj g) : bSet 𝔹 :=
+@subset.mk _ _ (prod y z)
+    (λ p, (⨆w, w ∈ᴮ x ⊓ (pair w (z.func p.snd)) ∈ᴮ f ⊓
+                          (pair w (y.func p.fst) ∈ᴮ g )))
+
+lemma extend_surj_inj_is_func : Γ ≤ is_func (extend_surj_inj y H_surj H_inj) :=
+begin
+  sorry
+end
+
+lemma extend_surj_inj_is_total : Γ ≤ is_total (image x y g) z (extend_surj_inj y H_surj H_inj) :=
+begin
+  sorry
+end
+
+lemma extend_surj_inj_is_surj : Γ ≤ is_surj (image x y g) z (extend_surj_inj y H_surj H_inj) :=
+begin
+  sorry
+end
+
+end 
+
 lemma bSet_lt_of_lt_of_le (x y z : bSet 𝔹) {Γ} (H₁ : Γ ≤ x ≺ y) (H₂ : Γ ≤ y ≼ z) : Γ ≤ x ≺ z :=
 begin
   dsimp only [larger_than, injects_into] at ⊢ H₁ H₂,
@@ -607,7 +641,13 @@ lemma bSet_lt_of_le_of_lt (x y z : bSet 𝔹) {Γ} (H₁ : Γ ≤ x ≼ y) (H₂
 begin
   unfold larger_than at ⊢ H₂, rw[<-imp_bot], bv_imp_intro H, unfold injects_into at H₁,
   rw[<-imp_bot] at H₂, refine H₂ _,
-  bv_cases_at H f H_f, bv_cases_at H₁ g H_g, sorry
+  bv_cases_at H S HS, bv_cases_at HS f Hf, bv_cases_at H₁ g H_g,
+  apply bv_use (image S y g), bv_split, bv_split_at Hf_left,
+  apply bv_use (extend_surj_inj y ‹_› ‹_›),
+  refine le_inf (le_inf (subset.mk_subset) (le_inf _ _)) _,
+    { apply extend_surj_inj_is_func },
+    { apply extend_surj_inj_is_total },
+    { apply extend_surj_inj_is_surj }
 end
 
 -- TODO(jesse): have specialize_context optionally not replace obsolete hypotheses, only note the updated versions
