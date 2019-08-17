@@ -476,6 +476,22 @@ begin
   exact B_ext_pair_mem_right, from ‹_›
 end
 
+-- bounded preimage
+def preimage (x y f : bSet 𝔹) : bSet 𝔹 := subset.mk (λ i : x.type, ⨆ b, b ∈ᴮ y ⊓
+ pair (x.func i) b ∈ᴮ f)
+
+@[simp]lemma preimage_subset {x y f} {Γ : 𝔹} : Γ ≤ (preimage x y f) ⊆ᴮ x := subset.mk_subset
+
+@[simp]lemma mem_preimage {x y a b f : bSet 𝔹} {Γ} (H_mem : Γ ≤ pair a b ∈ᴮ f) (H_mem'' : Γ ≤ a ∈ᴮ x) (H_mem' : Γ ≤ b ∈ᴮ y) : Γ ≤ a ∈ᴮ preimage x y f :=
+begin
+  rw[preimage, mem_subset.mk_iff],
+  rw[mem_unfold] at H_mem'', bv_cases_at H_mem'' i Hi, apply bv_use i,
+  bv_split_at Hi, refine le_inf ‹_› (le_inf _ ‹_›),
+  apply bv_use b, refine le_inf ‹_› _,
+  apply @bv_rw' _ _ _ _ _ (bv_symm Hi_right) (λ z, pair z b ∈ᴮ f),
+  exact B_ext_pair_mem_left, from ‹_›  
+end
+
 /-- f is a function x → y if it is extensional, total, and is a subset of the product of x and y -/
 @[reducible]def is_function (x y f : bSet 𝔹) : 𝔹 :=
   is_func f ⊓ (⨅w₁, w₁ ∈ᴮ x ⟹ ⨆w₂, w₂ ∈ᴮ y ⊓ pair w₁ w₂ ∈ᴮ f) ⊓ (f ⊆ᴮ prod x y)
@@ -745,6 +761,16 @@ begin
     { apply extend_surj_inj_is_total, from ‹_›,  exact is_func'_subset_of_is_func' H_g_left ‹_›},
     { apply extend_surj_inj_is_surj, from ‹_›,  exact is_func'_subset_of_is_func' H_g_left ‹_› }
 end
+
+lemma larger_than_trans {x y z} {Γ : 𝔹} (H₁ : Γ ≤ larger_than x y) (H₂ : Γ ≤ larger_than y z)
+  : Γ ≤ larger_than x z :=
+begin
+  bv_cases_at H₁ S HS, bv_cases_at H₂ S' HS', bv_cases_at HS f Hf, bv_cases_at HS' f' Hf',
+  apply bv_use (S ∩ᴮ (preimage S S' f)), sorry
+end
+
+lemma injects_into_trans {x y z} {Γ : 𝔹} (H₁ : Γ ≤ injects_into x y) (H₂ : Γ ≤ injects_into y z): Γ ≤ injects_into x z :=
+sorry
 
 -- TODO(jesse): have specialize_context optionally not replace obsolete hypotheses, only note the updated versions
 lemma function_of_func'_is_function {x y f : bSet 𝔹} {Γ} (H_is_func' : Γ ≤ is_func' x y f) : Γ ≤ is_function x y (function_of_func' H_is_func') :=

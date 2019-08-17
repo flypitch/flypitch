@@ -306,8 +306,7 @@ lemma π_spec' {Γ : 𝔹} : Γ ≤ (is_func' ((card_ex $ aleph 1)̌ ) ((powerse
 -- le_inf π_is_func' π_is_surj
 
 lemma ℵ₁_larger_than_continuum {Γ : 𝔹} : Γ ≤ larger_than (ℵ₁ ̌) ((powerset omega)̌ ) :=
-by {apply bv_use (ℵ₁ ̌), apply bv_use π, rw[inf_assoc], from le_inf subset_self π_spec' }
-
+by { apply bv_use (ℵ₁ ̌), apply bv_use π, rw[inf_assoc], from le_inf subset_self π_spec' }
 
 -- for these two lemmas, need 2.17 (iv) in Bell, which follows from (i) ⟹ (ii)
 -- i.e. If 𝔹 has a dense subset P which is ω-closed, then for any η < ℵ₁, and any x,

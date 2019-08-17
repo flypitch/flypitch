@@ -359,11 +359,15 @@ end
 theorem eq_iff_subset_subset {x y : bSet 𝔹} : x =ᴮ y = x ⊆ᴮ y ⊓ y ⊆ᴮ x :=
 by apply le_antisymm; [apply subset_subset_of_eq, apply eq_of_subset_subset]
 
-lemma subset_of_eq {x y : bSet 𝔹} {Γ} (H : Γ ≤ x =ᴮ y) : Γ ≤ x ⊆ᴮ y ∧ Γ ≤ y ⊆ᴮ x :=
+lemma subset_subset_of_eq' {x y : bSet 𝔹} {Γ} (H : Γ ≤ x =ᴮ y) : Γ ≤ x ⊆ᴮ y ∧ Γ ≤ y ⊆ᴮ x :=
 by {rw[eq_iff_subset_subset] at H, bv_split, exact ⟨‹_›,‹_›⟩}
 
+lemma subset_of_eq {x y} {Γ : 𝔹} (H : Γ ≤ x =ᴮ y) : Γ ≤ x ⊆ᴮ y :=
+(subset_subset_of_eq' H).left
+
 @[simp]lemma subset_self {x : bSet 𝔹} {Γ : 𝔹} : Γ ≤ x ⊆ᴮ x :=
-by {apply le_trans, apply le_top, rw[show ⊤ = x =ᴮ x, by simp[bv_eq_refl]], rw[eq_iff_subset_subset], apply inf_le_left}
+by { apply le_trans, apply le_top,
+     rw[show ⊤ = x =ᴮ x, by simp[bv_eq_refl]], rw[eq_iff_subset_subset], exact inf_le_left }
 
 theorem subset_ext {x y : bSet 𝔹} {Γ : 𝔹} (h₁ : Γ ≤ x ⊆ᴮ y) (h₂ : Γ ≤ y ⊆ᴮ x) : Γ ≤ x =ᴮ y :=
 begin
@@ -2055,6 +2059,8 @@ end
 instance has_zero_bSet : has_zero (bSet 𝔹) := ⟨of_nat 0⟩
 
 instance has_one_bSet : has_one (bSet 𝔹) := ⟨of_nat 1⟩
+
+@[reducible]def two : bSet 𝔹 := of_nat 2
 
 example : 0 ∈ᴮ 1 = (⊤ : 𝔹) :=
 by {apply top_unique, unfold has_zero.zero, apply bv_use none, simp}
