@@ -463,6 +463,19 @@ end
 -- bounded image
 def image (x y f : bSet 𝔹) : bSet 𝔹 := subset.mk (λ j : y.type, ⨆ z, z ∈ᴮ x ⊓ pair z (y.func j) ∈ᴮ f)
 
+@[simp]lemma image_subset  {x y f : bSet 𝔹} {Γ} : Γ ≤ (image x y f) ⊆ᴮ y :=
+subset.mk_subset
+
+@[simp]lemma mem_image {x y a b f : bSet 𝔹} {Γ} (H_mem : Γ ≤ pair a b ∈ᴮ f) (H_mem'' : Γ ≤ a ∈ᴮ x)(H_mem' : Γ ≤ b ∈ᴮ y) : Γ ≤ b ∈ᴮ image x y f :=
+begin
+  rw[image, mem_subset.mk_iff],
+  rw[mem_unfold] at H_mem', bv_cases_at H_mem' i Hi, apply bv_use i,
+  bv_split_at Hi, refine le_inf ‹_› (le_inf _ ‹_›),
+  apply bv_use a, refine le_inf ‹_› _,
+  apply @bv_rw' _ _ _ _ _ (bv_symm Hi_right) (λ z, pair a z ∈ᴮ f),
+  exact B_ext_pair_mem_right, from ‹_›
+end
+
 /-- f is a function x → y if it is extensional, total, and is a subset of the product of x and y -/
 @[reducible]def is_function (x y f : bSet 𝔹) : 𝔹 :=
   is_func f ⊓ (⨅w₁, w₁ ∈ᴮ x ⟹ ⨆w₂, w₂ ∈ᴮ y ⊓ pair w₁ w₂ ∈ᴮ f) ⊓ (f ⊆ᴮ prod x y)
@@ -642,6 +655,26 @@ begin
     apply bv_rw' H₂, exact B_ext_pair_mem_right, from ‹_›
 end
 
+lemma mem_extend_surj_inj_iff  {w₁ w₂ : bSet 𝔹} {H_mem₁ : Γ ≤ w₁ ∈ᴮ y} {H_mem₂ : Γ ≤ w₂ ∈ᴮ z}
+  (H_is_func'_f : Γ ≤ is_func' x z f)
+  : Γ ≤ pair w₁ w₂ ∈ᴮ (extend_surj_inj y H_surj H_inj) ↔ Γ ≤ ⨆ w, (w ∈ᴮ x ⊓ (pair w w₁ ∈ᴮ g) ⊓ (pair w w₂ ∈ᴮ f)) :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { exact ex_witness_of_mem_extend_surj_inj H_is_func'_f ‹_› },
+
+    { unfold extend_surj_inj, rw[mem_subset.mk_iff], bv_cases_at H w Hw, bv_split_at Hw, bv_split_at Hw_left, 
+      rw[mem_unfold] at H_mem₁, bv_cases_at H_mem₁ i Hi, rw[mem_unfold] at H_mem₂, bv_cases_at H_mem₂ j Hj,
+      apply bv_use (i,j), refine le_inf _ _,
+        { bv_split, simp[pair_congr, *] },
+        { refine le_inf _ _,
+          { apply bv_use w, refine le_inf (le_inf ‹_› _) _,
+            bv_split_at Hj, apply @bv_rw' _ _ _ _ _ (bv_symm $ Hj_right) (λ x, pair w x ∈ᴮ f),
+            exact B_ext_pair_mem_right, from ‹_›,
+            bv_split_at Hi, apply @bv_rw' _ _ _ _ _ (bv_symm $ Hi_right) (λ x, pair w x ∈ᴮ g),
+            exact B_ext_pair_mem_right, from ‹_› },
+          { bv_split, simp* }}}
+end
+
 
 variables (H_f_is_func' : Γ ≤ is_func' x z f) (H_g_is_func' : Γ ≤ is_func' x y g)
 include H_f_is_func' H_g_is_func'
@@ -659,12 +692,29 @@ end
 
 lemma extend_surj_inj_is_total : Γ ≤ is_total (image x y g) z (extend_surj_inj y H_surj H_inj) :=
 begin
-  sorry
+    bv_intro w₁, bv_imp_intro' Hw₁,
+    have Hw₁_mem : _ ≤ w₁ ∈ᴮ y := mem_of_mem_subset image_subset Hw₁,
+    rw image at Hw₁,
+  rw[mem_subset.mk_iff] at Hw₁, bv_cases_at Hw₁ i Hi, have Hi' := (bv_and.left $ bv_and.right Hi),
+  bv_cases_at Hi' b' Hb', bv_split_at Hb',
+  have := is_total_of_is_func' H_f_is_func' b' Hb'_left, bv_cases_at this b Hb,
+ apply bv_use b, refine le_inf (bv_and.left Hb) _,
+  apply (mem_extend_surj_inj_iff H_f_is_func').mpr, apply bv_use b',
+  refine le_inf (le_inf ‹_› _) (bv_and.right Hb),
+  apply bv_rw' (bv_and.left Hi), exact B_ext_pair_mem_right,
+  repeat {assumption}, exact bv_and.left ‹_›
 end
 
 lemma extend_surj_inj_is_surj : Γ ≤ is_surj (image x y g) z (extend_surj_inj y H_surj H_inj) :=
 begin
-  sorry
+  bv_intro b', bv_imp_intro' Hb'_mem,
+  have := H_surj b' ‹_›, bv_cases_at this b Hb, bv_split_at Hb,
+  have := is_total_of_is_func' H_g_is_func' b ‹_›,
+  bv_cases_at' this w₂ Hw₂, bv_split_at Hw₂, apply bv_use w₂,
+    refine le_inf _ _,
+      { exact mem_image ‹_› ‹_› ‹_› },
+      { apply (mem_extend_surj_inj_iff H_f_is_func').mpr, apply bv_use b,
+        exact le_inf (le_inf ‹_› ‹_›) ‹_›, repeat{assumption} }
 end
 
 end 

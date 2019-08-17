@@ -1942,7 +1942,7 @@ lemma mem_subset.mk_iff {x : bSet 𝔹} {χ : x .type → 𝔹} {z : bSet 𝔹} 
   : Γ ≤ z ∈ᴮ subset.mk χ ↔ Γ ≤ ⨆ (i : x.type), z =ᴮ (x.func i) ⊓ (χ i ⊓ (x.bval i)) :=
 mem_set_of_indicator_iff $ by simp
 
-lemma mem_of_mem_subset.mk {x : bSet 𝔹} {χ : x.type → 𝔹} {z} {Γ} (Hz : Γ ≤ z ∈ᴮ subset.mk χ) : Γ ≤ z ∈ᴮ x :=
+@[simp]lemma mem_of_mem_subset.mk {x : bSet 𝔹} {χ : x.type → 𝔹} {z} {Γ} (Hz : Γ ≤ z ∈ᴮ subset.mk χ) : Γ ≤ z ∈ᴮ x :=
 mem_of_mem_subset (subset.mk_subset) ‹_›
 
 /--
