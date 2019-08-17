@@ -1401,7 +1401,7 @@ note that a check-name is not only definite, but recursively definite
 @[simp]def check : (pSet : Type (u+1)) → bSet 𝔹
 | ⟨α,A⟩ := ⟨α, λ a, check (A a), λ a, ⊤⟩
 
-postfix `̌ `:90 := check
+postfix `̌ `:8999 := check
 
 @[simp, cleanup]lemma check_type {α : Type u} {A : α → pSet} :
   bSet.type ((pSet.mk α A)̌  : bSet 𝔹) = α := rfl
@@ -1424,6 +1424,9 @@ by {induction x, simp}
 
 @[reducible, simp]def check_cast {x : pSet} (i : (x̌ : bSet 𝔹).type) : x.type :=
 cast check_type' i
+
+@[reducible, simp]def check_cast.symm {x : pSet} (i : x.type) : (x̌ : bSet 𝔹).type :=
+cast check_type'.symm i
 
 @[reducible, simp] def check_cast_set {x : pSet} (S : set (x̌ : bSet 𝔹).type) : set (x.type) :=
 cast check_type'_set S
@@ -1448,6 +1451,14 @@ by {apply top_unique, rw[<-H_top], apply mem.mk'}
 
 @[simp]lemma check_mem_top {x : pSet} {i : (x̌ : bSet 𝔹).type} : (x̌).func i ∈ᴮ x̌ = ⊤ :=
 by simp
+
+@[simp]lemma mem_check_of_mem {x : pSet} {i : x.type} {Γ : 𝔹} : Γ ≤ ((x.func i) ̌) ∈ᴮ (x̌) :=
+begin
+  rw[mem_unfold], apply bv_use (check_cast.symm i),
+  simp only [true_and, type, le_inf_iff, bval, le_top, func, check,
+             check_cast.symm, check_bval_top],
+  convert bv_refl, cases x, refl
+end
 
 lemma check_bv_eq_top_of_equiv {x y : pSet} :
   pSet.equiv x y → x̌ =ᴮ y̌ = (⊤ : 𝔹) :=
@@ -2270,5 +2281,6 @@ end zorns_lemma
 --   z ∈ᴮ x ⟹ ((- (z =ᴮ ∅)) ⟹
 --   (⨆!(w : bSet 𝔹), w ∈ᴮ z ⟹
 --     ⨆(v : bSet 𝔹), v ∈ᴮ y ⟹ (z ∈ᴮ v ⊓ w ∈ᴮ v)))) = ⊤ := sorry
+
 
 end bSet

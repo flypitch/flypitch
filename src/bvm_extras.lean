@@ -772,6 +772,18 @@ end
 lemma injects_into_trans {x y z} {Γ : 𝔹} (H₁ : Γ ≤ injects_into x y) (H₂ : Γ ≤ injects_into y z): Γ ≤ injects_into x z :=
 sorry
 
+lemma AE_of_check_func_check (x y : pSet.{u}) {f : bSet 𝔹} {Γ : 𝔹}
+  (H : Γ ≤ is_func' (x̌) (y̌) f) (h_nonzero : ⊥ < Γ) :
+  ∀ i : x.type, ∃ j : y.type, ⊥ < (is_func' (x̌) (y̌) f) ⊓ (pair ((x.func i)̌ ) ((y.func j)̌ )) ∈ᴮ f :=
+begin
+  intro i, have := is_total_of_is_func' H ((x.func i)̌ ) (by simp),
+  have H' : Γ ≤ (is_func' (x̌) (y̌) f) ⊓ ⨆ w, w ∈ᴮ (y̌) ⊓ pair (x.func i)̌  w ∈ᴮ f ,
+    by exact le_inf ‹_› ‹_›,
+  rw[<-bounded_exists] at H', swap, {change B_ext _, exact B_ext_pair_mem_right},
+  replace H' := lt_of_lt_of_le h_nonzero H', rw[inf_supr_eq] at H',
+  cases y, dsimp at H', simp only [top_inf_eq] at H', exact (nonzero_wit H')
+end
+
 -- TODO(jesse): have specialize_context optionally not replace obsolete hypotheses, only note the updated versions
 lemma function_of_func'_is_function {x y f : bSet 𝔹} {Γ} (H_is_func' : Γ ≤ is_func' x y f) : Γ ≤ is_function x y (function_of_func' H_is_func') :=
 begin
@@ -1088,7 +1100,7 @@ begin
 end
 
 @[simp]lemma check_mem' {y : pSet} {i : y.type} : ((y.func i)̌ ) ∈ᴮ y̌ = (⊤ : 𝔹) :=
-by {apply top_unique, apply check_mem, cases y, apply pSet.mem.mk}
+by {apply top_unique, simp}
 
 lemma of_nat_inj {n k : ℕ} (H_neq : n ≠ k) : ((of_nat n : bSet 𝔹) =ᴮ of_nat k) = ⊥ :=
 check_bv_eq_bot_of_not_equiv (pSet.of_nat_inj ‹_›)

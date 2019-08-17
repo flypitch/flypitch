@@ -33,11 +33,11 @@ lemma AE_of_check_larger_than_check (x y : pSet.{u}) {f : bSet 𝔹} {Γ}
   ∀ i : y.type, ∃ j : x.type, ⊥ < (is_func f) ⊓ (pair ((x.func j)̌ ) ((y.func i)̌ )) ∈ᴮ f :=
 begin
   intro i_v, bv_split_at H, replace H_right := H_right ((y.func i_v)̌ ), simp[check_mem'] at H_right,
-  have H' : Γ ≤ is_func f ⊓ ⨆ (w : bSet 𝔹), w ∈ᴮ x̌  ⊓ pair w (pSet.func y i_v̌)  ∈ᴮ f,
+  have H' : Γ ≤ is_func f ⊓ ⨆ (w : bSet 𝔹), w ∈ᴮ x̌  ⊓ pair w (y.func i_v)̌   ∈ᴮ f,
     from context_and_intro ‹_› ‹_›,
   rw[inf_supr_eq] at H',
   replace H' := le_trans H' (by {apply supr_le, intro i, recover, show 𝔹,
-    from ⨆ (i : bSet 𝔹), i ∈ᴮ x̌ ⊓ (is_func f ⊓ pair i (pSet.func y i_v̌)  ∈ᴮ f),
+    from ⨆ (i : bSet 𝔹), i ∈ᴮ x̌ ⊓ (is_func f ⊓ pair i (pSet.func y i_v)̌  ∈ᴮ f),
     apply bv_use i, apply le_of_eq, ac_refl}),
   replace H' := lt_of_lt_of_le h_nonzero H',
   have := @bounded_exists 𝔹 _ (x̌) (λ z, is_func f ⊓ pair z ((y.func i_v)̌ ) ∈ᴮ f),
@@ -56,7 +56,7 @@ variables
   (H_lt : #(η₁.type) < #(η₂.type))
   (H_inj₂ : ∀ x y, x ≠ y → ¬ pSet.equiv (η₂.func x) (η₂.func y))
   (f : bSet 𝔹) (g : η₂.type → η₁.type)
-  (H : ∀ β : η₂.type, (⊥ : 𝔹) < is_func f ⊓ pair ((η₁.func (g β)̌ ) ) ((η₂.func β)̌ )∈ᴮ f)
+  (H : ∀ β : η₂.type, (⊥ : 𝔹) < is_func f ⊓ pair (η₁.func (g β))̌  ((η₂.func β)̌ )∈ᴮ f)
 
 include H_infinite H_lt H_inj₂ f H
 lemma not_CCC_of_uncountable_fiber (H_ex : ∃ ξ : η₁.type, ω < #(g⁻¹' {ξ})) : ¬ CCC 𝔹 :=
@@ -523,7 +523,7 @@ begin
      have : func (ℵ₂̌ ) j = (ℵ₂.func (check_cast j))̌ ,
        by simp[check_func],
      rw[this] at a,
-   suffices : func ℵ₂ (check_cast i)̌  =ᴮ func ℵ₂ (check_cast j)̌  ≤ ⊥,
+   suffices : (ℵ₂.func (check_cast i))̌   =ᴮ (ℵ₂.func (check_cast j))̌  ≤ ⊥,
      from le_trans a (le_trans this bot_le),
    rw[le_bot_iff], apply check_bv_eq_bot_of_not_equiv,
    apply ordinal.mk_inj, unfold check_cast, intro H, cc}
