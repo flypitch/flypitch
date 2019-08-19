@@ -2073,6 +2073,8 @@ instance has_one_bSet : has_one (bSet 𝔹) := ⟨of_nat 1⟩
 
 @[reducible]def two : bSet 𝔹 := of_nat 2
 
+notation `𝟚` := bSet.two
+
 example : 0 ∈ᴮ 1 = (⊤ : 𝔹) :=
 by {apply top_unique, unfold has_zero.zero, apply bv_use none, simp}
 

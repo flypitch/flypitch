@@ -163,7 +163,7 @@ lemma rel_of_array_is_func'  (x y : bSet 𝔹) (af : x.type → y.type → 𝔹)
   (H_anti : ∀ i, (∀ j₁ j₂, j₁ ≠ j₂ → af i j₁ ⊓ af i j₂ ≤ ⊥))
   (H_inj  : ∀ i₁ i₂, ⊥ < (func x i₁) =ᴮ (func x i₂) → i₁ = i₂)
   {Γ}
-  : Γ ≤ is_func' x y (rel_of_array x y af) :=
+  : Γ ≤ is_func( x y (rel_of_array x y af) :=
 begin
   refine le_inf (by apply rel_of_array_extensional; assumption) _, rw bSet.is_total,
   rw[<-bounded_forall], bv_intro i_x, bv_imp_intro Hi_x, rw[<-bounded_exists],
@@ -178,6 +178,13 @@ begin
       { simp },
       { from B_ext_term _ _ (B_ext_mem_left) (by simp) }}
 end
+
+-- any ω-indexed downward chain has a nonzero intersection
+-- TODO: pick a good formulation of this
+def omega_closed (α : Type*) [nontrivial_complete_boolean_algebra α] : Prop := sorry
+
+lemma check_functions_eq_functions_of_omega_closed (H_oc : omega_closed 𝔹) (y : pSet.{u})
+  {Γ : 𝔹} : Γ ≤ check (functions (pSet.omega) y) =ᴮ functions (bSet.omega) y̌ := sorry
 
 end lemmas
 
@@ -198,7 +205,7 @@ def π_χ : ((ℵ₁ : pSet.{u}).type × (pSet.powerset omega : pSet.{u}).type) 
 
 private lemma eq₀ : ((ℵ₁)̌  : bSet 𝔹).type = (ℵ₁).type := by simp
 
-private lemma eq₀' : ((powerset omega)̌  : bSet.{u} 𝔹).type = (powerset omega).type := by simp
+private lemma eq₀) : ((powerset omega)̌  : bSet.{u} 𝔹).type = (powerset omega).type := by simp
 
 private lemma eq₁ : (((ℵ₁)̌  : bSet 𝔹).type × ((powerset omega)̌  : bSet 𝔹).type) = ((ℵ₁ .type) × (powerset omega).type) := by simp
 

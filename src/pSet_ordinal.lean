@@ -432,6 +432,8 @@ begin
 end
 
 
+-- WARNING: pSet.is_func is the same as bSet.is_function, not bSet.is_func
+
 --f ⊆ prod x y ∧ ∀z:Set.{u}, z ∈ x → ∃! w, pair z w ∈ f
 @[reducible]def is_func (x y f : pSet.{u}) : Prop := Set.is_func ⟦x⟧ ⟦y⟧ ⟦f⟧
 
@@ -899,5 +901,22 @@ begin
       { refine surj_lift' _ ‹_›, intros j₁ j₂,
          contrapose, apply ordinal.mk_inj }
 end
+
+def pair (x y : pSet.{u}) : pSet.{u} := {{x}, {x,y}}
+
+lemma eq_iff_eq_pair {x y x' y' : pSet.{u}} : pSet.equiv x x' ∧ pSet.equiv y y' ↔ pSet.equiv (pair x y) (pair x' y') := sorry
+
+def prod (x y : pSet.{u}) : pSet.{u} :=
+⟨x.type × y.type, (λ pr, pair (x.func pr.1) (y.func pr.2))⟩
+
+def set_of_indicator {x : pSet.{u}} (χ : x.type → Prop) : pSet.{u} :=
+⟨{i // χ i}, λ p, x.func (p.1)⟩
+
+def functions (x y : pSet.{u}) : pSet.{u} := -- TODO(jesse): show this satisfies specification
+@set_of_indicator (powerset $ prod x y)
+  (λ i_S, is_func x y ((powerset $ prod x y).func i_S))
+
+lemma mem_functions_iff {x y : pSet.{u}} (z : pSet.{u}) : z ∈ functions x y ↔ is_func x y z :=
+sorry
 
 end pSet

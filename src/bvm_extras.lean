@@ -827,6 +827,15 @@ begin
       apply bv_rw' (bv_symm ‹_ ≤ g =ᴮ func (𝒫 prod x y) s›), simp, from ‹_› }
 end
 
+lemma two_omega_larger_than_powerset_omega {Γ : 𝔹}
+  : Γ ≤ larger_than (functions bSet.omega 𝟚) (bv_powerset bSet.omega) :=
+begin
+  sorry
+end
+
+-- lemma functions_check {x y : pSet.{u}} (pSet.functions x y):  := TODO(jesse): finish stating this
+
+
 -- lemma function_reflect_AE {x y : pSet} {f : bSet 𝔹} (H : ⊤ ≤ is_function (x̌) (y̌) f) : ∀ i : x̌.type, ∃ j : y̌.type, ⊤ ≤ pair (x̌.func i) (y̌.func j) ∈ᴮ f :=
 -- begin
 --   bv_split, bv_split, rw[<-@bounded_forall] at H_left_right,
