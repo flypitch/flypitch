@@ -202,8 +202,11 @@ private lemma eq₀' : ((powerset omega)̌  : bSet.{u} 𝔹).type = (powerset om
 
 private lemma eq₁ : (((ℵ₁)̌  : bSet 𝔹).type × ((powerset omega)̌  : bSet 𝔹).type) = ((ℵ₁ .type) × (powerset omega).type) := by simp
 
-lemma aleph_one_type_uncountable : (aleph 0) < # ℵ₁.type :=
-by simp only [cardinal.aleph_zero, pSet.omega_lt_aleph_one, pSet.mk_type_mk_eq''']
+-- lemma aleph_one_type_uncountable' : (aleph 0) < # ℵ₁.type :=
+-- by simp only [succ_le, cardinal.aleph_zero, pSet.omega_lt_aleph_one, pSet.mk_type_mk_eq''']
+
+lemma aleph_one_type_uncountable : cardinal.omega.succ ≤ # ℵ₁.type :=
+by simp only [succ_le, pSet.omega_lt_aleph_one, pSet.mk_type_mk_eq''']
 
 @[reducible]def π_af : ((ℵ₁̌  : bSet 𝔹) .type) → ((powerset omega)̌  : bSet 𝔹) .type → 𝔹 :=
 λ η S, (⟨{g | g (cast eq₀ η) = (cast eq₀' S)}, by simp⟩ : 𝔹)

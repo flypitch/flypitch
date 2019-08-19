@@ -88,13 +88,6 @@ section pfun_lemmas
 
 variables {ι : Sort*} {α : Type*} {β : Type*} {f f₁ f₂ : α →. β}
 
-/-- The empty partial function -/
-def empty : α →. β := λ x, roption.none
-
-@[simp] lemma dom_empty : (empty : α →. β).dom = ∅ := rfl
-@[simp] lemma empty_def (x : α) : (empty : α →. β) x = none := rfl
-lemma not_mem_empty (x : α) (y : β) : y ∉ (pfun.empty : α →. β) x := roption.not_mem_none _
-
 lemma mem_dom_iff_dom (f : α →. β) (x : α) : x ∈ dom f ↔ (f x).dom :=
 by simp [dom, set.mem_def]
 
@@ -107,6 +100,33 @@ roption.some_get h
 lemma fn_mem {f : α →. β} {x : α} (h : x ∈ f.dom) : f.fn x h ∈ f x :=
 roption.get_mem h
 
+lemma mem_iff_fn_eq {x : α} {y : β} : y ∈ f x ↔ ∃ h : x ∈ f.dom, f.fn x h = y :=
+by refl
+
+lemma fn_eq_iff_mem {x : α} {y : β} (h : x ∈ f.dom) : f.fn x h = y ↔ y ∈ f x :=
+by simp [mem_iff_fn_eq, h]
+
+lemma fn_eq_of_mem {x : α} {y : β} (h1 : y ∈ f x) (h2 : x ∈ f.dom) : f.fn x h2 = y :=
+(fn_eq_iff_mem h2).2 h1
+
+/- more on lift -/
+
+lemma mem_lift {f : α → β} {x : α} {y : β} : y ∈ (f : α →. β) x ↔ f x = y :=
+by simp [eq_comm]
+
+lemma lift_eq_some_iff {f : α → β} {x : α} {y : β} : (f : α →. β) x = roption.some y ↔ f x = y :=
+by simp
+
+@[simp] lemma fn_lift (f : α → β) (x : α) : (f : α →. β).fn x trivial = f x :=
+by simp [fn_eq_iff_mem]
+
+/-- The empty partial function -/
+def empty : α →. β := λ x, roption.none
+
+@[simp] lemma dom_empty : (empty : α →. β).dom = ∅ := rfl
+@[simp] lemma empty_def (x : α) : (empty : α →. β) x = none := rfl
+lemma not_mem_empty (x : α) (y : β) : y ∉ (pfun.empty : α →. β) x := roption.not_mem_none _
+
 /- Two partial functions are equal if their graphs are equal -/
 lemma ext_graph {α β : Type*} (f g : α →. β) (h_graph : f.graph = g.graph) : f = g :=
   pfun.ext $ λ _ _, iff_of_eq $ congr_fun h_graph (_,_)
@@ -114,7 +134,7 @@ lemma ext_graph {α β : Type*} (f g : α →. β) (h_graph : f.graph = g.graph)
 lemma graph_empty_iff_dom_empty {α β : Type*} (f : α →. β) : f.graph = ∅ ↔ f.dom = ∅ :=
 begin
   have := dom_iff_graph f,
-  split; intro; ext; safe, from this _ _ ‹_›
+  split; intro; ext; safe, exact this _ _ ‹_›
 end
 
 /-- A functional graph is a univalent graph -/
@@ -148,20 +168,20 @@ begin
   let c'', swap, change (prod.snd c'' = c'.snd),
   apply h_Γ a, swap, convert H, ext, rwa[h'], refl,
   have := (classical.indefinite_description _ h).property,
-  cases this with this1 this2, rw[<-this2], convert this1, ext; refl
+  cases this with this1 this2, rw [<-this2], convert this1, ext; refl
 end
 
 @[simp] lemma graph_of_graph {α β : Type*} (Γ : set $ α × β) (h_Γ : functional Γ) : (of_graph Γ h_Γ).graph = Γ :=
 begin
   ext, rcases x with ⟨a,b⟩, dsimp[graph],
   split; intro H, {cases H, induction H_h, cases H_w, cases H_w_h, induction H_w_h_h,
-  convert H_w_h_w, ext, refl, rw[of_graph_get], apply of_graph_val; try{assumption}; refl},
-  fsplit, {tidy}, rw[of_graph_get], apply @of_graph_val _ _ Γ _ a _ (a,b) _;
+  convert H_w_h_w, ext, refl, rw [of_graph_get], apply of_graph_val; try{assumption}; refl},
+  fsplit, {tidy}, rw [of_graph_get], apply @of_graph_val _ _ Γ _ a _ (a,b) _;
   try{assumption}; refl
 end
 
 @[simp] lemma of_graph_graph {α β : Type*} {f : α →. β} : of_graph (f.graph) (graph_functional f) = f :=
-  by apply ext_graph; rw[graph_of_graph]
+  by apply ext_graph; rw [graph_of_graph]
 
 @[simp] lemma dom_of_graph {α β : Type*} (Γ : set $ α × β) (h_Γ : functional Γ) : (of_graph Γ h_Γ).dom = (prod.fst '' Γ) :=
 begin
@@ -209,19 +229,20 @@ instance : semilattice_inf_bot (α →. β) :=
   inf_le_right := λ f g x y hy, (mem_inter.1 hy).2,
   le_inf := λ f g h hfg hfh x y hf, mem_inter.2 ⟨hfg x y hf, hfh x y hf⟩ }
 
--- lemma inter_le_left (f₁ f₂ : α →. β) : f₁ ∩ f₂ ≤ f₁ :=
--- by { intros x y hy, rw [mem_inter] at hy, exact hy.1 }
-
--- lemma inter_le_right (f₁ f₂ : α →. β) : f₁ ∩ f₂ ≤ f₂ :=
--- by { intros x y hy, rw [mem_inter] at hy, exact hy.2 }
-
+lemma le_def : f₁ ≤ f₂ ↔ ∀ x y, y ∈ f₁ x → y ∈ f₂ x := by refl
 
 lemma dom_subset_dom_of_le (h : f₁ ≤ f₂) : f₁.dom ⊆ f₂.dom :=
 λ x hx, mem_dom_of_mem (h x (f₁.fn x hx) (fn_mem hx))
 
-lemma le_def : f₁ ≤ f₂ ↔ ∀ x y, y ∈ f₁ x → y ∈ f₂ x := by refl
+lemma eq_some_of_subfun (h : f₁ ≤ f₂) {x : α} {y : β} (h1 : f₁ x = roption.some y) :
+  f₂ x = roption.some y :=
+by { rw [roption.eq_some_iff] at h1 ⊢, exact h x y h1 }
 
-lemma le_lift {f : α →. β} {g : α → β} : f ≤ pfun.lift g ↔ ∀ x y, y ∈ f x → g x = y :=
+lemma fn_eq_of_subfun (h : f₁ ≤ f₂) {x : α} {y : β} (h1 : x ∈ f₁.dom)
+  (h2 : f₁.fn x h1 = y) (h3 : x ∈ f₂.dom) : f₂.fn x h3 = y :=
+by { apply fn_eq_of_mem, apply h, rw [mem_iff_fn_eq], exact ⟨h1, h2⟩ }
+
+lemma le_lift {f : α →. β} {g : α → β} : f ≤ (g : α →. β) ↔ ∀ x y, y ∈ f x → g x = y :=
 by simp [le_def, eq_comm]
 
 /-- Two functions are compatible if they agree on the intersection of their domains. -/
@@ -380,6 +401,9 @@ begin
     specialize a ‹_› ‹_›, finish }
 end
 
+/-- A partial function with one element in its domain.
+  Note, this is a component of `pequiv.single` in a newer version of mathlib
+  -/
 def singleton (x : α) (y : β) : α →. β :=
 λ a, { dom := a = x, get := λ _, y }
 
@@ -393,6 +417,14 @@ begin
   { intro h, rw [roption.mem_eq] at h, rcases h with ⟨h, rfl⟩, exact ⟨h.symm, rfl⟩ },
   { rintro ⟨rfl, rfl⟩, exact ⟨rfl, rfl⟩ }
 end
+
+@[simp] lemma singleton_eq_some {x : α} {y : β} : singleton x y x = roption.some y :=
+by simp [roption.eq_some_iff]
+
+@[simp] lemma dom_singleton {x : α} {y : β} : (singleton x y).dom = {x} :=
+by { ext x', simp [singleton, mem_dom_iff_dom] }
+
+lemma mk_dom_singleton {x : α} {y : β} : # (singleton x y).dom = 1 := by simp
 
 end pfun_lemmas
 
@@ -441,7 +473,7 @@ lemma exists_mem_compl_ran_of_unctbl (p : collapse_poset X Y κ) (H_card : κ �
 exists_mem_compl_of_mk_lt_mk _ $ lt_of_lt_of_le (collapse_poset.mk_ran_lt p) H_card
 
 def collapse_poset.principal_open (p : collapse_poset X Y κ) : set (X → Y) :=
-{f | p.f ≤ pfun.lift f}
+{f | p.f ≤ (f : X →. Y)}
 
 @[simp] lemma collapse_poset.principal_open_empty (h : 0 < κ) :
   collapse_poset.principal_open (collapse_poset.empty h : collapse_poset X Y κ) = set.univ :=
@@ -452,8 +484,21 @@ begin
 end
 
 lemma mem_principal_open_iff {p : collapse_poset X Y κ} {f : X → Y} :
-  f ∈ (collapse_poset.principal_open p) ↔ ∀ x y, y ∈ p.f x → f x = y :=
+  f ∈ collapse_poset.principal_open p ↔ ∀ x y, y ∈ p.f x → f x = y :=
 le_lift
+
+lemma mem_principal_open_iff' {p : collapse_poset X Y κ} {f : X → Y} :
+  f ∈ collapse_poset.principal_open p ↔ ∀ (x : X) (H_x : x ∈ p.f.dom), f x = fn p.f x H_x :=
+begin
+  rw [mem_principal_open_iff], apply forall_congr, intro x,
+  split,
+  { intros H Hx, apply H, apply fn_mem },
+  { intros H y hy, rw [H $ mem_dom_of_mem hy], apply fn_eq_of_mem hy }
+end
+
+lemma mem_compl_principal_open_iff {p : collapse_poset X Y κ} {f : X → Y} :
+  f ∈ - collapse_poset.principal_open p ↔ ∃x (H_x : x ∈ p.f.dom), f x ≠ fn p.f x H_x :=
+by { rw [set.mem_compl_iff, mem_principal_open_iff'], push_neg }
 
 @[simp] lemma mem_ran_of_mem_dom {p : collapse_poset X Y κ} {f : X → Y} {x : X}
   (H : f ∈ collapse_poset.principal_open p) : x ∈ p.f.dom → f x ∈ p.f.ran :=
@@ -464,122 +509,125 @@ def collapse_space : topological_space (X → Y) :=
 generate_from $
   (collapse_poset.principal_open : collapse_poset X Y cardinal.omega.succ → set (X → Y)) '' set.univ
 
-local attribute [instance, priority 9001] collapse_space
+local attribute [instance, priority 9001, reducible] collapse_space
 
 @[simp] lemma collapse_poset.principal_open_is_open {p : collapse_poset X Y cardinal.omega.succ} :
   is_open (collapse_poset.principal_open p) :=
 generate_open.basic _ $ set.mem_image_of_mem _ trivial
 
+lemma one_lt_omega_succ : 1 < cardinal.omega.succ :=
+lt_trans one_lt_omega (cardinal.lt_succ_self _)
+
+lemma zero_lt_omega_succ : 0 < cardinal.omega.succ :=
+lt_trans cardinal.zero_lt_one one_lt_omega_succ
+
 open collapse_poset
 
-def one_point_collapse_poset (x : X) (y : Y) : collapse_poset X Y κ :=
-{ f := one_point_pfun x y,
-  Hc := by {unfold one_point_pfun, tidy, from 0} }
+def singleton_collapse_poset (x : X) (y : Y) (hκ : 1 < κ) : collapse_poset X Y κ :=
+{ f := singleton x y,
+  Hc := by simp [hκ] }
 
-@[simp] lemma one_point_collapse_poset_principal_open {x : X} {y : Y} :
-  (principal_open $ one_point_collapse_poset X Y κ) = {g | g x = y} :=
+@[simp] lemma singleton_collapse_poset_principal_open {x : X} {y : Y} {hκ : 1 < κ} :
+  principal_open (singleton_collapse_poset x y hκ) = {g : X → Y | g x = y} :=
 begin
-  ext, dsimp at *, fsplit, work_on_goal 0 { intros a }, work_on_goal 1 { intros a x_2 H_x, induction H_x, assumption }, exact a x rfl
+/- `tidy` says -/ ext1, cases hκ, induction κ, work_on_goal 0 { dsimp at *, fsplit, work_on_goal 0 { intros a }, work_on_goal 1 { intros a x_2 y_1 a_1, cases a_1, induction a, induction a_1_h, induction a_1_w, dsimp at *, simp at *, refl } }, work_on_goal 1 { refl },
+  rw [←lift_eq_some_iff], apply eq_some_of_subfun a, simp [singleton_collapse_poset]
 end
 
-lemma collapse_poset.compl_principal_open_is_Union (p : collapse_poset X Y κ) : ∃ {ι : Type u} (s : ι → (collapse_poset X Y κ)), set.Union (λ i : ι, (principal_open $ s i)) = - (principal_open p) :=
+lemma collapse_poset.compl_principal_open_is_Union (hκ : 1 < κ) (p : collapse_poset X Y κ) :
+  ∃ {ι : Type u} (s : ι → collapse_poset X Y κ),
+    set.Union (λ i : ι, principal_open $ s i) = - principal_open p :=
 begin
-  use ({pr : X × Y // ∃ (H_mem : pr.1 ∈ p.f.dom), pr.2 ≠ (fn p.f pr.1 H_mem)}),
-  use (λ s, one_point_collapse_poset s.1.1 s.1.2),
+  use {pr : X × Y // ∃ H_mem : pr.1 ∈ p.f.dom, pr.2 ≠ fn p.f pr.1 H_mem },
+  use (λ s, singleton_collapse_poset s.1.1 s.1.2 hκ),
   ext f, split; intro H,
-    { change _ ∉ _, intro H_mem,
-      rcases H with ⟨P, ⟨⟨⟨x',y'⟩, ⟨H_mem₁, H_neq⟩⟩, Hpr⟩, H_mem₂⟩, subst Hpr,
-      suffices this : y' = (fn p.f x' ‹_›),
-        by { exact H_neq ‹_› },
-      rw[<-show f x' = y', by simpa using H_mem₂],
-      from mem_principal_open_iff.mpr H_mem _ _ },
-    { change _ → false at H, rw[mem_principal_open_iff] at H,
-      change ¬ _ at H, push_neg at H, rcases H with ⟨x, Hx, H_neq⟩,
+    { intro H_mem,
+      rcases H with ⟨P, ⟨⟨⟨x',y'⟩, ⟨H_mem₁, H_neq⟩⟩, rfl⟩, H_mem₂⟩,
+      dsimp at H_neq H_mem₂,
+      apply H_neq,
+      rw [← show f x' = y', by simpa using H_mem₂],
+      rw mem_principal_open_iff'.mp H_mem _ _ },
+    { rw [mem_compl_principal_open_iff] at H, rcases H with ⟨x, Hx, H_neq⟩,
       suffices this : ∃ (a : X) (H_mem : (a, f a).fst ∈ dom (p.f)), ¬f a = fn (p.f) a H_mem,
-        by simpa,
-      from ⟨_, by use ‹_›⟩ }
+      { simp [this] },
+      exact ⟨_, by use ‹_›⟩ }
 end
 
-@[simp] lemma collapse_poset.principal_open_is_closed {p : collapse_poset X Y κ} : is_closed (collapse_poset.principal_open p) :=
-by  {rcases collapse_poset.compl_principal_open_is_Union p with ⟨ι, ⟨s, Hu⟩⟩,
-     rw[is_closed, <-Hu], simp[is_open_Union]}
+@[simp] lemma collapse_poset.principal_open_is_closed {p : collapse_poset X Y cardinal.omega.succ} :
+  is_closed (collapse_poset.principal_open p) :=
+by { rcases collapse_poset.compl_principal_open_is_Union one_lt_omega_succ p with ⟨ι, ⟨s, Hu⟩⟩,
+     rw [is_closed, ← Hu], simp [is_open_Union] }
 
-@[simp] lemma collapse_poset.is_regular_principal_open (p : collapse_poset X Y κ) : is_regular (collapse_poset.principal_open p) :=
-by simp[is_clopen]
+@[simp] lemma collapse_poset.is_regular_principal_open
+  (p : collapse_poset X Y cardinal.omega.succ) : is_regular (collapse_poset.principal_open p) :=
+by simp [is_clopen]
 
---   simp[join], refine ⟨_,_⟩,
---     { from or.inl ‹_› },
---     { intro H, solve_by_elim }
--- end
-
-lemma inter_principal_open {p₁ p₂ : collapse_poset X Y κ} (H : compatible p₁ p₂) : principal_open p₁ ∩ principal_open p₂ = principal_open (join p₁ p₂ H) :=
+lemma inter_principal_open (hκ : omega ≤ κ) {p₁ p₂ : collapse_poset X Y κ}
+  (H : compatible p₁.f p₂.f) :
+  principal_open p₁ ∩ principal_open p₂ = principal_open (p₁.union p₂ hκ) :=
 begin
-  ext f; split; intro H_mem,
-    { rw mem_principal_open_iff, intros x H_x, simp[join] at H_x ⊢,
-      cases H_x, cases H_mem,
-        { simp*, solve_by_elim },
-        { by_cases p₁.f.dom x; cases H_mem; simp*; solve_by_elim }},
-    { refine ⟨_,_⟩,
-        all_goals{rw[mem_principal_open_iff] at ⊢ H_mem, intros x Hx, specialize H_mem x},
-          { specialize H_mem (mem_dom_join_of_mem_left ‹_› ‹_›),
-            change p₁.f.dom x at Hx, refine eq.trans H_mem _,
-            simp[*, join] },
-          { specialize H_mem (mem_dom_join_of_mem_right ‹_› ‹_›),
-            change p₂.f.dom x at Hx, by_cases p₁.f.dom x,
-            { rw[<-H], rw[H_mem], simp[join, h], from ‹_› },
-            { rw[H_mem], simp[join, h] }}}
+  ext f,
+  simp [mem_principal_open_iff],
+  rw [← forall_and_distrib], apply forall_congr, intro x,
+  rw [← forall_and_distrib], apply forall_congr, intro y,
+  rw [union, mem_sup_of_compatible H, or_imp_distrib]
 end
 
-def collapse_space_basis : set $ set (X → Y) := insert (∅ : set (X → Y)) (collapse_poset.principal_open '' set.univ)
+def collapse_space_basis : set $ set (X → Y) :=
+insert (∅ : set (X → Y))
+  (collapse_poset.principal_open '' (set.univ : set (collapse_poset X Y cardinal.omega.succ)))
 
 def collapse_space_basis_spec : @is_topological_basis (X → Y) collapse_space collapse_space_basis :=
 begin
   refine ⟨λ P HP P' HP' f H_mem_inter, _,_,_⟩,
-    { rw[collapse_space_basis] at HP HP',
+    { rw [collapse_space_basis] at HP HP',
       cases HP; cases HP',
 
-        { suffices this : f ∈ (∅ : set $ X → Y),
-            by {cases this}, substs HP, cases H_mem_inter, from ‹_› },
-        { suffices this : f ∈ (∅ : set $ X → Y),
-            by {cases this}, substs HP, cases H_mem_inter, from ‹_› },
-        { suffices this : f ∈ (∅ : set $ X → Y),
-            by {cases this}, substs HP', cases H_mem_inter, from ‹_› },
+      { suffices this : f ∈ (∅ : set $ X → Y),
+          by {cases this}, substs HP, cases H_mem_inter, exact ‹_› },
+      { suffices this : f ∈ (∅ : set $ X → Y),
+          by {cases this}, substs HP, cases H_mem_inter, exact ‹_› },
+      { suffices this : f ∈ (∅ : set $ X → Y),
+          by {cases this}, substs HP', cases H_mem_inter, exact ‹_› },
 
       simp only [set.image_univ, set.mem_range] at HP HP',
       cases HP with y Hy; cases HP' with y' Hy',
 
       substs Hy Hy', use (principal_open y ∩ principal_open y'),
       refine ⟨_,⟨‹_›,(by refl)⟩⟩,
-       { by_cases H_compat : (compatible y y'),
-           { right, refine ⟨_,⟨trivial, _⟩⟩, from join y y' ‹_›, rw[inter_principal_open] },
-           { suffices this : principal_open y ∩ principal_open y' = ∅,
-               by {rw[this], from or.inl rfl },
-             ext g; split; intro H,
-               { exfalso, cases H with H₁ H₂, simp at H₁ H₂,
-                 push_neg at H_compat, rcases H_compat with ⟨x, Hx₁, Hx₂, Hx₃⟩,
-                 apply Hx₃, transitivity g x; solve_by_elim },
-               { cases H }}}},
+      { by_cases H_compat : compatible y.f y'.f,
+        { right, refine ⟨_,⟨trivial, _⟩⟩, exact y.union y' (le_of_lt (lt_succ_self _)),
+        rwa [inter_principal_open] },
+        { suffices this : principal_open y ∩ principal_open y' = ∅,
+            by {rw [this], exact or.inl rfl },
+          ext g; split; intro H,
+            { exfalso, cases H with H₁ H₂, rw [mem_principal_open_iff] at H₁ H₂,
+              rw [compatible] at H_compat,
+              push_neg at H_compat, rcases H_compat with ⟨x, Hx₁, Hx₂, Hx₃⟩,
+              apply Hx₃, rw [← some_fn Hx₁, ← some_fn Hx₂],
+              rw [← H₁ x _ (fn_mem Hx₁), ← H₂ x _ (fn_mem Hx₂)] },
+            { cases H }}}},
 
     { refine le_antisymm (λ _ _, trivial) _,
       intros f _a, refine ⟨_,_⟩,
-      { exact (principal_open collapse_poset.empty) },
-      { refine ⟨by {rw[collapse_space_basis], right, exact set.mem_image_univ},_⟩, simp }},
+      { exact (principal_open (collapse_poset.empty zero_lt_omega_succ)) },
+      { refine ⟨by {rw [collapse_space_basis], right, exact set.mem_image_univ},_⟩, simp }},
     { unfold collapse_space_basis collapse_space, refine le_antisymm _ _,
-      { refine generate_from_mono _, from λ _ _, or.inr ‹_›},
+      { refine generate_from_mono _, exact λ _ _, or.inr ‹_›},
       { intros T HT, induction HT,
-        { cases HT_H, subst HT_H, exact is_open_empty, constructor, from ‹_› },
+        { cases HT_H, subst HT_H, exact is_open_empty, constructor, exact ‹_› },
         { exact is_open_univ },
-        { apply generate_open.inter, from ‹_›, from ‹_› },
+        { apply generate_open.inter, exact ‹_›, exact ‹_› },
         { apply generate_open.sUnion, intros S HS, solve_by_elim }}}
 end
 
-@[simp] lemma is_regular_one_point_regular_open {x : X} {y : Y} :
-  is_regular (principal_open (one_point_collapse_poset X Y κ)) :=
+@[simp] lemma is_regular_singleton_regular_open {x : X} {y : Y} :
+  is_regular (principal_open (singleton_collapse_poset x y one_lt_omega_succ)) :=
 collapse_poset.is_regular_principal_open _
 
-@[simp] lemma is_regular_one_point_regular_open' {x : X} {y : Y} :
+@[simp] lemma is_regular_singleton_regular_open' {x : X} {y : Y} :
   is_regular {g : X → Y | g x = y} :=
-by {rw[<-one_point_collapse_poset_principal_open], from is_regular_one_point_regular_open}
+by {rw [<-singleton_collapse_poset_principal_open], exact is_regular_singleton_regular_open}
 
 /--
 Given a partial function f : X →. Y and a point y : Y, define an extension g of f to X such that g(x) = y whenever x ∉ f.dom
@@ -589,13 +637,14 @@ noncomputable def trivial_extension (f : X →. Y) (y : Y) : X → Y :=
   begin
     haveI : decidable (x ∈ f.dom) := classical.prop_decidable _,
     by_cases x ∈ f.dom,
-      { exact fn f x ‹_› },
-      { exact y }
+    { exact fn f x ‹_› },
+    { exact y }
   end
 
 lemma trivial_extension_mem_principal_open {p : collapse_poset X Y κ} {y : Y}
   : (trivial_extension p.f y) ∈ collapse_poset.principal_open p :=
-by unfold trivial_extension; tidy; simp*
+by { simp [trivial_extension, mem_principal_open_iff],
+     intros x y hy, simp [mem_dom_of_mem hy, fn_eq_of_mem hy] }
 
 end collapse_poset
 
@@ -613,21 +662,22 @@ regular_open_algebra ‹_›
 
 end collapse_algebra
 
-def collapse_poset.inclusion {X Y : Type u} : collapse_poset X Y κ → collapse_algebra X Y :=
-λ p, ⟨collapse_poset.principal_open p, collapse_poset.is_regular_principal_open p⟩
+def collapse_poset.inclusion {X Y : Type u} (p : collapse_poset X Y cardinal.omega.succ) :
+  collapse_algebra X Y :=
+⟨collapse_poset.principal_open p, collapse_poset.is_regular_principal_open p⟩
 
 local notation `ι`:65 := collapse_poset.inclusion
 
 lemma collapse_poset_dense_basis {X Y : Type u} : ∀ T ∈ @collapse_space_basis X Y,
-  ∀ h_nonempty : T ≠ ∅, ∃ p : collapse_poset X Y κ, (ι p).val ⊆ T :=
+  ∀ h_nonempty : T ≠ ∅, ∃ p : collapse_poset X Y cardinal.omega.succ, (ι p).val ⊆ T :=
 begin
   intros T H_mem_basis _,
   refine or.elim H_mem_basis (λ _, (false.elim (absurd ‹T = ∅› ‹_›))) (λ H, _),
-  rcases H with ⟨_,⟨_,H₂⟩⟩, from ⟨‹_›, by simp[H₂, collapse_poset.inclusion]⟩
+  rcases H with ⟨_,⟨_,H₂⟩⟩, exact ⟨‹_›, by simp[H₂, collapse_poset.inclusion]⟩
 end
 
 lemma collapse_poset_dense {X Y : Type u} [nonempty (X → Y)] {b : collapse_algebra X Y}
-  (H : ⊥ < b) : ∃ p : (collapse_poset X Y κ), ι p ≤ b :=
+  (H : ⊥ < b) : ∃ p : (collapse_poset X Y cardinal.omega.succ), ι p ≤ b :=
 begin
   cases (classical.choice (classical.nonempty_of_not_empty _ H.right.symm)) with S_wit H_wit,
   change ∃ p, (ι p).val ⊆ b.val,
@@ -635,14 +685,14 @@ begin
   rcases (mem_basis_subset_of_mem_open
            (collapse_space_basis_spec) H_wit (is_open_of_is_regular b.property))
          with ⟨v, Hv₁, Hv₂, Hv₃⟩,
-  have : v ≠ ∅, by {intro H, rw[H] at Hv₂, cases Hv₂},
-  cases (collapse_poset_dense_basis ‹_› ‹_› ‹_›) with p H_p, from ⟨p, set.subset.trans H_p ‹_›⟩
+  have : v ≠ ∅, by {intro H, rw [H] at Hv₂, cases Hv₂},
+  cases (collapse_poset_dense_basis ‹_› ‹_› ‹_›) with p H_p, exact ⟨p, set.subset.trans H_p ‹_›⟩
 end
 
 local notation `𝔹` := collapse_algebra ((ℵ₁ : pSet).type) (powerset omega : pSet).type
 
 instance nonempty_aleph_one_powerset_omega : nonempty $ ((ℵ₁).type) → (powerset omega).type :=
-⟨λ _, by {unfold pSet.omega, from λ _, false}⟩
+⟨λ _, by {unfold pSet.omega, exact λ _, false}⟩
 
 def 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 :=
 by apply_instance
