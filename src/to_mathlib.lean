@@ -326,6 +326,10 @@ section cardinal_lemmas
 
 local prefix `#`:65 := cardinal.mk
 
+theorem mk_union_le {α : Type u} {S T : set α} : mk (S ∪ T : set α) ≤ mk S + mk T :=
+by { rw [← mk_union_add_mk_inter], apply le_add_right }
+
+
 lemma exists_mem_compl_of_mk_lt_mk {α} (P : set α) (H_lt : cardinal.mk P  < cardinal.mk α) : ∃ x : α, x ∈ (- P) :=
 begin
   haveI : decidable (∃ (x : α), x ∈ - P) := classical.prop_decidable _,
