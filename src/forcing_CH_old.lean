@@ -385,17 +385,24 @@ begin
   { exact aleph_one_satisfies_universal_property }
 end
 
-lemma continuum_is_continuum {Γ : 𝔹} : Γ ≤ (pSet.powerset omega)̌  =ᴮ (bv_powerset bSet.omega) :=
+lemma continuum_le_continuum_check {Γ : 𝔹} :
+  Γ ≤ bv_powerset bSet.omega ≼ (pSet.powerset omega)̌ :=
 begin
-  refine subset_ext (check_powerset_subset_powerset _) _,
-  bv_intro χ, bv_imp_intro H_χ,
-  refine le_trans le_top _, rw[bSet.mem_unfold], simp only [check_bval_top, top_inf_eq],
-  simp only [bv_eq_unfold],
   sorry
--- TOOD(jesse) show that this simplifies to ⨆_S ⨅ i, σ_S(i) (χ i), where σ_S(i) is the ¬-indicator function o S
-
--- then an inductively-defined version of S := {i | ¬ χ i ⊓ principal_open p = ⊥} should work
 end
+
+-- not needed if we show continuum_le_continuum_check
+-- lemma continuum_is_continuum {Γ : 𝔹} : Γ ≤ (pSet.powerset omega)̌  =ᴮ (bv_powerset bSet.omega) :=
+-- begin
+--   refine subset_ext (check_powerset_subset_powerset _) _,
+--   bv_intro χ, bv_imp_intro H_χ,
+--   refine le_trans le_top _, rw[bSet.mem_unfold], simp only [check_bval_top, top_inf_eq],
+--   simp only [bv_eq_unfold],
+--   sorry
+-- -- TOOD(jesse) show that this simplifies to ⨆_S ⨅ i, σ_S(i) (χ i), where σ_S(i) is the ¬-indicator function o S
+
+-- -- then an inductively-defined version of S := {i | ¬ χ i ⊓ principal_open p = ⊥} should work
+-- end
 
 -- lemma continuum_is_continuum {Γ : 𝔹} : Γ ≤ (pSet.powerset omega)̌  =ᴮ (bv_powerset bSet.omega) :=
 -- begin
@@ -419,13 +426,9 @@ end
 
 lemma aleph_one_not_lt_powerset_omega : ∀ {Γ : 𝔹}, Γ ≤ - (ℵ₁̌ ≺ 𝒫(ω)) :=
 begin
- intro Γ, rw[<-imp_bot], bv_imp_intro H,
- suffices ex_surj : Γ_1 ≤ larger_than (ℵ₁̌ ) (𝒫 ω),
-     by {dsimp [Γ_1] at H ex_surj ⊢, from bv_absurd _ ex_surj ‹_› },
-
-      apply bv_rw' (bv_symm continuum_is_continuum),
-        { from B_ext_larger_than_right },
-        { from ℵ₁_larger_than_continuum }
+  intro Γ, rw[<-imp_bot], dsimp, bv_imp_intro H,
+  refine bv_absurd _ ℵ₁_larger_than_continuum _,
+  exact bSet_lt_of_lt_of_le _ _ _ H continuum_le_continuum_check
 end
 
 theorem CH_true : (⊤ : 𝔹) ≤ CH :=
