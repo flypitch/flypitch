@@ -1007,6 +1007,12 @@ begin
   [apply H₁, apply H₂]; from inf_le_left
 end
 
+lemma bv_em_aux {β : Type*} [complete_boolean_algebra β] (Γ : β) (b : β) : Γ ≤ b ⊔ -b :=
+le_trans le_top $ by simp
+
+lemma bv_em {β : Type*} [complete_boolean_algebra β] {Γ : β} (b : β) : Γ ≤ b ⊔ -b :=
+bv_em_aux _ _
+
 lemma diagonal_supr_le_supr {α} [complete_lattice α] {ι} {s : ι → ι → α} {Γ : α} (H : Γ ≤ ⨆ i, s i i) : Γ ≤ ⨆ i j, s i j :=
  le_trans H $ supr_le $ λ i,  le_supr_of_le i $ le_supr_of_le i $ by refl
 
@@ -1261,27 +1267,41 @@ do
   tactic.intro i >> ((get_unused_name H) >>= tactic.intro) >>
   skip
 
-meta def bv_or_elim_at_core (e : expr) (Γ_old : expr) : tactic unit :=
+-- here `e` is the proof of Γ ≤ a ⊔ b
+meta def bv_or_elim_at_core (e : expr) (Γ_old : expr) (n_H : name) : tactic unit :=
 do
-   n <- get_unused_name "H_left",
-   n' <- get_unused_name "H_right",
+   n <- get_unused_name (n_H ++ "left"),
+   n' <- get_unused_name (n_H ++ "right"),
    `[apply lattice.context_or_elim %%e],
    (tactic.intro n) >> specialize_context_core Γ_old, swap,
    (tactic.intro n') >> specialize_context_core Γ_old, swap
 
-
 meta def bv_or_elim_at (H : parse ident) : tactic unit :=
 do Γ_old <- target >>= lhs_of_le,
    e <- resolve_name H >>= to_expr,
-   bv_or_elim_at_core e Γ_old
+   bv_or_elim_at_core e Γ_old H
 
-meta def auto_or_elim_step : tactic unit :=
-do  ctx <- local_context >>= (λ l, l.mfilter hyp_is_ineq_sup),
-    if ctx.length > 0 then
-    ctx.mmap' (λ e, do Γ_old <- target >>= lhs_of_le, bv_or_elim_at_core e Γ_old)
-    else tactic.failed
+-- `px` is a term of type `𝔹`; this cases on "`px ∨ ¬ px`"
+meta def bv_cases_on (px : parse texpr) : tactic unit :=
+do Γ_old ← target >>= lhs_of_le,
+   e ← to_expr ``(lattice.bv_em_aux %%Γ_old %%px),
+   get_unused_name "H" >>= bv_or_elim_at_core e Γ_old
 
-meta def auto_or_elim : tactic unit := tactic.repeat auto_or_elim_step --TODO(jesse) debug this
+example {β : Type*} [lattice.nontrivial_complete_boolean_algebra β] {Γ : β} : Γ ≤ ⊤ :=
+begin
+  bv_cases_on ⊤,
+    { from ‹_› },
+    { by simp* }
+end
+
+-- TODO(jesse) debug these
+-- meta def auto_or_elim_step : tactic unit :=
+-- do  ctx <- local_context >>= (λ l, l.mfilter hyp_is_ineq_sup),
+--     if ctx.length > 0 then
+--     ctx.mmap' (λ e, do Γ_old <- target >>= lhs_of_le, bv_or_elim_at_core e Γ_old)
+--     else tactic.failed
+
+-- meta def auto_or_elim : tactic unit := tactic.repeat auto_or_elim_step
 
 -- example {β ι : Type u} [lattice.complete_boolean_algebra β] {s : ι → β} {H' : ⊤ ≤ ⨆i, s i} {b : β} : b ≤ ⊤ :=
 -- by {specialize_context ⊤, bv_cases_at H' i, specialize_context Γ, sorry }
