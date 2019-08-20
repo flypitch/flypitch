@@ -526,6 +526,8 @@ def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆ S, ⨆f, S ⊆ᴮ x ⊓ (is_func
 
 def injects_into (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ is_inj f
 
+def surjects_onto (x y : bSet 𝔹) : 𝔹 :=⨆f, (is_func' x y f) ⊓ (is_surj x y f)
+
 @[simp]lemma B_ext_larger_than_right {y : bSet 𝔹} : B_ext (λ z, larger_than y z) :=
 by simp[larger_than]
 
@@ -543,6 +545,16 @@ local infix `≺`:70 := (λ x y, -(larger_than x y))
 local infix `≼`:70 := (λ x y, injects_into x y)
 
 def CH : 𝔹 := - ⨆ x, ⨆y, (omega ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(omega))
+
+lemma surjects_onto_of_larger_than_and_exists_mem
+  {x y : bSet 𝔹} {Γ}
+  (H_larger_than : Γ ≤ larger_than x y)
+  (H_nonempty : Γ ≤ exists_mem y )
+   : Γ ≤ surjects_onto x y :=
+begin
+  sorry
+end
+
 
 section 
 parameter {Γ : 𝔹}
@@ -882,6 +894,15 @@ end
 --   is_func x y f ⊓ (⨅w₁ w₂, w₁ ∈ᴮ x ⊓ w₂ ∈ᴮ x ⟹
 --     (⨆v₁ v₂, (pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⊓ v₁ =ᴮ v₂ ⟹ w₁ =ᴮ w₂)))
 
+def function.mk'
+  {x y : bSet 𝔹}
+  (F : x.type → y.type)
+  (χ : x.type → 𝔹)
+  (H_ext : ∀ i j {Γ}, Γ ≤ x.func i =ᴮ x.func j → Γ ≤ y.func (F i) =ᴮ y.func (F j))
+  : bSet 𝔹
+:=
+subset.mk (λ pr : (prod x y).type, χ pr.1 ⊓ y.func pr.2 =ᴮ y.func (F pr.1))
+
 def function.mk {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : bSet 𝔹 :=
 ⟨u.type, λ a, pair (u.func a) (F a), u.bval⟩
 
@@ -1059,24 +1080,6 @@ end extras
 
 section check
 parameters {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
-
-lemma check_mem {x y : pSet} {Γ} (h_mem : x ∈ y) : (Γ : 𝔹) ≤ x̌ ∈ᴮ y̌ :=
-begin
-  rw[mem_unfold], cases y, unfold has_mem.mem pSet.mem at h_mem,
-  cases h_mem with w_y H_w_y, apply bv_use w_y,
-  apply le_inf, simp, from check_bv_eq ‹_›
-end
-
-lemma check_subset_of_subset {x y : pSet} (h_subset : x ⊆ y) : (⊤ : 𝔹) ≤ x̌ ⊆ᴮ y̌ :=
-begin
-  rw[subset_unfold], unfold has_subset.subset pSet.subset at h_subset,
-  bv_intro x_j, bv_imp_intro H_x_j, cases x with α A, cases y with β B,
-  rcases (h_subset ‹_›) with ⟨b , Hb⟩,
-  apply bv_use b, convert (check_bv_eq ‹_›), simpa[check_func]
-end
-
-lemma check_subset {x y : pSet} {Γ : 𝔹} (h_subset : x ⊆ y) : Γ ≤ x̌ ⊆ᴮ y̌ :=
-  le_trans le_top (check_subset_of_subset ‹_›)
 
 lemma mem_check_mem_powerset_nonzero_iff {x : pSet} {S : (pSet.powerset x).type} {i : x.type} :
   (⊥ : 𝔹) < (x.func i)̌  ∈ᴮ ((pSet.powerset x).func S)̌  ↔ (cast pSet.powerset_type S) i :=
