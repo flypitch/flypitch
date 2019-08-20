@@ -543,7 +543,7 @@ def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆ S, ⨆f, S ⊆ᴮ x ⊓ (is_func
 
 def injects_into (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ is_inj f
 
-def surjects_onto (x y : bSet 𝔹) : 𝔹 :=⨆f, (is_func' x y f) ⊓ (is_surj x y f)
+def surjects_onto (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ (is_surj x y f)
 
 @[simp]lemma B_ext_larger_than_right {y : bSet 𝔹} : B_ext (λ z, larger_than y z) :=
 by simp[larger_than]
@@ -563,14 +563,61 @@ local infix `≼`:70 := (λ x y, injects_into x y)
 
 def CH : 𝔹 := - ⨆ x, ⨆y, (omega ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(omega))
 
-lemma surjects_onto_of_larger_than_and_exists_mem
-  {x y : bSet 𝔹} {Γ}
+section surjects_onto_of_larger_than
+
+variables
+  {x y : bSet 𝔹} {Γ : 𝔹}
   (H_larger_than : Γ ≤ larger_than x y)
   (H_nonempty : Γ ≤ exists_mem y )
-   : Γ ≤ surjects_onto x y :=
+
+section pointed_extension
+
+variables {S f : bSet 𝔹} (b : bSet 𝔹) (H_b : Γ ≤ b ∈ᴮ y)
+  (H_S : Γ ≤ S ⊆ᴮ x) (H_surj : Γ ≤ is_func' S y f ⊓ is_surj x y f)
+          
+
+include b H_S H_surj
+lemma pointed_extension : bSet 𝔹 :=
+subset.mk $ λ pr : (prod x y).type,
+  (x.func pr.1 ∈ᴮ S ⊓ pair (x.func pr.1) (y.func pr.2) ∈ᴮ f) ⊔
+  ((- (x.func pr.1 ∈ᴮ S)) ⊓ (y.func pr.2) =ᴮ b)
+
+include H_b
+
+lemma pointed_extension_is_func' : Γ ≤ is_func' x y (pointed_extension b H_S H_surj) :=
 begin
   sorry
 end
+
+lemma pointed_extension_is_surj : Γ ≤ is_surj x y (pointed_extension b H_S H_surj) :=
+begin
+  sorry
+end
+
+lemma pointed_extension_spec : Γ ≤ surjects_onto x y :=
+begin
+  apply bv_use (pointed_extension b H_S H_surj),
+  from le_inf (by {apply pointed_extension_is_func', from ‹_›})
+              (by {apply pointed_extension_is_surj, from ‹_›})
+end
+
+
+end pointed_extension
+
+
+include H_larger_than H_nonempty
+
+lemma surjects_onto_of_larger_than_and_exists_mem : Γ ≤ surjects_onto x y :=
+begin
+  bv_cases_at H_larger_than S HS,
+  bv_cases_at H_nonempty b Hb, sorry,
+  -- have := pointed_extension_spec b ‹_›,
+end
+
+
+end surjects_onto_of_larger_than
+
+
 
 section 
 parameter {Γ : 𝔹}
