@@ -19,7 +19,7 @@ local prefix `p𝒫`:65 := pSet.powerset
 namespace bSet
 
 section extras
-parameters {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
+variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 
 @[simp, cleanup]lemma insert1_bval_none {u v : bSet 𝔹} : (bSet.insert1 u ({v})).bval none  = ⊤ :=
 by refl
@@ -189,13 +189,13 @@ begin
 end
 
 @[simp]lemma subst_congr_pair_left' {x z y : bSet 𝔹} {Γ : 𝔹} :
-  Γ ≤ x=ᴮ z → Γ ≤ pair x y =ᴮ pair z y := poset_yoneda_inv Γ (@subst_congr_pair_left x z y)
+  Γ ≤ x=ᴮ z → Γ ≤ pair x y =ᴮ pair z y := poset_yoneda_inv Γ (subst_congr_pair_left)
 
 lemma subst_congr_pair_right {x y z : bSet 𝔹} : y =ᴮ z ≤ pair x y =ᴮ pair x z :=
 by unfold pair; simp*
 
 lemma subst_congr_pair_right' {Γ} {x y z : bSet 𝔹} (H : Γ ≤ y =ᴮ z) : Γ ≤ pair x y =ᴮ pair x z :=
-poset_yoneda_inv Γ (@subst_congr_pair_right x y z) ‹_›
+poset_yoneda_inv Γ (subst_congr_pair_right) ‹_›
 
 lemma pair_congr {x₁ x₂ y₁ y₂ : bSet 𝔹} {Γ : 𝔹} (H₁ : Γ ≤ x₁ =ᴮ y₁) (H₂ : Γ ≤ x₂ =ᴮ y₂) : Γ ≤ pair x₁ x₂ =ᴮ pair y₁ y₂ :=
 begin
@@ -434,16 +434,16 @@ end
 @[reducible]def is_total' (x y f : bSet 𝔹) : 𝔹 :=
 (⨅ i, x.bval i ⟹ ⨆j, y.bval j ⊓ pair (x.func i) (y.func j) ∈ᴮ f)
 
--- TODO(jesse): finish this (and try to automate the congruence lemmas)
 lemma is_total_iff_is_total' {Γ : 𝔹} {x y f} : Γ ≤ is_total x y f ↔ Γ ≤ is_total' x y f :=
 begin
   unfold is_total, rw ←bounded_forall,
-  swap, {sorry},
+  swap, {change B_ext _, apply B_ext_supr,
+  intro i, apply B_ext_inf, simp, from B_ext_pair_mem_left},
   refine ⟨_,_⟩; intro H,
     { bv_intro i, bv_imp_intro Hi, replace H := H i Hi,
-      rw ←bounded_exists at H, swap, {sorry}, from ‹_› },
+      rw ←bounded_exists at H, swap, {change B_ext _, from B_ext_pair_mem_right }, from ‹_› },
     { bv_intro i, bv_imp_intro Hi, replace H := H i Hi,
-       rw ←bounded_exists, swap, {sorry}, from ‹_› }
+       rw ←bounded_exists, swap, { change B_ext _, from B_ext_pair_mem_right }, from ‹_› }
 end
 
 
@@ -541,6 +541,11 @@ H_func x x y z (le_inf ‹_› ‹_›) (bv_refl)
 /-- x is larger than y if there is a subset S ⊆ X which surjects onto y. -/
 def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆ S, ⨆f, S ⊆ᴮ x ⊓ (is_func' S y f) ⊓ (is_surj S y f)
 
+-- TODO: maybe move the S ⊆ᴮ x outside of the inner ⨆?
+@[simp]lemma larger_than_domain_subset {Γ : 𝔹} {x y S : bSet 𝔹} (HS : Γ ≤ ⨆ f, S ⊆ᴮ x ⊓ (is_func' S y f) ⊓ (is_surj S y f))
+  : Γ ≤ S ⊆ᴮ x :=
+by {bv_cases_at HS f Hf, exact bv_and.left (bv_and.left ‹_›)}
+
 def injects_into (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ is_inj f
 
 def surjects_onto (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ (is_surj x y f)
@@ -573,25 +578,199 @@ variables
 section pointed_extension
 
 variables {S f : bSet 𝔹} (b : bSet 𝔹) (H_b : Γ ≤ b ∈ᴮ y)
-  (H_S : Γ ≤ S ⊆ᴮ x) (H_surj : Γ ≤ is_func' S y f ⊓ is_surj x y f)
+  (H_S : Γ ≤ S ⊆ᴮ x) (H_surj : Γ ≤ is_func' S y f ⊓ is_surj S y f)
           
 
 include b H_S H_surj
-lemma pointed_extension : bSet 𝔹 :=
+def pointed_extension : bSet 𝔹 :=
 subset.mk $ λ pr : (prod x y).type,
-  (x.func pr.1 ∈ᴮ S ⊓ pair (x.func pr.1) (y.func pr.2) ∈ᴮ f) ⊔
-  ((- (x.func pr.1 ∈ᴮ S)) ⊓ (y.func pr.2) =ᴮ b)
+  (x.func pr.1 ∈ᴮ S ⟹ pair (x.func pr.1) (y.func pr.2) ∈ᴮ f) ⊓
+  ((- (x.func pr.1 ∈ᴮ S)) ⟹ (y.func pr.2) =ᴮ b)
+
+@[simp,cleanup]lemma pointed_extension_func {pr}
+  : (pointed_extension b H_S H_surj).func pr = pair (x.func pr.1) (y.func pr.2) :=
+by refl
+
+lemma pointed_extension_bval {pr}
+  : (pointed_extension b H_S H_surj).bval pr = ((x.func pr.1 ∈ᴮ S ⟹ pair (x.func pr.1) (y.func pr.2) ∈ᴮ f) ⊓
+  ((- (x.func pr.1 ∈ᴮ S)) ⟹ (y.func pr.2) =ᴮ b)) ⊓ (prod x y).bval pr :=
+by refl
+
+@[simp]lemma pointed_extension_bval_of_mem {pr : (prod x y).type} (H_mem : Γ ≤ (x.func pr.1) ∈ᴮ S) (H_bval : Γ ≤ (pointed_extension b H_S H_surj).bval pr)
+  : Γ ≤ x.bval pr.1 ∧ Γ ≤ y.bval pr.2 ∧ Γ ≤ pair (x.func pr.1) (y.func pr.2) ∈ᴮ f :=
+begin
+  simp [pointed_extension_bval] at H_bval, rcases H_bval with ⟨⟨H_bval₁, H_bval₂⟩, ⟨_,_⟩⟩,
+  from ⟨‹_›,‹_›,H_bval₁ ‹_›⟩
+end
+
+@[simp]lemma pointed_extension_pair_mem_of_mem {i : x.type} {j : y.type} (H_mem : Γ ≤ (x.func i) ∈ᴮ S) (H_bval : Γ ≤ (pointed_extension b H_S H_surj).bval (i,j))
+  : Γ ≤ pair (x.func i) (y.func j) ∈ᴮ f :=
+(pointed_extension_bval_of_mem b H_S H_surj (by {change _ ≤ func x (i,j).fst ∈ᴮ _ at H_mem, from ‹_›}) ‹_›).right.right
+
+@[simp]lemma pointed_extension_pair_mem_of_mem' {w v : bSet 𝔹} {pr : (prod x y).type} (H_mem : Γ ≤ (x.func pr.1) ∈ᴮ S) (H_bval : Γ ≤ (pointed_extension b H_S H_surj).bval pr) (H_eq : Γ ≤ pair w v =ᴮ func (pointed_extension b H_S H_surj) pr)
+  : Γ ≤ pair w v ∈ᴮ f :=
+begin
+  simp at H_eq, apply @bv_rw' _ _ _ _ _ (H_eq) (λ z, z ∈ᴮ f), simp,
+  cases pr with i j, apply pointed_extension_pair_mem_of_mem, repeat {assumption}
+end
+-- (pointed_extension_bval_of_mem b H_S H_surj (by {change _ ≤ func x (i,j).fst ∈ᴮ _ at H_mem, from ‹_›}) ‹_›).right.right
+
+@[simp]lemma pointed_extension_bval_of_not_mem {pr : (prod x y).type} (H_mem : Γ ≤ - ((x.func pr.1) ∈ᴮ S)) (H_bval : Γ ≤ (pointed_extension b H_S H_surj).bval pr)
+  : Γ ≤ x.bval pr.1 ∧ Γ ≤ y.bval pr.2 ∧ Γ ≤ (y.func pr.2) =ᴮ b :=
+begin
+  simp [pointed_extension_bval] at H_bval, rcases H_bval with ⟨⟨H_bval₁, H_bval₂⟩, ⟨_,_⟩⟩,
+  from ⟨‹_›,‹_›,H_bval₂ ‹_›⟩
+end
+
+@[simp]lemma pointed_extension_y_eq_of_not_mem {i : x.type} {j : y.type} (H_mem : Γ ≤ - ((x.func i) ∈ᴮ S)) (H_bval : Γ ≤ (pointed_extension b H_S H_surj).bval (i,j))
+  : Γ ≤ y.func j =ᴮ b :=
+(pointed_extension_bval_of_not_mem b H_S H_surj (by {change _ ≤ - (func x (i,j).fst ∈ᴮ _) at H_mem, from ‹_›}) ‹_›).right.right
+
+@[simp]lemma pointed_extension_y_eq_of_not_mem' {w v : bSet 𝔹} {pr : (prod x y).type} (H_mem : Γ ≤ - ((x.func pr.1) ∈ᴮ S)) (H_bval : Γ ≤ (pointed_extension b H_S H_surj).bval pr) (H_eq : Γ ≤ pair w v =ᴮ func (pointed_extension b H_S H_surj) pr)
+  : Γ ≤ v =ᴮ b :=
+begin
+  simp at H_eq, replace H_eq := eq_of_eq_pair_right' H_eq, apply @bv_rw' _ _ _ _ _ (H_eq) (λ z, z =ᴮ b), simp,
+  cases pr with i j, apply pointed_extension_y_eq_of_not_mem, repeat {assumption}
+end
 
 include H_b
 
+variable {b}
+lemma mem_pointed_extension_iff {w v : bSet 𝔹} (H_x_mem : Γ ≤ w ∈ᴮ x)
+  : Γ ≤ pair w v ∈ᴮ pointed_extension b H_S H_surj
+    ↔ (Γ ≤ ((w ∈ᴮ S ⊓ pair w v ∈ᴮ f) ⊔ (- (w ∈ᴮ S) ⊓ v =ᴮ b))) :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { bv_cases_on' (w ∈ᴮ S),
+      { apply bv_or_left, refine le_inf ‹_› _,
+        bv_split_at H_surj, have := is_total_of_is_func' H_surj_left w ‹_›,
+        bv_cases_at this w₂ Hw₂, rw[mem_unfold'],
+        apply bv_use (pair w w₂), rename H H', bv_split, refine le_inf ‹_› _,
+        suffices this : Γ_2 ≤ v =ᴮ w₂,
+          by {exact pair_congr (bv_refl) ‹_› },
+        suffices this : Γ_2 ≤ pair w v ∈ᴮ f,
+          by { apply eq_of_is_func_of_eq, repeat {assumption}, from bv_refl },
+
+        rw[mem_unfold] at H', bv_cases_at H' pr Hpr,
+        bv_split_at Hpr, apply pointed_extension_pair_mem_of_mem', repeat {assumption},
+        {simp at Hpr_right, rw[pair_eq_pair_iff] at Hpr_right, cases Hpr_right, bv_cc},
+        exact le_inf (le_inf ‹_› ‹_›) ‹_›
+        },
+      { apply bv_or_right, refine (le_inf ‹_› _) ,
+        rw[mem_unfold] at H, bv_cases_at H pr Hpr, bv_split_at Hpr,
+        apply pointed_extension_y_eq_of_not_mem', repeat {assumption},
+        {simp at Hpr_right, rw[pair_eq_pair_iff] at Hpr_right, cases Hpr_right, rw[<-imp_bot],
+         apply @bv_rw' _ _ _ _ _ (bv_symm Hpr_right_left) (λ z, z ∈ᴮ S ⟹ ⊥),
+         {simp}, dsimp, rwa[imp_bot] }, 
+         },
+},
+    { bv_or_elim_at' H,
+      { bv_split_at H.left, bv_split_at H_surj,
+        have := is_total_of_is_func' (H_surj_left) w H.left_left,
+        bv_cases_at this v' Hv', have H_S' := H_S,
+        rw[subset_unfold'] at H_S', replace H_S' := H_S' w ‹_›,
+        rw[mem_unfold] at H_S',
+        bv_cases_at H_S' i Hi,
+        bv_split_at Hv', rw[mem_unfold] at Hv'_left, bv_cases_at Hv'_left j Hj,
+        apply bv_use (i,j),
+        refine le_inf _ _,
+          { simp, refine ⟨⟨_,_⟩,_,_⟩,
+              { bv_imp_intro H_good,
+                  suffices this : Γ_5 ≤ pair w v' =ᴮ pair (func x i) (func y j) ,
+                    by {apply @bv_rw' _ _ _ _ _ (bv_symm this) (λ z, z ∈ᴮ f), simp, from ‹_› },
+                  refine pair_congr (bv_and.right ‹_›) (bv_and.right ‹_›) },                     
+              { bv_imp_intro H_bad, refine bv_exfalso (bv_absurd _ H.left_left _),
+                apply bv_rw' (bv_and.right Hi), simp, from ‹_› },
+              { from bv_and.left Hi },
+              { from bv_and.left Hj }
+              },
+          { refine pair_congr (bv_and.right ‹_›) _,
+            suffices this : Γ_4 ≤ v =ᴮ v',
+              by {bv_split_at Hj, bv_cc},
+            apply eq_of_is_func'_of_eq, from ‹_›, from (bv_refl : _ ≤ w =ᴮ w), from ‹_›, from ‹_›
+             },
+       },
+      { bv_split_at H.right,  rw[mem_unfold] at H_x_mem H_b,
+        bv_cases_at H_x_mem i Hi, bv_split_at Hi,
+        bv_cases_at H_b j Hj, bv_split_at Hj,
+        apply bv_use (i,j), refine le_inf (le_inf _ (le_inf ‹_› ‹_›)) (pair_congr ‹_› (by bv_cc)),
+        dsimp, refine le_inf _ _,
+          { bv_imp_intro H_mem, refine bv_exfalso (bv_absurd _ H_mem _),
+            apply @bv_rw' _ _ _ _ _ (bv_symm Hi_right) (λ z, - (z ∈ᴮ S)), simp, from ‹_› },
+          { bv_imp_intro H_not_mem, from bv_symm ‹_› } } }
+end
+
+lemma pointed_extension_is_func : Γ ≤ is_func (pointed_extension b H_S H_surj) :=
+begin
+  bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂, bv_imp_intro' H,
+  bv_imp_intro H_eq, bv_split_at H,
+  rw[mem_unfold] at H_left H_right, bv_cases_at H_left pr₁ Hpr₁, bv_cases_at H_right pr₂ Hpr₂,
+  cases pr₁ with i j, cases pr₂ with i' j',
+  simp only with cleanup at Hpr₁ Hpr₂, bv_split_at Hpr₁, bv_split_at Hpr₂,
+  rw[pair_eq_pair_iff] at Hpr₁_right Hpr₂_right, auto_cases,
+  bv_cases_on ((x.func i) ∈ᴮ S) with H_mem,
+    { suffices this : Γ_5 ≤ pair w₁ v₁ ∈ᴮ f ∧ Γ_5 ≤ pair w₂ v₂ ∈ᴮ f,
+        by { exact eq_of_is_func'_of_eq (bv_and.left ‹_›) ‹_› this.left this.right },
+      refine ⟨_,_⟩,
+        { suffices : Γ_5 ≤ pair (x.func i) (y.func j) ∈ᴮ f,
+            by { suffices H_eq : Γ_5 ≤ pair w₁ v₁ =ᴮ pair (x.func i) (y.func j) ,
+                   by {apply @bv_rw' _ _ _ _ _ H_eq (λ z, z ∈ᴮ f), simp, from ‹_›},
+                 from pair_congr ‹_› ‹_›, },
+          apply pointed_extension_pair_mem_of_mem, repeat {assumption} },
+        { suffices : Γ_5 ≤ pair (x.func i') (y.func j') ∈ᴮ f,
+            by { suffices H_eq : Γ_5 ≤ pair w₂ v₂ =ᴮ pair (x.func i') (y.func j') ,
+                   by {apply @bv_rw' _ _ _ _ _ H_eq (λ z, z ∈ᴮ f), simp, from ‹_›},
+                 from pair_congr ‹_› ‹_›, },
+          apply pointed_extension_pair_mem_of_mem, repeat {assumption},
+          suffices h_eq : Γ_5 ≤ func x i' =ᴮ func x i,
+            by {apply @bv_rw' _ _ _ _ _ h_eq (λ z, z ∈ᴮ S), simp, from ‹_›},
+          by bv_cc } },
+    { suffices this : Γ_5 ≤ v₁ =ᴮ b ∧ Γ_5 ≤ v₂ =ᴮ b,
+        by { cases this with this₁ this₂, bv_cc },
+      refine ⟨_,_⟩,
+        { suffices : Γ_5 ≤ (y.func j) =ᴮ b,
+            by { bv_cc },
+          apply pointed_extension_y_eq_of_not_mem, repeat {assumption} },
+        { suffices : Γ_5 ≤ (y.func j') =ᴮ b,
+            by { bv_cc },
+          suffices this : Γ_5 ≤ -(func x i' ∈ᴮ S),
+            by {replace H_mem.right := this, apply pointed_extension_y_eq_of_not_mem, repeat{assumption}},
+          suffices h_eq : Γ_5 ≤ func x i' =ᴮ func x i,
+            by {apply @bv_rw' _ _ _ _ _ h_eq (λ z, - (z ∈ᴮ S)), simp, from ‹_›},
+          bv_cc
+           } },
+end
+
+lemma pointed_extension_is_total : Γ ≤ is_total x y (pointed_extension b H_S H_surj) :=
+begin
+  bv_intro a, bv_imp_intro' Ha,
+  bv_cases_on (a ∈ᴮ S) with H_mem,
+    { have := is_total_of_is_func' (bv_and.left (‹_› : Γ_2 ≤ _)),
+      replace this := this a ‹_›, bv_cases_at this w₂ Hw₂,
+      apply bv_use w₂, refine le_inf (bv_and.left ‹_›) _, have H_mem_x : Γ_3 ≤ a ∈ᴮ x := mem_of_mem_subset ‹_› ‹_›,
+      apply (mem_pointed_extension_iff H_b ‹_› ‹_› ‹_›).mpr,
+      apply bv_or_left, from le_inf ‹_› (bv_and.right ‹_›)
+      },
+    { apply bv_use b, refine le_inf ‹_› _, apply (mem_pointed_extension_iff H_b ‹_› ‹_› ‹_›).mpr,
+      apply bv_or_right, from le_inf ‹_› (bv_refl) }
+end
+
 lemma pointed_extension_is_func' : Γ ≤ is_func' x y (pointed_extension b H_S H_surj) :=
 begin
-  sorry
+  refine le_inf _ _,
+    { apply pointed_extension_is_func, from ‹_› },
+    { apply pointed_extension_is_total, from ‹_› },
 end
 
 lemma pointed_extension_is_surj : Γ ≤ is_surj x y (pointed_extension b H_S H_surj) :=
 begin
-  sorry
+  bv_intro v, bv_imp_intro' Hv, bv_split_at H_surj, have H_surj' := H_surj_right,
+  replace H_surj_right := H_surj_right v Hv,
+  bv_cases_at H_surj_right w Hw, bv_split_at Hw,
+  have H_mem_x := (mem_of_mem_subset H_S ‹_›),
+  apply bv_use w, refine le_inf ‹_› _,
+  apply (mem_pointed_extension_iff H_b ‹_› (le_inf ‹_› ‹_›) ‹_›).mpr,
+  from bv_or_left (le_inf ‹_› ‹_›)
 end
 
 lemma pointed_extension_spec : Γ ≤ surjects_onto x y :=
@@ -601,26 +780,26 @@ begin
               (by {apply pointed_extension_is_surj, from ‹_›})
 end
 
-
 end pointed_extension
-
 
 include H_larger_than H_nonempty
 
+-- TODO(jesse): use this to reduce the forcing argument for CH
+-- to just the equality of function spaces
 lemma surjects_onto_of_larger_than_and_exists_mem : Γ ≤ surjects_onto x y :=
 begin
-  bv_cases_at H_larger_than S HS,
-  bv_cases_at H_nonempty b Hb, sorry,
-  -- have := pointed_extension_spec b ‹_›,
+  bv_cases_at H_larger_than S HS, bv_cases_at HS f Hf, bv_split_at Hf,
+  bv_split_at Hf_left,
+  bv_cases_at H_nonempty b Hb,
+  from pointed_extension_spec ‹_› ‹_› (le_inf ‹_› ‹_›)
 end
-
 
 end surjects_onto_of_larger_than
 
 
 
 section 
-parameter {Γ : 𝔹}
+variable {Γ : 𝔹}
 
 /--
   Given a surjection f : x ↠ z and an injection g : y ↪ z, lift f along g to a surjection f' : x ↠ y.
@@ -722,7 +901,7 @@ end
 end 
 
 section 
-parameter {Γ : 𝔹}
+variable {Γ : 𝔹}
 variables {x z f g : bSet 𝔹} (y : bSet 𝔹) (H_surj : Γ ≤ is_surj x z f) (H_inj : Γ ≤ is_inj g)
 -- extends a surjection f : x ↠ z along an injection g : x ↪ y to a surjection
 -- f' : y ↠ z
@@ -879,7 +1058,8 @@ begin
   use ‹_›, refine ⟨inf_le_right,⟨_,_⟩⟩; tidy_context
 end
 
--- TODO(jesse): have specialize_context optionally not replace obsolete hypotheses, only note the updated versions
+-- note: primed version of 𝔹-valued casing tactics will only note instead of replacing hypotheses
+-- this circumvents dependency issues that occasionally pop up
 lemma function_of_func'_is_function {x y f : bSet 𝔹} {Γ} (H_is_func' : Γ ≤ is_func' x y f) : Γ ≤ is_function x y (function_of_func' H_is_func') :=
 begin
   refine le_inf (le_inf _ _) _,
@@ -904,7 +1084,7 @@ end
 def functions (x y : bSet 𝔹) : bSet 𝔹 :=
   set_of_indicator (λ s : (bv_powerset (prod x y) : bSet 𝔹).type, is_function x y ((bv_powerset (prod x y)).func s))
 
--- TODO(jesse) this should be a more general lemma about a sep operator, as in zfc.lean
+-- TODO(jesse) should be able to shorten this using subset.mk_mem_iff
 lemma mem_functions_iff {g x y : bSet 𝔹} {Γ : 𝔹} : (Γ ≤ g ∈ᴮ functions x y) ↔ (Γ ≤ is_function x y g) :=
 begin
   refine ⟨_,_⟩; intro H,
@@ -1192,7 +1372,7 @@ end
 end extras
 
 section check
-parameters {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
+variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 
 lemma mem_check_mem_powerset_nonzero_iff {x : pSet} {S : (pSet.powerset x).type} {i : x.type} :
   (⊥ : 𝔹) < (x.func i)̌  ∈ᴮ ((pSet.powerset x).func S)̌  ↔ (cast pSet.powerset_type S) i :=
@@ -1253,7 +1433,7 @@ check_bv_eq_bot_of_not_equiv (pSet.of_nat_inj ‹_›)
 end check
 
 section ordinals
-parameters {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
+variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 def epsilon_well_orders (x : bSet 𝔹) : 𝔹 :=
 (⨅y, y∈ᴮ x ⟹ (⨅z, z ∈ᴮ x ⟹ (y =ᴮ z ⊔ y ∈ᴮ z ⊔ z ∈ᴮ y))) ⊓
   (⨅u, u ⊆ᴮ x ⟹ (- (u =ᴮ ∅) ⟹ ⨆y, y∈ᴮ u ⊓ (⨅z', z' ∈ᴮ u ⟹ (- (z' ∈ᴮ y)))))

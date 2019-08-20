@@ -1276,16 +1276,37 @@ do
    (tactic.intro n) >> specialize_context_core Γ_old, swap,
    (tactic.intro n') >> specialize_context_core Γ_old, swap
 
+meta def bv_or_elim_at_core' (e : expr) (Γ_old : expr) (n_H : name) : tactic unit :=
+do
+   n <- get_unused_name (n_H ++ "left"),
+   n' <- get_unused_name (n_H ++ "right"),
+   `[apply lattice.context_or_elim %%e],
+   (tactic.intro n) >> specialize_context_core' Γ_old, swap,
+   (tactic.intro n') >> specialize_context_core' Γ_old, swap
+
 meta def bv_or_elim_at (H : parse ident) : tactic unit :=
 do Γ_old <- target >>= lhs_of_le,
    e <- resolve_name H >>= to_expr,
    bv_or_elim_at_core e Γ_old H
 
 -- `px` is a term of type `𝔹`; this cases on "`px ∨ ¬ px`"
-meta def bv_cases_on (px : parse texpr) : tactic unit :=
+meta def bv_cases_on (px : parse texpr) (opt_id : parse (tk "with" *> ident)?) : tactic unit :=
 do Γ_old ← target >>= lhs_of_le,
    e ← to_expr ``(lattice.bv_em_aux %%Γ_old %%px),
-   get_unused_name "H" >>= bv_or_elim_at_core e Γ_old
+   let nm := option.get_or_else opt_id "H",
+   get_unused_name nm >>= bv_or_elim_at_core e Γ_old
+
+meta def bv_or_elim_at' (H : parse ident) : tactic unit :=
+do Γ_old <- target >>= lhs_of_le,
+   e <- resolve_name H >>= to_expr,
+   bv_or_elim_at_core' e Γ_old H
+
+-- `px` is a term of type `𝔹`; this cases on "`px ∨ ¬ px`"
+meta def bv_cases_on' (px : parse texpr) (opt_id : parse (tk "with" *> ident)?) : tactic unit :=
+do Γ_old ← target >>= lhs_of_le,
+   e ← to_expr ``(lattice.bv_em_aux %%Γ_old %%px),
+   let nm := option.get_or_else opt_id "H",
+   get_unused_name nm >>= bv_or_elim_at_core' e Γ_old
 
 example {β : Type*} [lattice.nontrivial_complete_boolean_algebra β] {Γ : β} : Γ ≤ ⊤ :=
 begin
