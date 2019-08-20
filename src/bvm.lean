@@ -1371,6 +1371,9 @@ lemma subset'_trans {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} {h : co
 lemma subset'_unfold {u : bSet 𝔹} {α : Type u} {S : α → bSet 𝔹} {h : core u S} {a₁ a₂ : α} :
   by {haveI := subset'_partial_order h, from a₁ ≤ a₂ → (S a₁ ⊆ᴮ S a₂ = ⊤)} := by tidy
 
+@[reducible]def exists_mem (x : bSet 𝔹) : 𝔹 := ⨆ (y : bSet 𝔹), y ∈ᴮ x
+
+-- note: nonempty means "not empty"
 lemma exists_mem_of_nonempty (u : bSet 𝔹) {Γ : 𝔹} {H : Γ ≤ -(u =ᴮ ∅)} : Γ ≤ ⨆x, x∈ᴮ u :=
 by {apply le_trans H, simp[eq_empty], intro x, apply bv_use (u.func x), apply mem.mk'}
 
@@ -1577,6 +1580,26 @@ begin
     { simp* }
 end
 
+@[simp]lemma check_mem {x y : pSet} {Γ} (h_mem : x ∈ y) : (Γ : 𝔹) ≤ x̌ ∈ᴮ y̌ :=
+begin
+  rw[mem_unfold], cases y, unfold has_mem.mem pSet.mem at h_mem,
+  cases h_mem with w_y H_w_y, apply bv_use w_y,
+  apply le_inf, simp, from check_bv_eq ‹_›
+end
+
+@[simp]lemma check_subset_of_subset {x y : pSet} (h_subset : x ⊆ y) : (⊤ : 𝔹) ≤ x̌ ⊆ᴮ y̌ :=
+begin
+  rw[subset_unfold], unfold has_subset.subset pSet.subset at h_subset,
+  bv_intro x_j, bv_imp_intro H_x_j, cases x with α A, cases y with β B,
+  rcases (h_subset ‹_›) with ⟨b , Hb⟩,
+  apply bv_use b, convert (check_bv_eq ‹_›), simpa[check_func]
+end
+
+lemma check_subset {x y : pSet} {Γ : 𝔹} (h_subset : x ⊆ y) : Γ ≤ x̌ ⊆ᴮ y̌ :=
+  le_trans le_top (check_subset_of_subset ‹_›)
+
+@[simp]lemma check_exists_mem {y : pSet} (H_exists_mem : ∃ z, z ∈ y ) {Γ : 𝔹} : Γ ≤ exists_mem y̌ :=
+by { rcases H_exists_mem with ⟨z,Hz⟩, apply bv_use ž, simp* }
 
 -- note(jesse): this lemma is not true; one also requires that x is a check-name
 -- lemma definite_mem_definite_iff_of_subset_check {x y : bSet 𝔹} (H_definite₁ : is_definite x) (H_definite₂ : is_definite y) (H_sub : ∃ z : pSet, ⊤ ≤ y ⊆ᴮ ž)  : ⊤ ≤ x ∈ᴮ y ↔ ∃ j : y.type, ⊤ ≤ x =ᴮ y.func j :=
