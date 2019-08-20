@@ -697,7 +697,7 @@ theorem inf_supr_eq {α ι : Type*} [complete_distrib_lattice α] {a : α} {s : 
     end
 
 theorem supr_inf_eq {α ι : Type*} [complete_distrib_lattice α] {a : α} {s : ι → α} :
-  (⨆(i:ι), s i) ⊓ a = ⨆(i:ι), s i ⊓ a :=
+  (⨆(i:ι), s i) ⊓ a = ⨆(i:ι), (s i ⊓ a) :=
 by simp[inf_comm,inf_supr_eq]
 
 theorem sup_infi_eq {α ι : Type*} [complete_distrib_lattice α] {a : α} {s : ι → α} :
@@ -1077,6 +1077,19 @@ begin
   by_contra, apply this, apply supr_le, intro i, rw[not_exists] at a,
   specialize a i, haveI : decidable (s i ≤ ⊥) := classical.prop_decidable _,
   by_contra, have := @bot_lt_iff_not_le_bot β _ (s i), tauto
+end
+
+lemma nonzero_wit' {β : Type*} [complete_distrib_lattice β] {ι : Type*} {s : ι → β} {Γ : β}
+  (H_nonzero : ⊥ < Γ) (H_le : Γ ≤ ⨆ i , s i ):
+  ∃ j, (⊥ < s j ⊓ Γ) :=
+begin
+  haveI : decidable (∃ j, (⊥ < s j ⊓ Γ)) := classical.prop_decidable _,
+  by_contra H, push_neg at H, simp only [(not_congr bot_lt_iff_not_le_bot)] at H,
+  have this : (⨆j, s j ⊓ Γ) ≤ ⊥ := supr_le (λ i, classical.by_contradiction $ H ‹_›),
+  rw[<-supr_inf_eq] at this,
+  suffices H_bad : Γ ⊓ Γ ≤ ⊥,
+    by {[smt] eblast_using [bot_lt_iff_not_le_bot, inf_self]},
+  exact le_trans (inf_le_inf ‹_› (by refl)) ‹_›,
 end
 
 def CCC (𝔹 : Type u) [boolean_algebra 𝔹] : Prop :=
