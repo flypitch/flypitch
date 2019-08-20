@@ -108,14 +108,14 @@ lemma B_congr_binary_inter_left {y : bSet 𝔹} : B_congr (λ x, x ∩ᴮ y) :=
 begin
   intros x₁ x₂ Γ H_eq, dsimp, apply mem_ext;
     {bv_intro z, bv_imp_intro H_mem, simp[binary_inter_mem_iff] at *,
-    cases H_mem, exact ⟨by bv_cc, ‹_›⟩}
+    cases H_mem, exact ⟨by bv_cc, ‹_›⟩ }
 end
 
 lemma B_congr_binary_inter_right {y : bSet 𝔹} : B_congr (λ x, y ∩ᴮ x) :=
 begin
   intros x₁ x₂ Γ H_eq, dsimp, apply mem_ext;
     {bv_intro z, bv_imp_intro H_mem, simp[binary_inter_mem_iff] at *,
-    cases H_mem, exact ⟨‹_›, by bv_cc⟩}
+    cases H_mem, exact ⟨‹_›, by bv_cc⟩ }
 end
 
 lemma binary_inter_subset_left {x y : bSet 𝔹} {Γ} : Γ ≤ x ∩ᴮ y ⊆ᴮ x :=
@@ -772,16 +772,36 @@ end
 lemma injects_into_trans {x y z} {Γ : 𝔹} (H₁ : Γ ≤ injects_into x y) (H₂ : Γ ≤ injects_into y z): Γ ≤ injects_into x z :=
 sorry
 
-lemma AE_of_check_func_check (x y : pSet.{u}) {f : bSet 𝔹} {Γ : 𝔹}
-  (H : Γ ≤ is_func' (x̌) (y̌) f) (h_nonzero : ⊥ < Γ) :
-  ∀ i : x.type, ∃ j : y.type, ⊥ < (is_func' (x̌) (y̌) f) ⊓ (pair ((x.func i)̌ ) ((y.func j)̌ )) ∈ᴮ f :=
+lemma AE_of_check_func_check₀ (x y : pSet.{u}) {f : bSet 𝔹} {Γ : 𝔹}
+  (H : Γ ≤ is_func' (x̌) (y̌) f) (H_nonzero : ⊥ < Γ) :
+  ∀ (i : x.type),
+    ∃ (j : y.type),
+      ⊥ < (is_func' (x̌) (y̌) f) ⊓ (pair ((x.func i)̌ ) ((y.func j)̌ )) ∈ᴮ f :=
 begin
-  intro i, have := is_total_of_is_func' H ((x.func i)̌ ) (by simp),
+    intro i, have := is_total_of_is_func' H ((x.func i)̌ ) (by simp),
   have H' : Γ ≤ (is_func' (x̌) (y̌) f) ⊓ ⨆ w, w ∈ᴮ (y̌) ⊓ pair (x.func i)̌  w ∈ᴮ f ,
     by exact le_inf ‹_› ‹_›,
   rw[<-bounded_exists] at H', swap, {change B_ext _, exact B_ext_pair_mem_right},
-  replace H' := lt_of_lt_of_le h_nonzero H', rw[inf_supr_eq] at H',
+  replace H' := lt_of_lt_of_le H_nonzero H', rw[inf_supr_eq] at H',
   cases y, dsimp at H', simp only [top_inf_eq] at H', exact (nonzero_wit H')
+end
+
+lemma AE_of_check_func_check (x y : pSet.{u}) {f : bSet 𝔹} {Γ : 𝔹}
+  (H : Γ ≤ is_func' (x̌) (y̌) f) (H_nonzero : ⊥ < Γ) :
+  Π (i : x.type),
+    ∃ (j : y.type ) (Γ' : 𝔹) (H_nonzero' : ⊥ < Γ') (H_le : Γ' ≤ Γ),
+      Γ' ≤ (is_func' (x̌) (y̌) f) ∧ Γ' ≤ (pair ((x.func i)̌ ) ((y.func j)̌ )) ∈ᴮ f :=
+begin
+    intro i, have := is_total_of_is_func' H ((x.func i)̌ ) (by simp),
+  have H' : Γ ≤ (is_func' (x̌) (y̌) f) ⊓ ⨆ w, w ∈ᴮ (y̌) ⊓ pair (x.func i)̌  w ∈ᴮ f ,
+    by exact le_inf ‹_› ‹_›,
+  rw[<-bounded_exists] at H', swap, {change B_ext _, exact B_ext_pair_mem_right},
+  rw[inf_supr_eq] at H',
+  cases y, dsimp at H', simp only [top_inf_eq] at H',
+  have := nonzero_wit' H_nonzero H', cases this with j Hj,
+  use j, use is_func' x̌  (mk y_α (λ (a : y_α), (y_A a)̌ ) (λ (a : y_α), ⊤)) f ⊓
+        pair (pSet.func x i)̌  (y_A j)̌  ∈ᴮ f ⊓ Γ,
+  use ‹_›, refine ⟨inf_le_right,⟨_,_⟩⟩; tidy_context
 end
 
 -- TODO(jesse): have specialize_context optionally not replace obsolete hypotheses, only note the updated versions
@@ -1429,7 +1449,6 @@ lemma aleph_one_check_sub_aleph_one {Γ : 𝔹} : Γ ≤ (pSet.card_ex (aleph 1)
 lemma aleph_one_satisfies_universal_property {Γ : 𝔹} : Γ ≤ aleph_one_weak_universal_property (aleph_one) := sorry
 
 lemma aleph_one_satisfies_Ord_spec {Γ : 𝔹} : Γ ≤ aleph_one_Ord_spec (aleph_one) := sorry
-
 
 -- TODO(jesse) prove this using regularity
 -- lemma aleph_one_exists {Γ} : Γ ≤ ⨆(x : bSet 𝔹), aleph_one_spec_internal x := sorry

@@ -545,6 +545,7 @@ poset_yoneda_inv Γ subset_trans $ le_inf ‹_› ‹_›
 --   apply subset_trans
 -- end
 
+-- TODO(jesse): mark this as simp
 lemma mem_of_mem_subset {x y z : bSet 𝔹} {Γ} (H₂ : Γ ≤ y ⊆ᴮ z) (H₁ : Γ ≤ x ∈ᴮ y) : Γ ≤ x ∈ᴮ z :=
 by {rw[subset_unfold'] at H₂, from H₂ x ‹_›}
 

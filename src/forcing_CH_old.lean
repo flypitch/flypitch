@@ -163,7 +163,7 @@ lemma rel_of_array_is_func'  (x y : bSet 𝔹) (af : x.type → y.type → 𝔹)
   (H_anti : ∀ i, (∀ j₁ j₂, j₁ ≠ j₂ → af i j₁ ⊓ af i j₂ ≤ ⊥))
   (H_inj  : ∀ i₁ i₂, ⊥ < (func x i₁) =ᴮ (func x i₂) → i₁ = i₂)
   {Γ}
-  : Γ ≤ is_func( x y (rel_of_array x y af) :=
+  : Γ ≤ is_func' x y (rel_of_array x y af) :=
 begin
   refine le_inf (by apply rel_of_array_extensional; assumption) _, rw bSet.is_total,
   rw[<-bounded_forall], bv_intro i_x, bv_imp_intro Hi_x, rw[<-bounded_exists],

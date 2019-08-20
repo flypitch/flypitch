@@ -358,7 +358,7 @@ def χ (ν : (ℵ₂̌  : bSet 𝔹).type) : ℕ → 𝔹 :=
 
 /-- `cohen_real.mk ν` is the subset of (ω : bSet 𝔹) induced by `cohen_real.χ ν` -/
 def mk (ν : (ℵ₂̌  : bSet 𝔹).type) : bSet 𝔹 :=
-  @set_of_indicator 𝔹 _ omega $ λ n, χ ν n.down
+  @bSet.set_of_indicator 𝔹 _ omega $ λ n, χ ν n.down
 
 @[simp, cleanup]lemma mk_type {ν} : (mk ν).type = ulift ℕ := rfl
 
