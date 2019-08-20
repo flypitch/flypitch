@@ -1066,8 +1066,8 @@ instance infi_to_pi {ι β} [complete_boolean_algebra β] {Γ : β} {ϕ : ι →
 { F := λ x, Π i : ι, Γ ≤ ϕ i,
   coe := λ H₁ i, by {change Γ ≤ ϕ i, change Γ ≤ _ at H₁, finish}}
 
-lemma bv_em {β : Type*} [boolean_algebra β] (Γ) (b : β) :
-  Γ ≤ b ⊔ -b := by simp
+-- lemma bv_em {β : Type*} [boolean_algebra β] (Γ) (b : β) :
+--   Γ ≤ b ⊔ -b := by simp
 
 lemma bv_absurd {β} [boolean_algebra β] {Γ : β} (b : β) (H₁ : Γ ≤ b) (H₂ : Γ ≤ -b) : Γ ≤ ⊥ :=
 @le_trans _ _ _ (b ⊓ -b) _ (le_inf ‹_› ‹_›) (by simp)

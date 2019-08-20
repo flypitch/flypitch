@@ -2160,15 +2160,15 @@ lemma regularity_aux (x : bSet 𝔹) {Γ : 𝔹} : Γ ≤ ⨅u, x ∈ᴮ u ⟹ �
 begin
   apply bSet.rec_on' x, clear x, intros x IH,
     bv_intro u, bv_imp_intro,
-    have := bv_em Γ_1 (⨅z', z' ∈ᴮ u ⟹ (-(z' ∈ᴮ x))),
+    have := bv_em_aux Γ_1 (⨅z', z' ∈ᴮ u ⟹ (-(z' ∈ᴮ x))),
     bv_or_elim_at this, apply bv_use x, from le_inf ‹_› ‹_›,
-    rw[neg_infi] at H_right, bv_cases_at H_right x_a,
-    rw[neg_imp] at H_right_1, bv_split,
-    rw[lattice.neg_neg] at H_right_1_right,
-    rw[mem_unfold] at H_right_1_right, bv_cases_at H_right_1_right a,
+    rw[neg_infi] at this.right, bv_cases_at this.right x_a,
+    rw[neg_imp] at this.right_1, bv_split,
+    rw[lattice.neg_neg] at this.right_1_right,
+    rw[mem_unfold] at this.right_1_right, bv_cases_at this.right_1_right a,
     bv_split, have H_in : Γ_4 ≤ (func x a) ∈ᴮ u,
-    rw[bv_eq_symm] at H_right_1_right_1_right,
-    apply @bv_rw' 𝔹 _ _ _ _  H_right_1_right_1_right (λ z, z ∈ᴮ u) (by simp) _, from ‹_›,
+    rw[bv_eq_symm] at this.right_1_right_1_right,
+    apply @bv_rw' 𝔹 _ _ _ _  this.right_1_right_1_right (λ z, z ∈ᴮ u) (by simp) _, from ‹_›,
     from (le_trans (by {dsimp*, simp[inf_le_right_of_le]} : Γ_4 ≤ Γ) (IH a u)) ‹_›
 end
 

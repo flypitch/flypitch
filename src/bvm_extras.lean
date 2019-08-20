@@ -134,7 +134,7 @@ lemma unordered_pair_symm (x y : bSet 𝔹) {Γ : 𝔹} : Γ ≤ {x,y} =ᴮ {y,x
 begin
   apply mem_ext; unfold has_insert.insert bSet.insert1; bv_intro; bv_imp_intro;
   {simp at *, bv_or_elim_at H, apply le_sup_right_of_le, apply mem_singleton_of_eq,
-  from bv_symm H_left, apply le_sup_left_of_le, rw[bv_eq_symm], apply eq_of_mem_singleton,
+  from bv_symm H.left, apply le_sup_left_of_le, rw[bv_eq_symm], apply eq_of_mem_singleton,
   from ‹_›}
 end
 
@@ -157,7 +157,7 @@ end
 lemma succ_eq_binary_union {x : bSet 𝔹} {Γ} : Γ ≤ succ x =ᴮ binary_union {x} x :=
 begin
   simp[succ, binary_union], apply mem_ext,
-  {bv_intro z, simp, bv_imp_intro, bv_or_elim_at H, apply bv_rw' H_left, simp,
+  {bv_intro z, simp, bv_imp_intro, bv_or_elim_at H, apply bv_rw' H.left, simp,
    apply (bv_union_spec_split _ x).mpr, apply bv_use ({x} : bSet 𝔹),
    refine le_inf _ (le_trans (le_top) mem_singleton), change _ ≤ _ ∈ᴮ insert _ _,
    simp, apply le_sup_right_of_le, from le_trans (le_top) mem_singleton,
@@ -166,7 +166,7 @@ begin
   {bv_intro z, simp, bv_imp_intro, rw[bv_union_spec_split] at H, bv_cases_at H y,
    bv_split, change Γ_2 ≤ _ ∈ᴮ insert _ _ at H_1_left,
    simp at H_1_left, bv_or_elim_at H_1_left, apply le_sup_right_of_le,
-   apply bv_rw' (bv_symm H_left), simp, from ‹_›,
+   apply bv_rw' (bv_symm ‹_›), simp, from ‹_›,
    apply le_sup_left_of_le,
    have : Γ_3 ≤ {x} =ᴮ y, apply eq_of_mem_singleton, from ‹_›,
    suffices : Γ_3 ≤ z ∈ᴮ {x}, rw[bv_eq_symm], apply eq_of_mem_singleton,
@@ -430,6 +430,23 @@ end
 @[reducible]def is_total (x y f : bSet 𝔹) : 𝔹 :=
 (⨅w₁, w₁ ∈ᴮ x ⟹ ⨆w₂, w₂ ∈ᴮ y ⊓ pair w₁ w₂ ∈ᴮ f)
 
+-- bounded version of is_total
+@[reducible]def is_total' (x y f : bSet 𝔹) : 𝔹 :=
+(⨅ i, x.bval i ⟹ ⨆j, y.bval j ⊓ pair (x.func i) (y.func j) ∈ᴮ f)
+
+-- TODO(jesse): finish this (and try to automate the congruence lemmas)
+lemma is_total_iff_is_total' {Γ : 𝔹} {x y f} : Γ ≤ is_total x y f ↔ Γ ≤ is_total' x y f :=
+begin
+  unfold is_total, rw ←bounded_forall,
+  swap, {sorry},
+  refine ⟨_,_⟩; intro H,
+    { bv_intro i, bv_imp_intro Hi, replace H := H i Hi,
+      rw ←bounded_exists at H, swap, {sorry}, from ‹_› },
+    { bv_intro i, bv_imp_intro Hi, replace H := H i Hi,
+       rw ←bounded_exists, swap, {sorry}, from ‹_› }
+end
+
+
 @[simp]lemma is_total_subset_of_is_total {S x y f : bSet 𝔹} {Γ} (H_is_total : Γ ≤ is_total x y f) (H_subset : Γ ≤ S ⊆ᴮ x) : Γ ≤ is_total S y f :=
 by {simp*, intro z, bv_imp_intro Hz, from H_is_total z (mem_of_mem_subset ‹_› ‹_›)}
 
@@ -494,7 +511,7 @@ end
 
 /-- f is a function x → y if it is extensional, total, and is a subset of the product of x and y -/
 @[reducible]def is_function (x y f : bSet 𝔹) : 𝔹 :=
-  is_func f ⊓ (⨅w₁, w₁ ∈ᴮ x ⟹ ⨆w₂, w₂ ∈ᴮ y ⊓ pair w₁ w₂ ∈ᴮ f) ⊓ (f ⊆ᴮ prod x y)
+  is_func' x y f ⊓ (f ⊆ᴮ prod x y)
 
 def function_of_func' {x y f : bSet 𝔹} {Γ} (H_is_func' : Γ ≤ is_func' x y f) : bSet 𝔹 :=
 f ∩ᴮ (prod x y)
@@ -554,7 +571,6 @@ lemma surjects_onto_of_larger_than_and_exists_mem
 begin
   sorry
 end
-
 
 section 
 parameter {Γ : 𝔹}
@@ -888,20 +904,70 @@ end
 --     { sorry }
 -- end
 
-/-- f is an injective function on x if it is a function and for every w₁ and w₂ ∈ x, if there exist v₁ and v₂ such that (w₁, v₁) ∈ f and (w₂, v₂) ∈ f,
-  then v₁ = v₂ implies  w₁ = w₂ -/
+-- /-- f is an injective function on x if it is a function and for every w₁ and w₂ ∈ x, if there exist v₁ and v₂ such that (w₁, v₁) ∈ f and (w₂, v₂) ∈ f,
+--   then v₁ = v₂ implies  w₁ = w₂ -/
 -- def is_inj_func (x y) (f : bSet 𝔹) : 𝔹 :=
 --   is_func x y f ⊓ (⨅w₁ w₂, w₁ ∈ᴮ x ⊓ w₂ ∈ᴮ x ⟹
 --     (⨆v₁ v₂, (pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⊓ v₁ =ᴮ v₂ ⟹ w₁ =ᴮ w₂)))
 
-def function.mk'
-  {x y : bSet 𝔹}
-  (F : x.type → y.type)
-  (χ : x.type → 𝔹)
-  (H_ext : ∀ i j {Γ}, Γ ≤ x.func i =ᴮ x.func j → Γ ≤ y.func (F i) =ᴮ y.func (F j))
-  : bSet 𝔹
-:=
+section function_mk'
+variables   {x y : bSet 𝔹}
+            (F : x.type → y.type)
+            (χ : x.type → 𝔹)
+            (H_ext : ∀ i j {Γ}, Γ ≤ x.func i =ᴮ x.func j → Γ ≤ y.func (F i) =ᴮ y.func (F j))
+            (H_mem : ∀ i {Γ}, Γ ≤ x.bval i → Γ ≤ y.bval (F i) ∧ Γ ≤ χ i)
+
+include H_ext H_mem
+def function.mk' : bSet 𝔹 :=
 subset.mk (λ pr : (prod x y).type, χ pr.1 ⊓ y.func pr.2 =ᴮ y.func (F pr.1))
+
+@[simp, cleanup]lemma function.mk'_type
+  : (function.mk' F χ H_ext H_mem).type = (prod x y).type := by refl
+
+@[simp, cleanup]lemma function.mk'_func {pr}
+  : (function.mk' F χ H_ext H_mem).func pr = (prod x y).func pr := by refl
+
+@[simp, cleanup]lemma function.mk'_bval {pr}
+  : (function.mk' F χ H_ext H_mem).bval pr = χ pr.1 ⊓
+      y.func pr.2 =ᴮ y.func (F pr.1) ⊓ (prod x y).bval pr := by refl
+
+@[simp, cleanup]lemma function.mk'_type_forall {ϕ : (function.mk' F χ H_ext H_mem).type → 𝔹} :
+  (⨅(z: (function.mk' F χ H_ext H_mem).type), ϕ z) = ⨅(z : (prod x y).type), ϕ z :=
+by refl
+
+lemma function.mk'_is_func {Γ} : Γ ≤ is_func (function.mk' F χ H_ext H_mem) :=
+begin
+  bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂, bv_imp_intro H, bv_imp_intro H_eq,
+  bv_split_at H, rw[mem_unfold] at H_left H_right,
+  bv_cases_at H_left pr₁ Hpr₁, bv_cases_at H_right pr₂ Hpr₂,
+  cases pr₁ with i j, cases pr₂ with i' j', simp at *, repeat{auto_cases},
+  rw[pair_eq_pair_iff] at Hpr₁_right Hpr₂_right, auto_cases, -- floris, don't look at the tactic state
+  have := @H_ext i i' Γ_4 (by bv_cc), bv_cc -- TODO(jesse): 𝔹-valued eblast?
+end
+
+lemma function.mk'_is_total {Γ} : Γ ≤ is_total x y (function.mk' F χ H_ext H_mem) :=
+begin
+  rw is_total_iff_is_total', bv_intro i, bv_imp_intro Hi,
+  apply bv_use (F i), rw[mem_unfold,inf_supr_eq],
+  apply bv_use (i, (F i)), simp*
+end
+
+lemma function.mk'_is_subset {Γ} : Γ ≤ (function.mk' F χ H_ext H_mem) ⊆ᴮ prod x y :=
+begin
+  rw[subset_unfold], simp only with cleanup, bv_intro pr, cases pr with i j, dsimp,
+  bv_imp_intro H_bval, apply bv_use (i,j), simp [le_inf_iff] at *, tidy
+end
+
+lemma function.mk'_is_function {Γ} : Γ ≤ is_function x y (function.mk' F χ H_ext H_mem) :=
+begin
+  refine le_inf (le_inf _ _) _,
+    { apply function.mk'_is_func },
+    { apply function.mk'_is_total },
+    { apply function.mk'_is_subset },
+end
+
+
+end function_mk'
 
 def function.mk {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : bSet 𝔹 :=
 ⟨u.type, λ a, pair (u.func a) (F a), u.bval⟩
@@ -1215,11 +1281,11 @@ begin
   bv_imp_elim_at a_left_left_left_right_2 ‹_›, rw[subset_unfold'] at H_3,
   bv_specialize_at H_3 z, bv_imp_elim_at H_3_1 ‹_›, bv_mp a_left_left_left_left (epsilon_dichotomy x y z),
   bv_imp_elim_at a_left_left_left_left_1 ‹_›, bv_imp_elim_at H_5 ‹_›, bv_or_elim_at H_6, swap, assumption,
-  bv_or_elim_at H_left,
+  bv_or_elim_at H_6.left,
   bv_exfalso, suffices : Γ_2 ≤ y ∈ᴮ w ⊓ w ∈ᴮ y,
     have : Γ_2 ≤ _ := le_trans (le_top) (bot_of_mem_mem y w),
     bv_imp_elim_at this ‹_›, assumption,
-  apply le_inf, swap, assumption, apply bv_rw' H_left_1, simp,
+  apply le_inf, swap, assumption, apply bv_rw' H_6.left.left, simp,
   assumption,
 
   bv_exfalso,
@@ -1255,7 +1321,7 @@ begin
     by {specialize a_left_left_left_right z, bv_to_pi', from a_left_left_left_right ‹_›},
   rename a_left_left_left_left_left H,
   replace H := H ‹_› z ‹_›,
-  bv_or_elim_at H, bv_or_elim_at H_left,
+  bv_or_elim_at H, bv_or_elim_at H.left,
   apply le_sup_left_of_le, apply le_sup_left_of_le, bv_split_goal,
   apply le_sup_right_of_le, assumption,
   apply le_sup_left_of_le, apply le_sup_right_of_le, assumption},
