@@ -919,4 +919,14 @@ def functions (x y : pSet.{u}) : pSet.{u} := -- TODO(jesse): show this satisfies
 lemma mem_functions_iff {x y : pSet.{u}} (z : pSet.{u}) : z ∈ functions x y ↔ is_func x y z :=
 sorry
 
+@[simp]lemma zero_lt_omega : 0 < ordinal.omega := omega_pos
+
+@[simp]lemma card_ex_aleph_exists_mem {n : ℕ} : ∃ z, z ∈ card_ex (aleph n) :=
+begin
+  use (card_ex 0), unfold card_ex, apply mk_mem_mk_of_lt,
+  induction n with n ih,
+    { simp },
+    { from lt_trans ih (by {simp, sorry}) }
+end
+
 end pSet

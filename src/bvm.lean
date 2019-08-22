@@ -1456,6 +1456,9 @@ by {apply top_unique, rw[<-H_top], apply mem.mk'}
 @[simp]lemma check_mem_top {x : pSet} {i : (x̌ : bSet 𝔹).type} : (x̌).func i ∈ᴮ x̌ = ⊤ :=
 by simp
 
+/--
+TODO(jesse): this name should really belong to check_mem instead
+-/
 @[simp]lemma mem_check_of_mem {x : pSet} {i : x.type} {Γ : 𝔹} : Γ ≤ ((x.func i) ̌) ∈ᴮ (x̌) :=
 begin
   rw[mem_unfold], apply bv_use (check_cast.symm i),
@@ -1657,15 +1660,27 @@ bot_lt_resolve_right H_nonzero (instantiate_existential_over_check_spec ‹_› 
 
 /--
   This corresponds to Property 4 in Moore's The method of forcing
--/
+-/ 
+
+-- we really need the stronger version
 lemma eq_check_of_mem_check {Γ : 𝔹} (h_nonzero : ⊥ < Γ) (x : pSet.{u}) (y : bSet 𝔹) (H_mem : Γ ≤ y ∈ᴮ x̌) :
+  ∃ (i : x.type) (Γ' : 𝔹) (H_nonzero : ⊥ < Γ') (H_le : Γ' ≤ Γ), Γ' ≤ y =ᴮ (x.func i)̌  :=
+begin
+  let ϕ : bSet 𝔹 → 𝔹 := λ z, y =ᴮ z,
+  let H_congr : B_ext ϕ := (by simp),
+  have H_ex : Γ ≤ ⨆ (y : bSet 𝔹), y ∈ᴮ x̌  ⊓ ϕ y,
+    by {apply bv_use y, from le_inf ‹_› bv_refl},
+  let i : x.type := instantiate_existential_over_check H_congr x ‹_› H_ex,
+    refine  ⟨i,y =ᴮ (x.func i)̌  ⊓ Γ,_,inf_le_right,inf_le_left⟩,
+    { exact instantiate_existential_over_check_spec H_congr _ ‹_› H_ex }
+end
+
+lemma eq_check_of_mem_check₂ {Γ : 𝔹} (h_nonzero : ⊥ < Γ) (x : pSet.{u}) (y : bSet 𝔹) (H_mem : Γ ≤ y ∈ᴮ x̌) :
   ∃ i : x.type, ⊥ < y =ᴮ (x.func i)̌  :=
   -- ∃ Γ' (H_le : Γ' ≤ Γ) (z) (H_mem : z ∈ x), (Γ' ≤ y =ᴮ ž) :=
 begin
-  refine ⟨_,_⟩,
-    { refine instantiate_existential_over_check _ x ‹_› _,
-      exact λ z, y =ᴮ z, simp, apply bv_use y, exact le_inf ‹_› bv_refl },
-    { apply instantiate_existential_over_check_spec₂ }
+  rcases (eq_check_of_mem_check ‹_› x y ‹_›) with ⟨i, Γ', HΓ'₁, HΓ'₂, HΓ'₃⟩,
+  use i, from lt_of_lt_of_le HΓ'₁ ‹_›
 end
 
 end check_names

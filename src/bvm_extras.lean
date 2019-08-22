@@ -402,13 +402,14 @@ begin
   exact H_sub (pair w₁ v₁) ‹_›, exact H_sub (pair w₂ v₂) ‹_›
 end
 
-lemma check_is_func {g : pSet} (H_ext : pSet.is_extensional g) {Γ : 𝔹} : Γ ≤ is_func (ǧ) :=
-begin
-  unfold pSet.is_extensional at H_ext, unfold is_func,
-  bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂,
-  bv_imp_intro H, bv_split, bv_imp_intro H_eq,
-  sorry
-end
+-- lemma check_is_func {g : pSet} (H_ext : pSet.is_extensional g) {Γ : 𝔹} : Γ ≤ is_func (ǧ) :=
+-- begin
+--   unfold pSet.is_extensional at H_ext, unfold is_func,
+--   bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂,
+--   bv_imp_intro H, bv_split, bv_imp_intro H_eq,
+--   sorry
+-- end
+
 
 /-- f is a functional relation if for every z ∈ x, if there exists a w ∈ y such that (z,w) ∈ f, then for every w' ∈ y such that (z,w') ∈ f, w' =ᴮ w -/
 -- @[reducible] def is_functional (x y f : bSet 𝔹) : 𝔹 :=
@@ -796,6 +797,21 @@ end
 
 end surjects_onto_of_larger_than
 
+lemma exists_surjection_of_surjects_onto {x y : bSet 𝔹} {Γ} (H_surj : Γ ≤ surjects_onto x y)
+  : Γ ≤ ⨆ f, is_function x y f ⊓ is_surj x y f := sorry
+
+lemma check_is_func {x y f : pSet.{u}} : pSet.is_func x y f ↔ ∀{Γ : 𝔹}, Γ ≤ is_function x̌ y̌ f̌   := sorry
+
+lemma check_not_is_func {x y f : pSet.{u}} : ¬ pSet.is_func x y f ↔ ((is_function x̌ y̌ f̌) ≤ (⊥ : 𝔹)) := sorry
+
+lemma check_is_surj {x y f : pSet.{u}} : pSet.is_surj x y f ↔ ∀{Γ : 𝔹}, Γ ≤ is_surj x̌ y̌ f̌   := sorry
+
+lemma check_not_is_surj {x y f : pSet.{u}} : ¬ pSet.is_surj x y f ↔ is_surj x̌ y̌ f̌ ≤ (⊥ : 𝔹) := sorry
+
+lemma bot_lt_of_true {b : 𝔹} (H : ∀ {Γ}, Γ ≤ b) : ⊥ < b :=
+begin
+  sorry
+end
 
 
 section 

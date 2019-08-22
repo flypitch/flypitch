@@ -724,6 +724,9 @@ by {rw[sup_comm], conv{to_rhs, simp[sup_comm]}, apply sup_infi_eq}
 lemma bot_lt_iff_not_le_bot {α} [bounded_lattice α] {a : α} : ⊥ < a ↔ (¬ a ≤ ⊥) :=
 by rw[le_bot_iff]; exact bot_lt_iff_ne_bot
 
+lemma false_of_bot_lt_and_le_bot {α} [bounded_lattice α] {a : α} (H_lt : ⊥ < a) (H_le : a ≤ ⊥) : false :=
+absurd H_le (bot_lt_iff_not_le_bot.mp ‹_›)
+
 lemma lt_top_iff_not_top_le {α} [bounded_lattice α] {a : α} : a < ⊤ ↔ (¬ ⊤ ≤ a) :=
 by rw[top_le_iff]; exact lt_top_iff_ne_top
 

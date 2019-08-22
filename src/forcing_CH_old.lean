@@ -16,7 +16,7 @@ local infix `≺`:70 := (λ x y, -(larger_than x y))
 
 local infix `≼`:70 := (λ x y, injects_into x y)
 
-@[reducible]private noncomputable definition ℵ₁ : pSet := (card_ex $ aleph 1)
+@[reducible]private noncomputable definition ℵ₁ : pSet.{u} := (card_ex $ aleph 1)
 
 local notation `ω` := (bSet.omega)
 
@@ -29,7 +29,7 @@ variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 /-- Corresponds to proposition 5.2 in Moore's 'the method of forcing':
 Let x be a set and let ϕ(v) be a formula in the forcing language. If ∀ y ∈ x, p ⊩ ϕ(y̌), then p ⊩ ∀ y ∈ (x̌), ϕ(y)
 -/
-lemma check_forall (x : pSet) (ϕ : bSet 𝔹 → 𝔹) {h : B_ext ϕ} {b : 𝔹} :
+lemma check_forall (x : pSet.{u}) (ϕ : bSet 𝔹 → 𝔹) {h : B_ext ϕ} {b : 𝔹} :
   (∀ (y : x.type), b ≤ ϕ((x.func y)̌ )) → (b ≤ (⨅(y : x.type), ϕ((x.func y)̌ ))) :=
 λ H, le_infi ‹_›
 
@@ -195,7 +195,10 @@ local attribute [instance, priority 9001] collapse_space
 
 open collapse_poset
 
-local notation `𝔹` := collapse_algebra ((ℵ₁ : pSet).type) (powerset omega : pSet).type
+local notation `𝔹` := collapse_algebra ((ℵ₁ : pSet.{u}).type) (powerset omega : pSet).type
+
+-- TODO(floris)
+lemma 𝔹_omega_closed : omega_closed 𝔹 := sorry
 
 lemma π_χ_regular (p : type (card_ex (aleph 1)) × (powerset omega).type) : @topological_space.is_regular _ collapse_space {g : type (card_ex (aleph 1)) → type (powerset omega) | g (p.fst) = p.snd} :=
 by simp
@@ -207,7 +210,7 @@ private lemma eq₀ : ((ℵ₁)̌  : bSet 𝔹).type = (ℵ₁).type := by simp
 
 private lemma eq₀' : ((powerset omega)̌  : bSet.{u} 𝔹).type = (powerset omega).type := by simp
 
-private lemma eq₁ : (((ℵ₁)̌  : bSet 𝔹).type × ((powerset omega)̌  : bSet 𝔹).type) = ((ℵ₁ .type) × (powerset omega).type) := by simp
+private lemma eq₁ : (((ℵ₁)̌  : bSet 𝔹).type × ((powerset omega)̌  : bSet 𝔹).type) = (((ℵ₁ : pSet.{u}) .type) × (powerset omega : pSet.{u}).type) := by simp
 
 -- lemma aleph_one_type_uncountable' : (aleph 0) < # ℵ₁.type :=
 -- by simp only [succ_le, cardinal.aleph_zero, pSet.omega_lt_aleph_one, pSet.mk_type_mk_eq''']
@@ -330,41 +333,47 @@ If q ∈ P satisfies q ≤ pᵢ for all i (i.e. is a witness to the ω-closed as
 and g is the function attached to the collection of pairs (i, y_i), show that q ⊩ f = ǧ.
 -/
 
---TODO(jesse) finish this
--- lemma function_reflect_aux {y : pSet} (g : bSet 𝔹) (H : Γ ≤ is_func' (ω) (y̌))
+-- lemma distributive {x : pSet.{u}} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) (af : pSet.omega.type → x.type → 𝔹) :
+--    ⨅ i : pSet.omega.type, (⨆ j : x.type, af i j) = ⨆(f : pSet.omega.type → x.type), ⨅(i : pSet.omega.type), af i (f i)
+--  := sorry
 
--- def 𝔹 := collapse_algebra ((ℵ₁ : pSet).type) (powerset omega : pSet).type
+-- lemma pSet.func_eq_of_inj {x : pSet.{u}} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) : sorry := sorry
 
--- instance 𝔹_nonempty : nonempty (type ℵ₁ → type (powerset omega)) := sorry
-
--- @[instance, priority 9001] def 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 :=
--- regular_open_algebra $ by apply_instance
-
--- local attribute [irreducible] 𝔹
-
-lemma distributive {x : pSet} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) (af : pSet.omega.type → x.type → 𝔹) :
-   ⨅ i : pSet.omega.type, (⨆ j : x.type, af i j) = ⨆(f : pSet.omega.type → x.type), ⨅(i : pSet.omega.type), af i (f i)
- := sorry
-
-lemma functions_eq {x : pSet} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) : sorry := sorry
-
--- TODO: needs to be fixed to accept an arbitrary subset of ω
-def function_reflect (y : pSet) (g : bSet 𝔹) {Γ} (H : Γ ≤  (is_function (ω) (y̌) g)) : pSet :=
-mk (ulift ℕ) (λ k, sorry)
-
--- TODO: needs to be fixed to accept an arbitrary subset of ω
-lemma function_reflect_spec₁ {y} {g} {Γ : 𝔹} (H : Γ ≤ _) : Γ ≤ (function_reflect y g H)̌  =ᴮ g :=
-sorry
-
--- TODO: needs to be fixed to accept an arbitrary subset of ω
-lemma function_reflect_spec₂ {y} {g} {Γ : 𝔹} (H : Γ ≤ _) : is_func pSet.omega y (function_reflect y g H) :=
-sorry
-
--- TODO: needs to be fixed to accept an arbitrary subset of ω
-lemma function_reflect_surj_of_surj {g} {y} {Γ : 𝔹} (H : Γ ≤ _) (H_not_zero : ⊥ < Γ) (H_surj : Γ ≤ is_surj ((omega)̌ ) (y̌) (g : bSet 𝔹)) :
-  pSet.is_surj ((omega)) y (function_reflect y g H) :=
-sorry -- TODO(jesse) this should be easy because surjectivity is Δ₀, so prove a general lemma for this
-
+lemma surjection_reflect {Γ : 𝔹} (H_bot_lt : ⊥ < Γ) (H_surj : Γ ≤ surjects_onto ω ℵ₁̌ )
+: ∃ (f : pSet.{u}), is_func omega (ordinal.mk (ord (aleph 1))) f
+   ∧ is_surj pSet.omega (card_ex $ aleph 1) f :=
+begin
+  by_contra H, simp only [not_exists, not_and_distrib] at H,
+  suffices this : Γ ≤ ⊥,
+    by {rw[bot_lt_iff_not_le_bot] at H_bot_lt, contradiction},
+  replace H_surj := exists_surjection_of_surjects_onto H_surj,
+  bv_cases_at H_surj f Hf, bv_split_at Hf,
+  rw[<-bSet.mem_functions_iff] at Hf_left,
+  suffices this : Γ_1 ≤ f ∈ᴮ (pSet.functions pSet.omega (ℵ₁))̌ ,
+    by { by_contra H', rw[<-bot_lt_iff_not_le_bot] at H',
+         replace this := eq_check_of_mem_check H' _ _ this,
+         rcases this with ⟨i_g, Γ', H₁,H₂,H₃⟩,
+         apply_at Hf_right le_trans H₂,
+         apply_at Hf_left le_trans H₂,
+         let g : pSet.{u} := (pSet.functions pSet.omega ℵ₁).func i_g,
+         specialize H g, cases H,
+           { apply_at H check_not_is_func.mp, rw[bSet.mem_functions_iff] at Hf_left,
+           tactic.rotate 1, from 𝔹, apply_instance,
+           apply_at H poset_yoneda_inv Γ',
+           refine false_of_bot_lt_and_le_bot H₁ (H _),
+           change Γ' ≤ f =ᴮ ǧ at H₃, apply_at H₃ bv_symm,
+           apply bv_rw' H₃, simp, from Hf_left },
+           { apply_at H check_not_is_surj.mp, 
+           tactic.rotate 1, from 𝔹, apply_instance,
+           apply_at H poset_yoneda_inv Γ',
+           refine false_of_bot_lt_and_le_bot H₁ (H _),
+           change Γ' ≤ f =ᴮ ǧ at H₃, apply_at H₃ bv_symm,
+           apply bv_rw' H₃, simp, from Hf_right}
+         },
+  have : Γ_1 ≤ _,
+    from check_functions_eq_functions_of_omega_closed (𝔹_omega_closed) ℵ₁,
+  bv_cc
+end
 
 lemma omega_lt_aleph_one {Γ : 𝔹} : Γ ≤ bSet.omega ≺ (ℵ₁̌ ) :=
 begin
@@ -374,15 +383,13 @@ begin
   intros f Hf, specialize_context Γ_2,
   simp only [le_inf_iff] at Hf, repeat{auto_cases}, by_contra H,
   replace H := (bot_lt_iff_not_le_bot.mpr H),
-  -- assuming we can reflect functions from a subset of omega to functions from a subset of omega, it is easy to extend them to omega in pSet
-  suffices : ∃ f : pSet, is_func pSet.omega (ordinal.mk (aleph 1).ord) f ∧ pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f,
-    by {exfalso, from ex_no_surj_omega_aleph_one ‹_›}, sorry
-  -- TODO(jesse): fix the definition of g
-  -- let g := (function_reflect (card_ex $ aleph 1) sorry sorry), use g,
-  -- refine ⟨_,_⟩,
-  --   { apply function_reflect_spec₂ },
-  --   { apply function_reflect_surj_of_surj,
-  --       from ‹_›, from (function_of_func'_surj_of_surj _ ‹_›) }
+  suffices : ∃ f : pSet.{u}, is_func pSet.omega (ordinal.mk (aleph 1).ord) f ∧ pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f,
+    by {exfalso, from ex_no_surj_omega_aleph_one ‹_›},
+  suffices : Γ_3 ≤ surjects_onto ω ℵ₁̌ ,
+    by {from surjection_reflect H this},
+  refine surjects_onto_of_larger_than_and_exists_mem ‹_› _,
+  simp only [show ℵ₁ = card_ex (aleph ↑1), by simp],
+  from check_exists_mem card_ex_aleph_exists_mem
 end
 
 lemma aleph_one_check_universal_property (Γ : 𝔹) : Γ ≤ aleph_one_weak_universal_property (ℵ₁̌  : bSet 𝔹) :=
