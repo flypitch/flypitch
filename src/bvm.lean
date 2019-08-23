@@ -2014,6 +2014,12 @@ lemma mem_subset.mk_iff {x : bSet 𝔹} {χ : x .type → 𝔹} {z : bSet 𝔹} 
   : Γ ≤ z ∈ᴮ subset.mk χ ↔ Γ ≤ ⨆ (i : x.type), z =ᴮ (x.func i) ⊓ (χ i ⊓ (x.bval i)) :=
 mem_set_of_indicator_iff $ by simp
 
+-- same as mem_subset.mk_iff, but with better ordering of terms on the RHS
+lemma mem_subset.mk_iff₂ {x : bSet 𝔹} {χ : x .type → 𝔹} {z : bSet 𝔹} {Γ : 𝔹}
+  : Γ ≤ z ∈ᴮ subset.mk χ ↔ Γ ≤ ⨆ (i : x.type), x.bval i ⊓ (z =ᴮ (x.func i) ⊓ χ i) :=
+by { rw mem_subset.mk_iff, congr' 3, ext, ac_refl }
+
+
 @[simp]lemma mem_of_mem_subset.mk {x : bSet 𝔹} {χ : x.type → 𝔹} {z} {Γ} (Hz : Γ ≤ z ∈ᴮ subset.mk χ) : Γ ≤ z ∈ᴮ x :=
 mem_of_mem_subset (subset.mk_subset) ‹_›
 
@@ -2329,6 +2335,34 @@ begin
   rw[bv_eq_symm] at claim_5, simp[claim_5.symm, bv_eq_trans]
 end
 end zorns_lemma
+
+section comprehension
+variables (ϕ : bSet 𝔹 → 𝔹) (x : bSet 𝔹) (H_congr : B_ext ϕ)
+
+include ϕ x H_congr
+/--
+For any ϕ and x, there is a subset y of x such that ∀ z, z ∈ y ↔ z ∈ x ∧ ϕ z
+-/
+lemma bSet_axiom_of_comprehension {Γ : 𝔹} : Γ ≤ ⨆ y, y ⊆ᴮ x ⊓ ⨅ z, z ∈ᴮ y ⇔ (z ∈ᴮ x ⊓ ϕ z) :=
+begin
+  let ψ : x.type → 𝔹 := λ i, ϕ (x.func i),
+  let y := subset.mk ψ,
+  apply bv_use y,
+  refine le_inf _ _,
+    { apply subset.mk_subset },
+    { bv_intro z, refine le_inf _ _,
+      { bv_imp_intro H, rw[mem_subset.mk_iff] at H, bv_cases_at H i Hi,
+        bv_split_at Hi, refine le_inf _ _,
+          { apply bv_rw' Hi_left, simp, apply mem.mk'', from bv_and.right Hi_right },
+          { apply bv_rw' Hi_left, simp*, from bv_and.left Hi_right },
+          },
+      { bv_imp_intro H, rw[mem_subset.mk_iff₂], dsimp [ψ], rw @bounded_exists _ _ _ (λ w, z =ᴮ w ⊓ ϕ w),
+        swap, {change B_ext _, simp* /- nice job, simp! -/ },
+        apply bv_use z, exact le_inf (bv_and.left ‹_›) (le_inf bv_refl $ bv_and.right ‹_›)}}
+end
+
+
+end comprehension
 
 -- /-- This is the abbreviated version of AC found at http://us.metamath.org/mpeuni/ac3.html
 --     It is provably equivalent over ZF to the usual formulation of AC
