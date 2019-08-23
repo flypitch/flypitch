@@ -33,12 +33,16 @@ lemma check_forall (x : pSet.{u}) (ϕ : bSet 𝔹 → 𝔹) {h : B_ext ϕ} {b : 
   (∀ (y : x.type), b ≤ ϕ((x.func y)̌ )) → (b ≤ (⨅(y : x.type), ϕ((x.func y)̌ ))) :=
 λ H, le_infi ‹_›
 
+-- TODO(jesse): move into extras
+lemma surjects_onto_of_injects_into {x y : bSet 𝔹} {Γ} (H_inj : Γ ≤ injects_into x y) : Γ ≤ surjects_onto y x := sorry
+
 lemma aleph_one_check_is_aleph_one_of_omega_lt {Γ : 𝔹} (H : Γ ≤ bSet.omega ≺ (ℵ₁)̌ ): Γ ≤ (ℵ₁̌ ) =ᴮ (aleph_one) :=
 begin
   refine subset_ext aleph_one_check_sub_aleph_one _,
   have := @aleph_one_satisfies_Ord_spec _ _ Γ, unfold aleph_one_Ord_spec at this,
-  bv_split, revert this_right, bv_split, intro this_right,
-  from this_right (ℵ₁ ̌) (by simp) ‹_›
+  bv_split, bv_split_at this_left,
+  refine this_right (ℵ₁ ̌) (by simp) _, dsimp at H, rw ←imp_bot at ⊢ H,
+  bv_imp_intro H', exact H (larger_than_of_surjects_onto $ surjects_onto_of_injects_into ‹_›)
 end
 
 theorem CH_true_aux

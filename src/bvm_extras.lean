@@ -517,6 +517,33 @@ end
 @[reducible]def is_function (x y f : bSet 𝔹) : 𝔹 :=
   is_func' x y f ⊓ (f ⊆ᴮ prod x y)
 
+lemma check_is_total {x y f : pSet.{u}} (H_total : pSet.is_total x y f)  {Γ : 𝔹} : Γ ≤ is_total x̌ y̌ f̌ :=
+begin
+  bv_intro z, bv_imp_intro Hz,
+  apply bv_by_contra, bv_imp_intro H,
+  classical, by_contra H_nonzero, rw ←bot_lt_iff_not_le_bot at H_nonzero,
+  rcases eq_check_of_mem_check ‹_› _ _ Hz with ⟨i, Γ', H₁, H₂, H₃⟩,
+  simp only with bv_push_neg at H,
+  rcases (H_total (x.func i) (by simp)) with ⟨b, Hb_mem, Hb_pair_mem⟩,
+  replace H := le_trans H₂ (H (b̌)), suffices this : Γ' ≤ ⊥, by {exact false_of_bot_lt_and_le_bot H₁ ‹_› },
+  bv_or_elim_at H,
+    { refine bv_absurd _ _ H.left, from check_mem ‹_› },
+    { have this : Γ_3 ≤ _ := check_mem Hb_pair_mem,
+      refine bv_absurd _ _ H.right,
+      apply bv_rw' H₃, from B_ext_pair_mem_left, change _ ≤ (λ w, w ∈ᴮ f̌) _,
+      apply bv_rw' (bv_symm check_pair), simp, from ‹_› }
+end
+
+lemma check_is_func {x y f : pSet.{u}} (H_func : pSet.is_func x y f) {Γ : 𝔹} : Γ ≤ is_function x̌ y̌ f̌ :=
+begin
+  refine le_inf (le_inf _ _) _,
+    { sorry }, -- this is annoying but doable
+    { from check_is_total (pSet.is_total_of_is_func ‹_›) },
+    {  apply bv_rw' (bv_symm check_prod), {simp},
+       from check_subset (pSet.subset_prod_of_is_func ‹_›) }
+end
+
+
 def function_of_func' {x y f : bSet 𝔹} {Γ} (H_is_func' : Γ ≤ is_func' x y f) : bSet 𝔹 :=
 f ∩ᴮ (prod x y)
 
@@ -529,6 +556,11 @@ lemma mem_function_of_func'_iff {x y f : bSet 𝔹} {Γ} {H_is_func' : Γ ≤ is
 
 @[reducible]def is_inj (f : bSet 𝔹) : 𝔹 :=
   ⨅w₁, ⨅ w₂, ⨅v₁, ⨅ v₂, (pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⊓ v₁ =ᴮ v₂) ⟹ w₁ =ᴮ w₂
+
+@[reducible]def is_injective_function (x y f : bSet 𝔹) : 𝔹 := is_function x y f ⊓ is_inj f
+
+lemma check_is_injective_function {x y f : pSet.{u}} (H_inj : pSet.is_injective_function x y f) {Γ : 𝔹}
+  : Γ ≤ bSet.is_injective_function x̌ y̌ f̌ := sorry
 
 @[simp]lemma eq_of_is_inj_of_eq {x y x' y' f : bSet 𝔹} {Γ : 𝔹} (H_is_inj : Γ ≤ is_inj f) (H_eq : Γ ≤ x' =ᴮ y')
   (H_mem₁ : Γ ≤ pair x x' ∈ᴮ f) (H_mem₂ : Γ ≤ pair y y' ∈ᴮ f) : Γ ≤ x =ᴮ y :=
@@ -800,6 +832,12 @@ end
 
 end surjects_onto_of_larger_than
 
+lemma larger_than_of_surjects_onto {x y : bSet 𝔹} {Γ} (H_surj : Γ ≤ surjects_onto x y) : Γ ≤ larger_than x y :=
+begin
+  apply bv_use x, unfold surjects_onto at H_surj, bv_cases_at H_surj f Hf,
+  apply bv_use f, from le_inf (le_inf (by simp) (bv_and.left ‹_›)) (bv_and.right ‹_›)
+end
+
 lemma exists_surjection_of_surjects_onto {x y : bSet 𝔹} {Γ} (H_surj : Γ ≤ surjects_onto x y)
   : Γ ≤ ⨆ f, is_function x y f ⊓ is_surj x y f := sorry
 
@@ -859,9 +897,7 @@ begin
 end
 
 lemma bot_lt_of_true {b : 𝔹} (H : ∀ {Γ}, Γ ≤ b) : ⊥ < b :=
-begin
-  sorry
-end
+by {specialize @H ⊤, rw top_le_iff at H, simp*}
 
 
 section 
@@ -1787,11 +1823,16 @@ check_mem $ pSet.of_nat_mem_of_lt H_lt
 lemma Ord_omega {Γ : 𝔹} : Γ ≤ Ord(omega) :=
 le_inf (check_ewo pSet.is_ewo_omega) (check_is_transitive pSet.is_transitive_omega)
 
-/-- ℵ₁ is defined as: the least ordinal which is larger than ω -/
+/-- ℵ₁ is defined as: the least ordinal which does not inject into ω -/
+-- @[reducible]def aleph_one_Ord_spec (x : bSet 𝔹) : 𝔹 :=
+--   (Ord x) ⊓
+--   (⨅y, (Ord(y) ⟹ (-larger_than bSet.omega y ⟹ x ⊆ᴮ y)))
+
 @[reducible]def aleph_one_Ord_spec (x : bSet 𝔹) : 𝔹 :=
-  (Ord x) ⊓
-  (larger_than x bSet.omega) ⊓
-  (⨅y, (Ord(y) ⟹ (-larger_than bSet.omega y ⟹ x ⊆ᴮ y)))
+  (Ord x) ⊓ (⨅ y, (Ord y) ⟹ ((- injects_into y bSet.omega) ⟹ x ⊆ᴮ y))
+
+-- TODO(jesse)
+@[simp]lemma B_ext_Ord : B_ext (Ord : bSet 𝔹 → 𝔹) := sorry
 
 /--
 The universal property of ℵ₁ is that it injects into any set which is larger than ω
@@ -1802,23 +1843,25 @@ The universal property of ℵ₁ is that it injects into any set which is larger
   B_ext (aleph_one_weak_universal_property : bSet 𝔹 → 𝔹) :=
 by { delta aleph_one_weak_universal_property, simp }
 
-lemma aleph_one_exists {Γ : 𝔹} : Γ ≤ ⨆x, aleph_one_Ord_spec x := sorry
+lemma aleph_one_exists {Γ : 𝔹} : Γ ≤ ⨆x, aleph_one_Ord_spec x := 
+begin
+  sorry -- TODO
+end
 
-def aleph_one : bSet 𝔹 := sorry
+noncomputable def aleph_one : bSet 𝔹 :=
+classical.some (maximum_principle aleph_one_Ord_spec (by simp))
+
+lemma aleph_one_satisfies_spec {Γ : 𝔹} : Γ ≤ aleph_one_Ord_spec (aleph_one) :=
+begin
+  let p := _, change Γ ≤ aleph_one_Ord_spec (classical.some p),
+  rw ←(classical.some_spec p), from aleph_one_exists
+end
 
 lemma aleph_one_check_sub_aleph_one {Γ : 𝔹} : Γ ≤ (pSet.card_ex (aleph 1))̌  ⊆ᴮ aleph_one := sorry
 
 lemma aleph_one_satisfies_universal_property {Γ : 𝔹} : Γ ≤ aleph_one_weak_universal_property (aleph_one) := sorry
 
 lemma aleph_one_satisfies_Ord_spec {Γ : 𝔹} : Γ ≤ aleph_one_Ord_spec (aleph_one) := sorry
-
--- TODO(jesse) prove this using regularity
--- lemma aleph_one_exists {Γ} : Γ ≤ ⨆(x : bSet 𝔹), aleph_one_spec_internal x := sorry
-
--- maybe it would be better to define ℵ₁ as the union of all the ordinals which ω surjects onto?
-
--- TODO(jesse) prove this
--- lemma check_aleph_one_le_aleph_one {Γ : 𝔹} : Γ ≤ ⨅(x : bSet 𝔹), (aleph_one_spec_internal x ⟹ ((pSet.ordinal.mk (aleph 1).ord)̌  ⊆ᴮ  x)) := sorry
 
 end ordinals
 

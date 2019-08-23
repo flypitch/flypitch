@@ -1065,7 +1065,7 @@ end
 end smallness
 
 
-lemma maximum_principle (ϕ : bSet 𝔹 → 𝔹) (h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y) : ∃ u, (⨆(x:bSet 𝔹), ϕ x) = ϕ u :=
+lemma maximum_principle (ϕ : bSet 𝔹 → 𝔹) (h_congr : B_ext ϕ) : ∃ u, (⨆(x:bSet 𝔹), ϕ x) = ϕ u :=
 begin
   have := classical.indefinite_description _ (@well_ordering_thm (type (@B_small_witness _ _ ϕ))),
   cases this with r inst_r,
@@ -2354,11 +2354,10 @@ begin
       { bv_imp_intro H, rw[mem_subset.mk_iff] at H, bv_cases_at H i Hi,
         bv_split_at Hi, refine le_inf _ _,
           { apply bv_rw' Hi_left, simp, apply mem.mk'', from bv_and.right Hi_right },
-          { apply bv_rw' Hi_left, simp*, from bv_and.left Hi_right },
-          },
+          { apply bv_rw' Hi_left, simp*, from bv_and.left Hi_right }},
       { bv_imp_intro H, rw[mem_subset.mk_iff₂], dsimp [ψ], rw @bounded_exists _ _ _ (λ w, z =ᴮ w ⊓ ϕ w),
         swap, {change B_ext _, simp* /- nice job, simp! -/ },
-        apply bv_use z, exact le_inf (bv_and.left ‹_›) (le_inf bv_refl $ bv_and.right ‹_›)}}
+        apply bv_use z, exact le_inf (bv_and.left ‹_›) (le_inf bv_refl $ bv_and.right ‹_›) }}
 end
 
 

@@ -912,6 +912,12 @@ lemma eq_iff_eq_pair {x y x' y' : pSet.{u}} : pSet.equiv x x' ∧ pSet.equiv y y
 def prod (x y : pSet.{u}) : pSet.{u} :=
 ⟨x.type × y.type, (λ pr, pair (x.func pr.1) (y.func pr.2))⟩
 
+lemma prod_sound {x y : pSet.{u}} : ⟦prod x y⟧ = Set.prod ⟦x⟧ ⟦y⟧ := sorry
+
+@[reducible]def is_inj (f : pSet.{u}) : Prop := ∀ w₁ w₂ v₁ v₂ : pSet.{u}, pair w₁ v₁ ∈ f ∧ pair w₂ v₂ ∈ f ∧ pSet.equiv v₁ v₂ → pSet.equiv w₁ w₂
+
+def is_injective_function (x y f : pSet.{u}) : Prop := is_func x y f ∧ is_inj f
+
 -- ∃ x, p x ∧ ∀ y, p y → y = x
 
 --f ⊆ prod x y ∧ ∀z:Set.{u}, z ∈ x → ∃! w, pair z w ∈ f
@@ -919,8 +925,28 @@ lemma is_func_iff {x y f : pSet.{u}} :
   is_func x y f ↔ f ⊆ prod x y ∧ ∀ z, z ∈ x → (∃ w, pair z w ∈ f ∧
                   ∀ v, pair z v ∈ f → pSet.equiv v w) :=
 begin
-  sorry
+  unfold pSet.is_func Set.is_func, congr' 2,
+    { sorry },
+    { unfold exists_unique, apply propext, refine ⟨_,_⟩,
+      { sorry },
+      { sorry }}
 end
+
+def is_total (x y f : pSet.{u}) : Prop := ∀ z ∈ x, ∃ w ∈ y, pair z w ∈ f
+
+lemma is_total_of_is_func {x y f : pSet.{u}} (H_func : is_func x y f)  : is_total x y f  :=
+begin
+  intro z, cases H_func with H_prod H_ext,
+  specialize H_ext ⟦z⟧, intro H_mem, specialize H_ext (mem_iff.mp ‹_›),
+  rcases H_ext with ⟨w, ⟨Hw₁, Hw₂⟩⟩, use w.out,
+  refine ⟨_,_⟩,
+    {sorry},
+    {sorry}
+end
+
+lemma subset_prod_of_is_func {x y f : pSet.{u}} (H_func : is_func x y f) : f ⊆ prod x y := sorry
+
+
 
 def set_of_indicator {x : pSet.{u}} (χ : x.type → Prop) : pSet.{u} :=
 ⟨{i // χ i}, λ p, x.func (p.1)⟩
