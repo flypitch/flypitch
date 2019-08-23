@@ -171,6 +171,10 @@ noncomputable instance decidable_eq_𝔹 : decidable_eq 𝔹 := λ _ _, classica
 
 run_cmd mk_simp_attr `cleanup
 
+run_cmd mk_simp_attr `bv_push_neg
+
+attribute [bv_push_neg] neg_infi neg_supr neg_Inf neg_Sup neg_inf neg_sup neg_top neg_bot lattice.neg_neg lattice.neg_imp
+
 /-- The underlying type of a bSet -/
 @[simp, cleanup]def type : bSet 𝔹 → Type u
 | ⟨α, _, _⟩ := α
@@ -1482,6 +1486,7 @@ lemma check_bv_eq {x y : pSet} {Γ : 𝔹}  (H : pSet.equiv x y) :
     (Γ : 𝔹) ≤ x̌ =ᴮ y̌ :=
 le_trans (le_top) $ by {simp only [top_le_iff], apply check_bv_eq_top_of_equiv ‹_›}
 
+-- deprecated, use check_not_eq
 lemma check_bv_eq_bot_of_not_equiv {x y : pSet} :
   (¬ pSet.equiv x y) → (x̌ =ᴮ y̌) = (⊥ : 𝔹) :=
 begin
@@ -1527,6 +1532,9 @@ begin
       rw[this] at H, conv{to_rhs, rw[<-H]}, simp }
 end
 
+lemma check_not_eq {x y : pSet.{u}} (H : ¬ pSet.equiv x y) {Γ : 𝔹} : Γ ≤ -(x̌ =ᴮ y̌) :=
+by {rw[not_check_bv_eq_iff.mp H], simp}
+
 lemma check_bv_eq_nonzero_iff_eq_top {x y : pSet} : (⊥ : 𝔹) < x̌ =ᴮ y̌  ↔ x̌ =ᴮ y̌ = (⊤ : 𝔹) :=
 begin
   refine ⟨_,_⟩; intro H,
@@ -1570,6 +1578,10 @@ begin
       rw[this] at H, conv{to_rhs, rw[<-H]}, simp }
 end
 
+-- TODO(jesse): refactor this so that the conclusion is simply Γ ≤ ¬ (x̌ ∈ᴮ y̌)
+lemma check_not_mem {x y : pSet} : x ∉ y → ∀ {Γ : 𝔹}, Γ ≤ x̌ ∈ᴮ y̌ → Γ ≤ ⊥ :=
+by {intro H, replace H := not_check_mem_iff.mp H, intros Γ HΓ, rwa ←H}
+
 lemma check_mem_dichotomy (x y : pSet) : (x̌ ∈ᴮ y̌ = (⊤ : 𝔹)) ∨ (x̌ ∈ᴮ y̌ = (⊥ : 𝔹)) :=
 begin
   haveI := classical.prop_decidable, by_cases (x ∈ y);
@@ -1600,6 +1612,12 @@ end
 
 lemma check_subset {x y : pSet} {Γ : 𝔹} (h_subset : x ⊆ y) : Γ ≤ x̌ ⊆ᴮ y̌ :=
   le_trans le_top (check_subset_of_subset ‹_›)
+
+lemma check_not_subset {x y : pSet} (H : ¬ x ⊆ y) {Γ} : (Γ : 𝔹) ≤ -(x̌ ⊆ᴮ y̌) :=
+begin
+  rw[subset_unfold], simp only with bv_push_neg, sorry -- TODO(jesse): finish this
+end
+
 
 @[simp]lemma check_exists_mem {y : pSet} (H_exists_mem : ∃ z, z ∈ y ) {Γ : 𝔹} : Γ ≤ exists_mem y̌ :=
 by { rcases H_exists_mem with ⟨z,Hz⟩, apply bv_use ž, simp* }

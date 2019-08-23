@@ -437,6 +437,7 @@ end
 --f ⊆ prod x y ∧ ∀z:Set.{u}, z ∈ x → ∃! w, pair z w ∈ f
 @[reducible]def is_func (x y f : pSet.{u}) : Prop := Set.is_func ⟦x⟧ ⟦y⟧ ⟦f⟧
 
+
 @[reducible]def is_weak_func (x y f : pSet.{u}) : Prop :=
   (∀ z, z ∈ ⟦x⟧ →  ∃! w, w ∈ ⟦y⟧ ∧ Set.pair z w ∈ ⟦f⟧)
 
@@ -904,10 +905,22 @@ end
 
 def pair (x y : pSet.{u}) : pSet.{u} := {{x}, {x,y}}
 
+lemma pair_sound {x y : pSet.{u}} : ⟦pair x y⟧ = Set.pair ⟦x⟧ ⟦y⟧ := sorry
+
 lemma eq_iff_eq_pair {x y x' y' : pSet.{u}} : pSet.equiv x x' ∧ pSet.equiv y y' ↔ pSet.equiv (pair x y) (pair x' y') := sorry
 
 def prod (x y : pSet.{u}) : pSet.{u} :=
 ⟨x.type × y.type, (λ pr, pair (x.func pr.1) (y.func pr.2))⟩
+
+-- ∃ x, p x ∧ ∀ y, p y → y = x
+
+--f ⊆ prod x y ∧ ∀z:Set.{u}, z ∈ x → ∃! w, pair z w ∈ f
+lemma is_func_iff {x y f : pSet.{u}} :
+  is_func x y f ↔ f ⊆ prod x y ∧ ∀ z, z ∈ x → (∃ w, pair z w ∈ f ∧
+                  ∀ v, pair z v ∈ f → pSet.equiv v w) :=
+begin
+  sorry
+end
 
 def set_of_indicator {x : pSet.{u}} (χ : x.type → Prop) : pSet.{u} :=
 ⟨{i // χ i}, λ p, x.func (p.1)⟩

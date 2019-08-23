@@ -377,9 +377,12 @@ end
 
 @[simp]lemma mem_prod {v w x y : bSet 𝔹} {Γ} (H_mem₁ : Γ ≤ x ∈ᴮ v) (H_mem₂ : Γ ≤ y ∈ᴮ w) :
  Γ ≤ pair x y ∈ᴮ prod v w :=
-by simp*
+mem_prod_iff.mpr (by simp*)
 
--- lemma check_pair {x y : pSet} : sorry (x y) = bSet.pair (x̌) (y̌ : bSet 𝔹) := sorry
+-- TODO(jesse): finish these
+lemma check_pair {x y : pSet.{u}} {Γ} : Γ ≤ (pSet.pair x y)̌  =ᴮ bSet.pair (x̌) (y̌ : bSet 𝔹) := sorry
+
+lemma check_prod {x y : pSet.{u}} {Γ : 𝔹} : Γ ≤ (pSet.prod x y)̌  =ᴮ bSet.prod x̌ y̌ := sorry
 
 -- /-- f is =ᴮ-extensional on x if for every w₁ and w₂ ∈ x, if w₁ =ᴮ w₂, then for every v₁ and v₂, if (w₁,v₁) ∈ f and (w₂,v₂) ∈ f, then v₁ =ᴮ v₂ -/
 -- @[reducible]def is_extensional (x f : bSet 𝔹) : 𝔹 :=
@@ -800,13 +803,60 @@ end surjects_onto_of_larger_than
 lemma exists_surjection_of_surjects_onto {x y : bSet 𝔹} {Γ} (H_surj : Γ ≤ surjects_onto x y)
   : Γ ≤ ⨆ f, is_function x y f ⊓ is_surj x y f := sorry
 
-lemma check_is_func {x y f : pSet.{u}} : pSet.is_func x y f ↔ ∀{Γ : 𝔹}, Γ ≤ is_function x̌ y̌ f̌   := sorry
+-- lemma check_is_func {x y f : pSet.{u}} : pSet.is_func x y f ↔ ∀{Γ : 𝔹}, Γ ≤ is_function x̌ y̌ f̌   := sorry
 
-lemma check_not_is_func {x y f : pSet.{u}} : ¬ pSet.is_func x y f ↔ ((is_function x̌ y̌ f̌) ≤ (⊥ : 𝔹)) := sorry
+lemma check_not_is_func {x y f : pSet.{u}} (H : ¬ pSet.is_func x y f) : ∀ {Γ : 𝔹}, ( Γ ≤ (is_function x̌ y̌ f̌) → Γ ≤ (⊥ : 𝔹)) :=
+begin
+  rw pSet.is_func_iff at H, intros Γ H', push_neg at H,
+  bv_split_at H', 
+  cases H,
+    { replace H := (check_not_subset H : Γ ≤ _),
+      have := @bv_rw'' 𝔹 _ _ _ _ (check_prod) (λ z, - (f̌ ⊆ᴮ z)) H (by simp),
+      dsimp only at this, bv_contradiction },
+    { rcases H with ⟨z, ⟨Hz_mem, Hz⟩⟩,
+      have H'_total := is_total_of_is_func' H'_left,
+      replace H'_total := H'_total (ž) (by simp*), bv_cases_at H'_total w Hw,
+      bv_split_at Hw, classical, by_contra H_nonzero,
+      rw ←bot_lt_iff_not_le_bot at H_nonzero,
+      rcases eq_check_of_mem_check ‹_› _ _ Hw_left with ⟨i, Γ', HΓ'_nonzero, HΓ'_le, Hi⟩,
+      have Hz₁ := Hz (y.func i), cases Hz₁ with H_not_total H_not_func,
+        { suffices this : Γ' ≤ ⊥, by exact false_of_bot_lt_and_le_bot HΓ'_nonzero ‹_›,
+          refine check_not_mem H_not_total _,
+          apply @bv_rw' _ _ _ _ _ check_pair (λ z, z ∈ᴮ f̌), simp, dsimp,
+          apply @bv_rw' _ _ _ _ _ (bv_symm Hi) (λ w, pair ž w ∈ᴮ f̌), from B_ext_pair_mem_right,
+          from le_trans HΓ'_le ‹_› },
+        { rcases H_not_func with ⟨b, Hb_pair_mem, Hb_neq⟩,
+          have H_not_eq : Γ' ≤ _ := check_not_eq Hb_neq,
+          have H_is_func := is_func_of_is_func' H'_left ž ž w b̌ (le_inf ‹_› _) bv_refl,
+          replace H_is_func := (le_trans HΓ'_le H_is_func : Γ' ≤ w =ᴮ b̌),
+          refine false_of_bot_lt_and_le_bot HΓ'_nonzero (bv_absurd _ (bv_symm H_is_func) _),
+          apply bv_rw' Hi, simp, from ‹_›,
+          apply @bv_rw' _ _ _ _ _ (bv_symm check_pair) (λ w, w ∈ᴮ f̌), simp,
+          exact check_mem Hb_pair_mem } },
+end
 
-lemma check_is_surj {x y f : pSet.{u}} : pSet.is_surj x y f ↔ ∀{Γ : 𝔹}, Γ ≤ is_surj x̌ y̌ f̌   := sorry
+-- lemma check_is_surj {x y f : pSet.{u}} : pSet.is_surj x y f ↔ ∀{Γ : 𝔹}, Γ ≤ is_surj x̌ y̌ f̌   :=
+-- begin
+--   sorry
+-- end
 
-lemma check_not_is_surj {x y f : pSet.{u}} : ¬ pSet.is_surj x y f ↔ is_surj x̌ y̌ f̌ ≤ (⊥ : 𝔹) := sorry
+lemma check_not_is_surj {x y f : pSet.{u}} (H : ¬ pSet.is_surj x y f) : ∀ {Γ : 𝔹}, Γ ≤  is_surj x̌ y̌ f̌ → Γ ≤ (⊥ : 𝔹) :=
+begin
+  unfold pSet.is_surj at H, push_neg at H,
+  intros Γ H_surj,
+  unfold is_surj at H_surj,
+  rcases H with ⟨b, ⟨Hb₁, Hb₂⟩⟩ ,
+  have := (check_mem Hb₁ : Γ ≤ _),
+  replace H_surj := H_surj (b̌) this,
+  rw[<-bounded_exists] at H_surj, swap, {change B_ext _, from B_ext_pair_mem_left },
+  bv_cases_at H_surj i_a Hi_a, bv_split_at Hi_a,
+  specialize Hb₂ (x.func (check_cast i_a)), cases Hb₂,  
+    { apply check_not_mem ‹_›, simp  },
+    { rw ←pSet.pair_sound at Hb₂, change _ ∉ f at Hb₂, apply check_not_mem ‹_›,
+      have this : Γ_1 ≤ (pSet.pair (pSet.func x (check_cast i_a)) b)̌  =ᴮ bSet.pair _ _,
+      by {apply check_pair},
+      apply @bv_rw' _ _ _ _ _ this (λ z, z ∈ᴮ f̌), simp, rwa[←check_func] }
+end
 
 lemma bot_lt_of_true {b : 𝔹} (H : ∀ {Γ}, Γ ≤ b) : ⊥ < b :=
 begin

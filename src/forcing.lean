@@ -378,7 +378,7 @@ lemma definite' {ν} {Γ} : Γ ≤ mk ν ∈ᴮ bv_powerset omega := bv_powerset
 lemma sep {n} {Γ} {ν₁ ν₂} (H₁ : Γ ≤ (of_nat n) ∈ᴮ (mk ν₁)) (H₂ : Γ ≤ (- ((of_nat n) ∈ᴮ (mk ν₂)))) :
   Γ ≤ (- ((mk ν₁) =ᴮ (mk ν₂))) :=
 begin
-  rw[bv_eq_unfold], rw[neg_inf, neg_infi, neg_infi], simp only [neg_imp],
+  rw[bv_eq_unfold], rw[neg_inf, neg_infi, neg_infi], simp only [lattice.neg_imp],
   refine le_sup_left_of_le _, rw[@bounded_exists 𝔹 _ (mk ν₁) (λ z, -(z ∈ᴮ mk ν₂)) _],
   swap, change B_ext _, simp[-imp_bot, imp_bot.symm],
   apply bv_use (bSet.of_nat n), bv_split_goal
