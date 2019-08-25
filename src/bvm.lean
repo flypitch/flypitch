@@ -2374,5 +2374,28 @@ end comprehension
 --   (⨆!(w : bSet 𝔹), w ∈ᴮ z ⟹
 --     ⨆(v : bSet 𝔹), v ∈ᴮ y ⟹ (z ∈ᴮ v ⊓ w ∈ᴮ v)))) = ⊤ := sorry
 
+-- def check_shadow : Π (x : bSet 𝔹), (bSet 𝔹)
+-- | (bSet.mk α A B) := ⟨α, λ i, check_shadow (A i), λ _, ⊤⟩
+
+-- lemma check_shadow_check : Π {x : pSet.{u}}, check_shadow (x̌) = (x̌ : bSet 𝔹)
+-- | ⟨α,A⟩ := by simp[check, check_shadow,check_shadow_check]
+
+def dom : ∀ x : bSet 𝔹, pSet.{u}
+| ⟨α,A,B⟩ := ⟨α, λ i, dom (A i)⟩
+
+-- lemma dom_spec : Π {x : bSet 𝔹}, (dom x)̌  = check_shadow x
+-- | ⟨α,A,B⟩ := by simp[dom, check_shadow, *]
+
+@[reducible]def check_shadow : bSet 𝔹 → bSet 𝔹 := λ x, (dom x)̌ 
+
+-- bSet 𝔹 retracts onto pSet
+lemma dom_check : Π {x : pSet.{u}}, dom (x̌ : bSet 𝔹) = x
+| ⟨α,A⟩ := by simp[dom,*]
+
+lemma dom_left_inv_check : function.left_inverse dom (check : pSet.{u} → bSet 𝔹) :=
+λ x, dom_check
+
+lemma check_injective : function.injective (check : pSet.{u} → bSet 𝔹) :=
+function.injective_of_left_inverse dom_left_inv_check
 
 end bSet
