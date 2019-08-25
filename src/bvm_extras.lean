@@ -1160,6 +1160,24 @@ begin
   use ‹_›, refine ⟨inf_le_right,⟨_,_⟩⟩; tidy_context
 end
 
+-- lemma AE_of_check_func_check'
+--  (x : pSet.{u})
+--  {y f : bSet 𝔹}
+--  {Γ : 𝔹}
+--  (H : Γ ≤ is_func' x̌ y f)
+--  (H_nonezero : ⊥ < Γ)
+--    :  Π (i : x.type), ∃ (b : pSet.{u}) (Γ' : 𝔹) (H_nonzero' : ⊥ < Γ') (H_le : Γ' ≤ Γ),
+--         Γ' ≤ is_func' x̌ y f ∧ Γ' ≤ pair (x.func i)̌  b̌ ∈ᴮ f :=
+-- begin
+--   intro i, have := is_total_of_is_func' H ((x.func i)̌ ) (by simp),
+--   have H' : Γ ≤ (is_func' (x̌) y f) ⊓ ⨆ w, w ∈ᴮ y ⊓ pair (x.func i)̌  w ∈ᴮ f ,
+--     by { exact le_inf ‹_› ‹_› },
+--   rw[<-bounded_exists] at H', swap, {change B_ext _, exact B_ext_pair_mem_right},
+--   rw[inf_supr_eq] at H', -- this is probably not true
+--   cases y, dsimp at H', simp only [top_inf_eq] at H',
+--   -- have := nonzero_wit' H_nonzero H', cases this with j Hj,
+-- end
+
 -- note: primed version of 𝔹-valued casing tactics will only note instead of replacing hypotheses
 -- this circumvents dependency issues that occasionally pop up
 lemma function_of_func'_is_function {x y f : bSet 𝔹} {Γ} (H_is_func' : Γ ≤ is_func' x y f) : Γ ≤ is_function x y (function_of_func' H_is_func') :=
@@ -1903,7 +1921,7 @@ begin
     bv_split, replace a_left := a_left w' ‹_›,
     have : Γ_2 ≤ ∅ =ᴮ w', by {apply eq_of_mem_singleton, from ‹_›},
     apply bv_exfalso, apply bot_of_mem_empty, show bSet 𝔹, from w,
-    apply bv_rw' this, simpa
+    bv_cc
 end
 
 end bSet
