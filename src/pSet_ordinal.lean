@@ -905,9 +905,15 @@ end
 
 def pair (x y : pSet.{u}) : pSet.{u} := {{x}, {x,y}}
 
-lemma pair_sound {x y : pSet.{u}} : ⟦pair x y⟧ = Set.pair ⟦x⟧ ⟦y⟧ := sorry
+lemma pair_sound {x y : pSet.{u}} : ⟦pair x y⟧ = Set.pair ⟦x⟧ ⟦y⟧ := rfl
 
-lemma eq_iff_eq_pair {x y x' y' : pSet.{u}} : pSet.equiv x x' ∧ pSet.equiv y y' ↔ pSet.equiv (pair x y) (pair x' y') := sorry
+lemma eq_iff_eq_pair {x y x' y' : pSet.{u}} : pSet.equiv x x' ∧ pSet.equiv y y' ↔ pSet.equiv (pair x y) (pair x' y') :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { rcases H with ⟨H₁,H₂⟩, change x ≈ x' at H₁, change y ≈ y' at H₂, replace H₁ := quotient.sound H₁, replace H₂ := quotient.sound H₂, change (pair x y) ≈ (pair x' y'), rw [←quotient.eq, pair_sound, pair_sound], simp* },
+    { change (pair x y) ≈ (pair _ _) at H, change x ≈ _ ∧ y ≈ _,
+      simp only [quotient.eq.symm] at ⊢ H, simp only [pair_sound] at H, from Set.pair_inj H }
+end
 
 def prod (x y : pSet.{u}) : pSet.{u} :=
 ⟨x.type × y.type, (λ pr, pair (x.func pr.1) (y.func pr.2))⟩
@@ -945,8 +951,6 @@ begin
 end
 
 lemma subset_prod_of_is_func {x y f : pSet.{u}} (H_func : is_func x y f) : f ⊆ prod x y := sorry
-
-
 
 def set_of_indicator {x : pSet.{u}} (χ : x.type → Prop) : pSet.{u} :=
 ⟨{i // χ i}, λ p, x.func (p.1)⟩
