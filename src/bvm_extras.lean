@@ -1519,13 +1519,13 @@ end extras
 section check
 variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 
-lemma mem_check_mem_powerset_nonzero_iff {x : pSet} {S : (pSet.powerset x).type} {i : x.type} :
-  (⊥ : 𝔹) < (x.func i)̌  ∈ᴮ ((pSet.powerset x).func S)̌  ↔ (cast pSet.powerset_type S) i :=
-begin
-  refine ⟨_,_⟩; intro H,
-    { sorry },
-    { sorry }
-end
+-- lemma mem_check_mem_powerset_nonzero_iff {x : pSet} {S : (pSet.powerset x).type} {i : x.type} :
+--   (⊥ : 𝔹) < (x.func i)̌  ∈ᴮ ((pSet.powerset x).func S)̌  ↔ (cast pSet.powerset_type S) i :=
+-- begin
+--   refine ⟨_,_⟩; intro H,
+--     { sorry },
+--     { sorry }
+-- end
 
 example {x : bSet 𝔹} {i : x.type} {χ : x.type → 𝔹} : χ i ≤ (x.func i) ∈ᴮ (set_of_indicator χ) :=
 by {rw[mem_unfold], tidy_context, apply bv_use i, bv_split_goal}
@@ -1567,6 +1567,12 @@ begin
            transitivity ⊥,
              { exact le_trans Hj H },
              { exact bot_le }}}
+end
+
+lemma check_functions_subset_functions {x y : pSet.{u}} {Γ : 𝔹} : Γ ≤ (pSet.functions x y)̌  ⊆ᴮ functions x̌ y̌ :=
+begin
+  rw subset_unfold, bv_intro j, bv_imp_intro Hj,
+  sorry
 end
 
 @[simp]lemma check_mem' {y : pSet} {i : y.type} : ((y.func i)̌ ) ∈ᴮ y̌ = (⊤ : 𝔹) :=

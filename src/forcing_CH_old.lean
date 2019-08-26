@@ -184,8 +184,39 @@ end
 -- TODO: pick a good formulation of this
 def omega_closed (α : Type*) [nontrivial_complete_boolean_algebra α] : Prop := sorry
 
-lemma check_functions_eq_functions_of_omega_closed (H_oc : omega_closed 𝔹) (y : pSet.{u})
-  {Γ : 𝔹} : Γ ≤ check (functions (pSet.omega) y) =ᴮ functions (bSet.omega) y̌ := sorry
+section function_reflect
+
+variables (H_omega_closed : omega_closed 𝔹) {y : pSet.{u}} {g : bSet 𝔹} {Γ : 𝔹} (H_nonzero : ⊥ < Γ) (H : Γ ≤ is_func' bSet.omega y̌ g)
+
+include H_omega_closed y g Γ H_nonzero H
+
+local notation `ae₀` := AE_of_check_func_check pSet.omega y H H_nonzero
+
+local notation `aeₖ` := AE_of_check_func_check pSet.omega y
+
+noncomputable def function_reflect.fB : ℕ → Σ' (j : y.type) (B : 𝔹), (⊥ < B ∧ B ≤ is_func' bSet.omega y̌ g)
+| 0 := begin
+         use classical.some (ae₀ (ulift.up 0)), use classical.some (classical.some_spec (ae₀ (ulift.up 0))),
+         rcases classical.some_spec (classical.some_spec (ae₀ (ulift.up 0))) with ⟨a,b,c,d⟩, from ⟨‹_›,‹_›⟩
+       end
+| (k+1) := begin
+             rcases (function_reflect.fB) k with ⟨j,B,⟨H₁,H₂⟩⟩,
+             use classical.some ((aeₖ H₂ H₁ ((ulift.up $ k + 1)))),
+             use classical.some (classical.some_spec ((aeₖ H₂ H₁ ((ulift.up $ k + 1))))),
+             rcases classical.some_spec (classical.some_spec ((aeₖ H₂ H₁ ((ulift.up $ k + 1))))) with ⟨_,_,_,_⟩,
+             from ⟨‹_›,‹_›⟩
+           end
+
+-- TODO(jesse) prove that this satisfies the pair property, i.e. that at each step, B ≤ ... for k (B ≤ (pair ((pSet.omega.func i)̌ ) ((y.func j)̌ )) ∈ᴮ f)
+
+lemma function_reflect_of_omega_closed : ∃ (f : pSet.{u}) (Γ' : 𝔹) (H_nonzero' : ⊥ < Γ') (H_le' : Γ' ≤ Γ), Γ' ≤ g =ᴮ f̌ :=
+begin
+  sorry
+end
+
+end function_reflect
+
+
 
 end lemmas
 
@@ -200,6 +231,20 @@ local notation `𝔹` := collapse_algebra ((ℵ₁ : pSet.{u}).type) (powerset o
 
 -- TODO(floris)
 lemma 𝔹_omega_closed : omega_closed 𝔹 := sorry
+
+lemma check_functions_eq_functions_of_omega_closed (H_oc : omega_closed 𝔹) (y : pSet.{u})
+  {Γ : 𝔹} : Γ ≤ check (functions (pSet.omega) y) =ᴮ functions (bSet.omega) y̌ :=
+begin
+  refine subset_ext check_functions_subset_functions _,
+  bv_intro χ, bv_imp_intro Hχ, rw bSet.mem_unfold,
+  let A := _, change _ ≤ A, let B := _, change _ ≤ B at Hχ,
+  suffices this : A ⊓ B = B,
+    by {refine le_trans _ inf_le_left, from B, rw this, simp* },
+  apply Sup_eq_top_of_dense_Union_rel, apply rel_dense_of_dense_in_basis B.1 _ collapse_space_basis_spec,
+ intros D HD HD_ne, unfold collapse_space_basis at HD, cases HD with p Hp,
+    { clear_except p HD_ne, exfalso, finish },
+    sorry
+end
 
 lemma π_χ_regular (p : type (card_ex (aleph 1)) × (powerset omega).type) : @topological_space.is_regular _ collapse_space {g : type (card_ex (aleph 1)) → type (powerset omega) | g (p.fst) = p.snd} :=
 by simp

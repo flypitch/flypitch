@@ -73,6 +73,9 @@ include τ
 
 def dense (S : set α) : Prop := ∀ U : set α, @is_open α τ U → U ≠ ∅ → U ∩ S ≠ ∅
 
+-- S is dense in S₀ if S ∩ S₀ is dense in the subspace S₀ 
+def rel_dense (S₀ S : set α) : Prop := ∀ U : set α, @is_open α τ U → U ∩ S₀ ≠ ∅ → U ∩ S₀ ∩ S ≠ ∅
+
 lemma closure_univ_of_dense {S : set α} (H_dense : dense S) : closure S = univ :=
 dense_iff_inter_open.mpr H_dense
 
@@ -92,6 +95,21 @@ begin
   have := exists_mem_of_ne_empty (H _ HB₁ (ne_empty_of_exists_mem (by finish))),
   rcases this with ⟨x,⟨Hx₁,Hx₂⟩⟩, use x, tidy
 end
+
+def rel_dense_in_basis (S₀ : set α) (S : set α) {𝓑 : set $ set α} (H_basis : is_topological_basis 𝓑) : Prop :=
+∀ B ∈ 𝓑, B ∩ S₀ ≠ ∅ → B ∩ S₀ ∩ S ≠ ∅
+
+lemma rel_dense_of_dense_in_basis (S₀ : set α) (S : set α) {𝓑} (H_basis : is_topological_basis 𝓑) (H : rel_dense_in_basis S₀ S H_basis) : rel_dense S₀ S :=
+begin
+  intros U HU HU_ne,
+  rcases (exists_mem_of_ne_empty ‹_›) with ⟨a,Ha,Ha₀⟩,
+  rcases mem_basis_subset_of_mem_open ‹_› Ha ‹_› with ⟨B, ⟨HB₁, ⟨HB₂, HB₃⟩⟩⟩,
+  suffices this : ∃ a', a' ∈ U ∧ a' ∈ S₀ ∧ a' ∈ S,
+    from ne_empty_of_exists_mem (by finish),
+  have := exists_mem_of_ne_empty (H _ HB₁ (ne_empty_of_exists_mem (by finish))),
+  rcases this with ⟨x,⟨Hx₁,Hx₂⟩⟩, use x, tidy
+end
+
 
 def nowhere_dense (S : set α) : Prop := int (cl S) = ∅
 
@@ -641,6 +659,11 @@ lemma Sup_eq_top_of_dense_Union {ι} {rO : ι → regular_opens α}
   (H_dense : dense $ ⋃₀(subtype.val '' range (λ (i : ι), rO i)))
   : (⨆i, rO i : regular_opens α) = ⊤ :=
 by {change Sup _ = _, rw[Sup_unfold], exact subtype.ext.mpr (p_p_eq_univ_of_dense ‹_›)}
+
+-- TODO: rephrase in terms of subspace topology?
+lemma Sup_eq_top_of_dense_Union_rel {ι} {rO : ι → regular_opens α} (S : regular_opens α)
+  (H_dense : rel_dense S.1 $ ⋃₀(subtype.val '' range (λ (i : ι), rO i)))
+  : ((⨆i, rO i : regular_opens α) ⊓ S = S) := sorry
 
 open cardinal function
 local attribute [instance] [priority 0] subtype.preorder
