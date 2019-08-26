@@ -166,6 +166,8 @@ instance mem_of_pSet : has_mem (quotient pSet.setoid) (quotient pSet.setoid) :=
 
 lemma mem_iff {x y : pSet} : x ∈ y ↔ ⟦x⟧ ∈ ⟦y⟧ := by refl
 
+lemma mem_sound {x y : pSet} : x ∈ y ↔ ⟦x⟧ ∈ ⟦y⟧ := mem_iff
+
 lemma mem_insert {x y z : pSet} (H : x ∈ insert y z) : equiv x y ∨ x ∈ z :=
 begin
   have this₁ : ⟦x⟧ ∈ Set.insert ⟦y⟧ ⟦z⟧, by assumption,
@@ -918,7 +920,17 @@ end
 def prod (x y : pSet.{u}) : pSet.{u} :=
 ⟨x.type × y.type, (λ pr, pair (x.func pr.1) (y.func pr.2))⟩
 
-lemma prod_sound {x y : pSet.{u}} : ⟦prod x y⟧ = Set.prod ⟦x⟧ ⟦y⟧ := sorry
+lemma prod_sound {x y : pSet.{u}} : ⟦prod x y⟧ = Set.prod ⟦x⟧ ⟦y⟧ :=
+begin
+  let a := _, let b := _, change ⟦a⟧ = b,
+  suffices : a ≈ b.out, by {rw [←quotient.eq] at this, rw [this, quotient.out_eq] },
+  change pSet.equiv a _, apply mem.ext, intro w, refine ⟨_,_⟩; intro H,
+    { dsimp[a] at H, dsimp [prod,has_mem.mem, pSet.mem, mem] at H,
+      rcases H with ⟨j, Hj⟩, suffices : (prod x y).func j ∈ quotient.out b,
+      by {rw mem.congr_left, from this, from Hj}, change pair _ _ ∈ _,
+          sorry }, -- rest is easy
+    { sorry } -- equally easy
+end
 
 @[reducible]def is_inj (f : pSet.{u}) : Prop := ∀ w₁ w₂ v₁ v₂ : pSet.{u}, pair w₁ v₁ ∈ f ∧ pair w₂ v₂ ∈ f ∧ pSet.equiv v₁ v₂ → pSet.equiv w₁ w₂
 
@@ -950,7 +962,25 @@ begin
     {sorry}
 end
 
-lemma subset_prod_of_is_func {x y f : pSet.{u}} (H_func : is_func x y f) : f ⊆ prod x y := sorry
+lemma subset_sound {x y : pSet.{u}} : x ⊆ y ↔ Set.mk x ⊆ Set.mk y :=
+begin
+  refine iff.intro _ _; intro H,
+    { intros z Hz, rw ←(quotient.out_eq _ : ⟦_⟧ = z) at Hz, change _ ∈ ⟦_⟧ at Hz, rw ←mem_sound at Hz,
+    rw subset_iff_all_mem at H, specialize H _ ‹_›, rw mem_sound at H, convert H, exact (quotient.out_eq _).symm },
+    { sorry } -- easy
+end
+
+
+lemma subset_prod_of_is_func {x y f : pSet.{u}} (H_func : is_func x y f) : f ⊆ prod x y :=
+begin
+  unfold is_func Set.is_func at H_func,
+  suffices this : Set.subset ⟦f⟧ (Set.prod ⟦x⟧ ⟦y⟧) → f ⊆ prod x y,
+    by exact this H_func.left,
+  intro H,
+  suffices this : Set.subset ⟦f⟧ ⟦prod x y⟧,
+    by { rwa subset_sound },
+  rwa prod_sound
+end
 
 def set_of_indicator {x : pSet.{u}} (χ : x.type → Prop) : pSet.{u} :=
 ⟨{i // χ i}, λ p, x.func (p.1)⟩
