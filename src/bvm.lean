@@ -2388,6 +2388,12 @@ def dom : ∀ x : bSet 𝔹, pSet.{u}
 
 @[reducible]def check_shadow : bSet 𝔹 → bSet 𝔹 := λ x, (dom x)̌ 
 
+lemma check_shadow_type {x : bSet 𝔹} : (check_shadow x).type = x.type := by cases x; refl
+
+@[reducible]def check_shadow_cast {x : bSet 𝔹} : (check_shadow x).type → x.type := cast check_shadow_type
+
+@[reducible]def check_shadow_cast_symm {x : bSet 𝔹} : x.type → (check_shadow x).type := cast (check_shadow_type.symm)
+
 -- bSet 𝔹 retracts onto pSet
 lemma dom_check : Π {x : pSet.{u}}, dom (x̌ : bSet 𝔹) = x
 | ⟨α,A⟩ := by simp[dom,*]
@@ -2397,5 +2403,22 @@ lemma dom_left_inv_check : function.left_inverse dom (check : pSet.{u} → bSet 
 
 lemma check_injective : function.injective (check : pSet.{u} → bSet 𝔹) :=
 function.injective_of_left_inverse dom_left_inv_check
+
+-- -- should follow from maximum principle + induction (every member of a dom is a dom)
+-- @[simp]lemma dom_congr : ∀ x y : bSet 𝔹, (∀ {Γ}, Γ ≤ x =ᴮ y) → pSet.equiv (dom x) (dom y)
+-- | x@⟨α,A,B⟩ x'@⟨α',A',B'⟩ H :=
+-- begin
+--   sorry
+-- end
+
+-- should follow from induction (every member of a check_shadow is a check_shadow)
+@[simp]lemma B_congr_check_shadow : B_congr (check_shadow : bSet 𝔹 → bSet 𝔹)
+| x@⟨α,A,B⟩ x'@⟨α',A',B'⟩ Γ H :=
+begin
+  unfold check_shadow, rw[bv_eq_unfold] at H ⊢, refine le_inf _ _; bv_intro i; simp at ⊢ H; cases H with H H',
+    { sorry },
+    { sorry },
+end
+
 
 end bSet
