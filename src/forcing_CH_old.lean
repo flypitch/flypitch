@@ -181,14 +181,14 @@ begin
 end
 
 -- any ω-indexed downward chain has a nonzero intersection
--- TODO: pick a good formulation of this
-def omega_closed (α : Type*) [nontrivial_complete_boolean_algebra α] : Prop := sorry
+def omega_closed (α : Type*) [nontrivial_complete_boolean_algebra α] : Prop :=
+∀ (s : ℕ → α) (H_nonzero : ∀ n, ⊥ < s n) (H_chain : ∀ n, s (n+1) ≤ s n), ⊥ < ⨅n, s n
 
 section function_reflect
 
 variables (H_omega_closed : omega_closed 𝔹) {y : pSet.{u}} {g : bSet 𝔹} {Γ : 𝔹} (H_nonzero : ⊥ < Γ) (H : Γ ≤ is_func' bSet.omega y̌ g)
 
-include H_omega_closed y g Γ H_nonzero H
+include y g Γ H_nonzero H
 
 local notation `ae₀` := AE_of_check_func_check pSet.omega y H H_nonzero
 
@@ -197,26 +197,74 @@ local notation `aeₖ` := AE_of_check_func_check pSet.omega y
 noncomputable def function_reflect.fB : ℕ → Σ' (j : y.type) (B : 𝔹), (⊥ < B ∧ B ≤ is_func' bSet.omega y̌ g)
 | 0 := begin
          use classical.some (ae₀ (ulift.up 0)), use classical.some (classical.some_spec (ae₀ (ulift.up 0))),
-         rcases classical.some_spec (classical.some_spec (ae₀ (ulift.up 0))) with ⟨a,b,c,d⟩, from ⟨‹_›,‹_›⟩
+         rcases classical.some_spec (classical.some_spec (ae₀ (ulift.up 0))) with ⟨_,_,_,_⟩, from ⟨‹_›,‹_›⟩
        end
 | (k+1) := begin
-             rcases (function_reflect.fB) k with ⟨j,B,⟨H₁,H₂⟩⟩,
-             use classical.some ((aeₖ H₂ H₁ ((ulift.up $ k + 1)))),
-             use classical.some (classical.some_spec ((aeₖ H₂ H₁ ((ulift.up $ k + 1))))),
-             rcases classical.some_spec (classical.some_spec ((aeₖ H₂ H₁ ((ulift.up $ k + 1))))) with ⟨_,_,_,_⟩,
+             use classical.some ((aeₖ ((function_reflect.fB) k).2.2.2 ((function_reflect.fB) k).2.2.1 ((ulift.up $ k + 1)))),
+             use classical.some (classical.some_spec ((aeₖ ((function_reflect.fB) k).2.2.2 ((function_reflect.fB) k).2.2.1 ((ulift.up $ k + 1))))),
+             rcases classical.some_spec (classical.some_spec ((aeₖ ((function_reflect.fB) k).2.2.2 ((function_reflect.fB) k).2.2.1 ((ulift.up $ k + 1))))) with ⟨_,_,_,_⟩,
              from ⟨‹_›,‹_›⟩
            end
 
--- TODO(jesse) prove that this satisfies the pair property, i.e. that at each step, B ≤ ... for k (B ≤ (pair ((pSet.omega.func i)̌ ) ((y.func j)̌ )) ∈ᴮ f)
+@[reducible]noncomputable def function_reflect.B : ℕ → 𝔹 := λ n, (function_reflect.fB H_nonzero H n).2.1
 
-lemma function_reflect_of_omega_closed : ∃ (f : pSet.{u}) (Γ' : 𝔹) (H_nonzero' : ⊥ < Γ') (H_le' : Γ' ≤ Γ), Γ' ≤ g =ᴮ f̌ :=
+@[reducible]noncomputable def function_reflect.f : ℕ → y.type := λ n, (function_reflect.fB H_nonzero H n).1
+
+lemma function_reflect.B_nonzero (n) : ⊥ < (function_reflect.B H_nonzero H n) :=
+(function_reflect.fB H_nonzero H n).2.2.left
+
+lemma function_reflect.B_is_func' (n) : (function_reflect.B H_nonzero H n) ≤ is_func' bSet.omega y̌ g :=
+(function_reflect.fB H_nonzero H n).2.2.right
+
+lemma function_reflect.B_unfold {n} : function_reflect.B H_nonzero H (n+1)
+  = classical.some ((function_reflect.fB._main._proof_5 H_nonzero H n)) -- yuck
+:=  rfl
+
+lemma function_reflect.B_le {n} : (function_reflect.B H_nonzero H (n + 1)) ≤ function_reflect.B H_nonzero H n :=
 begin
-  sorry
+  rw function_reflect.B_unfold, let p := _, change classical.some p ≤ _,
+  rcases classical.some_spec p with ⟨_,_,_,_⟩, convert h_w, clear_except, unfold function_reflect.B, cases n, refl, refl,
+end
+
+
+lemma function_reflect.B_pair {n} : (function_reflect.B H_nonzero H n) ≤ pair (pSet.omega.func (ulift.up n))̌  (y.func $ function_reflect.f H_nonzero H n)̌  ∈ᴮ g :=
+begin
+  cases n,
+    { change classical.some _ ≤ _, let p := _, change classical.some p ≤ _,
+      rcases classical.some_spec p with ⟨_,_,_,_⟩, from ‹_› },
+    { rw function_reflect.B_unfold, let p := _, change classical.some p ≤ _,
+      rcases classical.some_spec p with ⟨_,_,_,_⟩, from ‹_› }
+end
+
+variable (H_function : Γ ≤ is_function bSet.omega y̌ g)
+
+-- TODO(jesse): come up with a better name
+lemma function_reflect_aux : (⨅n, function_reflect.B H_nonzero H n) ≤ (⨅n, pair (pSet.omega.func (ulift.up n))̌  (y.func $ function_reflect.f H_nonzero H n)̌  ∈ᴮ g) :=
+infi_le_infi $ λ _, function_reflect.B_pair _ _
+
+include H_omega_closed H_function
+lemma function_reflect_of_omega_closed : ∃ (f : pSet.{u}) (Γ' : 𝔹) (H_nonzero' : ⊥ < Γ') (H_le' : Γ' ≤ Γ), (Γ' ≤ f̌ =ᴮ g) ∧ is_func omega y f :=
+begin
+  refine ⟨_,_⟩,
+    { refine @pSet.function.mk pSet.omega _ _,
+      intro k, cases k with k',
+      exact y.func (function_reflect.f H_nonzero H k'),
+      intros i j Heqv,
+      suffices this : i = j,
+        by {subst this, exact pSet.equiv.refl _ },
+      from pSet.omega_inj ‹_› },
+    { use (⨅ n, function_reflect.B H_nonzero H n), -- this is Γ'
+      refine ⟨_,_,⟨_,_⟩⟩,
+        { apply H_omega_closed, apply function_reflect.B_nonzero, apply function_reflect.B_le },
+        { refine infi_le_of_le 0 _, let p := _, change classical.some p ≤ _,
+          rcases classical.some_spec p with ⟨_,_,_,_⟩, from ‹_› },
+        { refine le_trans (function_reflect_aux _ _) _,
+          sorry -- TODO(jesse): use that Γ' ≤ Γ (Γ ≤ is_function ω̌ y̌ f̌ ), and 𝔹-valuedfunext for is_functions
+             },
+          { apply pSet.function.mk_is_func, intro n, cases n, simp }}
 end
 
 end function_reflect
-
-
 
 end lemmas
 
@@ -232,18 +280,33 @@ local notation `𝔹` := collapse_algebra ((ℵ₁ : pSet.{u}).type) (powerset o
 -- TODO(floris)
 lemma 𝔹_omega_closed : omega_closed 𝔹 := sorry
 
-lemma check_functions_eq_functions_of_omega_closed (H_oc : omega_closed 𝔹) (y : pSet.{u})
+lemma check_functions_eq_functions (y : pSet.{u})
   {Γ : 𝔹} : Γ ≤ check (functions (pSet.omega) y) =ᴮ functions (bSet.omega) y̌ :=
 begin
   refine subset_ext check_functions_subset_functions _,
-  bv_intro χ, bv_imp_intro Hχ, rw bSet.mem_unfold,
-  let A := _, change _ ≤ A, let B := _, change _ ≤ B at Hχ,
+  rw[subset_unfold'], bv_intro g, bv_imp_intro Hg, rw[mem_unfold'],
+  let A := _, change _ ≤ A, let B := _, change _ ≤ B at Hg,
   suffices this : A ⊓ B = B,
     by {refine le_trans _ inf_le_left, from B, rw this, simp* },
   apply Sup_eq_top_of_dense_Union_rel, apply rel_dense_of_dense_in_basis B.1 _ collapse_space_basis_spec,
- intros D HD HD_ne, unfold collapse_space_basis at HD, cases HD with p Hp,
+  intros D HD HD_ne, unfold collapse_space_basis at HD, cases HD with p Hp,
     { clear_except p HD_ne, exfalso, finish },
-    sorry
+    rcases Hp with ⟨p,⟨_,Hp⟩⟩, subst Hp, let P : 𝔹 := ⟨principal_open p, is_regular_principal_open p⟩,
+    have bot_lt_Γ : (⊥ : 𝔹) < P ⊓ B,
+    rw [bot_lt_iff_not_le_bot, le_bot_iff], rwa subtype.ext,
+    have := function_reflect_of_omega_closed 𝔹_omega_closed bot_lt_Γ
+      (by {dsimp[B], refine inf_le_right_of_le (is_func'_of_is_function
+            (by { refine poset_yoneda _, tactic.rotate 2, intros Γ HΓ, rw[bSet.mem_functions_iff] at HΓ, convert HΓ }))}) (by {dsimp [B],
+              refine poset_yoneda _, intros Γ HΓ, exact bSet.mem_functions_iff.mp (bv_and.right HΓ) }),
+    rcases this with ⟨f, Γ', H_nonzero', H_lt', H_pr', H_func'⟩, apply set.inter_sUnion_ne_empty_of_exists_mem,
+    let C := g ∈ᴮ (functions omega y)̌  ⊓ g =ᴮ g,
+    use C.val, simp, refine ⟨⟨C.property, _⟩, _⟩, use g,
+    suffices this : P ⊓ B ⊓ C ≠ ⊥,
+      by {change ¬ _ at this, rwa subtype.ext at this }, rw ←bot_lt_iff_ne_bot,
+    suffices this : Γ' ≤ C,
+      by {exact lt_of_lt_of_le H_nonzero' (le_inf ‹_› ‹_›)},
+    refine le_inf _ (bv_refl), apply bv_rw' (bv_symm H_pr'), simp,
+    rw ←pSet.mem_functions_iff at H_func', from check_mem H_func'
 end
 
 lemma π_χ_regular (p : type (card_ex (aleph 1)) × (powerset omega).type) : @topological_space.is_regular _ collapse_space {g : type (card_ex (aleph 1)) → type (powerset omega) | g (p.fst) = p.snd} :=
@@ -407,6 +470,7 @@ begin
            rw[bSet.mem_functions_iff] at Hf_left,
            tactic.rotate 1, apply_instance,
            refine false_of_bot_lt_and_le_bot H₁ (H _),
+
            change Γ' ≤ f =ᴮ ǧ at H₃, apply_at H₃ bv_symm,
            apply bv_rw' H₃, simp, from Hf_left },
            { apply_at H check_not_is_surj,  show 𝔹, from Γ',
@@ -416,7 +480,7 @@ begin
            apply bv_rw' H₃, simp, from Hf_right}
          },
   have : Γ_1 ≤ _,
-    from check_functions_eq_functions_of_omega_closed (𝔹_omega_closed) ℵ₁,
+    from check_functions_eq_functions ℵ₁,
   bv_cc
 end
 

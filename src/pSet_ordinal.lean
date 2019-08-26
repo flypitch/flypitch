@@ -762,6 +762,10 @@ begin
   apply H_neq, apply le_antisymm; from le_of_subset ‹_›
 end
 
+lemma omega_inj {n k : omega.type} : pSet.equiv (omega.func n) (omega.func k) → n = k :=
+by {cases n, cases k, change equiv (of_nat _) (of_nat _) → _, intro H, suffices this : n = k,
+    subst this, by_contra H', from of_nat_inj H' H }
+
 -- lemma AE_of_AE_inj_indexing {x y : pSet} (H₁ : function.injective x.func) (H₂ : function.injective y.func) (H₂ : ∀ z ∈ y, ∃ w ∈ x,
 
 lemma function_lift_aux {x y f : pSet}
@@ -1000,6 +1004,19 @@ begin
   induction n with n ih,
     { simp },
     { from lt_trans ih (by {simp, sorry}) }
+end
+
+-- TODO(jesse): move into pSet_ordinal
+def pSet.function.mk {x : pSet.{u}} (ψ : x.type → pSet.{u}) (H_ext : ∀ i j, pSet.equiv (x.func i) (x.func j) → pSet.equiv (ψ i) (ψ j)) : pSet.{u} :=
+⟨x.type, ψ⟩
+
+lemma pSet.function.mk_is_func {x y : pSet.{u}} (ψ : x.type → pSet.{u}) {H_ext : ∀ i j, pSet.equiv (x.func i) (x.func j) → pSet.equiv (ψ i) (ψ j)}
+  (H_im : ∀ i, ψ i ∈ y) : pSet.is_func x y (pSet.function.mk ψ H_ext)
+  :=
+begin
+  refine ⟨_,_⟩,
+    { sorry },
+    { sorry }
 end
 
 end pSet

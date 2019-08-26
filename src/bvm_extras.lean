@@ -517,6 +517,8 @@ end
 @[reducible]def is_function (x y f : bSet 𝔹) : 𝔹 :=
   is_func' x y f ⊓ (f ⊆ᴮ prod x y)
 
+lemma is_func'_of_is_function {Γ : 𝔹} {x y f} (H_func : Γ ≤is_function x y f) : Γ ≤ is_func' x y f := bv_and.left H_func
+
 lemma check_is_total {x y f : pSet.{u}} (H_total : pSet.is_total x y f)  {Γ : 𝔹} : Γ ≤ is_total x̌ y̌ f̌ :=
 begin
   bv_intro z, bv_imp_intro Hz,

@@ -463,6 +463,12 @@ variables {α : Type u} {β : Type v} {γ : Type w}
 lemma ne_empty_of_exists_mem {s : set α} : ∀(h : ∃x, x ∈ s), s ≠ ∅
 | ⟨x, hx⟩ := ne_empty_of_mem hx
 
+lemma inter_sUnion_ne_empty_of_exists_mem {b : set α} {𝓕 : set $ set α} (H : ∃ f ∈ 𝓕, b ∩ f ≠ ∅) : b ∩ ⋃₀ 𝓕 ≠ ∅ :=
+begin
+  apply ne_empty_of_exists_mem, safe, change _ ≠ _ at h_1, rw ne_empty_iff_exists_mem at h_1,
+  rcases h_1 with ⟨x, H₁, H₂⟩, specialize a x, finish
+end
+
 @[simp]lemma mem_image_univ {f : α → β} {x} : f x ∈ f '' set.univ := ⟨x, ⟨trivial, rfl⟩⟩
 
 -- todo: only use image_preimage_eq_of_subset
