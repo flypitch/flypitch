@@ -604,6 +604,13 @@ local infix `≼`:70 := (λ x y, injects_into x y)
 
 def CH : 𝔹 := - ⨆ x, ⨆y, (omega ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(omega))
 
+def surjection_of_injection (f : bSet 𝔹) : bSet 𝔹 := sorry -- use pointed_extension
+
+lemma surjects_onto_of_injects_into {x y : bSet 𝔹} {Γ} (H_inj : Γ ≤ injects_into x y) : Γ ≤ surjects_onto y x := sorry
+
+-- aka AC
+lemma injects_into_of_surjects_onto {x y : bSet 𝔹} {Γ} (H_inj : Γ ≤ surjects_onto x y) : Γ ≤ injects_into y x := sorry
+
 section surjects_onto_of_larger_than
 
 variables
@@ -1315,6 +1322,24 @@ end
 
 
 end function_mk'
+
+section dom_cover
+
+def dom_section : Π (x : bSet 𝔹), bSet 𝔹
+| x@⟨α,A,B⟩ := function.mk' (check_shadow_cast_symm : x.type → (check_shadow x).type) (x.bval)
+    (by {intros i j Γ, apply B_congr_check_shadow}) (by {intros, simpa[*, check_shadow]})
+
+def dom_cover : bSet 𝔹 := sorry -- use surjects_onto_of_injects_into
+-- def dom_cover (x : bSet 𝔹) : bSet 𝔹 :=
+-- function.mk' (check_shadow_cast : _ → x.type) (λ i, ⊤) _ _
+
+/- by following lemma 1.52 in Bell, should be able to well-order any set
+   via well-ordering principle in pSet -/
+
+-- lemma dom_cover_surjection : is_surj (check_shadow )  :=
+
+
+end dom_cover
 
 def function.mk {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : bSet 𝔹 :=
 ⟨u.type, λ a, pair (u.func a) (F a), u.bval⟩
