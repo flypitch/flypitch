@@ -321,7 +321,7 @@ lemma eq_of_eq_pair {x y z w : bSet 𝔹} {Γ : 𝔹} (H_eq : Γ ≤ pair x y =�
   Γ ≤ x =ᴮ z ∧ Γ ≤ y =ᴮ w :=
 ⟨eq_of_eq_pair_left' ‹_›, eq_of_eq_pair_right' ‹_›⟩
 
-lemma pair_eq_pair_iff {x y x' y' : bSet 𝔹} {Γ : 𝔹} 
+lemma pair_eq_pair_iff {x y x' y' : bSet 𝔹} {Γ : 𝔹}
   : Γ ≤ pair x y =ᴮ pair x' y' ↔ Γ ≤ x =ᴮ x' ∧ Γ ≤ y =ᴮ y' :=
 iff.intro (λ _, eq_of_eq_pair ‹_›) (λ ⟨_,_⟩, pair_congr ‹_› ‹_›)
 
@@ -512,7 +512,7 @@ begin
   bv_split_at Hi, refine le_inf ‹_› (le_inf _ ‹_›),
   apply bv_use b, refine le_inf ‹_› _,
   apply @bv_rw' _ _ _ _ _ (bv_symm Hi_right) (λ z, pair z b ∈ᴮ f),
-  exact B_ext_pair_mem_left, from ‹_›  
+  exact B_ext_pair_mem_left, from ‹_›
 end
 
 /-- f is a function x → y if it is extensional, total, and is a subset of the product of x and y -/
@@ -642,7 +642,7 @@ section pointed_extension
 
 variables {S f : bSet 𝔹} (b : bSet 𝔹) (H_b : Γ ≤ b ∈ᴮ y)
   (H_S : Γ ≤ S ⊆ᴮ x) (H_surj : Γ ≤ is_func' S y f ⊓ is_surj S y f)
-          
+
 
 include b H_S H_surj
 def pointed_extension : bSet 𝔹 :=
@@ -724,7 +724,7 @@ begin
         apply pointed_extension_y_eq_of_not_mem', repeat {assumption},
         {simp at Hpr_right, rw[pair_eq_pair_iff] at Hpr_right, cases Hpr_right, rw[<-imp_bot],
          apply @bv_rw' _ _ _ _ _ (bv_symm Hpr_right_left) (λ z, z ∈ᴮ S ⟹ ⊥),
-         {simp}, dsimp, rwa[imp_bot] }, 
+         {simp}, dsimp, rwa[imp_bot] },
          },
 },
     { bv_or_elim_at' H,
@@ -741,7 +741,7 @@ begin
               { bv_imp_intro H_good,
                   suffices this : Γ_5 ≤ pair w v' =ᴮ pair (func x i) (func y j) ,
                     by {apply @bv_rw' _ _ _ _ _ (bv_symm this) (λ z, z ∈ᴮ f), simp, from ‹_› },
-                  refine pair_congr (bv_and.right ‹_›) (bv_and.right ‹_›) },                     
+                  refine pair_congr (bv_and.right ‹_›) (bv_and.right ‹_›) },
               { bv_imp_intro H_bad, refine bv_exfalso (bv_absurd _ H.left_left _),
                 apply bv_rw' (bv_and.right Hi), simp, from ‹_› },
               { from bv_and.left Hi },
@@ -873,7 +873,7 @@ lemma exists_surjection_of_surjects_onto {x y : bSet 𝔹} {Γ} (H_surj : Γ ≤
 lemma check_not_is_func {x y f : pSet.{u}} (H : ¬ pSet.is_func x y f) : ∀ {Γ : 𝔹}, ( Γ ≤ (is_function x̌ y̌ f̌) → Γ ≤ (⊥ : 𝔹)) :=
 begin
   rw pSet.is_func_iff at H, intros Γ H', push_neg at H,
-  bv_split_at H', 
+  bv_split_at H',
   cases H,
     { replace H := (check_not_subset H : Γ ≤ _),
       have := @bv_rw'' 𝔹 _ _ _ _ (check_prod) (λ z, - (f̌ ⊆ᴮ z)) H (by simp),
@@ -915,7 +915,7 @@ begin
   replace H_surj := H_surj (b̌) this,
   rw[<-bounded_exists] at H_surj, swap, {change B_ext _, from B_ext_pair_mem_left },
   bv_cases_at H_surj i_a Hi_a, bv_split_at Hi_a,
-  specialize Hb₂ (x.func (check_cast i_a)), cases Hb₂,  
+  specialize Hb₂ (x.func (check_cast i_a)), cases Hb₂,
     { apply check_not_mem ‹_›, simp  },
     { rw ←pSet.pair_sound at Hb₂, change _ ∉ f at Hb₂, apply check_not_mem ‹_›,
       have this : Γ_1 ≤ (pSet.pair (pSet.func x (check_cast i_a)) b)̌  =ᴮ bSet.pair _ _,
@@ -927,7 +927,7 @@ lemma bot_lt_of_true {b : 𝔹} (H : ∀ {Γ}, Γ ≤ b) : ⊥ < b :=
 by {specialize @H ⊤, rw top_le_iff at H, simp*}
 
 
-section 
+section
 variable {Γ : 𝔹}
 
 /--
@@ -957,7 +957,7 @@ begin
   refine ⟨_,_⟩; intro H,
     { apply ex_witness_of_mem_lift_surj_inj _ _, from x, from y, repeat {assumption} },
 
-    { unfold lift_surj_inj, rw[mem_subset.mk_iff], bv_cases_at H w Hw, bv_split_at Hw, bv_split_at Hw_left, 
+    { unfold lift_surj_inj, rw[mem_subset.mk_iff], bv_cases_at H w Hw, bv_split_at Hw, bv_split_at Hw_left,
       rw[mem_unfold] at H_mem₁, bv_cases_at H_mem₁ i Hi, rw[mem_unfold] at H_mem₂, bv_cases_at H_mem₂ j Hj,
       apply bv_use (i,j), refine le_inf _ _,
         { bv_split, simp[pair_congr, *] },
@@ -1027,9 +1027,9 @@ begin
         repeat {assumption}, dsimp [Γ_3], exact inf_le_left_of_le inf_le_left }
 end
 
-end 
+end
 
-section 
+section
 variable {Γ : 𝔹}
 variables {x z f g : bSet 𝔹} (y : bSet 𝔹) (H_surj : Γ ≤ is_surj x z f) (H_inj : Γ ≤ is_inj g)
 -- extends a surjection f : x ↠ z along an injection g : x ↪ y to a surjection
@@ -1042,7 +1042,7 @@ def extend_surj_inj : bSet 𝔹 :=
                           (pair w (y.func p.fst) ∈ᴮ g )))
 
 variables {y} {H_surj} {H_inj}
-lemma ex_witness_of_mem_extend_surj_inj {w₁ w₂ : bSet 𝔹} 
+lemma ex_witness_of_mem_extend_surj_inj {w₁ w₂ : bSet 𝔹}
   (H_is_func'_f : Γ ≤ is_func' x z f) (H : Γ ≤ pair w₁ w₂ ∈ᴮ (extend_surj_inj y H_surj H_inj))
   : Γ ≤ ⨆ w, (w ∈ᴮ x ⊓ (pair w w₁ ∈ᴮ g) ⊓ (pair w w₂ ∈ᴮ f)) :=
 begin
@@ -1061,7 +1061,7 @@ begin
   refine ⟨_,_⟩; intro H,
     { exact ex_witness_of_mem_extend_surj_inj H_is_func'_f ‹_› },
 
-    { unfold extend_surj_inj, rw[mem_subset.mk_iff], bv_cases_at H w Hw, bv_split_at Hw, bv_split_at Hw_left, 
+    { unfold extend_surj_inj, rw[mem_subset.mk_iff], bv_cases_at H w Hw, bv_split_at Hw, bv_split_at Hw_left,
       rw[mem_unfold] at H_mem₁, bv_cases_at H_mem₁ i Hi, rw[mem_unfold] at H_mem₂, bv_cases_at H_mem₂ j Hj,
       apply bv_use (i,j), refine le_inf _ _,
         { bv_split, simp[pair_congr, *] },
@@ -1086,7 +1086,7 @@ begin
   repeat{assumption}, bv_cases_at H_mems_left w₁' Hw₁', bv_cases_at H_mems_right w₂' Hw₂',
   suffices H_eq' : Γ_4 ≤ w₁' =ᴮ w₂',
     by {apply eq_of_is_func'_of_eq, from ‹_›, from H_eq', all_goals {bv_split, from ‹_›} },
-  apply eq_of_is_inj_of_eq ‹_› H_eq, all_goals {bv_split, bv_split, from ‹_›} 
+  apply eq_of_is_inj_of_eq ‹_› H_eq, all_goals {bv_split, bv_split, from ‹_›}
 end
 
 lemma extend_surj_inj_is_total : Γ ≤ is_total (image x y g) z (extend_surj_inj y H_surj H_inj) :=
@@ -1116,7 +1116,7 @@ begin
         exact le_inf (le_inf ‹_› ‹_›) ‹_›, repeat{assumption} }
 end
 
-end 
+end
 
 lemma bSet_lt_of_lt_of_le (x y z : bSet 𝔹) {Γ} (H₁ : Γ ≤ x ≺ y) (H₂ : Γ ≤ y ≼ z) : Γ ≤ x ≺ z :=
 begin
@@ -1228,6 +1228,12 @@ begin
   erw[binary_inter_mem_iff], simp*
 end
 
+lemma function_of_func'_inj_of_inj {x y f : bSet 𝔹} {Γ} {H : Γ ≤ is_func' x y f}
+  (H_is_surj : Γ ≤ is_inj f) : Γ ≤ is_inj (function_of_func' H) :=
+begin
+  sorry
+end
+
 def functions (x y : bSet 𝔹) : bSet 𝔹 :=
   set_of_indicator (λ s : (bv_powerset (prod x y) : bSet 𝔹).type, is_function x y ((bv_powerset (prod x y)).func s))
 
@@ -1247,12 +1253,6 @@ begin
       bv_intro w₁, bv_imp_intro Hw₁, replace H_left_right := H_left_right w₁ ‹_›,
       bv_cases_at H_left_right w₂, apply bv_use w₂, bv_split, refine le_inf ‹_› _,
       apply bv_rw' (bv_symm ‹_ ≤ g =ᴮ func (𝒫 prod x y) s›), simp, from ‹_› }
-end
-
-lemma two_omega_larger_than_powerset_omega {Γ : 𝔹}
-  : Γ ≤ larger_than (functions bSet.omega 𝟚) (bv_powerset bSet.omega) :=
-begin
-  sorry
 end
 
 -- lemma functions_check {x y : pSet.{u}} (pSet.functions x y):  := TODO(jesse): finish stating this
@@ -1570,7 +1570,7 @@ begin
        apply bv_use j.val,
        refine le_inf _ _,
          { have := j.property, unfold Prop_to_bot_top, simp* },
-         { exact bv_refl }}, 
+         { exact bv_refl }},
      { rw[subset_unfold], bv_intro j, bv_imp_intro Hj, simp,
        let Q := bval (set_of_indicator (λ (i : type $ (pSet.mk α A)̌  ), Prop_to_bot_top (s i))) j,
        haveI := classical.prop_decidable, by_cases H: ⊥ < Q,
@@ -1602,6 +1602,61 @@ lemma of_nat_inj {n k : ℕ} (H_neq : n ≠ k) : ((of_nat n : bSet 𝔹) =ᴮ of
 check_bv_eq_bot_of_not_equiv (pSet.of_nat_inj ‹_›)
 
 end check
+
+section powerset
+variables {BB : Type u} [nontrivial_complete_boolean_algebra BB] -- todo: search + replace BB
+/- The function from 2^x to P(x) -/
+-- def set_of_indicator (x : bSet 𝔹) : bSet 𝔹 :=
+-- begin
+--   refine subset.mk (_ : (functions x 𝟚).type → 𝔹),
+--   dsimp [functions, bv_powerset], intro f,
+-- end
+
+/- I am working on the injection P(ω) ↪ 2 ^ ω ↪ (2 ^ ω) ✓ ↪ P(ω) ✓ -/
+
+def indicator_of_set' (x : bSet BB) : bSet BB :=
+begin
+  refine subset.mk (_ : ((bv_powerset x).prod (functions x 𝟚)).type → BB),
+  intro sχ,
+  refine ⨅(a : type x), sχ.2 (a, option.none) ⇔ sχ.1 a
+end
+
+lemma is_func'_indicator_of_set' {Γ : BB} (x : bSet BB) :
+  Γ ≤ is_func' (bv_powerset x) (functions x 𝟚) (indicator_of_set' x) :=
+begin
+  apply bv_and_intro,
+  { bv_intro s₁, bv_intro s₂, bv_intro χ₁, bv_intro χ₂, bv_imp_intro h₁, bv_imp_intro h₂,
+    bv_split_at h₁,
+    apply subset_ext,
+    { rw [subset_unfold'], bv_intro y, bv_imp_intro hy,
+      rw [indicator_of_set', mem_subset.mk_iff] at h₁_left h₁_right,
+      bv_cases_at h₁_left sχ h₃, clear h₁_left, cases sχ with s χ, bv_split_at h₃,
+      dsimp at h₃_left,
+      -- dsimp at *,
+      -- have := eq_of_is_func'_of_eq,
+      },
+    {  }},
+  { }
+end
+
+lemma is_inj_indicator_of_set' {Γ : BB} (x : bSet BB) : Γ ≤ is_inj (indicator_of_set' x) :=
+begin
+  sorry
+end
+
+def indicator_of_set (Γ : BB) (x : bSet BB) : bSet BB :=
+function_of_func' $ (is_func'_indicator_of_set' x : Γ ≤ _)
+
+lemma is_function_indicator_of_set {Γ : BB} (x : bSet BB) :
+  Γ ≤ is_function (bv_powerset x) (functions x 𝟚) (indicator_of_set Γ x) :=
+function_of_func'_is_function _
+
+lemma is_inj_indicator_of_set {Γ : BB} (x : bSet BB) :
+  Γ ≤ is_inj (indicator_of_set Γ x) :=
+function_of_func'_inj_of_inj $ is_inj_indicator_of_set' x --todo: function_of_func'_inj_of_inj
+
+
+end powerset
 
 section ordinals
 variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
@@ -1866,7 +1921,7 @@ def omega_spec (ω : bSet 𝔹) := (∀ {Γ : 𝔹}, closed_under_successor Γ �
 lemma check_succ_eq_succ_check {n : ℕ} : (of_nat (n.succ) : bSet 𝔹) = bSet.succ (of_nat n) :=
 by simp[of_nat, succ, pSet.of_nat]
 
-lemma omega_closed_under_succ {Γ : 𝔹} : closed_under_successor Γ (bSet.omega) := 
+lemma omega_closed_under_succ {Γ : 𝔹} : closed_under_successor Γ (bSet.omega) :=
 begin
   unfold closed_under_successor, bv_intro y, bv_imp_intro H_mem,
   bv_cases_at H_mem k, cases k with k, simp at H_mem_1, refine bv_use _,
@@ -1878,7 +1933,7 @@ end
 
 lemma omega_is_omega : omega_spec (bSet.omega : bSet 𝔹) :=
 begin
-  refine ⟨by apply omega_closed_under_succ, _⟩, 
+  refine ⟨by apply omega_closed_under_succ, _⟩,
     {intros x Γ H₁ H₂, unfold closed_under_successor at H₂, rw[subset_unfold],
      simp, intro k, cases k, induction k, convert H₁,
      {change (∅̌) = _, simp},
@@ -1912,7 +1967,7 @@ The universal property of ℵ₁ is that it injects into any set which is larger
   B_ext (aleph_one_weak_universal_property : bSet 𝔹 → 𝔹) :=
 by { delta aleph_one_weak_universal_property, simp }
 
-lemma aleph_one_exists {Γ : 𝔹} : Γ ≤ ⨆x, aleph_one_Ord_spec x := 
+lemma aleph_one_exists {Γ : 𝔹} : Γ ≤ ⨆x, aleph_one_Ord_spec x :=
 begin
   sorry -- TODO
 end

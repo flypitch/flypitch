@@ -751,7 +751,7 @@ meta def bv_cc : tactic unit := do
    apply_all ``(bSet.bv_cc.mk_mem),
    try `[rw[bSet.bv_cc.mk_mem_iff]],
    cc
-   
+
 end bv_cc
 end interactive
 end tactic
@@ -1554,7 +1554,7 @@ begin
   intros a H, by_contra,
   cases (@check_bv_eq_dichotomy 𝔹 _ y (pSet.func x a)),
     { finish },
-    { contradiction }    
+    { contradiction }
 end
 
 lemma check_mem_iff {x y : pSet} : x ∈ y ↔ x̌ ∈ᴮ y̌ = (⊤ : 𝔹) :=
@@ -1678,7 +1678,7 @@ bot_lt_resolve_right H_nonzero (instantiate_existential_over_check_spec ‹_› 
 
 /--
   This corresponds to Property 4 in Moore's The method of forcing
--/ 
+-/
 
 -- we really need the stronger version
 lemma eq_check_of_mem_check {Γ : 𝔹} (h_nonzero : ⊥ < Γ) (x : pSet.{u}) (y : bSet 𝔹) (H_mem : Γ ≤ y ∈ᴮ x̌) :
@@ -2010,7 +2010,7 @@ begin
       bv_split, apply bv_rw' Hi_left, simp, apply set_of_indicator_mem.mk, from ‹_› }
 end
 
-lemma mem_subset.mk_iff {x : bSet 𝔹} {χ : x .type → 𝔹} {z : bSet 𝔹} {Γ : 𝔹}
+lemma mem_subset.mk_iff {x : bSet 𝔹} {χ : x.type → 𝔹} {z : bSet 𝔹} {Γ : 𝔹}
   : Γ ≤ z ∈ᴮ subset.mk χ ↔ Γ ≤ ⨆ (i : x.type), z =ᴮ (x.func i) ⊓ (χ i ⊓ (x.bval i)) :=
 mem_set_of_indicator_iff $ by simp
 
@@ -2386,7 +2386,7 @@ def dom : ∀ x : bSet 𝔹, pSet.{u}
 -- lemma dom_spec : Π {x : bSet 𝔹}, (dom x)̌  = check_shadow x
 -- | ⟨α,A,B⟩ := by simp[dom, check_shadow, *]
 
-@[reducible]def check_shadow : bSet 𝔹 → bSet 𝔹 := λ x, (dom x)̌ 
+@[reducible]def check_shadow : bSet 𝔹 → bSet 𝔹 := λ x, (dom x)̌
 
 lemma check_shadow_type {x : bSet 𝔹} : (check_shadow x).type = x.type := by cases x; refl
 
