@@ -238,28 +238,51 @@ end
 
 variable (H_function : Γ ≤ is_function bSet.omega y̌ g)
 
+lemma function_reflect.B_infty_le_Γ : (⨅ n, (function_reflect.B H_nonzero H n)) ≤ Γ :=
+begin
+  refine infi_le_of_le 0 _, let p := _, change classical.some p ≤ _,
+  rcases classical.some_spec p with ⟨_,_,_,_⟩, from ‹_›
+end
+
 -- TODO(jesse): come up with a better name
 lemma function_reflect_aux : (⨅n, function_reflect.B H_nonzero H n) ≤ (⨅n, pair (pSet.omega.func (ulift.up n))̌  (y.func $ function_reflect.f H_nonzero H n)̌  ∈ᴮ g) :=
 infi_le_infi $ λ _, function_reflect.B_pair _ _
 
+noncomputable def function_reflect.f' : pSet.{u} :=
+begin
+  refine @pSet.function.mk pSet.omega _ _,
+  intro k, cases k with k',
+  exact y.func (function_reflect.f H_nonzero H k'),
+  intros i j Heqv,
+  suffices this : i = j,
+    by { subst this },
+  from pSet.omega_inj ‹_›
+end
+
+lemma function_reflect.f'_is_function : ∀ {Γ : 𝔹}, Γ ≤ is_function (pSet.omega)̌  y̌ (function_reflect.f' H_nonzero H)̌  :=
+begin
+  refine @check_is_func 𝔹 _ pSet.omega y (function_reflect.f' H_nonzero H) _, apply pSet.function.mk_is_func, intro i, cases i, simp
+end
+
+lemma function_reflect_aux₂ : (⨅n, function_reflect.B H_nonzero H n) ≤ (⨅n, (pair (pSet.omega.func (ulift.up n))̌  (y.func $ function_reflect.f H_nonzero H n)̌  ∈ᴮ (function_reflect.f' H_nonzero H)̌  ⇔ (pair (pSet.omega.func (ulift.up n))̌  (y.func $ function_reflect.f H_nonzero H n)̌  ∈ᴮ g))) :=
+begin
+  refine infi_le_infi (λ n, _), tidy_context, refine ⟨_,_⟩; bv_imp_intro H_mem,
+    { refine le_trans a _, apply function_reflect.B_pair },
+    { apply @bv_rw' _ _ _ _ _ (bv_symm check_pair) (λ z, z ∈ᴮ  (function_reflect.f' H_nonzero H)̌ ), simp,
+      refine check_mem _, convert pSet.function.mk_mem, refl }
+end
+
 include H_omega_closed H_function
 lemma function_reflect_of_omega_closed : ∃ (f : pSet.{u}) (Γ' : 𝔹) (H_nonzero' : ⊥ < Γ') (H_le' : Γ' ≤ Γ), (Γ' ≤ f̌ =ᴮ g) ∧ is_func omega y f :=
 begin
-  refine ⟨_,_⟩,
-    { refine @pSet.function.mk pSet.omega _ _,
-      intro k, cases k with k',
-      exact y.func (function_reflect.f H_nonzero H k'),
-      intros i j Heqv,
-      suffices this : i = j,
-        by {subst this, exact pSet.equiv.refl _ },
-      from pSet.omega_inj ‹_› },
+  refine ⟨function_reflect.f' H_nonzero H,_⟩,
     { use (⨅ n, function_reflect.B H_nonzero H n), -- this is Γ'
       refine ⟨_,_,⟨_,_⟩⟩,
         { apply H_omega_closed, apply function_reflect.B_nonzero, apply function_reflect.B_le },
         { refine infi_le_of_le 0 _, let p := _, change classical.some p ≤ _,
           rcases classical.some_spec p with ⟨_,_,_,_⟩, from ‹_› },
         { refine le_trans (function_reflect_aux _ _) _,
-          sorry -- TODO(jesse): use that Γ' ≤ Γ (Γ ≤ is_function ω̌ y̌ f̌ ), and 𝔹-valuedfunext for is_functions
+          sorry
              },
           { apply pSet.function.mk_is_func, intro n, cases n, simp }}
 end

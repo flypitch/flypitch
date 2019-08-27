@@ -465,10 +465,12 @@ lemma is_total_of_is_func' {x y f : bSet 𝔹} {Γ : 𝔹} (H_is_func' : Γ ≤ 
   : Γ ≤ is_total x y f :=
 bv_and.right ‹_›
 
+-- aka function extensionality
 @[simp]lemma eq_of_is_func_of_eq {x y f x' y' : bSet 𝔹} {Γ : 𝔹} (H_is_func : Γ ≤ is_func f)  (H_eq₁ : Γ ≤ x =ᴮ y)
   (H_mem₁ : Γ ≤ pair x x' ∈ᴮ f) (H_mem₂ : Γ ≤ pair y y' ∈ᴮ f) : Γ ≤ x' =ᴮ y' :=
 H_is_func x y x' y' (le_inf ‹_› ‹_›) ‹_›
 
+-- aka function extensionality
 @[simp]lemma eq_of_is_func'_of_eq {a b x y f x' y' : bSet 𝔹} {Γ : 𝔹} (H_is_func' : Γ ≤ is_func' a b f)  (H_eq₁ : Γ ≤ x =ᴮ y)
   (H_mem₁ : Γ ≤ pair x x' ∈ᴮ f) (H_mem₂ : Γ ≤ pair y y' ∈ᴮ f) : Γ ≤ x' =ᴮ y' :=
 by {[smt] eblast_using [eq_of_is_func_of_eq, is_func_of_is_func']}
@@ -517,7 +519,9 @@ end
 @[reducible]def is_function (x y f : bSet 𝔹) : 𝔹 :=
   is_func' x y f ⊓ (f ⊆ᴮ prod x y)
 
-lemma is_func'_of_is_function {Γ : 𝔹} {x y f} (H_func : Γ ≤is_function x y f) : Γ ≤ is_func' x y f := bv_and.left H_func
+lemma is_func'_of_is_function {Γ : 𝔹} {x y f} (H_func : Γ ≤ is_function x y f) : Γ ≤ is_func' x y f := bv_and.left H_func
+
+lemma subset_prod_of_is_function {Γ : 𝔹} {x y f} (H_func : Γ ≤ is_function x y f) : Γ ≤ f ⊆ᴮ prod x y := bv_and.right H_func
 
 lemma check_is_total {x y f : pSet.{u}} (H_total : pSet.is_total x y f)  {Γ : 𝔹} : Γ ≤ is_total x̌ y̌ f̌ :=
 begin
@@ -568,9 +572,23 @@ lemma check_is_injective_function {x y f : pSet.{u}} (H_inj : pSet.is_injective_
   (H_mem₁ : Γ ≤ pair x x' ∈ᴮ f) (H_mem₂ : Γ ≤ pair y y' ∈ᴮ f) : Γ ≤ x =ᴮ y :=
 H_is_inj x y x' y' (le_inf (le_inf ‹_› ‹_›) ‹_›)
 
-lemma funext (f x y z : bSet 𝔹) {Γ : 𝔹} (H_func : Γ ≤ is_func f) (H : Γ ≤ (pair x y) ∈ᴮ f)
-  (H' : Γ ≤ (pair x z) ∈ᴮ f) : Γ ≤ y =ᴮ z :=
-H_func x x y z (le_inf ‹_› ‹_›) (bv_refl)
+-- lemma funext (f x y z : bSet 𝔹) {Γ : 𝔹} (H_func : Γ ≤ is_func f) (H : Γ ≤ (pair x y) ∈ᴮ f)
+--   (H' : Γ ≤ (pair x z) ∈ᴮ f) : Γ ≤ y =ᴮ z :=
+-- H_func x x y z (le_inf ‹_› ‹_›) (bv_refl)
+
+-- ∀ z ∈ x, ∀ w ∈ y, (z,w) ∈ f ↔ (z,w) ∈ g
+
+-- not really funext since it doesn't use extensionality in an essential way
+lemma funext {x y f g : bSet 𝔹} {Γ : 𝔹} (H₁ : Γ ≤ is_function x y f) (H₂ : Γ ≤ is_function x y g)
+  (H_peq : Γ ≤ ⨅ p, p ∈ᴮ prod x y ⟹ (p ∈ᴮ f ⇔ p ∈ᴮ g)) : Γ ≤ f =ᴮ g :=
+begin
+  have H_sub₁ := subset_prod_of_is_function H₁, have H_sub₂ := subset_prod_of_is_function H₂,
+  apply mem_ext, all_goals {bv_intro z, bv_imp_intro Hz_mem},
+    { have := mem_of_mem_subset H_sub₁ Hz_mem, replace H_peq := H_peq z ‹_›,
+      rw le_inf_iff at H_peq, cases H_peq with H_peq₁ H_peq₂, exact H_peq₁ Hz_mem },
+    { have := mem_of_mem_subset H_sub₂ Hz_mem, replace H_peq := H_peq z ‹_›,
+      rw le_inf_iff at H_peq, cases H_peq with H_peq₁ H_peq₂, exact H_peq₂ Hz_mem }
+end
 
 /-- A relation f is surjective if for every w ∈ y there is a v ∈ x such that (v,w) ∈ f. -/
 @[reducible]def is_surj (x y : bSet 𝔹) (f : bSet 𝔹) : 𝔹 :=

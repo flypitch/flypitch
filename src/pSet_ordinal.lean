@@ -155,6 +155,8 @@ def Ord (x : pSet) : Prop := epsilon_well_orders x ∧ is_transitive x
 
 @[simp]lemma is_ewo_of_Ord {x} (H : Ord x) : epsilon_well_orders x := H.left
 
+@[simp, refl]lemma equiv.refl' {x : pSet} : pSet.equiv x x := equiv.refl _
+
 lemma equiv_of_eq {x y : pSet} : ⟦x⟧ = ⟦y⟧ → pSet.equiv x y :=
 λ H, quotient.eq.mp H
 
@@ -1006,17 +1008,28 @@ begin
     { from lt_trans ih (by {simp, sorry}) }
 end
 
--- TODO(jesse): move into pSet_ordinal
 def pSet.function.mk {x : pSet.{u}} (ψ : x.type → pSet.{u}) (H_ext : ∀ i j, pSet.equiv (x.func i) (x.func j) → pSet.equiv (ψ i) (ψ j)) : pSet.{u} :=
-⟨x.type, ψ⟩
+⟨x.type, λ i, pair (x.func i) (ψ i)⟩
+
+lemma pSet.function.mk_mem {x : pSet.{u}} {ψ : x.type → pSet.{u}} {H_ext : ∀ i j, pSet.equiv (x.func i) (x.func j) → pSet.equiv (ψ i) (ψ j)}
+  : ∀ {i : x.type}, pSet.pair (x.func i) (ψ i) ∈ pSet.function.mk ψ H_ext :=
+begin
+  intro i,change (pSet.function.mk ψ H_ext).func _ ∈ _, apply mem.mk
+end
 
 lemma pSet.function.mk_is_func {x y : pSet.{u}} (ψ : x.type → pSet.{u}) {H_ext : ∀ i j, pSet.equiv (x.func i) (x.func j) → pSet.equiv (ψ i) (ψ j)}
   (H_im : ∀ i, ψ i ∈ y) : pSet.is_func x y (pSet.function.mk ψ H_ext)
   :=
 begin
   refine ⟨_,_⟩,
-    { sorry },
-    { sorry }
+    { rw [←prod_sound], change Set.mk _ ⊆ Set.mk _, rw ←subset_sound,
+      rw subset_iff_all_mem, intros z Hz, rw mem_unfold at Hz ⊢,
+      cases Hz with i Hi, specialize H_im i, rw mem_unfold at H_im,
+      cases H_im with j Hj, use (i,j), refine equiv.trans Hi _, change equiv (pair (x.func i) (ψ i)) (pair (x.func i) (y.func j)), rw ←eq_iff_eq_pair, simp*, },
+    { intros z Hz,  rw ←(quotient.out_eq _ : ⟦_⟧ = z) at Hz, change _ ∈ ⟦_⟧ at Hz, rw ←mem_sound at Hz, rw[mem_unfold] at Hz, cases Hz with i Hi, use ⟦ψ i⟧, dsimp,
+      refine ⟨_,_⟩,
+        { rw ←(quotient.out_eq _ : ⟦_⟧ = z), erw ←pair_sound, erw ←mem_iff, sorry },
+        { sorry }}
 end
 
 end pSet
