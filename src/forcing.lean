@@ -76,12 +76,12 @@ begin
                      cases a, cases a_right, cases a_left, solve_by_elim },
     work_on_goal 1 { cases β₂_property,
       work_on_goal 0 { induction β₂_property, simp only [le_inf_iff] at a,
-        cases a, cases a_right, cases a_left, solve_by_elim}, simp only [le_inf_iff] at a,
-        cases a, cases a_right, cases a_left, solve_by_elim},
+        cases a, cases a_right, cases a_left, solve_by_elim }, simp only [le_inf_iff] at a,
+        cases a, cases a_right, cases a_left, solve_by_elim },
 
     rw[β₁_property] at a_left_right,
     have H_le_eq : Γ ≤ ((η₂.func β₁_val)̌ ) =ᴮ ((η₂.func β₂_val)̌ ),
-     by {apply funext; from ‹_›},
+     by {apply eq_of_is_func_of_eq, from a_right_left, repeat {sorry} },
     from le_trans H_le_eq
            (by {rw[le_bot_iff], apply check_bv_eq_bot_of_not_equiv, apply H_inj₂, tidy})},
    intro H_CCC, specialize H_CCC (g⁻¹'{ξ}) ‹_› ‹_› ‹_›,
@@ -262,7 +262,7 @@ begin
   from cast_heq _ _, from cast_heq _ _, from eq₀, from eq₀
 end
 
-lemma 𝒞_dense {b : 𝔹} (H : ⊥ < b) : ∃ p : 𝒞, ι p ≤ b :=
+lemma 𝒞_dense {b : 𝔹} (H : ⊥ < b) : ∃ p : 𝒞, (ι p) ≤ b :=
 begin
   cases (classical.choice (classical.nonempty_of_not_empty _ H.right.symm)) with S_wit H_wit,
   change ∃ p, (ι p).val ⊆ b.val,
@@ -532,7 +532,7 @@ end
 noncomputable def neg_CH_func : bSet 𝔹 :=
 @function.mk _ _ (ℵ₂̌ ) (λ x, cohen_real.mk x) cohen_real.mk_ext
 
-theorem ℵ₂_le_𝔠 : ⊤ ≤ is_func' (ℵ₂̌ ) 𝔠 (neg_CH_func) ⊓ is_inj (neg_CH_func) :=
+theorem ℵ₂_le_𝔠 : ⊤ ≤ is_func' (ℵ₂̌ ) 𝔠 (neg_CH_func) ⊓ bSet.is_inj (neg_CH_func) :=
 begin
 refine le_inf _ _,
 

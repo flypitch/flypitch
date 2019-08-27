@@ -272,7 +272,47 @@ begin
       refine check_mem _, convert pSet.function.mk_mem, refl }
 end
 
-include H_omega_closed H_function
+include H_function
+
+lemma function_reflect.B_infty_le_function : (⨅ n, (function_reflect.B H_nonzero H n)) ≤ is_function ω y̌ g :=
+le_trans (by apply function_reflect.B_infty_le_Γ) H_function
+
+lemma function_reflect_aux₃ : (⨅n, function_reflect.B H_nonzero H n) ≤ ⨅ (p : bSet 𝔹), p ∈ᴮ prod omegǎ  y̌  ⟹ (p ∈ᴮ (function_reflect.f' H_nonzero H)̌  ⇔ p ∈ᴮ g) := 
+begin
+  rw ←bounded_forall, swap, {change B_ext _, simp},
+  bv_intro pr, rcases pr with ⟨⟨i⟩, j⟩, simp only [prod_check_bval, top_imp, prod_func],
+  have := (function_reflect_aux₂ H_nonzero H) i, bv_split_at this,
+  refine le_inf _ _; bv_imp_intro H',
+    { have this' : Γ_1 ≤ (pair (func omegǎ  {down := i}) (func y̌  j)) =ᴮ (pair (func omega {down := i})̌  (func y (function_reflect.f H_nonzero H i))̌ ),
+        by {rw pair_eq_pair_iff, refine ⟨bv_refl, _⟩,
+            refine eq_of_is_func'_of_eq (is_func'_of_is_function _) _ _ _, show _ ≤ is_function bSet.omega y̌ (function_reflect.f' H_nonzero H)̌ ,
+            refine check_is_func _, apply pSet.function.mk_is_func, intro n, cases n, simp,
+            show _ ≤ _ =ᴮ _, apply bv_refl, from H',
+            refine this_right _,
+            refine le_trans (inf_le_right) (infi_le_of_le i (by apply function_reflect.B_pair))},  
+      apply @bv_rw' _ _ _ _ _ this' (λ z, z ∈ᴮ g), simp,
+      have := (inf_le_right : Γ_1 ≤ _),
+      exact le_trans this (le_trans
+              (by apply function_reflect_aux) (infi_le_of_le i (by refl)))},
+    { have this' : Γ_1 ≤ (pair (func omegǎ  {down := i}) (func y̌  j)) =ᴮ (pair (func omega {down := i})̌  (func y (function_reflect.f H_nonzero H i))̌ ),
+        by {rw pair_eq_pair_iff, refine ⟨bv_refl, _⟩,
+            refine eq_of_is_func'_of_eq (is_func'_of_is_function _) _ _ _, show _ ≤ is_function _ _ _, refine le_trans inf_le_right (function_reflect.B_infty_le_function _ _ H_function),
+            show _ ≤ _ =ᴮ _, from (bv_refl : _ ≤ (func omegǎ  {down := i}) =ᴮ _), from H',
+        refine le_trans (inf_le_right) (infi_le_of_le i _), apply function_reflect.B_pair },
+      apply @bv_rw' _ _ _ _ _ this' (λ z, z ∈ᴮ ((function_reflect.f' H_nonzero H)̌ )), simp,
+      apply @bv_rw' _ _ _ _ _ (bv_symm check_pair) (λ z, z ∈ᴮ  (function_reflect.f' H_nonzero H)̌ ), simp,
+      refine check_mem _, convert pSet.function.mk_mem, refl}
+end
+-- begin
+--   rw ←bounded_forall, swap, {change B_ext _, simp},
+--   bv_intro pr, simp only [prod_check_bval, top_imp],
+--   rcases pr with ⟨⟨i⟩, j⟩,
+--   refine le_inf _ _; bv_imp_intro H',
+--     { sorry },
+--     { sorry }
+-- end
+
+include H_omega_closed
 lemma function_reflect_of_omega_closed : ∃ (f : pSet.{u}) (Γ' : 𝔹) (H_nonzero' : ⊥ < Γ') (H_le' : Γ' ≤ Γ), (Γ' ≤ f̌ =ᴮ g) ∧ is_func omega y f :=
 begin
   refine ⟨function_reflect.f' H_nonzero H,_⟩,
@@ -281,9 +321,9 @@ begin
         { apply H_omega_closed, apply function_reflect.B_nonzero, apply function_reflect.B_le },
         { refine infi_le_of_le 0 _, let p := _, change classical.some p ≤ _,
           rcases classical.some_spec p with ⟨_,_,_,_⟩, from ‹_› },
-        { refine le_trans (function_reflect_aux _ _) _,
-          sorry
-             },
+        { apply bSet.funext, apply function_reflect.f'_is_function,
+          refine le_trans _ H_function, {exact function_reflect.B_infty_le_Γ H_nonzero H},
+          apply function_reflect_aux₃, from ‹_› },
           { apply pSet.function.mk_is_func, intro n, cases n, simp }}
 end
 

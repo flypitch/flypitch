@@ -731,7 +731,7 @@ begin
   intros z H, cases H, cases H_w with k, simp at H_h,
   rw[subset.congr_left H_h], unfold omega, rw[subset_iff_all_mem],
   intros y Hy, have := of_nat_of_mem_of_nat Hy, cases this with j Hj,
-  rw[mem.congr_left Hj], use j, simp[equiv.refl]
+  rw[mem.congr_left Hj], use j
 end
 
 lemma is_ewo_omega : epsilon_well_orders (omega : pSet.{u}) :=

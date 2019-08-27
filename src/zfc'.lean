@@ -446,14 +446,14 @@ end
 
 instance V_𝔹_nonempty : nonempty (V 𝔹) := ⟨bSet.empty⟩
 
-theorem CH_f_unprovable : ¬ (ZFC' ⊢' CH_f) :=
-begin
-  intro H,
-  suffices forces_false : ⊤ ⊩[V 𝔹] bd_falsum,
-    from absurd (nontrivial.bot_lt_top) (not_lt_of_le forces_false),
-  refine forced_absurd _ _, exact ZFC', exact CH_f, swap, apply neg_CH_f,
-  let prf_of_CH_f := sprovable_of_provable (classical.choice H),
-  have CH_f_true := boolean_soundness prf_of_CH_f (V_𝔹_nonempty),
-  convert CH_f_true, rw[inf_axioms_top_of_models (bSet_models_ZFC' _)]
-end
+theorem CH_f_unprovable : ¬ (ZFC' ⊢' CH_f) := sorry
+-- begin
+--   intro H,
+--   suffices forces_false : ⊤ ⊩[V 𝔹] bd_falsum,
+--     from absurd (nontrivial.bot_lt_top) (not_lt_of_le forces_false),
+--   refine forced_absurd _ _, exact ZFC', exact CH_f, swap, apply neg_CH_f,
+--   let prf_of_CH_f := sprovable_of_provable (classical.choice H),
+--   have CH_f_true := boolean_soundness prf_of_CH_f (V_𝔹_nonempty),
+--   convert CH_f_true, rw[inf_axioms_top_of_models (bSet_models_ZFC' _)]
+-- end
 end CH_unprovable

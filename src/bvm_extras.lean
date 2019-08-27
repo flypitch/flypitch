@@ -329,11 +329,19 @@ iff.intro (λ _, eq_of_eq_pair ‹_›) (λ ⟨_,_⟩, pair_congr ‹_› ‹_�
 
 @[simp, cleanup]lemma prod_type {v w : bSet 𝔹} : (prod v w).type = (v.type × w.type) := by refl
 
+@[simp, cleanup]lemma prod_func {v w : bSet 𝔹} {pr} : (prod v w).func pr = pair (v.func (pr.1))
+ (w.func (pr.2)) := by refl
+
 @[simp, cleanup]lemma prod_bval {v w : bSet 𝔹} {a b} : (prod v w).bval (a,b) = v.bval a ⊓ w.bval b := by refl
 
 @[simp, cleanup]lemma prod_type_forall {v w : bSet 𝔹} {ϕ : (prod v w).type → 𝔹} :
   (⨅(z:(prod v w).type), ϕ z) = ⨅(z : v.type × w.type), ϕ z :=
 by refl
+
+@[simp]lemma prod_check_bval {x y : pSet.{u}} {pr} : (prod x̌ y̌ : bSet 𝔹).bval pr = ⊤ :=
+begin
+  dsimp only with cleanup, simp
+end
 
 lemma prod_mem_old {v w x y : bSet 𝔹} : x ∈ᴮ v ⊓ y ∈ᴮ w ≤ pair x y ∈ᴮ prod v w :=
 begin
@@ -1631,12 +1639,12 @@ begin
     { rw [subset_unfold'], bv_intro y, bv_imp_intro hy,
       rw [indicator_of_set', mem_subset.mk_iff] at h₁_left h₁_right,
       bv_cases_at h₁_left sχ h₃, clear h₁_left, cases sχ with s χ, bv_split_at h₃,
-      dsimp at h₃_left,
+      dsimp at h₃_left, sorry
       -- dsimp at *,
       -- have := eq_of_is_func'_of_eq,
       },
-    {  }},
-  { }
+    {sorry }},
+  { sorry }
 end
 
 lemma is_inj_indicator_of_set' {Γ : BB} (x : bSet BB) : Γ ≤ is_inj (indicator_of_set' x) :=

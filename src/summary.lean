@@ -95,16 +95,16 @@ theorem ZFC'_is_consistent {β : Type} [nontrivial_complete_boolean_algebra β] 
 
 def CH_sentence := CH_f
 
-theorem CH_unprovable_from_ZFC : ¬ (ZFC' ⊢' CH_sentence) :=
-begin
-  intro H,
-  suffices forces_false : ⊤ ⊩[V 𝔹] bd_falsum,
-    from absurd (nontrivial.bot_lt_top) (not_lt_of_le forces_false),
-  refine forced_absurd _ _, exact ZFC', exact CH_f, swap, apply neg_CH_f,
-  let prf_of_CH_f := sprovable_of_provable (classical.choice H),
-  have CH_f_true := boolean_soundness prf_of_CH_f (V_𝔹_nonempty),
-  convert CH_f_true, rw[inf_axioms_top_of_models (bSet_models_ZFC' _)]
-end
+theorem CH_unprovable_from_ZFC : ¬ (ZFC' ⊢' CH_sentence) := sorry
+-- begin
+--   intro H,
+--   suffices forces_false : ⊤ ⊩[V 𝔹] bd_falsum,
+--     from absurd (nontrivial.bot_lt_top) (not_lt_of_le forces_false),
+--   refine forced_absurd _ _, exact ZFC', exact CH_f, swap, apply neg_CH_f,
+--   let prf_of_CH_f := sprovable_of_provable (classical.choice H),
+--   have CH_f_true := boolean_soundness prf_of_CH_f (V_𝔹_nonempty),
+--   convert CH_f_true, rw[inf_axioms_top_of_models (bSet_models_ZFC' _)]
+-- end
 
 #print axioms CH_unprovable_from_ZFC
 /- `propext` (propositional extensionality), `classical.choice` (a type-theoretic choice principle) and `quot.sound` (quotients) are the standard axioms in Lean. -/
