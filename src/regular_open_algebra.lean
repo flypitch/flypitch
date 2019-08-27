@@ -79,6 +79,16 @@ def rel_dense (S₀ S : set α) : Prop := ∀ U : set α, @is_open α τ U → U
 lemma closure_univ_of_dense {S : set α} (H_dense : dense S) : closure S = univ :=
 dense_iff_inter_open.mpr H_dense
 
+lemma closure_rel_dense_of_open {S₀ S : set α} (H_open : is_open τ S₀)  (H_rel_dense : rel_dense S₀ S) : cl S ∩ S₀ = S₀ :=
+begin
+  ext, split; intro H_mem,
+    { cases H_mem with H₁ H₂, from ‹_› },
+    { refine ⟨_,‹_›⟩, rw mem_closure_iff,
+      intros o Ho H_mem_o, specialize H_rel_dense (o ∩ S₀) (by {apply is_open_inter, from ‹_›, from ‹_›}) _,
+       rw set.ne_empty_iff_exists_mem at H_rel_dense ⊢, cases H_rel_dense with x Hx, repeat {auto_cases},
+       use x, finish, rw set.ne_empty_iff_exists_mem, use x, finish}
+end
+
 /--
 S is dense in the basis 𝓑 if S meets every B ∈ 𝓑.
 -/
@@ -655,15 +665,23 @@ lemma p_p_eq_univ_of_dense {S : set α} (H_dense : dense S) : Sᵖᵖ = univ :=
 by simp only [perp_unfold, closure_univ_of_dense H_dense,
                set.compl_univ, closure_empty, set.compl_empty]
 
+lemma p_p_eq_univ_of_rel_dense_of_open {S₀ : set α} {S : set α} (H_open : is_open S₀) (H_rel_dense : rel_dense S₀ S) : S₀ ∩ Sᵖᵖ = S₀ :=
+begin
+  simp [perp_unfold], have := closure_rel_dense_of_open H_open H_rel_dense,
+  have : S₀ = int S₀, by simp*, {[smt] eblast_using [interior_inter]}
+end
+
 lemma Sup_eq_top_of_dense_Union {ι} {rO : ι → regular_opens α}
   (H_dense : dense $ ⋃₀(subtype.val '' range (λ (i : ι), rO i)))
   : (⨆i, rO i : regular_opens α) = ⊤ :=
 by {change Sup _ = _, rw[Sup_unfold], exact subtype.ext.mpr (p_p_eq_univ_of_dense ‹_›)}
 
--- TODO: rephrase in terms of subspace topology?
 lemma Sup_eq_top_of_dense_Union_rel {ι} {rO : ι → regular_opens α} (S : regular_opens α)
   (H_dense : rel_dense S.1 $ ⋃₀(subtype.val '' range (λ (i : ι), rO i)))
-  : ((⨆i, rO i : regular_opens α) ⊓ S = S) := sorry
+  : ((⨆i, rO i : regular_opens α) ⊓ S = S) :=
+begin
+  {change (Sup _) ⊓ _ = _, rw Sup_unfold, have := (p_p_eq_univ_of_rel_dense_of_open (is_open_of_is_regular S.property) ‹_›), rw inter_comm at this, exact subtype.ext.mpr this}
+end
 
 open cardinal function
 local attribute [instance] [priority 0] subtype.preorder
