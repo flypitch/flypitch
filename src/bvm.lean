@@ -1482,9 +1482,13 @@ begin
   apply le_supr_of_le w; simp only [lattice.top_le_iff, bSet.check]; apply (x_ih _); exact h
 end
 
+-- deprecated, use check_eq
 lemma check_bv_eq {x y : pSet} {Γ : 𝔹}  (H : pSet.equiv x y) :
     (Γ : 𝔹) ≤ x̌ =ᴮ y̌ :=
 le_trans (le_top) $ by {simp only [top_le_iff], apply check_bv_eq_top_of_equiv ‹_›}
+
+lemma check_eq {x y : pSet} {Γ : 𝔹}  (H : pSet.equiv x y) :
+    (Γ : 𝔹) ≤ x̌ =ᴮ y̌ := check_bv_eq H
 
 -- deprecated, use check_not_eq
 lemma check_bv_eq_bot_of_not_equiv {x y : pSet} :

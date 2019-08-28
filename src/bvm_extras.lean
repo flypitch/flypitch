@@ -574,7 +574,44 @@ lemma mem_function_of_func'_iff {x y f : bSet 𝔹} {Γ} {H_is_func' : Γ ≤ is
 @[reducible]def is_injective_function (x y f : bSet 𝔹) : 𝔹 := is_function x y f ⊓ is_inj f
 
 lemma check_is_injective_function {x y f : pSet.{u}} (H_inj : pSet.is_injective_function x y f) {Γ : 𝔹}
-  : Γ ≤ bSet.is_injective_function x̌ y̌ f̌ := sorry
+  : Γ ≤ bSet.is_injective_function x̌ y̌ f̌ :=
+begin
+  have : Γ ≤ _ := check_is_func H_inj.left,
+  refine le_inf this _, bv_split_at this,
+  bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂,
+  bv_imp_intro H, bv_split_at H, bv_split_at H_left,
+  cases H_inj with _ H_inj,
+  unfold pSet.is_inj at H_inj,
+  have H₁ := mem_of_mem_subset this_right H_left_left,
+  have H₂ := mem_of_mem_subset this_right H_left_right,
+  rw [mem_prod_iff] at H₁ H₂,
+  cases H₁ with Hw₁ Hv₁, cases H₂ with Hw₂ Hv₂,
+  rw mem_unfold at Hw₁ Hv₁ Hw₂ Hv₂,
+  bv_cases_at Hw₁ iw₁ Hiw₁,
+  bv_cases_at Hw₂ iw₂ Hiw₂,
+  bv_cases_at Hv₁ iv₁ Hiv₁,
+  bv_cases_at Hv₂ iv₂ Hiv₂,
+  rw [check_bval_top, top_inf_eq] at Hiw₁ Hiw₂ Hiv₁ Hiv₂,
+  suffices : Γ_5 ≤ (func x̌ iw₁) =ᴮ (func x̌ iw₂),
+    by bv_cc,
+  simp only [check_func] at ⊢ Hiv₁ Hiv₂ Hiw₁ Hiw₂,
+  classical, by_cases H_lt : ⊥ < Γ_5,
+  swap, {rw le_bot_iff_not_bot_lt at H_lt, from le_trans H_lt bot_le},
+  refine (check_eq $ H_inj _ _ (pSet.func y (check_cast iv₁)) (pSet.func y (check_cast iv₂)) _),
+  refine ⟨_,_,_⟩,
+    { by_contra, suffices : Γ_5 ≤ ⊥, from false_of_bot_lt_and_le_bot ‹_› ‹_›, apply check_not_mem a,
+      suffices : Γ_5 ≤ pair w₁ v₁ =ᴮ (pSet.pair (pSet.func x (check_cast iw₁)) (pSet.func y (check_cast iv₁)))̌ ,
+      by {change _ ≤ (λ w, w ∈ᴮ f̌) _, apply bv_rw' (bv_symm $ this), simp, from ‹_›}, change _ ≤ (λ w, pair w₁ v₁ =ᴮ w) _,
+       apply bv_rw' check_pair, simp, rw pair_eq_pair_iff,
+       from ⟨‹_›,‹_›⟩ },
+    { by_contra, suffices : Γ_5 ≤ ⊥, from false_of_bot_lt_and_le_bot ‹_› ‹_›, apply check_not_mem a,
+      suffices : Γ_5 ≤ pair w₂ v₂ =ᴮ (pSet.pair (pSet.func x (check_cast iw₂)) (pSet.func y (check_cast iv₂)))̌ ,
+      by {change _ ≤ (λ w, w ∈ᴮ f̌) _, apply bv_rw' (bv_symm $ this), simp, from ‹_›}, change _ ≤ (λ w, pair w₂ v₂ =ᴮ w) _,
+       apply bv_rw' check_pair, simp, rw pair_eq_pair_iff,
+       from ⟨‹_›,‹_›⟩ },
+    { apply check_bv_eq_iff.mpr, tactic.rotate 1, from 𝔹, apply_instance,
+      rw ←check_bv_eq_nonzero_iff_eq_top, from lt_of_lt_of_le H_lt (by bv_cc) },
+end
 
 
 @[simp]lemma eq_of_is_inj_of_eq {x y x' y' f : bSet 𝔹} {Γ : 𝔹} (H_is_inj : Γ ≤ is_inj f) (H_eq : Γ ≤ x' =ᴮ y')
