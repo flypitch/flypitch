@@ -16,7 +16,7 @@ local infix `≺`:70 := (λ x y, -(larger_than x y))
 
 local infix `≼`:70 := (λ x y, injects_into x y)
 
-@[reducible]private noncomputable definition ℵ₁ : pSet.{u} := (card_ex $ aleph 1)
+@[reducible]private noncomputable definition ℵ₁ : pSet := (card_ex $ aleph 1)
 
 local notation `ω` := (bSet.omega)
 
@@ -374,17 +374,19 @@ local attribute [instance] collapse_space
 
 open collapse_poset
 
--- def foo := collapse_algebra ((ℵ₁ : pSet.{u}).type) (powerset omega : pSet.{u}).type
+def 𝔹_CH : Type u := collapse_algebra ((ℵ₁ : pSet.{u}).type) (powerset omega : pSet.{u}).type
 
--- local attribute instance my_instance : nontrivial_complete_boolean_algebra foo := by {unfold foo, apply_instance}
+local attribute instance my_instance : nontrivial_complete_boolean_algebra 𝔹_CH := by {unfold 𝔹_CH, apply_instance}
 
-local notation `𝔹` := collapse_algebra ((ℵ₁ : pSet.{u}).type) (powerset omega : pSet.{u}).type
+local notation `β` := 𝔹_CH
+
+-- local notation `β` := collapse_algebra ((ℵ₁ : pSet.{u}).type) (powerset omega : pSet.{u}).type
 
 -- TODO(floris)
-lemma 𝔹_omega_closed : omega_closed 𝔹 := sorry
+lemma β_omega_closed : omega_closed β := sorry
 
 lemma check_functions_eq_functions (y : pSet.{u})
-  {Γ : 𝔹} : Γ ≤ check (functions (pSet.omega) y) =ᴮ functions (bSet.omega) y̌ :=
+  {Γ : β} : Γ ≤ check (functions (pSet.omega) y) =ᴮ functions (bSet.omega) y̌ :=
 begin
   refine subset_ext check_functions_subset_functions _,
   rw[subset_unfold'], bv_intro g, bv_imp_intro Hg, rw[mem_unfold'],
@@ -394,10 +396,10 @@ begin
   apply Sup_eq_top_of_dense_Union_rel, apply rel_dense_of_dense_in_basis B.1 _ collapse_space_basis_spec,
   intros D HD HD_ne, unfold collapse_space_basis at HD, cases HD with p Hp,
     { clear_except p HD_ne, exfalso, finish },
-    rcases Hp with ⟨p,⟨_,Hp⟩⟩, subst Hp, let P : 𝔹 := ⟨principal_open p, is_regular_principal_open p⟩,
-    have bot_lt_Γ : (⊥ : 𝔹) < P ⊓ B,
+    rcases Hp with ⟨p,⟨_,Hp⟩⟩, subst Hp, let P : β := ⟨principal_open p, is_regular_principal_open p⟩,
+    have bot_lt_Γ : (⊥ : β) < P ⊓ B,
     rw [bot_lt_iff_not_le_bot, le_bot_iff], rwa subtype.ext,
-    have := function_reflect_of_omega_closed 𝔹_omega_closed bot_lt_Γ
+    have := function_reflect_of_omega_closed β_omega_closed bot_lt_Γ
       (by {dsimp[B], refine inf_le_right_of_le (is_func'_of_is_function
             (by { refine poset_yoneda _, tactic.rotate 2, intros Γ HΓ, rw[bSet.mem_functions_iff] at HΓ, convert HΓ }))}) (by {dsimp [B],
               refine poset_yoneda _, intros Γ HΓ, exact bSet.mem_functions_iff.mp (bv_and.right HΓ) }),
@@ -415,14 +417,14 @@ end
 lemma π_χ_regular (p : type (card_ex (aleph 1)) × (powerset omega).type) : @topological_space.is_regular _ collapse_space {g : type (card_ex (aleph 1)) → type (powerset omega) | g (p.fst) = p.snd} :=
 by simp
 
-def π_χ : ((ℵ₁ : pSet.{u}).type × (pSet.powerset omega : pSet.{u}).type) → 𝔹 :=
+def π_χ : ((ℵ₁ : pSet.{u}).type × (pSet.powerset omega : pSet.{u}).type) → β :=
 λ p, ⟨{g | g p.1 = p.2}, π_χ_regular _⟩
 
-private lemma eq₀ : ((ℵ₁)̌  : bSet 𝔹).type = (ℵ₁).type := by simp
+private lemma eq₀ : ((ℵ₁)̌  : bSet β).type = (ℵ₁).type := by simp
 
-private lemma eq₀' : ((powerset omega)̌  : bSet.{u} 𝔹).type = (powerset omega).type := by simp
+private lemma eq₀' : ((powerset omega)̌  : bSet.{u} β).type = (powerset omega).type := by simp
 
-private lemma eq₁ : (((ℵ₁)̌  : bSet 𝔹).type × ((powerset omega)̌  : bSet 𝔹).type) = (((ℵ₁ : pSet.{u}) .type) × (powerset omega : pSet.{u}).type) := by simp
+private lemma eq₁ : ((ℵ₁̌  : bSet β).type × ((powerset omega)̌  : bSet β).type) = ((ℵ₁).type × (powerset omega : pSet.{u}).type ):= by simp
 
 -- lemma aleph_one_type_uncountable' : (aleph 0) < # ℵ₁.type :=
 -- by simp only [succ_le, cardinal.aleph_zero, pSet.omega_lt_aleph_one, pSet.mk_type_mk_eq''']
@@ -430,10 +432,10 @@ private lemma eq₁ : (((ℵ₁)̌  : bSet 𝔹).type × ((powerset omega)̌  : 
 lemma aleph_one_type_uncountable : cardinal.omega.succ ≤ # ℵ₁.type :=
 by simp only [succ_le, pSet.omega_lt_aleph_one, pSet.mk_type_mk_eq''']
 
-@[reducible]def π_af : ((ℵ₁̌  : bSet 𝔹) .type) → ((powerset omega)̌  : bSet 𝔹) .type → 𝔹 :=
-λ η S, (⟨{g | g (cast eq₀ η) = (cast eq₀' S)}, by simp⟩ : 𝔹)
+@[reducible]def π_af : ((ℵ₁̌  : bSet β) .type) → ((powerset omega)̌  : bSet β) .type → β :=
+λ η S, (⟨{g | g (cast eq₀ η) = (cast eq₀' S)}, by simp⟩ : β)
 
-lemma π_af_wide :  ∀ (j : ((powerset omega)̌ ).type), (⨆ (i : type (ℵ₁̌ )), π_af i j) = (⊤ : 𝔹) :=
+lemma π_af_wide :  ∀ (j : ((powerset omega)̌ ).type), (⨆ (i : type (ℵ₁̌ )), π_af i j) = (⊤ : β) :=
 begin
  intro S,
    refine Sup_eq_top_of_dense_Union _,
@@ -456,7 +458,7 @@ begin
        intro, apply Hη, cc } }
 end
 
-lemma π_af_tall : ∀ (i : (card_ex $ aleph 1)̌ .type), (⨆(j : (powerset omega)̌ .type), π_af i j) = (⊤ : 𝔹) :=
+lemma π_af_tall : ∀ (i : (card_ex $ aleph 1)̌ .type), (⨆(j : (powerset omega)̌ .type), π_af i j) = (⊤ : β) :=
 begin
   intro i, refine Sup_eq_top_of_dense_Union _,
   apply dense_of_dense_in_basis _ collapse_space_basis_spec _,
@@ -472,12 +474,12 @@ begin
           { exact ⟨⟨f.val (cast eq₀ i), rfl⟩, rfl⟩ }}}
 end
 
-lemma π_af_anti : ∀ (i : type (ℵ₁̌  : bSet 𝔹)) (j₁ j₂ : type ((powerset omega)̌ )),
+lemma π_af_anti : ∀ (i : type (ℵ₁̌  : bSet β)) (j₁ j₂ : type ((powerset omega)̌ )),
     j₁ ≠ j₂ → π_af i j₁ ⊓ π_af i j₂ ≤ ⊥ :=
 λ _ _ _ _ _ h, by cases h; finish
 
 -- TODO(jesse) refactor the proof of the suffices into a more general lemma
-lemma aleph_one_inj : (∀ i₁ i₂, ⊥ < (func (ℵ₁̌  : bSet 𝔹) i₁) =ᴮ (func (ℵ₁̌  : bSet 𝔹) i₂) → i₁ = i₂) :=
+lemma aleph_one_inj : (∀ i₁ i₂, ⊥ < (func (ℵ₁̌  : bSet β) i₁) =ᴮ (func (ℵ₁̌  : bSet β) i₂) → i₁ = i₂) :=
 begin
   suffices this : ∀ (x y : type (ℵ₁)),
     x ≠ y → ¬equiv (func (ℵ₁) x) (func (ℵ₁) y),
@@ -489,17 +491,17 @@ begin
         have this₀ := check_bv_eq_bot_of_not_equiv this,
         suffices this₁ : func (ℵ₁̌ ) i₁ =ᴮ func (ℵ₁̌ ) i₂ = ⊥,
           by {exfalso, rw[eq_bot_iff] at this₀, rw[bot_lt_iff_not_le_bot] at H,
-              suffices : func (ℵ₁̌  : bSet 𝔹) i₁ =ᴮ func (ℵ₁ ̌) i₂ ≤ ⊥, by contradiction,
+              suffices : func (ℵ₁̌  : bSet β) i₁ =ᴮ func (ℵ₁ ̌) i₂ ≤ ⊥, by contradiction,
               convert_to (func ℵ₁ (cast eq₀ i₁))̌   =ᴮ (func ℵ₁ (cast eq₀ i₂)) ̌ ≤ ⊥,
               apply check_func, apply check_func, from ‹_›},
         convert this₀; apply check_func},
   exact λ _ _ _, ordinal.mk_inj _ _ _ ‹_›
 end
 
-noncomputable def π : bSet 𝔹 :=
-rel_of_array (ℵ₁̌  : bSet 𝔹) ((powerset omega)̌ ) π_af
+noncomputable def π : bSet β :=
+rel_of_array (ℵ₁̌  : bSet β) ((powerset omega)̌ ) π_af
 
--- noncomputable def π : bSet 𝔹 := @set_of_indicator (𝔹 : Type u) _ (prod (ℵ₁̌ ) ((powerset omega)̌ )) (λ z, π_χ (cast eq₁ z))
+-- noncomputable def π : bSet β := @set_of_indicator (β : Type u) _ (prod (ℵ₁̌ ) ((powerset omega)̌ )) (λ z, π_χ (cast eq₁ z))
 
 lemma π_is_func {Γ} : Γ ≤ is_func π :=
 begin
@@ -509,7 +511,7 @@ begin
   { from aleph_one_inj },
 end
 
-lemma π_is_func' {Γ} : Γ ≤ is_func' (ℵ₁̌  : bSet 𝔹) ((powerset omega)̌ ) π :=
+lemma π_is_func' {Γ} : Γ ≤ is_func' (ℵ₁̌  : bSet β) ((powerset omega)̌ ) π :=
 begin
   unfold π, refine rel_of_array_is_func' _ _ _ (by simp) (by simp) _ _ _ _,
     { from π_af_wide },
@@ -523,19 +525,19 @@ lemma π_is_functional {Γ} : Γ ≤ is_functional π := is_functional_of_is_fun
 lemma π_is_surj {Γ} : Γ ≤ is_surj (ℵ₁̌ ) ((powerset omega)̌ ) π :=
 rel_of_array_surj _ _ _ (by simp) (by simp) (π_af_wide)
 
-lemma π_spec {Γ : 𝔹} : Γ ≤ (is_func π) ⊓ ⨅v, v ∈ᴮ (powerset omega)̌  ⟹ (⨆w, w ∈ᴮ (ℵ₁̌ ) ⊓ pair w v ∈ᴮ π) := le_inf π_is_func π_is_surj
+lemma π_spec {Γ : β} : Γ ≤ (is_func π) ⊓ ⨅v, v ∈ᴮ (powerset omega)̌  ⟹ (⨆w, w ∈ᴮ (ℵ₁̌ ) ⊓ pair w v ∈ᴮ π) := le_inf π_is_func π_is_surj
 
-lemma π_spec' {Γ : 𝔹} : Γ ≤ (is_func' ((card_ex $ aleph 1)̌ ) ((powerset omega)̌ ) π) ⊓ is_surj ((card_ex $ aleph 1)̌ ) ((powerset omega)̌ ) π:=  le_inf π_is_func' π_is_surj
+lemma π_spec' {Γ : β} : Γ ≤ (is_func' ((card_ex $ aleph 1)̌ ) ((powerset omega)̌ ) π) ⊓ is_surj ((card_ex $ aleph 1)̌ ) ((powerset omega)̌ ) π:=  le_inf π_is_func' π_is_surj
 
--- lemma π_spec' {Γ : 𝔹} : Γ ≤ (is_func π) ⊓ ⨅v, v ∈ᴮ (powerset omega)̌  ⟹ (⨆w, w ∈ᴮ (ℵ₁̌ ) ⊓ pair w v ∈ᴮ π) := sorry
+-- lemma π_spec' {Γ : β} : Γ ≤ (is_func π) ⊓ ⨅v, v ∈ᴮ (powerset omega)̌  ⟹ (⨆w, w ∈ᴮ (ℵ₁̌ ) ⊓ pair w v ∈ᴮ π) := sorry
 -- le_inf π_is_func' π_is_surj
 
-lemma ℵ₁_larger_than_continuum {Γ : 𝔹} : Γ ≤ larger_than (ℵ₁ ̌) ((powerset omega)̌ ) :=
+lemma ℵ₁_larger_than_continuum {Γ : β} : Γ ≤ larger_than (ℵ₁ ̌) ((powerset omega)̌ ) :=
 by { apply bv_use (ℵ₁ ̌), apply bv_use π, rw[inf_assoc], from le_inf subset_self π_spec' }
 
 -- for these two lemmas, need 2.17 (iv) in Bell, which follows from (i) ⟹ (ii)
--- i.e. If 𝔹 has a dense subset P which is ω-closed, then for any η < ℵ₁, and any x,
--- bSet 𝔹 ⊩ Func(η̌, x̌) = Func(η, x)̌ .
+-- i.e. If β has a dense subset P which is ω-closed, then for any η < ℵ₁, and any x,
+-- bSet β ⊩ Func(η̌, x̌) = Func(η, x)̌ .
 
 /-
 Proof sketch:
@@ -545,21 +547,21 @@ If q ∈ P satisfies q ≤ pᵢ for all i (i.e. is a witness to the ω-closed as
 and g is the function attached to the collection of pairs (i, y_i), show that q ⊩ f = ǧ.
 -/
 
--- lemma distributive {x : pSet.{u}} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) (af : pSet.omega.type → x.type → 𝔹) :
+-- lemma distributive {x : pSet.{u}} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) (af : pSet.omega.type → x.type → β) :
 --    ⨅ i : pSet.omega.type, (⨆ j : x.type, af i j) = ⨆(f : pSet.omega.type → x.type), ⨅(i : pSet.omega.type), af i (f i)
 --  := sorry
 
 -- lemma pSet.func_eq_of_inj {x : pSet.{u}} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) : sorry := sorry
 
-lemma surjection_reflect {Γ : 𝔹} (H_bot_lt : ⊥ < Γ) (H_surj : Γ ≤ surjects_onto ω ℵ₁̌ )
+lemma surjection_reflect {Γ : β} (H_bot_lt : ⊥ < Γ) (H_surj : Γ ≤ surjects_onto (bSet.omega : bSet.{u} β) ((ℵ₁)̌  : bSet β))
 : ∃ (f : pSet.{u}), is_func omega (ordinal.mk (ord (aleph 1))) f
    ∧ is_surj pSet.omega (card_ex $ aleph 1) f :=
 begin
   by_contra H, simp only [not_exists, not_and_distrib] at H,
   suffices this : Γ ≤ ⊥,
     by {rw[bot_lt_iff_not_le_bot] at H_bot_lt, contradiction},
-  replace H_surj := exists_surjection_of_surjects_onto H_surj,
-  bv_cases_at H_surj f Hf, bv_split_at Hf,
+  have := exists_surjection_of_surjects_onto H_surj,
+  bv_cases_at this f Hf, bv_split_at Hf,
   rw[<-bSet.mem_functions_iff] at Hf_left,
   suffices this : Γ_1 ≤ f ∈ᴮ (pSet.functions pSet.omega (ℵ₁))̌ ,
     by { by_contra H', rw[<-bot_lt_iff_not_le_bot] at H',
@@ -567,16 +569,16 @@ begin
          rcases this with ⟨i_g, Γ', H₁,H₂,H₃⟩,
          apply_at Hf_right le_trans H₂,
          apply_at Hf_left le_trans H₂,
-         let g : pSet.{u} := (pSet.functions pSet.omega ℵ₁).func i_g,
+         let g := (pSet.functions pSet.omega ℵ₁).func i_g,
          specialize H g, cases H,
-           { apply_at H check_not_is_func, show 𝔹, from Γ',
+           { apply_at H check_not_is_func, show β, from Γ',
            rw[bSet.mem_functions_iff] at Hf_left,
            tactic.rotate 1, apply_instance,
            refine false_of_bot_lt_and_le_bot H₁ (H _),
 
            change Γ' ≤ f =ᴮ ǧ at H₃, apply_at H₃ bv_symm,
            apply bv_rw' H₃, simp, from Hf_left },
-           { apply_at H check_not_is_surj,  show 𝔹, from Γ',
+           { apply_at H check_not_is_surj,  show β, from Γ',
            tactic.rotate 1, apply_instance,
            refine false_of_bot_lt_and_le_bot H₁ (H _),
            change Γ' ≤ f =ᴮ ǧ at H₃, apply_at H₃ bv_symm,
@@ -587,7 +589,7 @@ begin
   bv_cc
 end
 
-lemma omega_lt_aleph_one {Γ : 𝔹} : Γ ≤ bSet.omega ≺ (ℵ₁̌ ) :=
+lemma omega_lt_aleph_one {Γ : β} : Γ ≤ bSet.omega ≺ (ℵ₁̌ ) :=
 begin
   unfold larger_than, rw[<-imp_bot, <-deduction],
   /- `tidy_context` says -/ refine poset_yoneda _, intros Γ_1 a, simp only [le_inf_iff] at *, cases a,
@@ -595,7 +597,7 @@ begin
   intros f Hf, specialize_context Γ_2,
   simp only [le_inf_iff] at Hf, repeat{auto_cases}, by_contra H,
   replace H := (bot_lt_iff_not_le_bot.mpr H),
-  suffices : ∃ f : pSet.{u}, is_func pSet.omega (ordinal.mk (aleph 1).ord) f ∧ pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f,
+  suffices : ∃ f : pSet, is_func pSet.omega (ordinal.mk (aleph 1).ord) f ∧ pSet.is_surj (pSet.omega) (ordinal.mk (aleph 1).ord) f,
     by {exfalso, from ex_no_surj_omega_aleph_one ‹_›},
   suffices : Γ_3 ≤ surjects_onto ω ℵ₁̌ ,
     by {from surjection_reflect H this},
@@ -604,39 +606,39 @@ begin
   from check_exists_mem card_ex_aleph_exists_mem
 end
 
-lemma aleph_one_check_universal_property (Γ : 𝔹) : Γ ≤ aleph_one_weak_universal_property (ℵ₁̌  : bSet 𝔹) :=
+lemma aleph_one_check_universal_property (Γ : β) : Γ ≤ aleph_one_weak_universal_property (ℵ₁̌  : bSet β) :=
 begin
   apply bv_rw' (aleph_one_check_is_aleph_one_of_omega_lt (omega_lt_aleph_one)),
   { simp },
   { exact aleph_one_satisfies_universal_property }
 end
 
-lemma continuum_le_continuum_check {Γ : 𝔹} :
-  Γ ≤ bv_powerset (bSet.omega : bSet 𝔹) ≼ (pSet.powerset (pSet.omega : pSet.{u}) : pSet.{u})̌ :=
+lemma continuum_le_continuum_check {Γ : β} :
+  Γ ≤ bv_powerset (bSet.omega : bSet β) ≼ (pSet.powerset (pSet.omega : pSet.{u}) : pSet.{u})̌ :=
 begin
     refine injects_into_trans _ _, tactic.rotate 1, from powerset_injects_into_functions,
-  have : (Γ : 𝔹) ≤ injects_into (functions pSet.omega (of_nat 2) : pSet.{u})̌  (powerset (omega) : pSet.{u})̌ ,
-    by { sorry -- typeclass issues 
- -- apply injects_into_of_is_injective_function,
-         -- rcases functions_2_injects_into_powerset (pSet.omega : pSet.{u}) with ⟨f,Hf⟩,
-         -- apply bv_use f̌, apply check_is_injective_function, from Hf
+  have : (Γ : β) ≤ injects_into (functions pSet.omega (of_nat 2) : pSet.{u})̌  (powerset (omega) : pSet.{u})̌ ,
+    by {  refine injects_into_of_is_injective_function _,
+         rcases functions_2_injects_into_powerset (pSet.omega : pSet.{u}) with ⟨f,Hf⟩,
+         apply bv_use f̌, refine check_is_injective_function _, from Hf
  },
-  change Γ ≤ (λ z, injects_into z (powerset omega)̌ ) _ at this, sorry -- typeclass issues
-  -- have := bv_rw'' _ this, tactic.rotate 2,
-  -- apply check_functions_eq_functions, from ‹_›
+  change Γ ≤ (λ z, injects_into z (powerset omega)̌ ) _ at this,
+  have := bv_rw'' _ this, tactic.rotate 2,
+  exact check_functions_eq_functions (of_nat 2),
+  from this
 end
 
-lemma aleph_one_not_lt_powerset_omega : ∀ {Γ : 𝔹}, Γ ≤ - (ℵ₁̌ ≺ 𝒫(ω)) :=
+lemma aleph_one_not_lt_powerset_omega : ∀ {Γ : β}, Γ ≤ - (ℵ₁̌ ≺ 𝒫(ω)) :=
 begin
   intro Γ, rw[<-imp_bot], dsimp, bv_imp_intro H,
   refine bv_absurd _ ℵ₁_larger_than_continuum _,
   exact bSet_lt_of_lt_of_le _ _ _ H continuum_le_continuum_check
 end
 
-theorem CH_true : (⊤ : 𝔹) ≤ CH :=
+theorem CH_true : (⊤ : β) ≤ CH :=
 CH_true_aux aleph_one_check_universal_property (by apply aleph_one_not_lt_powerset_omega)
 
-theorem CH₂_true : (⊤ : 𝔹) ≤ CH₂ :=
+theorem CH₂_true : (⊤ : β) ≤ CH₂ :=
 le_inf (by apply aleph_one_not_lt_powerset_omega) (omega_lt_aleph_one)
 
 end collapse_algebra

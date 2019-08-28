@@ -1406,7 +1406,7 @@ section check_names
 /- `check` is the canonical embedding of pSet into bSet.
 note that a check-name is not only definite, but recursively definite
 -/
-@[simp]def check : (pSet : Type (u+1)) → bSet 𝔹
+@[simp]def check : (pSet.{u}) → bSet 𝔹
 | ⟨α,A⟩ := ⟨α, λ a, check (A a), λ a, ⊤⟩
 
 postfix `̌ `:8999 := check
@@ -2142,8 +2142,8 @@ instance has_one_bSet : has_one (bSet 𝔹) := ⟨of_nat 1⟩
 
 notation `𝟚` := bSet.two
 
-example : 0 ∈ᴮ 1 = (⊤ : 𝔹) :=
-by {apply top_unique, unfold has_zero.zero, apply bv_use none, simp}
+@[simp]lemma zero_mem_one {Γ : 𝔹} : Γ ≤ 0 ∈ᴮ 1 :=
+by {unfold has_zero.zero, apply bv_use none, simp}
 
 @[simp, cleanup]lemma omega_bval {k} : (omega : bSet 𝔹).bval k = ⊤ :=
 by refl

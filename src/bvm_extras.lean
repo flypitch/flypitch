@@ -527,6 +527,8 @@ end
 @[reducible]def is_function (x y f : bSet 𝔹) : 𝔹 :=
   is_func' x y f ⊓ (f ⊆ᴮ prod x y)
 
+@[simp]lemma B_ext_is_function_right {x y: bSet 𝔹} : B_ext (λ f, is_function x y f) := sorry
+
 lemma is_func'_of_is_function {Γ : 𝔹} {x y f} (H_func : Γ ≤ is_function x y f) : Γ ≤ is_func' x y f := bv_and.left H_func
 
 lemma subset_prod_of_is_function {Γ : 𝔹} {x y f} (H_func : Γ ≤ is_function x y f) : Γ ≤ f ⊆ᴮ prod x y := bv_and.right H_func
@@ -612,7 +614,6 @@ begin
     { apply check_bv_eq_iff.mpr, tactic.rotate 1, from 𝔹, apply_instance,
       rw ←check_bv_eq_nonzero_iff_eq_top, from lt_of_lt_of_le H_lt (by bv_cc) },
 end
-
 
 @[simp]lemma eq_of_is_inj_of_eq {x y x' y' f : bSet 𝔹} {Γ : 𝔹} (H_is_inj : Γ ≤ is_inj f) (H_eq : Γ ≤ x' =ᴮ y')
   (H_mem₁ : Γ ≤ pair x x' ∈ᴮ f) (H_mem₂ : Γ ≤ pair y y' ∈ᴮ f) : Γ ≤ x =ᴮ y :=
@@ -917,7 +918,7 @@ begin
   apply bv_use f, from le_inf (le_inf (by simp) (bv_and.left ‹_›)) (bv_and.right ‹_›)
 end
 
-lemma exists_surjection_of_surjects_onto {x y : bSet 𝔹} {Γ} (H_surj : Γ ≤ surjects_onto x y)
+lemma exists_surjection_of_surjects_onto {x y : bSet 𝔹} {Γ : 𝔹} (H_surj : Γ ≤ surjects_onto x y)
   : Γ ≤ ⨆ f, is_function x y f ⊓ is_surj x y f := sorry
 
 -- lemma check_is_func {x y f : pSet.{u}} : pSet.is_func x y f ↔ ∀{Γ : 𝔹}, Γ ≤ is_function x̌ y̌ f̌   := sorry
@@ -1289,6 +1290,12 @@ end
 def functions (x y : bSet 𝔹) : bSet 𝔹 :=
   set_of_indicator (λ s : (bv_powerset (prod x y) : bSet 𝔹).type, is_function x y ((bv_powerset (prod x y)).func s))
 
+@[simp, cleanup] lemma functions_func {x y : bSet 𝔹} {i} : (functions x y).func i = (bv_powerset $ prod x y).func i := rfl
+
+@[simp, cleanup] lemma functions_bval {x y : bSet 𝔹} {i} : (functions x y).bval i = is_function x y ((bv_powerset (prod x y)).func i) := rfl
+
+@[simp, cleanup] lemma functions_type {x y : bSet 𝔹} : (functions x y).type = (bv_powerset (prod x y)).type := rfl
+
 -- TODO(jesse) should be able to shorten this using subset.mk_mem_iff
 lemma mem_functions_iff {g x y : bSet 𝔹} {Γ : 𝔹} : (Γ ≤ g ∈ᴮ functions x y) ↔ (Γ ≤ is_function x y g) :=
 begin
@@ -1563,6 +1570,9 @@ begin
   from le_trans H this
 end
 
+lemma bot_of_zero_eq_one {Γ : 𝔹} (H : Γ ≤ 0 =ᴮ 1) : Γ ≤ ⊥ :=
+bot_of_mem_self' $ by {apply bv_rw' H, simp, from zero_mem_one}
+
 -- lemma bot_of_mem_mem_aux {x : bSet 𝔹} {i : x.type} : ⊤ ≤ ( x ∈ᴮ x.func i ⟹ ⊥) :=
 -- begin
 --   induction x, apply bv_imp_intro, rw[top_inf_eq], rw[mem_unfold],
@@ -1649,8 +1659,12 @@ end
 
 lemma check_functions_subset_functions {x y : pSet.{u}} {Γ : 𝔹} : Γ ≤ (pSet.functions x y)̌  ⊆ᴮ functions x̌ y̌ :=
 begin
-  rw subset_unfold, bv_intro j, bv_imp_intro Hj,
-  sorry
+  rw subset_unfold', bv_intro w, bv_imp_intro Hw,
+  rw mem_unfold at Hw, bv_cases_at Hw f Hf, bv_split_at Hf, rw check_func at Hf_right,
+  let g := _, change _ ≤ w =ᴮ ǧ at Hf_right,
+  suffices : pSet.is_func x y g,
+    by {rw mem_functions_iff, apply bv_rw' Hf_right, simp, from check_is_func this },
+  apply (pSet.mem_functions_iff _).mp, dsimp[g], apply pSet.mem.mk
 end
 
 @[simp]lemma check_mem' {y : pSet} {i : y.type} : ((y.func i)̌ ) ∈ᴮ y̌ = (⊤ : 𝔹) :=
@@ -1658,6 +1672,15 @@ by {apply top_unique, simp}
 
 lemma of_nat_inj {n k : ℕ} (H_neq : n ≠ k) : ((of_nat n : bSet 𝔹) =ᴮ of_nat k) = ⊥ :=
 check_bv_eq_bot_of_not_equiv (pSet.of_nat_inj ‹_›)
+
+lemma of_nat_mem_of_lt {k₁ k₂ : ℕ} (H_lt : k₁ < k₂) {Γ} : Γ ≤ (bSet.of_nat k₁ : bSet 𝔹) ∈ᴮ (bSet.of_nat k₂) :=
+check_mem $ pSet.of_nat_mem_of_lt H_lt
+
+lemma check_succ_eq_succ_check {n : ℕ} : (of_nat (n.succ) : bSet 𝔹) = bSet.succ (of_nat n) :=
+by simp[of_nat, succ, pSet.of_nat]
+
+@[simp]lemma zero_eq_some_none {Γ : 𝔹} : Γ ≤ 0 =ᴮ two.func (some none) :=
+bv_refl
 
 end check
 
@@ -1715,20 +1738,163 @@ local notation `fx2` := functions x 𝟚
 -- function_of_func'_inj_of_inj $ is_inj_indicator_of_set' x --todo: function_of_func'_inj_of_inj
 
 def powerset_injects.F : (bv_powerset x).type → (functions x 𝟚).type :=
-λ χ, λ pr, χ pr.1 ⊓ (𝟚.func (pr.2) =ᴮ 0)
+λ χ, λ pr, ((x.func pr.1 ∈ᴮ set_of_indicator χ ⊓ (𝟚.func (pr.2) =ᴮ 0)) ⊔ ((x.func pr.1) ∈ᴮ (subset.mk (λ i, - ((x.func i) ∈ᴮ set_of_indicator χ))) ⊓ (𝟚.func (pr.2) =ᴮ 1)))
+
+lemma mem_powerset_injects.F_iff {Γ : 𝔹} {χ : x.type → 𝔹} {z : bSet 𝔹} : Γ ≤ pair z 0 ∈ᴮ func (functions x 𝟚) (powerset_injects.F χ) ↔ Γ ≤ z ∈ᴮ set_of_indicator χ :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { rw mem_unfold at H, bv_cases_at H pr Hpr, bv_split_at Hpr, cases pr with i j,
+      erw pair_eq_pair_iff at Hpr_right, cases Hpr_right with Hpr_right.left Hpr_right.right, bv_or_elim_at Hpr_left,
+      change _ ≤ (λ w, w ∈ᴮ set_of_indicator χ) _, apply bv_rw' Hpr_right.left, simp, from bv_and.left ‹_›,
+      apply bv_exfalso, apply bot_of_zero_eq_one,
+      have := bv_and.right Hpr_left.right, bv_cc},
+
+    { bv_cases_at H i Hi, bv_split_at Hi,
+      rw mem_unfold, apply bv_use (i, some none), refine le_inf _ _,
+        { apply bv_or_left, refine le_inf _ _,
+          { change _ ≤ (λ w, w ∈ᴮ (set_of_indicator χ)) _,
+            apply bv_rw' (bv_symm Hi_right), simp, from ‹_› },
+          { exact bv_refl }},
+        { change _ ≤ pair _ _ =ᴮ pair _ _, simp [pair_eq_pair_iff, *] }}
+end
 
 lemma powerset_injects.F_ext : ∀ (i j : type (𝒫 x)) {Γ : 𝔹},
     Γ ≤ func (𝒫 x) i =ᴮ func (𝒫 x) j →
     Γ ≤ func (functions x 𝟚) (powerset_injects.F i) =ᴮ func (functions x 𝟚) (powerset_injects.F j) :=
 begin
   intros χ₁ χ₂ Γ H,
-  sorry
+  apply mem_ext; bv_intro z; bv_imp_intro Hz,
+    { rw mem_unfold at Hz, bv_cases_at Hz ρ Hρ,
+      rw[eq_iff_subset_subset, le_inf_iff] at H,
+      cases ρ with i j,
+      bv_split_at Hρ,
+      cases H with H₁ H₂,
+      bv_or_elim_at Hρ_left,
+        { rename Hρ_left.left Hρ_left, bv_split_at Hρ_left,
+      apply bv_use (i,j), 
+      refine le_inf (bv_or_left $ le_inf _ _) _, tactic.rotate 1,
+      from ‹_›, from Hρ_right, refine mem_of_mem_subset H₁ ‹_›  },
+        { rename Hρ_left.right Hρ_left, bv_split_at Hρ_left,
+      apply bv_use (i,j), 
+      refine le_inf (bv_or_right $ le_inf _ _) _, tactic.rotate 1,
+      from ‹_›, from Hρ_right,
+      rw mem_subset.mk_iff at Hρ_left_left ⊢,
+      bv_cases_at Hρ_left_left i' Hi',
+      bv_split_at Hi',
+      apply bv_use i', refine le_inf ‹_› _,
+      rw ←imp_bot, refine le_inf _ (bv_and.right ‹_›),
+      bv_imp_intro H',
+      exact bv_absurd _ (mem_of_mem_subset H₂ ‹_›) (bv_and.left Hi'_right)},
+ },
+    {rw mem_unfold at Hz, bv_cases_at Hz ρ Hρ,
+      rw[eq_iff_subset_subset, le_inf_iff] at H,
+      cases ρ with i j,
+      bv_split_at Hρ,
+      cases H with H₁ H₂,
+      bv_or_elim_at Hρ_left,
+        { rename Hρ_left.left Hρ_left, bv_split_at Hρ_left,
+      apply bv_use (i,j), 
+      refine le_inf (bv_or_left $ le_inf _ _) _, tactic.rotate 1,
+      from ‹_›, from Hρ_right, refine mem_of_mem_subset H₂ ‹_›  },
+        { rename Hρ_left.right Hρ_left, bv_split_at Hρ_left,
+      apply bv_use (i,j), 
+      refine le_inf (bv_or_right $ le_inf _ _) _, tactic.rotate 1,
+      from ‹_›, from Hρ_right,
+      rw mem_subset.mk_iff at Hρ_left_left ⊢,
+      bv_cases_at Hρ_left_left i' Hi',
+      bv_split_at Hi',
+      apply bv_use i', refine le_inf ‹_› _,
+      rw ←imp_bot, refine le_inf _ (bv_and.right ‹_›),
+      bv_imp_intro H',
+      exact bv_absurd _ (mem_of_mem_subset H₁ ‹_›) (bv_and.left ‹_›)},
+ }
+end
+
+lemma powerset_injects.F_subset_prod {χ : x.type → 𝔹} {Γ : 𝔹} {H_le : Γ ≤ set_of_indicator χ ⊆ᴮ x}
+: Γ ≤ func (𝒫 prod x 𝟚) (powerset_injects.F χ) ⊆ᴮ prod x 𝟚 :=
+begin
+   change _ ≤ set_of_indicator _ ⊆ᴮ _, rw subset_unfold,
+      bv_intro pr, bv_imp_intro H_pr, cases pr with i j,
+      bv_or_elim_at H_pr,
+        { rename H_pr.left H_pr, bv_split_at H_pr, have := mem_of_mem_subset H_le H_pr_left, rw mem_unfold at this,
+      bv_cases_at this i' Hi, apply bv_use (i',j), simp, bv_split_at Hi, rw pair_eq_pair_iff,
+      refine ⟨‹_›,_,bv_refl⟩, bv_cc },
+        { rename H_pr.right H_pr, bv_split_at H_pr,
+          rw mem_subset.mk_iff at H_pr_left,
+          bv_cases_at H_pr_left i' Hi', bv_split_at Hi',
+          rw mem_unfold, apply bv_use (i', j), refine le_inf _ _,
+            { simp, from bv_and.right ‹_› },
+            { erw pair_eq_pair_iff, refine ⟨‹_›, bv_refl⟩ }},
 end
 
 lemma powerset_injects.F_mem : ∀ (i : type (𝒫 x)) {Γ : 𝔹},
-    Γ ≤ bval (𝒫 x) i → Γ ≤ bval (functions x 𝟚) (powerset_injects.F i) ∧ Γ ≤ ⊤ := sorry
+    Γ ≤ bval (𝒫 x) i → Γ ≤ bval (functions x 𝟚) (powerset_injects.F i) ∧ Γ ≤ ⊤ :=
+begin
+  intros χ Γ H_le, change _ ≤ (set_of_indicator χ) ⊆ᴮ x at H_le,
+  refine ⟨_,le_top⟩, simp only with cleanup,
+  refine le_inf (le_inf _ _) _,
+    { bv_intro v₁, bv_intro v₂, bv_intro w₁, bv_intro w₂,
+      bv_imp_intro H, bv_split_at H, bv_imp_intro H_eq,
+      have := @powerset_injects.F_subset_prod _ _ x χ Γ_2 ‹_›,
+      have H_pm_left := mem_of_mem_subset this H_left,
+      have H_pm_right := mem_of_mem_subset this H_right,
+      rw mem_prod_iff at H_pm_left H_pm_right,
+      cases H_pm_left with Hv₁ Hw₁, cases H_pm_right with Hv₂ Hw₂,
+      bv_cases_at H_left pr₁ Hpr₁, bv_cases_at H_right pr₂ Hpr₂,
+      cases pr₁ with i₁ j₁, cases pr₂ with i₂ j₂,
+      bv_split_at Hpr₁, bv_split_at Hpr₂,
+      bv_or_elim_at Hpr₁_left; bv_or_elim_at Hpr₂_left,
+        { erw pair_eq_pair_iff at Hpr₁_right Hpr₂_right,
+          auto_cases, bv_split_at Hpr₁_left.left, bv_split_at Hpr₂_left.left, bv_cc },
+        {bv_exfalso, refine bv_absurd _ (bv_and.left Hpr₁_left.left) _,
+         bv_split_at Hpr₂_left.right, rw mem_subset.mk_iff at Hpr₂_left.right_left,
+         bv_cases_at Hpr₂_left.right_left i Hi, bv_split_at Hi,
+         suffices : Γ_7 ≤ x.func i₁ =ᴮ x.func i,
+           by {apply @bv_rw' _ _ _ _ _ this (λ w, -(w ∈ᴮ set_of_indicator χ)), simp, from bv_and.left ‹_› },
+         erw pair_eq_pair_iff at Hpr₁_right Hpr₂_right, auto_cases, bv_cc     },
+        {bv_exfalso, refine bv_absurd _ (bv_and.left Hpr₂_left.left) _,
+         bv_split_at Hpr₁_left.right, rw mem_subset.mk_iff at Hpr₁_left.right_left,
+         bv_cases_at Hpr₁_left.right_left i Hi, bv_split_at Hi,
+         suffices : Γ_7 ≤ x.func i₂ =ᴮ x.func i,
+           by {apply @bv_rw' _ _ _ _ _ this (λ w, -(w ∈ᴮ set_of_indicator χ)), simp, from bv_and.left ‹_› },
+         erw pair_eq_pair_iff at Hpr₁_right Hpr₂_right, auto_cases, bv_cc     },
+        {  erw pair_eq_pair_iff at Hpr₁_right Hpr₂_right,
+          auto_cases, bv_split_at Hpr₁_left.right, bv_split_at Hpr₂_left.right, bv_cc } },
+    { bv_intro z, bv_imp_intro Hz, bv_cases_on z ∈ᴮ (set_of_indicator χ),
+      {apply bv_use (0 : bSet 𝔹), rw le_inf_iff, refine ⟨_,_⟩,
+        { from of_nat_mem_of_lt dec_trivial },
+        { rw mem_unfold at Hz, bv_cases_at Hz i Hi, bv_split_at Hi,
+          apply bv_rw' Hi_right, from B_ext_pair_mem_left,
+          rw mem_unfold, apply bv_use (i, some none),
+          refine le_inf _ _,
+            { apply bv_or_left, refine le_inf _ _,
+              { change _ ≤ (λ w, w ∈ᴮ set_of_indicator χ) _, apply bv_rw' (bv_symm Hi_right), simpa },
+              { from bv_refl } },
+            { erw pair_eq_pair_iff, simp* }}},
+      {apply bv_use (1 : bSet 𝔹), rw le_inf_iff, refine ⟨_,_⟩,
+        { from of_nat_mem_of_lt dec_trivial },
+        { rw mem_unfold at Hz, bv_cases_at Hz i Hi, bv_split_at Hi,
+          apply bv_rw' Hi_right, from B_ext_pair_mem_left,
+          rw mem_unfold, apply bv_use (i, none),
+          refine le_inf _ _,
+            { apply bv_or_right, refine le_inf _ _,
+              { dsimp only, let p := _, change _ ≤ _ ∈ᴮ p, change _ ≤ (λ w, w ∈ᴮ p) _, apply bv_rw' (bv_symm Hi_right), simp, dsimp only [p],
+                rw mem_subset.mk_iff, apply bv_use i, refine le_inf ‹_› (le_inf _ ‹_›),
+                  apply @bv_rw' _ _ _ _ _ (bv_symm Hi_right) (λ w, - (w ∈ᴮ set_of_indicator χ)), simp, from ‹_› },
+              { from bv_refl },},
+            { erw pair_eq_pair_iff, from ⟨by simp*, bv_refl⟩ }}}},
+    apply powerset_injects.F_subset_prod, from ‹_›
+end
 
-lemma powerset_injects.F_inj {Γ} : ∀ (i j : (𝒫 x).type), Γ ≤ (fx2).func (powerset_injects.F i ) =ᴮ (fx2).func (powerset_injects.F j) → Γ ≤ (𝒫 x).func i =ᴮ (𝒫 x).func j  := sorry
+lemma powerset_injects.F_inj {Γ} : ∀ (i j : (𝒫 x).type), Γ ≤ (fx2).func (powerset_injects.F i ) =ᴮ (fx2).func (powerset_injects.F j) → Γ ≤ (𝒫 x).func i =ᴮ (𝒫 x).func j  :=
+begin
+  intros χ₁ χ₂ H,
+  apply mem_ext,
+    { bv_intro z, bv_imp_intro Hz, erw ←mem_powerset_injects.F_iff at Hz,
+     have := bv_rw'' H Hz, erw mem_powerset_injects.F_iff at this, exact this  },
+    { bv_intro z, bv_imp_intro Hz, erw ←mem_powerset_injects.F_iff at Hz,
+     have := bv_rw'' (bv_symm H) Hz, erw mem_powerset_injects.F_iff at this, exact this },
+end
 
 def powerset_injects.f : bSet 𝔹 := function.mk' powerset_injects.F (λ _, ⊤) powerset_injects.F_ext powerset_injects.F_mem
 
@@ -2001,9 +2167,6 @@ def closed_under_successor (Γ) (x : bSet 𝔹) := Γ ≤ ⨅y, y ∈ᴮ x ⟹ s
 
 def omega_spec (ω : bSet 𝔹) := (∀ {Γ : 𝔹}, closed_under_successor Γ ω) ∧ ∀ (x : bSet 𝔹) {Γ} (H₁ : Γ ≤ ∅ ∈ᴮ x) (H₂ : closed_under_successor Γ x), Γ ≤ bSet.omega ⊆ᴮ x
 
-lemma check_succ_eq_succ_check {n : ℕ} : (of_nat (n.succ) : bSet 𝔹) = bSet.succ (of_nat n) :=
-by simp[of_nat, succ, pSet.of_nat]
-
 lemma omega_closed_under_succ {Γ : 𝔹} : closed_under_successor Γ (bSet.omega) :=
 begin
   unfold closed_under_successor, bv_intro y, bv_imp_intro H_mem,
@@ -2023,9 +2186,6 @@ begin
      {let A := _, change Γ ≤ A ∈ᴮ x at k_ih,
       convert H₂ A ‹_›, from check_succ_eq_succ_check}}
 end
-
-lemma of_nat_mem_of_lt {k₁ k₂ : ℕ} (H_lt : k₁ < k₂) {Γ} : Γ ≤ (bSet.of_nat k₁ : bSet 𝔹) ∈ᴮ (bSet.of_nat k₂) :=
-check_mem $ pSet.of_nat_mem_of_lt H_lt
 
 lemma Ord_omega {Γ : 𝔹} : Γ ≤ Ord(omega) :=
 le_inf (check_ewo pSet.is_ewo_omega) (check_is_transitive pSet.is_transitive_omega)
