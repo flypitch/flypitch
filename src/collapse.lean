@@ -667,7 +667,7 @@ def collapse_algebra : Type* := @regular_opens (X → Y) collapse_space
 variables {X Y}
 
 @[instance, priority 9001] def collapse_algebra_boolean_algebra [nonempty (X → Y)] : nontrivial_complete_boolean_algebra (collapse_algebra X Y) :=
-regular_open_algebra ‹_›
+regular_open_algebra
 
 end collapse_algebra
 
@@ -705,4 +705,3 @@ instance nonempty_aleph_one_powerset_omega : nonempty $ ((ℵ₁).type) → (pow
 
 def 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 :=
 by apply_instance
-

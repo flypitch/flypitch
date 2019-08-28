@@ -370,11 +370,15 @@ end lemmas
 namespace collapse_algebra
 
 local prefix `#`:50 := cardinal.mk
-local attribute [instance, priority 9001] collapse_space
+local attribute [instance] collapse_space
 
 open collapse_poset
 
-local notation `𝔹` := collapse_algebra ((ℵ₁ : pSet.{u}).type) (powerset omega : pSet).type
+-- def foo := collapse_algebra ((ℵ₁ : pSet.{u}).type) (powerset omega : pSet.{u}).type
+
+-- local attribute instance my_instance : nontrivial_complete_boolean_algebra foo := by {unfold foo, apply_instance}
+
+local notation `𝔹` := collapse_algebra ((ℵ₁ : pSet.{u}).type) (powerset omega : pSet.{u}).type
 
 -- TODO(floris)
 lemma 𝔹_omega_closed : omega_closed 𝔹 := sorry
@@ -608,16 +612,18 @@ begin
 end
 
 lemma continuum_le_continuum_check {Γ : 𝔹} :
-  Γ ≤ bv_powerset bSet.omega ≼ (pSet.powerset omega)̌ :=
+  Γ ≤ bv_powerset (bSet.omega : bSet 𝔹) ≼ (pSet.powerset (pSet.omega : pSet.{u}) : pSet.{u})̌ :=
 begin
-  refine injects_into_trans _ _, tactic.rotate 1, from powerset_injects_into_functions,
-  have : Γ ≤ injects_into (functions pSet.omega (of_nat 2))̌  (powerset omega)̌ ,
-    by { apply injects_into_of_is_injective_function,
-         rcases functions_2_injects_into_powerset pSet.omega with ⟨f,Hf⟩,
-         apply bv_use f̌, from check_is_injective_function Hf },
-  change Γ ≤ (λ z, injects_into z (powerset omega)̌ ) _ at this,
-  have := bv_rw'' _ this, tactic.rotate 2,
-  apply check_functions_eq_functions, from ‹_›
+    refine injects_into_trans _ _, tactic.rotate 1, from powerset_injects_into_functions,
+  have : (Γ : 𝔹) ≤ injects_into (functions pSet.omega (of_nat 2) : pSet.{u})̌  (powerset (omega) : pSet.{u})̌ ,
+    by { sorry -- typeclass issues 
+ -- apply injects_into_of_is_injective_function,
+         -- rcases functions_2_injects_into_powerset (pSet.omega : pSet.{u}) with ⟨f,Hf⟩,
+         -- apply bv_use f̌, apply check_is_injective_function, from Hf
+ },
+  change Γ ≤ (λ z, injects_into z (powerset omega)̌ ) _ at this, sorry -- typeclass issues
+  -- have := bv_rw'' _ this, tactic.rotate 2,
+  -- apply check_functions_eq_functions, from ‹_›
 end
 
 lemma aleph_one_not_lt_powerset_omega : ∀ {Γ : 𝔹}, Γ ≤ - (ℵ₁̌ ≺ 𝒫(ω)) :=

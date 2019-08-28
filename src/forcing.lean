@@ -117,7 +117,7 @@ def 𝔹 : Type := @regular_opens (set(ℵ₂.type × ℕ)) (Pi.topological_spac
 instance H_nonempty : nonempty (set $ ℵ₂.type × ℕ) := ⟨∅⟩
 
 @[instance, priority 1000]def 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 :=
-regular_open_algebra (H_nonempty)
+regular_open_algebra
 
 lemma le_iff_subset' {x y : 𝔹} : x ≤ y ↔ x.1 ⊆ y.1 := by refl
 
