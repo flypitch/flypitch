@@ -998,6 +998,8 @@ def functions (x y : pSet.{u}) : pSet.{u} := -- TODO(jesse): show this satisfies
 lemma mem_functions_iff {x y : pSet.{u}} (z : pSet.{u}) : z ∈ functions x y ↔ is_func x y z :=
 sorry
 
+lemma functions_2_injects_into_powerset (x : pSet.{u}) : ∃ (f : pSet.{u}), is_injective_function (pSet.functions x (pSet.of_nat 2)) (pSet.powerset x) f := sorry
+
 @[simp]lemma zero_lt_omega : 0 < ordinal.omega := omega_pos
 
 @[simp]lemma card_ex_aleph_exists_mem {n : ℕ} : ∃ z, z ∈ card_ex (aleph n) :=

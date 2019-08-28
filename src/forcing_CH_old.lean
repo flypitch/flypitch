@@ -610,41 +610,15 @@ end
 lemma continuum_le_continuum_check {Γ : 𝔹} :
   Γ ≤ bv_powerset bSet.omega ≼ (pSet.powerset omega)̌ :=
 begin
-  sorry
+  refine injects_into_trans _ _, tactic.rotate 1, from powerset_injects_into_functions,
+  have : Γ ≤ injects_into (functions pSet.omega (of_nat 2))̌  (powerset omega)̌ ,
+    by { apply injects_into_of_is_injective_function,
+         rcases functions_2_injects_into_powerset pSet.omega with ⟨f,Hf⟩,
+         apply bv_use f̌, from check_is_injective_function Hf },
+  change Γ ≤ (λ z, injects_into z (powerset omega)̌ ) _ at this,
+  have := bv_rw'' _ this, tactic.rotate 2,
+  apply check_functions_eq_functions, from ‹_›
 end
-
--- not needed if we show continuum_le_continuum_check
--- lemma continuum_is_continuum {Γ : 𝔹} : Γ ≤ (pSet.powerset omega)̌  =ᴮ (bv_powerset bSet.omega) :=
--- begin
---   refine subset_ext (check_powerset_subset_powerset _) _,
---   bv_intro χ, bv_imp_intro H_χ,
---   refine le_trans le_top _, rw[bSet.mem_unfold], simp only [check_bval_top, top_inf_eq],
---   simp only [bv_eq_unfold],
---   sorry
--- -- TOOD(jesse) show that this simplifies to ⨆_S ⨅ i, σ_S(i) (χ i), where σ_S(i) is the ¬-indicator function o S
-
--- -- then an inductively-defined version of S := {i | ¬ χ i ⊓ principal_open p = ⊥} should work
--- end
-
--- lemma continuum_is_continuum {Γ : 𝔹} : Γ ≤ (pSet.powerset omega)̌  =ᴮ (bv_powerset bSet.omega) :=
--- begin
---   refine subset_ext (check_powerset_subset_powerset _) _,
---   bv_intro χ, bv_imp_intro H_χ,
---   suffices this : ∃ S : (powerset omega).type, Γ_1 ≤  (set_of_indicator χ) =ᴮ ((powerset omega).func S)̌ ,
---     by { cases this with S HS, apply bv_use S, rwa[top_inf_eq] },
---   clear H_χ,
---   fsplit,
---     { sorry },
---     { rw[bv_eq_unfold], refine le_inf _ _,
---       { sorry }, -- this condition says that says for ∀ i, χ i ≤ ω.func i ∈ᴮ Š
---                  -- note that S, being a subtype, also satisfies a 0-1 property,
---                  -- so that ∀ i, (⊥ < (ω.func i ∈ᴮ Š) ↔ ⊤ = ω.func i ∈ᴮ Š ↔ (S i))
---                  -- so, in case that ⊥ < χ i, we must have that i ∈ S.
-
---       { sorry } -- this condition, combined some easy facts and check_mem_set_of_indicator_iff,
---                 -- says that S ⊆ {i | χ i = ⊤}
--- }
--- end
 
 lemma aleph_one_not_lt_powerset_omega : ∀ {Γ : 𝔹}, Γ ≤ - (ℵ₁̌ ≺ 𝒫(ω)) :=
 begin

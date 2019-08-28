@@ -576,6 +576,7 @@ lemma mem_function_of_func'_iff {x y f : bSet 𝔹} {Γ} {H_is_func' : Γ ≤ is
 lemma check_is_injective_function {x y f : pSet.{u}} (H_inj : pSet.is_injective_function x y f) {Γ : 𝔹}
   : Γ ≤ bSet.is_injective_function x̌ y̌ f̌ := sorry
 
+
 @[simp]lemma eq_of_is_inj_of_eq {x y x' y' f : bSet 𝔹} {Γ : 𝔹} (H_is_inj : Γ ≤ is_inj f) (H_eq : Γ ≤ x' =ᴮ y')
   (H_mem₁ : Γ ≤ pair x x' ∈ᴮ f) (H_mem₂ : Γ ≤ pair y y' ∈ᴮ f) : Γ ≤ x =ᴮ y :=
 H_is_inj x y x' y' (le_inf (le_inf ‹_› ‹_›) ‹_›)
@@ -611,6 +612,12 @@ def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆ S, ⨆f, S ⊆ᴮ x ⊓ (is_func
 by {bv_cases_at HS f Hf, exact bv_and.left (bv_and.left ‹_›)}
 
 def injects_into (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ is_inj f
+
+lemma injects_into_of_is_injective_function {x y : bSet 𝔹} {Γ} (H_inj : Γ ≤ ⨆f, is_injective_function x y f) : Γ ≤ injects_into x y :=
+begin
+  bv_cases_at H_inj f Hf, apply bv_use f, bv_split_at Hf,
+  from le_inf (is_func'_of_is_function ‹_›) ‹_›
+end
 
 def surjects_onto (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ (is_surj x y f)
 
@@ -1612,7 +1619,8 @@ check_bv_eq_bot_of_not_equiv (pSet.of_nat_inj ‹_›)
 end check
 
 section powerset
-variables {BB : Type u} [nontrivial_complete_boolean_algebra BB] -- todo: search + replace BB
+
+variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 /- The function from 2^x to P(x) -/
 -- def set_of_indicator (x : bSet 𝔹) : bSet 𝔹 :=
 -- begin
@@ -1622,14 +1630,14 @@ variables {BB : Type u} [nontrivial_complete_boolean_algebra BB] -- todo: search
 
 /- I am working on the injection P(ω) ↪ 2 ^ ω ↪ (2 ^ ω) ✓ ↪ P(ω) ✓ -/
 
-def indicator_of_set' (x : bSet BB) : bSet BB :=
+def indicator_of_set' (x : bSet 𝔹) : bSet 𝔹 :=
 begin
-  refine subset.mk (_ : ((bv_powerset x).prod (functions x 𝟚)).type → BB),
+  refine subset.mk (_ : ((bv_powerset x).prod (functions x 𝟚)).type → 𝔹),
   intro sχ,
   refine ⨅(a : type x), sχ.2 (a, option.none) ⇔ sχ.1 a
 end
 
-lemma is_func'_indicator_of_set' {Γ : BB} (x : bSet BB) :
+lemma is_func'_indicator_of_set' {Γ : 𝔹} (x : bSet 𝔹) :
   Γ ≤ is_func' (bv_powerset x) (functions x 𝟚) (indicator_of_set' x) :=
 begin
   apply bv_and_intro,
@@ -1647,22 +1655,23 @@ begin
   { sorry }
 end
 
-lemma is_inj_indicator_of_set' {Γ : BB} (x : bSet BB) : Γ ≤ is_inj (indicator_of_set' x) :=
+lemma is_inj_indicator_of_set' {Γ : 𝔹} (x : bSet 𝔹) : Γ ≤ is_inj (indicator_of_set' x) :=
 begin
   sorry
 end
 
-def indicator_of_set (Γ : BB) (x : bSet BB) : bSet BB :=
+def indicator_of_set (Γ : 𝔹) (x : bSet 𝔹) : bSet 𝔹 :=
 function_of_func' $ (is_func'_indicator_of_set' x : Γ ≤ _)
 
-lemma is_function_indicator_of_set {Γ : BB} (x : bSet BB) :
+lemma is_function_indicator_of_set {Γ : 𝔹} (x : bSet 𝔹) :
   Γ ≤ is_function (bv_powerset x) (functions x 𝟚) (indicator_of_set Γ x) :=
 function_of_func'_is_function _
 
-lemma is_inj_indicator_of_set {Γ : BB} (x : bSet BB) :
+lemma is_inj_indicator_of_set {Γ : 𝔹} (x : bSet 𝔹) :
   Γ ≤ is_inj (indicator_of_set Γ x) :=
 function_of_func'_inj_of_inj $ is_inj_indicator_of_set' x --todo: function_of_func'_inj_of_inj
 
+lemma powerset_injects_into_functions {x : bSet 𝔹} {Γ : 𝔹} : Γ ≤ injects_into (bv_powerset x) (functions x 𝟚) := sorry
 
 end powerset
 
