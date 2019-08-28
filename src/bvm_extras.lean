@@ -1355,6 +1355,12 @@ begin
     { apply function.mk'_is_subset },
 end
 
+lemma function.mk'_is_inj {Γ} (H_inj : ∀ i j, Γ ≤ y.func (F i ) =ᴮ y.func (F j) → Γ ≤ x.func i =ᴮ x.func j) : Γ ≤ is_inj (function.mk' F χ H_ext H_mem) :=
+begin
+  bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂, bv_imp_intro H,
+  bv_split_at H, bv_split_at H_left, sorry -- rest is easy
+end
+
 
 end function_mk'
 
@@ -1620,7 +1626,11 @@ end check
 
 section powerset
 
-variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
+parameters {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
+
+parameter (x : bSet 𝔹)
+
+local notation `fx2` := functions x 𝟚
 /- The function from 2^x to P(x) -/
 -- def set_of_indicator (x : bSet 𝔹) : bSet 𝔹 :=
 -- begin
@@ -1630,48 +1640,67 @@ variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 
 /- I am working on the injection P(ω) ↪ 2 ^ ω ↪ (2 ^ ω) ✓ ↪ P(ω) ✓ -/
 
-def indicator_of_set' (x : bSet 𝔹) : bSet 𝔹 :=
-begin
-  refine subset.mk (_ : ((bv_powerset x).prod (functions x 𝟚)).type → 𝔹),
-  intro sχ,
-  refine ⨅(a : type x), sχ.2 (a, option.none) ⇔ sχ.1 a
-end
+-- def indicator_of_set' (x : bSet 𝔹) : bSet 𝔹 :=
+-- subset.mk (λ sχ, ⨅(a : type x), sχ.2 (a, option.none) ⇔ sχ.1 a : ((bv_powerset x).prod (functions x 𝟚)).type → 𝔹)
 
-lemma is_func'_indicator_of_set' {Γ : 𝔹} (x : bSet 𝔹) :
-  Γ ≤ is_func' (bv_powerset x) (functions x 𝟚) (indicator_of_set' x) :=
-begin
-  apply bv_and_intro,
-  { bv_intro s₁, bv_intro s₂, bv_intro χ₁, bv_intro χ₂, bv_imp_intro h₁, bv_imp_intro h₂,
-    bv_split_at h₁,
-    apply subset_ext,
-    { rw [subset_unfold'], bv_intro y, bv_imp_intro hy,
-      rw [indicator_of_set', mem_subset.mk_iff] at h₁_left h₁_right,
-      bv_cases_at h₁_left sχ h₃, clear h₁_left, cases sχ with s χ, bv_split_at h₃,
-      dsimp at h₃_left, sorry
-      -- dsimp at *,
-      -- have := eq_of_is_func'_of_eq,
-      },
-    {sorry }},
-  { sorry }
-end
+-- lemma is_func'_indicator_of_set' {Γ : 𝔹} (x : bSet 𝔹) :
+--   Γ ≤ is_func' (bv_powerset x) (functions x 𝟚) (indicator_of_set' x) :=
+-- begin
+--   apply bv_and_intro,
+--   { bv_intro s₁, bv_intro s₂, bv_intro χ₁, bv_intro χ₂, bv_imp_intro h₁, bv_imp_intro h₂,
+--     bv_split_at h₁,
+--     apply subset_ext,
+--     { rw [subset_unfold'], bv_intro y, bv_imp_intro hy,
+--       rw [indicator_of_set', mem_subset.mk_iff] at h₁_left h₁_right,
+--       bv_cases_at h₁_left sχ h₃, clear h₁_left, cases sχ with s χ, bv_split_at h₃,
+--       dsimp at h₃_left, sorry
+--       -- dsimp at *,
+--       -- have := eq_of_is_func'_of_eq,
+--       },
+--     {sorry }},
+--   { sorry }
+-- end
 
-lemma is_inj_indicator_of_set' {Γ : 𝔹} (x : bSet 𝔹) : Γ ≤ is_inj (indicator_of_set' x) :=
+-- lemma is_inj_indicator_of_set' {Γ : 𝔹} (x : bSet 𝔹) : Γ ≤ is_inj (indicator_of_set' x) :=
+-- begin
+--   sorry
+-- end
+
+-- def indicator_of_set (Γ : 𝔹) (x : bSet 𝔹) : bSet 𝔹 :=
+-- function_of_func' $ (is_func'_indicator_of_set' x : Γ ≤ _)
+
+-- lemma is_function_indicator_of_set {Γ : 𝔹} (x : bSet 𝔹) :
+--   Γ ≤ is_function (bv_powerset x) (functions x 𝟚) (indicator_of_set Γ x) :=
+-- function_of_func'_is_function _
+
+-- lemma is_inj_indicator_of_set {Γ : 𝔹} (x : bSet 𝔹) :
+--   Γ ≤ is_inj (indicator_of_set Γ x) :=
+-- function_of_func'_inj_of_inj $ is_inj_indicator_of_set' x --todo: function_of_func'_inj_of_inj
+
+def powerset_injects.F : (bv_powerset x).type → (functions x 𝟚).type :=
+λ χ, λ pr, χ pr.1 ⊓ (𝟚.func (pr.2) =ᴮ 0)
+
+lemma powerset_injects.F_ext : ∀ (i j : type (𝒫 x)) {Γ : 𝔹},
+    Γ ≤ func (𝒫 x) i =ᴮ func (𝒫 x) j →
+    Γ ≤ func (functions x 𝟚) (powerset_injects.F i) =ᴮ func (functions x 𝟚) (powerset_injects.F j) :=
 begin
+  intros χ₁ χ₂ Γ H,
   sorry
 end
 
-def indicator_of_set (Γ : 𝔹) (x : bSet 𝔹) : bSet 𝔹 :=
-function_of_func' $ (is_func'_indicator_of_set' x : Γ ≤ _)
+lemma powerset_injects.F_mem : ∀ (i : type (𝒫 x)) {Γ : 𝔹},
+    Γ ≤ bval (𝒫 x) i → Γ ≤ bval (functions x 𝟚) (powerset_injects.F i) ∧ Γ ≤ ⊤ := sorry
 
-lemma is_function_indicator_of_set {Γ : 𝔹} (x : bSet 𝔹) :
-  Γ ≤ is_function (bv_powerset x) (functions x 𝟚) (indicator_of_set Γ x) :=
-function_of_func'_is_function _
+lemma powerset_injects.F_inj {Γ} : ∀ (i j : (𝒫 x).type), Γ ≤ (fx2).func (powerset_injects.F i ) =ᴮ (fx2).func (powerset_injects.F j) → Γ ≤ (𝒫 x).func i =ᴮ (𝒫 x).func j  := sorry
 
-lemma is_inj_indicator_of_set {Γ : 𝔹} (x : bSet 𝔹) :
-  Γ ≤ is_inj (indicator_of_set Γ x) :=
-function_of_func'_inj_of_inj $ is_inj_indicator_of_set' x --todo: function_of_func'_inj_of_inj
+def powerset_injects.f : bSet 𝔹 := function.mk' powerset_injects.F (λ _, ⊤) powerset_injects.F_ext powerset_injects.F_mem
 
-lemma powerset_injects_into_functions {x : bSet 𝔹} {Γ : 𝔹} : Γ ≤ injects_into (bv_powerset x) (functions x 𝟚) := sorry
+lemma powerset_injects_into_functions {x : bSet 𝔹} {Γ : 𝔹} : Γ ≤ injects_into (bv_powerset x) (functions x 𝟚) :=
+begin
+  apply bv_use (powerset_injects.f x), refine le_inf _ _,
+    { exact is_func'_of_is_function (function.mk'_is_function _ _ _ _) },
+    { exact function.mk'_is_inj _ _ _ _ (powerset_injects.F_inj _) }
+end
 
 end powerset
 
