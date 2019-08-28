@@ -73,7 +73,7 @@ include τ
 
 def dense (S : set α) : Prop := ∀ U : set α, @is_open α τ U → U ≠ ∅ → U ∩ S ≠ ∅
 
--- S is dense in S₀ if S ∩ S₀ is dense in the subspace S₀ 
+-- S is dense in S₀ if S ∩ S₀ is dense in the subspace S₀
 def rel_dense (S₀ S : set α) : Prop := ∀ U : set α, @is_open α τ U → U ∩ S₀ ≠ ∅ → U ∩ S₀ ∩ S ≠ ∅
 
 lemma closure_univ_of_dense {S : set α} (H_dense : dense S) : closure S = univ :=
@@ -330,8 +330,8 @@ begin
   have this₁_right : (S₁ ∩ S₂)ᵖᵖ ⊆ S₂ᵖᵖ, from p_anti (p_anti this₀_right),
   have this₂ : (S₁ ∩ S₂)ᵖᵖ ⊆ S₁ᵖᵖ ∩ S₂ᵖᵖ,
     by {intros x Hx, split, from this₁_left ‹_›, from this₁_right ‹_›},
-  ext, split, from λ _, this₂ ‹_›,
-  suffices : S₁ᵖᵖ ∩ S₂ᵖᵖ ⊆ (S₁ ∩ S₂)ᵖᵖ, from λ _, this ‹_›,
+  apply subset.antisymm, exact λ _ _, this₂ ‹_›,
+  show S₁ᵖᵖ ∩ S₂ᵖᵖ ⊆ (S₁ ∩ S₂)ᵖᵖ,
   have this₃ := inter_eq_inter_aux S₁ S₂ H₁,
   have this₄ := compl_mono (this₃),
   have this₅ := p_anti this₄,
@@ -647,7 +647,7 @@ begin
   refl, refl
 end
 
-def regular_open_algebra (H_nonempty : nonempty α) :
+def regular_open_algebra [H_nonempty : nonempty α] :
   nontrivial_complete_boolean_algebra (regular_opens α) :=
 {infi_sup_le_sup_Inf := regular_open_infi_sup_le_sup_Inf,
   inf_Sup_le_supr_inf := regular_open_inf_Sup_le_supr_inf,
@@ -684,7 +684,7 @@ begin
 end
 
 open cardinal function
-local attribute [instance] [priority 0] subtype.preorder
+local attribute [instance, priority 0] subtype.preorder
 
 lemma CCC_regular_opens (h : countable_chain_condition α) : CCC (regular_opens α) :=
 begin
@@ -701,5 +701,28 @@ begin
     have : x ≠ y, { intro h, apply hxy, exact congr_arg (subtype.val ∘ O) h },
     rw [disjoint_iff_eq_empty], refine subset.antisymm _ (empty_subset _), exact h2O _ _ this }
 end
+
+local attribute [instance, priority 10] regular_open_algebra
+lemma regular_open.bot_lt [nonempty α] {o : regular_opens α} : ⊥ < o ↔ ∃x, x ∈ (o : set α) :=
+by { refine bot_lt_iff_ne_bot.trans _,
+    rw [← set.ne_empty_iff_exists_mem], rw [← subtype.val_injective.ne_iff], refl }
+
+
+lemma fst_Sup [nonempty α] {f : set (regular_opens α)} : ↑(Sup f) = (Sup (subtype.val '' f))ᵖᵖ :=
+by refl
+
+lemma fst_supr [nonempty α] {ι} {f : ι → regular_opens α} : ↑(⨆ i, f i) = (⨆ i, (f i).1)ᵖᵖ :=
+by { rw [supr, fst_Sup], congr' 3, rw [range_comp] }
+
+lemma fst_Inf [nonempty α] {f : set (regular_opens α)} : ↑(Inf f) = (Inf (subtype.val '' f))ᵖᵖ :=
+begin
+  rw [Inf_unfold, neg_unfold], dsimp,
+  rw [fst_Sup, ← p_eq_p_p_p, ← image_comp],
+  dsimp [function.comp],
+  sorry, sorry
+end
+
+lemma fst_infi [nonempty α] {ι} {f : ι → regular_opens α} : ↑(⨅ i, f i) = (⨅ i, (f i).1)ᵖᵖ :=
+by { rw [infi, fst_Inf], congr' 3, rw [range_comp] }
 
 end regular_algebra

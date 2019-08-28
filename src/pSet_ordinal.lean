@@ -300,7 +300,7 @@ begin
     { from ‹_› },
     { exfalso, from mem_self ‹_› },
     { suffices : ordinal.mk η ∈ ordinal.mk ξ,
-        by {exfalso, from mem_mem_false ‹_› ‹_›}, 
+        by {exfalso, from mem_mem_false ‹_› ‹_›},
       from mk_mem_mk_of_lt ‹_› }
 end
 
@@ -329,7 +329,7 @@ end
 
 lemma Ord_limit : ∀ (o : ordinal), is_limit o → (∀ (o' : ordinal), o' < o → Ord (ordinal.mk o')) → Ord (ordinal.mk o) :=
 begin
-  intros η Hη ih, 
+  intros η Hη ih,
   refine ⟨_,_⟩,
     { unfold epsilon_well_orders, refine ⟨_,_⟩,
         { intros x Hx z Hz, have this₁ := equiv_mk_of_mem_mk _ Hx,
@@ -355,7 +355,7 @@ begin
       apply subset_of_all_mem, intros z Hz,
       specialize this z Hz, rcases this with ⟨ρ, Hρ₁, Hρ₂⟩,
       rw[mem.congr_left Hρ₂],
-      convert (mem_mk_limit_of_lt ‹_› _ (lt_trans Hρ₁ ‹_›)), simp* } 
+      convert (mem_mk_limit_of_lt ‹_› _ (lt_trans Hρ₁ ‹_›)), simp* }
 end
 
 @[simp]lemma Ord_mk (η : ordinal) : Ord (ordinal.mk η) :=

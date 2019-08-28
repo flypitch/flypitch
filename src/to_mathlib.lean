@@ -12,6 +12,13 @@ import algebra.ordered_group data.set.disjointed data.set.countable set_theory.c
 
 universe variables u v w w'
 
+namespace function
+lemma injective.ne_iff {α β} {f : α → β} (hf : function.injective f) {a₁ a₂ : α} :
+  f a₁ ≠ f a₂ ↔ a₁ ≠ a₂ :=
+not_congr hf.eq_iff
+end function
+
+
 inductive dvector (α : Type u) : ℕ → Type u
 | nil {} : dvector 0
 | cons : ∀{n} (x : α) (xs : dvector n), dvector (n+1)
@@ -1375,7 +1382,7 @@ meta def bv_split_at (H : parse ident) : tactic unit :=
 do e_H <- resolve_name H,
    tactic.replace H ``(lattice.le_inf_iff.mp %%e_H),
    resolve_name H >>= to_expr >>= cases_core
-    
+
 meta def bv_split : tactic unit :=
 do ctx <- (local_context >>= (λ l, l.mfilter hyp_is_ineq)),
    ctx.mmap' (λ e, try (tactic.replace (get_name e) ``(lattice.le_inf_iff.mp %%e))),

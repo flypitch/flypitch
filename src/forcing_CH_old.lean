@@ -184,6 +184,42 @@ end
 def omega_closed (α : Type*) [nontrivial_complete_boolean_algebra α] : Prop :=
 ∀ (s : ℕ → α) (H_nonzero : ∀ n, ⊥ < s n) (H_chain : ∀ n, s (n+1) ≤ s n), ⊥ < ⨅n, s n
 
+section
+local attribute [instance, priority 10] regular_open_algebra
+lemma ne_empty_of_subset {α} {s t : set α} (h : s ⊆ t) (hs : s ≠ ∅) : t ≠ ∅ :=
+by { rw [set.ne_empty_iff_exists_mem] at hs ⊢, cases hs with x hx, exact ⟨x, h hx⟩ }
+
+lemma omega_closed_regular_opens {α : Type*} [topological_space α] [hα : nonempty α]
+  (B : set (set α)) (hB : is_topological_basis B)
+  (h : ∀(s : ℕ → B) (H_nonzero : ∀ n, (s n).1 ≠ ∅) (H_chain : ∀ n, s (n+1) ≤ s n),
+  ∃t ∈ B, (t : set α) ≠ ∅ ∧ t ⊆ ⨅ n, (s n).1) :
+  omega_closed (regular_opens α) :=
+begin
+  intros s h1s h2s,
+  have : ∃(s' : ℕ → B), ∀ n, (s' n).1 ≠ ∅ ∧ (s' n).1 ⊆ s n ∧ (s' (n+1)).1 ⊆ (s' n).1,
+  { sorry
+    -- apply @classical.axiom_of_choice _ _ (λ n (sn : B), sn.1 ≠ ∅ ∧ sn.1 ⊆ s n ∧ ),
+    -- intro n, specialize h1s n, rw [regular_open.bot_lt] at h1s,
+    -- cases h1s with x hx,
+    -- have := mem_basis_subset_of_mem_open hB hx (is_open_of_is_regular (s n).2),
+    -- rcases this with ⟨s, hsB, hxs, hs⟩,
+    -- use ⟨s, hsB⟩, dsimp only, rw [set.ne_empty_iff_exists_mem],
+    -- exact ⟨⟨x, hxs⟩, hs⟩
+    },
+  cases this with s' hs',
+  rw [forall_and_distrib, forall_and_distrib] at hs', rcases hs' with ⟨h1s', h2s', h3s'⟩,
+  rw [regular_open.bot_lt, ←set.ne_empty_iff_exists_mem],
+  rcases h s' h1s' h3s' with ⟨t, h1t, h2t, h3t⟩,
+  apply ne_empty_of_subset _ h2t,
+  rw [fst_infi],
+  refine set.subset.trans (in_p_p_of_open $ is_open_of_is_topological_basis hB h1t) _,
+  apply p_p_mono, refine set.subset.trans h3t _,
+  show (⨅ (n : ℕ), (s' n).val) ≤ ⨅ (i : ℕ), (s i).val,
+  refine infi_le_infi _, exact h2s'
+end
+
+end
+
 section function_reflect
 
 variables (H_omega_closed : omega_closed 𝔹) {y : pSet.{u}} {g : bSet 𝔹} {Γ : 𝔹} (H_nonzero : ⊥ < Γ) (H : Γ ≤ is_func' bSet.omega y̌ g)

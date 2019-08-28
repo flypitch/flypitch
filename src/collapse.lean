@@ -505,6 +505,15 @@ by { rw [set.mem_compl_iff, mem_principal_open_iff'], push_neg }
 by { intro H_mem, rw [mem_principal_open_iff] at H,
      use x, rw [H x (p.f.fn x H_mem) (fn_mem _)], exact roption.get_mem H_mem }
 
+def collapse_poset.Sup {ι} (p : ι → collapse_poset X Y κ) (h : #ι < (ord κ).cof)
+  (hκ : cardinal.omega ≤ κ) : collapse_poset X Y κ :=
+⟨Sup $ λ i, (p i).f,
+  begin
+    rw [dom_Sup], apply lt_of_le_of_lt (mk_Union_le _) _,
+    apply mul_lt_of_lt hκ (lt_of_lt_of_le h (ordinal.cof_ord_le κ)),
+    exact ordinal.sup_lt _ h (λ i, collapse_poset.Hc _)
+  end⟩
+
 def collapse_space : topological_space (X → Y) :=
 generate_from $
   (collapse_poset.principal_open : collapse_poset X Y cardinal.omega.succ → set (X → Y)) '' set.univ
@@ -653,7 +662,7 @@ local attribute [instance, priority 9000] collapse_space
 section collapse_algebra
 variables X Y : Type u
 
-def collapse_algebra := @regular_opens (X → Y) collapse_space
+def collapse_algebra : Type* := @regular_opens (X → Y) collapse_space
 
 variables {X Y}
 
