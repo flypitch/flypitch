@@ -4,9 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 Authors: Jesse Han, Floris van Doorn
 -/
-import .zfc' .completeness .print_formula
+import .zfc' .completeness .print_formula .forcing_CH_old
 
-open fol bSet pSet lattice
+open fol bSet pSet lattice collapse_algebra
 
 /-
 This file summarizes:
@@ -54,7 +54,9 @@ This file summarizes:
 
 #print CH_f
 
-#print 𝔹
+#print 𝔹_cohen
+
+#print 𝔹_collapse
 
 theorem godel_completeness_theorem {L} (T) (ψ : sentence L) : T ⊢' ψ ↔ T ⊨ ψ :=
 begin

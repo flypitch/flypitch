@@ -51,6 +51,12 @@ begin
       dsimp with cleanup, rw[top_inf_eq]}
 end
 
+lemma AE_of_check_larger_than_check' (x y : pSet.{u}) {f : bSet 𝔹} {Γ}
+  (H : Γ ≤ (is_func' x̌ y̌ f) ⊓ ⨅v, v ∈ᴮ y̌ ⟹ ⨆w, w ∈ᴮ x̌ ⊓ pair w v ∈ᴮ f) (h_nonzero : ⊥ < Γ) :
+  ∀ i : y.type, ∃ j : x.type, ⊥ < (is_func f) ⊓ (pair ((x.func j)̌ ) ((y.func i)̌ )) ∈ᴮ f :=
+by {apply AE_of_check_larger_than_check, repeat {assumption},
+    refine le_inf (is_func_of_is_func' $ bv_and.left ‹_›) _, from bv_and.right ‹_› }
+
 variables
   (η₁ η₂ : pSet.{u}) (H_infinite : ω ≤ #(η₁.type))
   (H_lt : #(η₁.type) < #(η₂.type))
@@ -112,7 +118,9 @@ end pSet
 
 open pSet
 
-def 𝔹 : Type := @regular_opens (set(ℵ₂.type × ℕ)) (Pi.topological_space)
+def 𝔹_cohen : Type := @regular_opens (set(ℵ₂.type × ℕ)) (Pi.topological_space)
+
+local notation `𝔹` := 𝔹_cohen
 
 instance H_nonempty : nonempty (set $ ℵ₂.type × ℕ) := ⟨∅⟩
 
@@ -489,12 +497,13 @@ begin
 end
 
 lemma ℵ₀_lt_ℵ₁ : (⊤ : 𝔹)  ≤ ℵ₀ ≺ ℵ₁̌  :=
-begin
-  sorry
+begin sorry
   -- simp[larger_than, -top_le_iff], rw[<-imp_bot],
-  -- bv_imp_intro, bv_cases_at'' H f, by_contra,
+  -- bv_imp_intro, bv_cases_at'' H S,
+  -- bv_cases_at'' H_1 f, conv_rhs at H_1_1 {rw [inf_assoc]},
+  -- bv_split_at H_1_1,
   -- have := classical.axiom_of_choice
-  --           (AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
+  --           (AE_of_check_larger_than_check' _ _ H_1_1_right (bot_lt_iff_not_le_bot.mpr ‹_›)),
   -- cases this with g g_spec,
   -- suffices : ¬ CCC 𝔹, from absurd 𝔹_CCC this,
   -- apply not_CCC_of_uncountable_fiber; try{assumption},
@@ -510,6 +519,8 @@ end
 lemma ℵ₁_lt_ℵ₂ : (⊤ : 𝔹) ≤ ℵ₁̌  ≺ ℵ₂̌  :=
 cardinal_inequality_of_regular _ _ (is_regular_aleph_one)
   (is_regular_aleph_two) (by simp) (by simp)
+
+lemma ℵ₁_lt_ℵ₂' {Γ : 𝔹} : Γ ≤ ℵ₁̌  ≺ ℵ₂̌  := le_trans (le_top) ℵ₁_lt_ℵ₂
 
 lemma cohen_real.mk_ext : ∀ (i j : type (ℵ₂̌  : bSet 𝔹)), func (ℵ₂̌ ) i =ᴮ func (ℵ₂̌ ) j ≤
   (λ (x : type (ℵ₂̌ )), cohen_real.mk x) i =ᴮ (λ (x : type (ℵ₂̌ )), cohen_real.mk x) j :=
@@ -559,13 +570,13 @@ end
 --   dsimp only at hxy hyz ⊢, sorry
 -- end
 
--- def CH' : 𝔹 := - ⨆ x, (ℵ₀ ≺ x) ⊓ (x ≺ 𝒫(ℵ₀))
+def CH' : 𝔹 := - ⨆ x, (ℵ₀ ≺ x) ⊓ (x ≺ 𝒫(ℵ₀))
 
--- theorem neg_CH' : ⊤ ≤ -CH' :=
--- begin
---   rw [CH', lattice.neg_neg], apply bv_use (ℵ₁̌ ),
---   simp only [lattice.le_inf_iff],
---   refine ⟨ℵ₀_lt_ℵ₁, lt_of_lt_of_le' ℵ₁_lt_ℵ₂ (bv_use neg_CH_func)⟩, exact ℵ₂_le_𝔠
--- end
+theorem neg_CH' : ⊤ ≤ -CH' :=
+begin
+  rw [CH', lattice.neg_neg], apply bv_use (ℵ₁̌ ),
+  simp only [lattice.le_inf_iff], sorry
+  -- refine ⟨ℵ₀_lt_ℵ₁, bSet_lt_of_lt_of_le _ _ ℵ₁_lt_ℵ₂' (bv_use neg_CH_func)⟩, exact ℵ₂_le_𝔠
+end
 
 end neg_CH

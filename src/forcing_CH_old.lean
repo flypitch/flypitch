@@ -1,4 +1,4 @@
-import .bvm_extras .collapse tactic.elide
+import .bvm_extras .collapse
 
 /-
   Forcing the continuum hypothesis.
@@ -36,7 +36,7 @@ lemma check_forall (x : pSet.{u}) (ϕ : bSet 𝔹 → 𝔹) {h : B_ext ϕ} {b : 
 lemma aleph_one_check_is_aleph_one_of_omega_lt {Γ : 𝔹} (H : Γ ≤ bSet.omega ≺ (ℵ₁)̌ ): Γ ≤ (ℵ₁̌ ) =ᴮ (aleph_one) :=
 begin
   refine subset_ext aleph_one_check_sub_aleph_one _,
-  have := @aleph_one_satisfies_Ord_spec _ _ Γ, unfold aleph_one_Ord_spec at this,
+  have := @aleph_one_satisfies_spec _ _ Γ, unfold aleph_one_Ord_spec at this,
   bv_split, bv_split_at this_left,
   refine this_right (ℵ₁ ̌) (by simp) _, dsimp at H, rw ←imp_bot at ⊢ H,
   bv_imp_intro H', exact H (larger_than_of_surjects_onto $ surjects_onto_of_injects_into ‹_›)
@@ -374,11 +374,11 @@ local attribute [instance] collapse_space
 
 open collapse_poset
 
-def 𝔹_CH : Type u := collapse_algebra ((ℵ₁ : pSet.{u}).type) (powerset omega : pSet.{u}).type
+def 𝔹_collapse : Type u := collapse_algebra ((ℵ₁ : pSet.{u}).type) (powerset omega : pSet.{u}).type
 
-local attribute instance my_instance : nontrivial_complete_boolean_algebra 𝔹_CH := by {unfold 𝔹_CH, apply_instance}
+local attribute instance my_instance : nontrivial_complete_boolean_algebra 𝔹_collapse := by {unfold 𝔹_collapse, apply_instance}
 
-local notation `β` := 𝔹_CH
+local notation `β` := 𝔹_collapse
 
 -- local notation `β` := collapse_algebra ((ℵ₁ : pSet.{u}).type) (powerset omega : pSet.{u}).type
 

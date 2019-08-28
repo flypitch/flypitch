@@ -431,7 +431,7 @@ open pSet cardinal
 section CH_unprovable
 
 
-lemma neg_CH_f : ⊤ ⊩[V 𝔹] ∼CH_f :=
+lemma neg_CH_f : ⊤ ⊩[V 𝔹_cohen] ∼CH_f :=
 begin
   change ⊤ ≤ _, simp[-top_le_iff, CH_f], simp only [neg_infi],
   apply bv_use (ℵ₁̌ ), apply bv_use (ℵ₂ ̌), simp[-top_le_iff],
@@ -444,7 +444,7 @@ begin
     apply bv_use (neg_CH_func), from this}
 end
 
-instance V_𝔹_nonempty : nonempty (V 𝔹) := ⟨bSet.empty⟩
+instance V_𝔹_nonempty : nonempty (V 𝔹_cohen) := ⟨bSet.empty⟩
 
 theorem CH_f_unprovable : ¬ (ZFC' ⊢' CH_f) := sorry
 -- begin

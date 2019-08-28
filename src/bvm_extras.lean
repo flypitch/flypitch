@@ -527,7 +527,7 @@ end
 @[reducible]def is_function (x y f : bSet 𝔹) : 𝔹 :=
   is_func' x y f ⊓ (f ⊆ᴮ prod x y)
 
-@[simp]lemma B_ext_is_function_right {x y: bSet 𝔹} : B_ext (λ f, is_function x y f) := sorry
+@[simp]lemma B_ext_is_function_right {x y: bSet 𝔹} : B_ext (λ f, is_function x y f) := by simp
 
 lemma is_func'_of_is_function {Γ : 𝔹} {x y f} (H_func : Γ ≤ is_function x y f) : Γ ≤ is_func' x y f := bv_and.left H_func
 
@@ -681,8 +681,8 @@ def surjection_of_injection (f : bSet 𝔹) : bSet 𝔹 := sorry -- use pointed_
 
 lemma surjects_onto_of_injects_into {x y : bSet 𝔹} {Γ} (H_inj : Γ ≤ injects_into x y) : Γ ≤ surjects_onto y x := sorry
 
--- aka AC
-lemma injects_into_of_surjects_onto {x y : bSet 𝔹} {Γ} (H_inj : Γ ≤ surjects_onto x y) : Γ ≤ injects_into y x := sorry
+-- aka AC -- TODO
+-- lemma injects_into_of_surjects_onto {x y : bSet 𝔹} {Γ} (H_inj : Γ ≤ surjects_onto x y) : Γ ≤ injects_into y x := sorry
 
 section surjects_onto_of_larger_than
 
@@ -900,8 +900,6 @@ end pointed_extension
 
 include H_larger_than H_nonempty
 
--- TODO(jesse): use this to reduce the forcing argument for CH
--- to just the equality of function spaces
 lemma surjects_onto_of_larger_than_and_exists_mem : Γ ≤ surjects_onto x y :=
 begin
   bv_cases_at H_larger_than S HS, bv_cases_at HS f Hf, bv_split_at Hf,
@@ -917,9 +915,6 @@ begin
   apply bv_use x, unfold surjects_onto at H_surj, bv_cases_at H_surj f Hf,
   apply bv_use f, from le_inf (le_inf (by simp) (bv_and.left ‹_›)) (bv_and.right ‹_›)
 end
-
-lemma exists_surjection_of_surjects_onto {x y : bSet 𝔹} {Γ : 𝔹} (H_surj : Γ ≤ surjects_onto x y)
-  : Γ ≤ ⨆ f, is_function x y f ⊓ is_surj x y f := sorry
 
 -- lemma check_is_func {x y f : pSet.{u}} : pSet.is_func x y f ↔ ∀{Γ : 𝔹}, Γ ≤ is_function x̌ y̌ f̌   := sorry
 
@@ -1198,12 +1193,13 @@ begin
     { apply extend_surj_inj_is_surj, from ‹_›,  exact is_func'_subset_of_is_func' H_g_left ‹_› }
 end
 
-lemma larger_than_trans {x y z} {Γ : 𝔹} (H₁ : Γ ≤ larger_than x y) (H₂ : Γ ≤ larger_than y z)
-  : Γ ≤ larger_than x z :=
-begin
-  bv_cases_at H₁ S HS, bv_cases_at H₂ S' HS', bv_cases_at HS f Hf, bv_cases_at HS' f' Hf',
-  apply bv_use (S ∩ᴮ (preimage S S' f)), sorry
-end
+-- TODO
+-- lemma larger_than_trans {x y z} {Γ : 𝔹} (H₁ : Γ ≤ larger_than x y) (H₂ : Γ ≤ larger_than y z)
+--   : Γ ≤ larger_than x z :=
+-- begin
+--   bv_cases_at H₁ S HS, bv_cases_at H₂ S' HS', bv_cases_at HS f Hf, bv_cases_at HS' f' Hf',
+--   apply bv_use (S ∩ᴮ (preimage S S' f)), sorry
+-- end
 
 lemma injects_into_trans {x y z} {Γ : 𝔹} (H₁ : Γ ≤ injects_into x y) (H₂ : Γ ≤ injects_into y z): Γ ≤ injects_into x z :=
 sorry
@@ -1284,7 +1280,19 @@ end
 lemma function_of_func'_inj_of_inj {x y f : bSet 𝔹} {Γ} {H : Γ ≤ is_func' x y f}
   (H_is_surj : Γ ≤ is_inj f) : Γ ≤ is_inj (function_of_func' H) :=
 begin
-  sorry
+  bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂,
+  bv_imp_intro' H', bv_split_at H', bv_split_at H'_left,
+  suffices : Γ_1 ≤ pair w₁ v₁ ∈ᴮ f ∧ Γ_1 ≤ pair w₂ v₂ ∈ᴮ f,
+    by {refine H_is_surj w₁ w₂ v₁ v₂ _, simp*},
+  refine ⟨_,_⟩; from mem_of_mem_subset (by {apply function_of_func'_subset, from ‹_›}) ‹_›
+end
+
+lemma exists_surjection_of_surjects_onto {x y : bSet 𝔹} {Γ : 𝔹} (H_surj : Γ ≤ surjects_onto x y)
+  : Γ ≤ ⨆ f, is_function x y f ⊓ is_surj x y f :=
+begin
+  bv_cases_at H_surj f' Hf',
+  apply bv_use (function_of_func' $ bv_and.left Hf'),
+  from le_inf (function_of_func'_is_function _) ( function_of_func'_surj_of_surj _ $ bv_and.right ‹_›),
 end
 
 def functions (x y : bSet 𝔹) : bSet 𝔹 :=
@@ -1399,10 +1407,13 @@ begin
     { apply function.mk'_is_subset },
 end
 
-lemma function.mk'_is_inj {Γ} (H_inj : ∀ i j, Γ ≤ y.func (F i ) =ᴮ y.func (F j) → Γ ≤ x.func i =ᴮ x.func j) : Γ ≤ is_inj (function.mk' F χ H_ext H_mem) :=
+lemma function.mk'_is_inj {Γ} (H_inj : ∀ i j {Γ' : 𝔹}, Γ' ≤ y.func (F i ) =ᴮ y.func (F j) → Γ' ≤ x.func i =ᴮ x.func j) : Γ ≤ is_inj (function.mk' F χ H_ext H_mem) :=
 begin
   bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂, bv_imp_intro H,
-  bv_split_at H, bv_split_at H_left, sorry -- rest is easy
+  bv_split_at H, bv_split_at H_left, bv_cases_at H_left_left pr₁ Hpr₁, bv_cases_at H_left_right pr₂ Hpr₂,
+  dsimp at Hpr₁ Hpr₂, bv_split_at Hpr₁, bv_split_at Hpr₂, rw pair_eq_pair_iff at Hpr₁_right Hpr₂_right, cases Hpr₁_right, cases Hpr₂_right,
+  cases pr₁ with i j, cases pr₂ with i' j', specialize @H_inj i i' Γ_3, bv_split, bv_split, dsimp at *,
+  have := H_inj (by bv_cc), bv_cc
 end
 
 
@@ -1414,7 +1425,8 @@ def dom_section : Π (x : bSet 𝔹), bSet 𝔹
 | x@⟨α,A,B⟩ := function.mk' (check_shadow_cast_symm : x.type → (check_shadow x).type) (x.bval)
     (by {intros i j Γ, apply B_congr_check_shadow}) (by {intros, simpa[*, check_shadow]})
 
-def dom_cover : bSet 𝔹 := sorry -- use surjects_onto_of_injects_into
+-- def dom_cover : bSet 𝔹 := sorry -- use surjects_onto_of_injects_into
+
 -- def dom_cover (x : bSet 𝔹) : bSet 𝔹 :=
 -- function.mk' (check_shadow_cast : _ → x.type) (λ i, ⊤) _ _
 
@@ -1886,9 +1898,9 @@ begin
     apply powerset_injects.F_subset_prod, from ‹_›
 end
 
-lemma powerset_injects.F_inj {Γ} : ∀ (i j : (𝒫 x).type), Γ ≤ (fx2).func (powerset_injects.F i ) =ᴮ (fx2).func (powerset_injects.F j) → Γ ≤ (𝒫 x).func i =ᴮ (𝒫 x).func j  :=
+lemma powerset_injects.F_inj : ∀ (i j : (𝒫 x).type) {Γ}, Γ ≤ (fx2).func (powerset_injects.F i ) =ᴮ (fx2).func (powerset_injects.F j) → Γ ≤ (𝒫 x).func i =ᴮ (𝒫 x).func j  :=
 begin
-  intros χ₁ χ₂ H,
+  intros χ₁ χ₂ Γ H,
   apply mem_ext,
     { bv_intro z, bv_imp_intro Hz, erw ←mem_powerset_injects.F_iff at Hz,
      have := bv_rw'' H Hz, erw mem_powerset_injects.F_iff at this, exact this  },
@@ -1912,6 +1924,9 @@ variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 def epsilon_well_orders (x : bSet 𝔹) : 𝔹 :=
 (⨅y, y∈ᴮ x ⟹ (⨅z, z ∈ᴮ x ⟹ (y =ᴮ z ⊔ y ∈ᴮ z ⊔ z ∈ᴮ y))) ⊓
   (⨅u, u ⊆ᴮ x ⟹ (- (u =ᴮ ∅) ⟹ ⨆y, y∈ᴮ u ⊓ (⨅z', z' ∈ᴮ u ⟹ (- (z' ∈ᴮ y)))))
+
+@[simp]lemma B_ext_ewo : B_ext (λ w : bSet 𝔹, epsilon_well_orders w) :=
+by simp[epsilon_well_orders]
 
 lemma epsilon_dichotomy (x y z : bSet 𝔹) : epsilon_well_orders x ≤ y ∈ᴮ x ⟹ (z ∈ᴮ x ⟹ (y =ᴮ z ⊔ y ∈ᴮ z ⊔ z ∈ᴮ y)) :=
 begin
@@ -2199,7 +2214,7 @@ le_inf (check_ewo pSet.is_ewo_omega) (check_is_transitive pSet.is_transitive_ome
   (Ord x) ⊓ (⨅ y, (Ord y) ⟹ ((- injects_into y bSet.omega) ⟹ x ⊆ᴮ y))
 
 -- TODO(jesse)
-@[simp]lemma B_ext_Ord : B_ext (Ord : bSet 𝔹 → 𝔹) := sorry
+@[simp]lemma B_ext_Ord : B_ext (Ord : bSet 𝔹 → 𝔹) := B_ext_inf (by simp) (by simp)
 
 /--
 The universal property of ℵ₁ is that it injects into any set which is larger than ω
@@ -2227,8 +2242,6 @@ end
 lemma aleph_one_check_sub_aleph_one {Γ : 𝔹} : Γ ≤ (pSet.card_ex (aleph 1))̌  ⊆ᴮ aleph_one := sorry
 
 lemma aleph_one_satisfies_universal_property {Γ : 𝔹} : Γ ≤ aleph_one_weak_universal_property (aleph_one) := sorry
-
-lemma aleph_one_satisfies_Ord_spec {Γ : 𝔹} : Γ ≤ aleph_one_Ord_spec (aleph_one) := sorry
 
 end ordinals
 

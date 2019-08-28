@@ -703,5 +703,5 @@ local notation `𝔹` := collapse_algebra ((ℵ₁ : pSet).type) (powerset omega
 instance nonempty_aleph_one_powerset_omega : nonempty $ ((ℵ₁).type) → (powerset omega).type :=
 ⟨λ _, by {unfold pSet.omega, exact λ _, false}⟩
 
-def 𝔹_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 :=
+def collapse_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 :=
 by apply_instance
