@@ -198,7 +198,7 @@ local attribute [ematch] is_clopen_interior is_clopen_closure closure_mono'
 
 -- @[reducible,simp,ematch]def int_of_cl (S : set α) := interior (closure S)
 
-def perp (S : set α) := - (closure S)
+def perp (S : set α) : set α := - (closure S)
 local attribute [reducible] perp
 
 local postfix `ᵖ`:80 := perp
@@ -207,7 +207,14 @@ local notation `cl`:65 := closure
 
 local notation `int`:65 := interior
 
-@[reducible, ematch]lemma perp_unfold (S : set α) : Sᵖ = - (cl S) := rfl
+@[ematch]lemma perp_unfold (S : set α) : Sᵖ = - (cl S) := rfl
+
+lemma perp_eq_int_neg {S : set α} : Sᵖ = int (- S) :=
+by simp [perp]
+
+lemma mem_perp_iff {S : set α} {x : α} :
+  x ∈ Sᵖ ↔ ∃T, T ∩ S = ∅ ∧ _root_.is_open T ∧ x ∈ T :=
+by simp [perp_eq_int_neg, subset_compl_iff_disjoint, mem_interior, -interior_compl]
 
 @[simp]lemma is_open_perp {S : set α} : is_open (Sᵖ) :=
 by {unfold perp, apply is_open_compl_iff.mpr, simp}
@@ -351,6 +358,30 @@ end
 
 @[simp]lemma is_regular_inter {S₁ S₂ : set α} (H₁ : is_regular S₁) (H₂ : is_regular S₂) : is_regular (S₁ ∩ S₂) :=
 by {rw[regular_iff_p_p] at *, rw[p_p_inter_eq_inter_p_p (is_open_of_p_p H₁) (is_open_of_p_p H₂)], cc}
+
+lemma Union_perp_subset (C : set (set α)) : ⋃₀ (perp '' C) ⊆ (⋂₀ C)ᵖ :=
+begin
+  intros x hx, simp [-mem_compl_eq, mem_perp_iff] at hx ⊢, rcases hx with ⟨s, hs, t, hts, ht⟩,
+  refine ⟨t, _, ht⟩, rw [← subset_empty_iff, ← hts], apply inter_subset_inter_right,
+  apply sInter_subset_of_mem hs
+end
+
+lemma perp_sUnion_perp {C : set (set α)} (h : ∀(s ∈ C), is_regular s) :
+  (⋃₀ (perp '' C))ᵖ = (⋂₀ C)ᵖᵖ :=
+begin
+  refine subset.antisymm _ (p_anti $ Union_perp_subset C),
+  intros x hx, simp [-mem_compl_eq, mem_perp_iff] at hx ⊢,
+  rcases hx with ⟨t, h1t, h2t, h3t⟩,
+  rw [← subset_compl_iff_disjoint, compl_bUnion, ← subset_interior_iff_subset_of_open h2t] at h1t,
+  simp only [compl_compl] at h1t,
+  simp only [subset_compl_iff_disjoint.symm, compl_compl],
+  refine ⟨t, _, h2t, h3t⟩,
+  have := subset.trans h1t (interior_bInter_subset _),
+  rw [subset_bInter_iff] at this,
+  refine subset.trans _ subset_closure,
+  rw [subset_sInter_iff], intros s hs,
+  convert this s hs, exact h s hs
+end
 
 end regular
 
@@ -717,9 +748,12 @@ by { rw [supr, fst_Sup], congr' 3, rw [range_comp] }
 lemma fst_Inf [nonempty α] {f : set (regular_opens α)} : ↑(Inf f) = (Inf (subtype.val '' f))ᵖᵖ :=
 begin
   rw [Inf_unfold, neg_unfold], dsimp,
-  rw [fst_Sup, ← p_eq_p_p_p, ← image_comp],
-  dsimp [function.comp],
-  sorry, sorry
+  rw [fst_Sup, ← p_eq_p_p_p, image_image],
+  { refine eq.trans _ (perp_sUnion_perp _),
+    { rw [image_image], refl },
+    intros s hs, rw [mem_image] at hs, rcases hs with ⟨t, ht, rfl⟩, exact t.2 },
+  apply _root_.is_open_sUnion,
+  intros t ht, rw [mem_image] at ht, rcases ht with ⟨t, ht, rfl⟩, exact is_open_of_is_regular t.2
 end
 
 lemma fst_infi [nonempty α] {ι} {f : ι → regular_opens α} : ↑(⨅ i, f i) = (⨅ i, (f i).1)ᵖᵖ :=

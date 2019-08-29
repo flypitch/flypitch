@@ -288,6 +288,21 @@ end
 end dvectors
 end dvector
 
+namespace set
+lemma disjoint_iff_eq_empty {α} {s t : set α} : disjoint s t ↔ s ∩ t = ∅ := disjoint_iff
+
+@[simp] lemma not_nonempty_iff {α} {s : set α} : ¬nonempty s ↔ s = ∅ :=
+by rw [coe_nonempty_iff_ne_empty, classical.not_not]
+
+@[simp] lemma subset_bInter_iff {α β} {s : set α} {t : set β} {u : α → set β} :
+  t ⊆ (⋂ x ∈ s, u x) ↔ ∀ x ∈ s, t ⊆ u x :=
+⟨λ h x hx y hy, by { have := h hy, rw mem_bInter_iff at this, exact this x hx }, subset_bInter⟩
+
+@[simp] lemma subset_sInter_iff {α} {s : set α} {C : set (set α)} :
+  s ⊆ ⋂₀ C ↔ ∀ t ∈ C, s ⊆ t :=
+by simp [sInter_eq_bInter]
+
+end set
 
 section topological_space
 open lattice filter topological_space set
@@ -315,6 +330,15 @@ begin
   { rw [singleton_subset_iff], exact ho.1 },
   { rw [sInter_singleton], refine mt mem_singleton_iff.mpr ho.2 },
   dsimp only, rw [sInter_singleton]
+end
+
+lemma interior_bInter_subset {β} {s : set β} (f : β → set α) :
+  interior (⋂i ∈ s, f i) ⊆ ⋂i ∈ s, interior (f i) :=
+begin
+  intros x hx, rw [mem_interior] at hx, rcases hx with ⟨t, h1t, h2t, h3t⟩,
+  rw [subset_bInter_iff] at h1t,
+  rw [mem_bInter_iff], intros y hy, rw [mem_interior],
+  refine ⟨t, h1t y hy, h2t, h3t⟩
 end
 
 end topological_space
@@ -360,14 +384,6 @@ end
 end cardinal_lemmas
 
 end cardinal
-
-namespace set
-lemma disjoint_iff_eq_empty {α} {s t : set α} : disjoint s t ↔ s ∩ t = ∅ := disjoint_iff
-
-@[simp] lemma not_nonempty_iff {α} {s : set α} : ¬nonempty s ↔ s = ∅ :=
-by rw [coe_nonempty_iff_ne_empty, classical.not_not]
-
-end set
 
 ------------------------------------------------------- maybe not move to mathlib ------------------
 
