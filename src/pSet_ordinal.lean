@@ -971,18 +971,13 @@ begin
   specialize H_ext ⟦z⟧, intro H_mem, specialize H_ext (mem_iff.mp ‹_›),
   rcases H_ext with ⟨w, ⟨Hw₁, Hw₂⟩⟩, use w.out,
   refine ⟨_,_⟩,
-    {sorry},
-    {sorry}
+    { have := H_prod Hw₁, rw Set.pair_mem_prod at this,
+      rw mem_sound, convert this.right, rw quotient.out_eq },
+    { rw mem_sound, rw pair_sound, convert Hw₁, rw quotient.out_eq }
 end
 
 lemma subset_sound {x y : pSet.{u}} : x ⊆ y ↔ Set.mk x ⊆ Set.mk y :=
-begin
-  refine iff.intro _ _; intro H,
-    { intros z Hz, rw ←(quotient.out_eq _ : ⟦_⟧ = z) at Hz, change _ ∈ ⟦_⟧ at Hz, rw ←mem_sound at Hz,
-    rw subset_iff_all_mem at H, specialize H _ ‹_›, rw mem_sound at H, convert H, exact (quotient.out_eq _).symm },
-    { sorry } -- easy
-end
-
+by rw Set.subset_iff
 
 lemma subset_prod_of_is_func {x y f : pSet.{u}} (H_func : is_func x y f) : f ⊆ prod x y :=
 begin
@@ -1037,8 +1032,19 @@ begin
       cases H_im with j Hj, use (i,j), refine equiv.trans Hi _, change equiv (pair (x.func i) (ψ i)) (pair (x.func i) (y.func j)), rw ←eq_iff_eq_pair, simp*, },
     { intros z Hz,  rw ←(quotient.out_eq _ : ⟦_⟧ = z) at Hz, change _ ∈ ⟦_⟧ at Hz, rw ←mem_sound at Hz, rw[mem_unfold] at Hz, cases Hz with i Hi, use ⟦ψ i⟧, dsimp,
       refine ⟨_,_⟩,
-        { rw ←(quotient.out_eq _ : ⟦_⟧ = z), erw ←pair_sound, erw ←mem_iff, sorry },
-        { sorry }}
+        { rw ←(quotient.out_eq _ : ⟦_⟧ = z), rw equiv_iff_eq at Hi, rw Hi, erw ←pair_sound,
+          erw ←mem_sound, unfold pSet.function.mk, change ((λ (i : type x), pair (func x i) (ψ i))) i ∈ _,
+          apply pSet.mem.mk },
+        { intros y Hy,
+          have : pSet.pair (x.func i) (ψ i) ∈ pSet.function.mk ψ H_ext := pSet.function.mk_mem,
+          rw ←(quotient.out_eq z) at Hy,
+          rw ←(quotient.out_eq y) at Hy ⊢,
+          rw ←pair_sound at Hy,
+          erw ←mem_sound at Hy, rw mem_unfold at Hy,
+          rcases Hy with ⟨j, Hj⟩, erw ←eq_iff_eq_pair at Hj,
+          erw ←equiv_iff_eq, cases Hj with Hj₁ Hj₂,
+          specialize H_ext i j _;
+          rw equiv_iff_eq at *; cc }}
 end
 
 end pSet
