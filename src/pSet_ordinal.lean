@@ -934,8 +934,15 @@ begin
     { dsimp[a] at H, dsimp [prod,has_mem.mem, pSet.mem, mem] at H,
       rcases H with ⟨j, Hj⟩, suffices : (prod x y).func j ∈ quotient.out b,
       by {rw mem.congr_left, from this, from Hj}, change pair _ _ ∈ _,
-          sorry }, -- rest is easy
-    { sorry } -- equally easy
+          erw mem_sound, erw pair_sound, dsimp only [b], rw quotient.out_eq,
+          rw Set.pair_mem_prod, rw [←mem_sound, ←mem_sound], simp  },
+    { dsimp [b] at H, rw mem_sound at H, rw quotient.out_eq at H,
+      rw Set.mem_prod at H, rcases H with ⟨c,Hc,d,Hd,H_eq⟩,
+      rw mem_sound, rw H_eq, rw ←(quotient.out_eq c) at ⊢ Hc, rw ←quotient.out_eq d at ⊢ Hd,
+      rw ←pair_sound, erw ←mem_sound at ⊢ Hc Hd,  
+      rw pSet.mem_unfold at Hd Hc,
+      cases Hc with i Hi, cases Hd with j Hj,
+      use (i,j), rw ←eq_iff_eq_pair, from ⟨‹_›,‹_›⟩ }
 end
 
 @[reducible]def is_inj (f : pSet.{u}) : Prop := ∀ w₁ w₂ v₁ v₂ : pSet.{u}, pair w₁ v₁ ∈ f ∧ pair w₂ v₂ ∈ f ∧ pSet.equiv v₁ v₂ → pSet.equiv w₁ w₂
