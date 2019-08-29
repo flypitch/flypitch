@@ -37,6 +37,13 @@ by {cases x; apply pSet.mem.mk}
 lemma mem_unfold {x y : pSet} : x ∈ y ↔ ∃ j : y.type, equiv x (y.func j) :=
 by cases y; refl
 
+lemma ext_iff {x y : pSet} : equiv x y ↔ ∀ z, z ∈ x ↔ z ∈ y :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { intros z, rw mem.congr_right H },
+    { apply mem.ext, from ‹_› },
+end
+
 lemma mem_mem_false {x y : pSet.{u}} (H₁:  x ∈ y) (H₂ : y ∈ x) : false :=
 begin
   have := Set.regularity {⟦x⟧, ⟦y⟧},
@@ -951,16 +958,33 @@ def is_injective_function (x y f : pSet.{u}) : Prop := is_func x y f ∧ is_inj 
 
 -- ∃ x, p x ∧ ∀ y, p y → y = x
 
+lemma Set.is_func_iff {x y f : Set.{u}} : (Set.is_func x y f) ↔ (f ⊆ Set.prod x y ∧ ∀ z, z ∈ x → (∃ w, Set.pair z w ∈ f ∧
+                  ∀ v, Set.pair z v ∈ f → v = w)) :=
+by tidy
+
+lemma subset_sound {x y : pSet.{u}} : x ⊆ y ↔ Set.mk x ⊆ Set.mk y :=
+by rw Set.subset_iff
+
 --f ⊆ prod x y ∧ ∀z:Set.{u}, z ∈ x → ∃! w, pair z w ∈ f
 lemma is_func_iff {x y f : pSet.{u}} :
   is_func x y f ↔ f ⊆ prod x y ∧ ∀ z, z ∈ x → (∃ w, pair z w ∈ f ∧
                   ∀ v, pair z v ∈ f → pSet.equiv v w) :=
 begin
-  unfold pSet.is_func Set.is_func, congr' 2,
-    { sorry },
-    { unfold exists_unique, apply propext, refine ⟨_,_⟩,
-      { sorry },
-      { sorry }}
+  unfold pSet.is_func, rw Set.is_func_iff, congr' 2, rw [←prod_sound, subset_sound], refl,
+  ext, refine ⟨_,_⟩,
+    { intros H z Hz, specialize H ⟦z⟧ (mem_sound.mp ‹_›),
+      rcases H with ⟨w, Hw₁, Hw₂⟩, rw ←(quotient.out_eq w) at Hw₁ Hw₂,
+      use quotient.out w, refine ⟨_,_⟩,
+        { rwa [←pair_sound, ←mem_sound] at Hw₁ },
+        { intro v, specialize Hw₂ ⟦v⟧, intro Hv,
+          rw [mem_sound, pair_sound] at Hv, specialize Hw₂ ‹_›, rwa ←equiv_iff_eq at Hw₂ }},
+    { intros H z Hz, specialize H (z.out), rw ←(quotient.out_eq z) at Hz,
+      rw ←mem_sound at Hz, specialize H Hz, rcases H with ⟨w,Hw₁, Hw₂⟩,
+      use ⟦w⟧, refine ⟨_,_⟩,
+        { rwa [←(quotient.out_eq z), ←pair_sound, ←mem_sound] },
+        { intro v, specialize Hw₂ v.out, rw ←(quotient.out_eq v), intro Hpr,
+          rw ←(quotient.out_eq z) at Hpr, rw [←pair_sound, ←mem_sound] at Hpr,
+          rw ←equiv_iff_eq, solve_by_elim  }}
 end
 
 def is_total (x y f : pSet.{u}) : Prop := ∀ z ∈ x, ∃ w ∈ y, pair z w ∈ f
@@ -976,8 +1000,7 @@ begin
     { rw mem_sound, rw pair_sound, convert Hw₁, rw quotient.out_eq }
 end
 
-lemma subset_sound {x y : pSet.{u}} : x ⊆ y ↔ Set.mk x ⊆ Set.mk y :=
-by rw Set.subset_iff
+lemma powerset_sound {x : pSet.{u}} : ⟦pSet.powerset x⟧ = Set.powerset ⟦x⟧ := rfl
 
 lemma subset_prod_of_is_func {x y f : pSet.{u}} (H_func : is_func x y f) : f ⊆ prod x y :=
 begin
@@ -998,9 +1021,17 @@ def functions (x y : pSet.{u}) : pSet.{u} := -- TODO(jesse): show this satisfies
   (λ i_S, is_func x y ((powerset $ prod x y).func i_S))
 
 lemma mem_functions_iff {x y : pSet.{u}} (z : pSet.{u}) : z ∈ functions x y ↔ is_func x y z :=
-sorry
-
-lemma functions_2_injects_into_powerset (x : pSet.{u}) : ∃ (f : pSet.{u}), is_injective_function (pSet.functions x (pSet.of_nat 2) : pSet.{u}) (pSet.powerset x : pSet.{u}) f := sorry
+begin
+  refine ⟨_,_⟩; intro H,
+    { rw mem_unfold at H, cases H with j Hj,
+      unfold pSet.is_func, rw equiv_iff_eq at Hj, rw Hj, exact j.2 },
+    { unfold pSet.is_func at H, rw ←Set.mem_funs at H, erw Set.mem_sep at H, cases H with H₁ H₂,
+      rw ←prod_sound at H₁, rw ←powerset_sound at H₁, rw ←mem_sound at H₁,
+      rw mem_unfold at H₁, cases H₁ with χ Hχ,
+      rw mem.congr_left Hχ,
+      rw equiv_iff_eq at Hχ, rw Hχ at H₂,
+      refine ⟨_,_⟩, from ⟨χ, ‹_›⟩, simp }
+end
 
 @[simp]lemma zero_lt_omega : 0 < ordinal.omega := omega_pos
 
@@ -1009,7 +1040,8 @@ begin
   use (card_ex 0), unfold card_ex, apply mk_mem_mk_of_lt,
   induction n with n ih,
     { simp },
-    { from lt_trans ih (by {simp, sorry}) }
+    { from lt_trans ih (by {simp, rw ←nat.cast_one, rw ←nat.cast_add,
+      rw ordinal.nat_cast_lt, norm_num }) }
 end
 
 def pSet.function.mk {x : pSet.{u}} (ψ : x.type → pSet.{u}) (H_ext : ∀ i j, pSet.equiv (x.func i) (x.func j) → pSet.equiv (ψ i) (ψ j)) : pSet.{u} :=
@@ -1046,5 +1078,91 @@ begin
           specialize H_ext i j _;
           rw equiv_iff_eq at *; cc }}
 end
+
+@[simp]lemma sep_subset {p : set pSet} {x : pSet} : {z ∈ x | p z} ⊆ x :=
+begin
+  rw subset_iff_all_mem, intros w Hw,
+  cases x with α A,
+  unfold has_sep.sep pSet.sep at Hw,
+  rw mem_unfold at Hw ⊢, cases Hw with j Hj,
+  cases j with i Hi,
+  use i, from Hj
+end
+
+lemma mem_sep_iff {p : set pSet} {x : pSet} {w : pSet} : w ∈ {z ∈ x | p z} ↔ w ∈ x ∧ p w :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { refine ⟨_,_⟩,
+      { sorry },
+      { sorry }},
+    { sorry }
+end
+
+lemma sep_equiv_iff {p₁ p₂ : set pSet} {x : pSet} : equiv {z ∈ x | p₁ z}  {z ∈ x | p₂ z} ↔ (∀ z, z ∈ x ∧ p₁ z ↔ z ∈ x ∧ p₂ z) :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { rw ext_iff at H, simp [mem_sep_iff] at H, from ‹_› },
+    { apply mem.ext, simp [mem_sep_iff], exact H  }
+end
+
+section injects_powerset
+variable {x : pSet.{u}}
+local notation `fx2` := functions x (of_nat 2)
+
+def f2ip.F := (λ χ, {z ∈ x | (pSet.pair z (of_nat 0)) ∈ ((fx2).func χ)} : (functions x (of_nat 2)).type → pSet.{u})
+
+lemma mem_f2ip.F_iff {χ : (fx2).type} {w : pSet} : w ∈ f2ip.F χ ↔ w ∈ x ∧ pSet.pair w (of_nat 0) ∈ ((fx2).func χ) :=
+by erw mem_sep_iff
+
+
+lemma f2ip.F_ext : ∀ i j, pSet.equiv ((fx2).func i) ((fx2).func j) → pSet.equiv (f2ip.F i) (f2ip.F j) :=
+begin
+  intros χ₁ χ₂ H_eqv, erw sep_equiv_iff,
+  intro z, refine ⟨_,_⟩; intro H; cases H,
+    { refine ⟨‹_›, _⟩, rw equiv_iff_eq at H_eqv, rw mem_sound at *,
+     rwa ←H_eqv  },
+    { refine ⟨‹_›, _⟩, rw equiv_iff_eq at H_eqv, rw mem_sound at *,
+      rwa H_eqv }
+end
+
+def f2ip (x : pSet.{u}) : pSet.{u} := pSet.function.mk  (@f2ip.F x) f2ip.F_ext
+
+lemma mem_f2ip_iff {a b : pSet.{u}} : (pair a b) ∈ f2ip x ↔ a ∈ fx2 ∧ b ∈ powerset x ∧ equiv b {z ∈ x | pair z (of_nat 0) ∈ a} :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { rw mem_unfold at H, cases H with pr Hpr,
+      erw ←eq_iff_eq_pair at Hpr, cases Hpr with Hpr₁ Hpr₂,
+      refine ⟨_,_,_⟩,
+        { rw mem.congr_left Hpr₁, simp },
+        { rw mem.congr_left Hpr₂, rw mem_powerset, apply sep_subset },
+        { suffices : equiv (f2ip.F pr) {z ∈ x | pair z (of_nat 0) ∈ a},
+            by {rw equiv_iff_eq at *, cc},
+          sorry  }}, -- easy but tedious
+    { rcases H with ⟨H₁, H₂, H₃⟩, rw mem_unfold at H₁ H₂ ⊢,
+      cases H₁ with χ Hχ, cases H₂ with S HS, use χ, change equiv (pair a b) (pair _ _),
+      rw ←eq_iff_eq_pair,
+      refine ⟨_,_⟩,
+        { from ‹_› },
+        { suffices : equiv (f2ip.F χ) {z ∈ x | pair z (of_nat 0) ∈ a},
+            by { rw equiv_iff_eq at *, cc},
+         sorry }} -- same proof
+end
+
+lemma functions_2_injects_into_powerset (x : pSet.{u}) : ∃ (f : pSet.{u}), is_injective_function (pSet.functions x (pSet.of_nat 2) : pSet.{u}) (pSet.powerset x : pSet.{u}) f :=
+begin
+  refine ⟨f2ip x,_⟩,
+  refine ⟨_,_⟩,
+    { apply pSet.function.mk_is_func, intro χ, rw mem_powerset, simp[f2ip.F] },
+    { intros w₁ w₂ v₁ v₂ H, rcases H with ⟨H₁,H₂, H_eq⟩,
+      rw mem_f2ip_iff at H₁ H₂,
+      have : equiv {z ∈ x | pair z (of_nat 0) ∈ w₁} {z ∈ x | pair z (of_nat 0) ∈ w₂},
+        by sorry, -- congruence closure
+      sorry -- use function extensionality + finiteness of 2
+        }
+end
+
+
+end injects_powerset
+
 
 end pSet
