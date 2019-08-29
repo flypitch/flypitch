@@ -32,10 +32,6 @@ This file summarizes:
 
 #print soundness
 
-#print boolean_soundness
-
-#print completeness
-
 #print prf
 
 #print provable
@@ -58,19 +54,18 @@ This file summarizes:
 
 #print 𝔹_collapse
 
+#check completeness
+
 theorem godel_completeness_theorem {L} (T) (ψ : sentence L) : T ⊢' ψ ↔ T ⊨ ψ :=
 begin
-  suffices : T ⊨ ψ → T ⊢' ψ, by exact ⟨(by apply satisfied_of_provable), this⟩,
-  intro hψ, haveI : decidable (T ⊢' ψ) := classical.prop_decidable _, by_contra,
-  suffices : ¬ T ⊨ ψ, by contradiction,
-  have := nonempty_model_of_consis (consis_not_of_not_provable a),
-  rcases this with ⟨⟨M,hM⟩, nonempty_M⟩;
-  fapply not_satisfied_of_model_not,
-  refine ⟨M,_⟩,
-  intros f hf, apply hM, simp[hf],
-  unfold Model_ssatisfied, dsimp, apply hM _,
-  simpa only [set.mem_insert_iff, true_or, eq_self_iff_true, set.union_singleton]
+  refine ⟨λ _, satisfied_of_provable _ _ ‹_›, _⟩,
+  classical, by_contra H, push_neg at H,
+  rcases nonempty_model_of_consis (consis_not_of_not_provable H.right) with ⟨⟨M,HM⟩, H_nonempty⟩,
+  refine absurd H.left (not_satisfied_of_model_not _ _ _), swap,
+  exact ((by simp at HM; simp*) : (⟨M, by tidy⟩ : Model T) ⊨ _), from ‹_›
 end
+
+#check boolean_soundness
 
 theorem boolean_valued_soundness_theorem {L} {β} [complete_boolean_algebra β] {T : Theory L}
   {A : sentence L} (H : T ⊢ A) : T ⊨[β] A :=
@@ -97,16 +92,20 @@ theorem ZFC'_is_consistent {β : Type} [nontrivial_complete_boolean_algebra β] 
 
 def CH_sentence := CH_f
 
-theorem CH_unprovable_from_ZFC : ¬ (ZFC' ⊢' CH_sentence) := sorry
--- begin
---   intro H,
---   suffices forces_false : ⊤ ⊩[V 𝔹] bd_falsum,
---     from absurd (nontrivial.bot_lt_top) (not_lt_of_le forces_false),
---   refine forced_absurd _ _, exact ZFC', exact CH_f, swap, apply neg_CH_f,
---   let prf_of_CH_f := sprovable_of_provable (classical.choice H),
---   have CH_f_true := boolean_soundness prf_of_CH_f (V_𝔹_nonempty),
---   convert CH_f_true, rw[inf_axioms_top_of_models (bSet_models_ZFC' _)]
--- end
+theorem CH_unprovable_from_ZFC : ¬ (ZFC' ⊢' CH_sentence) :=
+unprovable_of_model_neg _ (fundamental_theorem_of_forcing) (nontrivial.bot_lt_top) neg_CH_f
+
+theorem neg_CH_unprovable_from_ZFC : ¬ (ZFC' ⊢' ∼CH_sentence) := sorry
+
+def independent {L : Language} (T : Theory L) (f : sentence L) : Prop :=
+¬ (T ⊢' f ∨ T ⊢' ∼f)
+
+theorem independence_of_CH : independent ZFC' CH_f :=
+begin
+  have := CH_unprovable_from_ZFC,
+  have := neg_CH_unprovable_from_ZFC,
+  finish
+end
 
 #print axioms CH_unprovable_from_ZFC
 /- `propext` (propositional extensionality), `classical.choice` (a type-theoretic choice principle) and `quot.sound` (quotients) are the standard axioms in Lean. -/

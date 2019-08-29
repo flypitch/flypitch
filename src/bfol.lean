@@ -699,6 +699,14 @@ variable {β}
 lemma boolean_soundness {T : Theory L} {A : sentence L} (H : T ⊢ A) : T ⊨[β] A :=
 forced_of_bsatisfied $ boolean_formula_soundness H
 
+lemma unprovable_of_model_neg {T : Theory L} {f : sentence L} (S : bStructure L β) (H_model : ⊤ ⊩[S] T) [H_nonempty : nonempty S]
+  {Γ : β} (H_nonzero : (⊥ : β) < Γ) (H : Γ ⊩[S] ∼f) : ¬ (T ⊢' f) :=
+begin
+  intro Hp, refine absurd H_nonzero (not_lt_of_le (forced_absurd _ H : Γ ⊩[S] (bd_falsum))),
+  from T, have := boolean_soundness (sprovable_of_provable (classical.choice Hp)) H_nonempty,
+  rw inf_axioms_top_of_models at this, from le_trans le_top ‹_›, from ‹_›
+end
+
 lemma boolean_realize_subst_preterm {n l} (t : bounded_preterm L (n+1) l)
   (xs : dvector S l) (s : closed_term L) (v : dvector S n) :
   boolean_realize_bounded_term v (substmax_bounded_term t s) xs =
