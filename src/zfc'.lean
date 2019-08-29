@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 Authors: Jesse Han, Floris van Doorn
 -/
-import .bvm .bfol .bvm_extras .forcing .pSet_ordinal
+import .bvm .bfol .bvm_extras .forcing .pSet_ordinal .forcing_CH_old
 
 open lattice
 
@@ -382,13 +382,13 @@ begin
 end
 
 def larger_than_f : bounded_formula L_ZFC' 2 :=
-∃' (is_func_f.cast (dec_trivial) ⊓
+∃' (is_func'_f.cast (dec_trivial) ⊓
    ∀' ( &0 ∈' &2 ⟹ (∃' (&'0 ∈' &'4 ⊓' pair' &'0 &'1 ∈' &'2))))
 
 @[simp]lemma realize_larger_than_f {x y : V β} :
   boolean_realize_bounded_formula (by exact [y,x]) larger_than_f dvector.nil = larger_than x y :=
 begin
-  simp[larger_than, larger_than_f, is_func, is_func_f], sorry -- refl
+  simp[larger_than, larger_than_f, is_func, is_func_f, is_func'_f], sorry
 end
 
 def is_inj_f : bounded_formula L_ZFC' 1 :=
@@ -416,13 +416,29 @@ def CH_f : sentence L_ZFC' :=
 (∀' (∀' (∼((∼(substmax_bounded_formula (larger_than_f) ω' ↑ 1) ⊓'
   ∼larger_than_f ⊓' (injects_into_f[(Powerset omega) /0].cast1))))))
 
-lemma subst_unfold₁ : ((substmax_bounded_formula (larger_than_f) ω' ↑ 1)) =
-  ∃' ((is_func_f.cast (dec_trivial)) ⊓
-    ∀' (&0 ∈' &3 ⟹ (∃' (&'0 ∈' (ω') ⊓' pair' &'0 &'1 ∈' &'2)))) := rfl
+-- lemma subst_unfold₁ : ((substmax_bounded_formula (larger_than_f) ω' ↑ 1)) =
+--   ∃' ((is_func'_f.cast (dec_trivial)) ⊓
+--     ∀' (&0 ∈' &3 ⟹ (∃' (&'0 ∈' (ω') ⊓' pair' &'0 &'1 ∈' &'2)))) := rfl
 
 lemma subst_unfold₂ : (injects_into_f[P' omega /0]) = ∃'(((is_func_f.cast (dec_trivial) ⊓'
   (∀' (&'0 ∈' &'2 ⟹ (∃' (&'0 ∈' (Powerset omega) ⊓' (pair' &'1 &'0 ∈' &'2))))))
   ⊓' is_inj_f.cast (dec_trivial))) := rfl
+
+variable {β}
+lemma CH_f_is_CH : ⟦CH_f⟧[V β] = CH :=
+begin
+  unfold CH_f, simp [-substmax_bounded_formula,CH, neg_supr],
+  congr, ext, congr, ext, 
+  simp only [sup_assoc], congr,
+  swap, rw subst_unfold₂, simp[-top_le_iff], refl,
+  sorry -- TODO(jesse): update subst_unfold₁, is_func'_f
+end
+
+lemma CH_f_sound {Γ : β} : Γ ⊩[V β] CH_f ↔ Γ ≤ CH :=
+by {change _ ≤ _ ↔ _ ≤ _, rw CH_f_is_CH}
+
+lemma neg_CH_f_sound {Γ : β} : Γ ⊩[V β] ∼CH_f ↔ Γ ≤ - CH :=
+by {change _ ≤ _ ↔ _ ≤ _, rw [boolean_realize_sentence_not, CH_f_is_CH]}
 
 end ZFC'
 
@@ -433,27 +449,33 @@ section CH_unprovable
 
 lemma neg_CH_f : ⊤ ⊩[V 𝔹_cohen] ∼CH_f :=
 begin
-  change ⊤ ≤ _, simp[-top_le_iff, CH_f], simp only [neg_infi],
-  apply bv_use (ℵ₁̌ ), apply bv_use (ℵ₂ ̌), simp[-top_le_iff],
-  refine ⟨_,ℵ₁_lt_ℵ₂,_⟩,
-  {have := ℵ₀_lt_ℵ₁, unfold larger_than at this, have := subst_unfold₁,
-  unfold substmax_bounded_formula at this, rw[this],
-  simp[-top_le_iff], simp only [neg_supr] at *, bv_intro f,
-  bv_specialize_at this (f), from sorry }, --this_1},
-  {have := ℵ₂_le_𝔠, rw[subst_unfold₂], simp[-top_le_iff],
-    apply bv_use (neg_CH_func), from this}
+  rw neg_CH_f_sound, from neg_CH
+
+  -- change ⊤ ≤ _, simp[-top_le_iff, CH_f], simp only [neg_infi],
+  -- apply bv_use (ℵ₁̌ ), apply bv_use (ℵ₂ ̌), simp[-top_le_iff],
+  -- refine ⟨_,ℵ₁_lt_ℵ₂,_⟩,
+  -- {have := ℵ₀_lt_ℵ₁, unfold larger_than at this, have := subst_unfold₁,
+  -- unfold substmax_bounded_formula at this, rw[this],
+  -- simp[-top_le_iff], simp only [neg_supr] at *, bv_intro f,
+  -- bv_specialize_at this (f), from sorry }, --this_1},
+  -- {have := ℵ₂_le_𝔠, rw[subst_unfold₂], simp[-top_le_iff],
+  --   apply bv_use (neg_CH_func), from this}
 end
 
 instance V_𝔹_nonempty : nonempty (V 𝔹_cohen) := ⟨bSet.empty⟩
 
-theorem CH_f_unprovable : ¬ (ZFC' ⊢' CH_f) := sorry
--- begin
---   intro H,
---   suffices forces_false : ⊤ ⊩[V 𝔹] bd_falsum,
---     from absurd (nontrivial.bot_lt_top) (not_lt_of_le forces_false),
---   refine forced_absurd _ _, exact ZFC', exact CH_f, swap, apply neg_CH_f,
---   let prf_of_CH_f := sprovable_of_provable (classical.choice H),
---   have CH_f_true := boolean_soundness prf_of_CH_f (V_𝔹_nonempty),
---   convert CH_f_true, rw[inf_axioms_top_of_models (bSet_models_ZFC' _)]
--- end
+theorem CH_f_unprovable : ¬ (ZFC' ⊢' CH_f) :=
+unprovable_of_model_neg _ (bSet_models_ZFC' _) (nontrivial.bot_lt_top) neg_CH_f
+
 end CH_unprovable
+
+open collapse_algebra
+
+section neg_CH_unprovable
+
+instance V_𝔹_collapse_nonempty : nonempty (V 𝔹_collapse) := ⟨bSet.empty⟩
+
+lemma V_𝔹_collapse_models_CH : ⊤ ⊩[V 𝔹_collapse] CH_f :=
+by rw CH_f_sound; from CH_true
+
+end neg_CH_unprovable

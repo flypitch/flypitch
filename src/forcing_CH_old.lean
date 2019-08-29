@@ -376,7 +376,7 @@ open collapse_poset
 
 def 𝔹_collapse : Type u := collapse_algebra ((ℵ₁ : pSet.{u}).type) (powerset omega : pSet.{u}).type
 
-local attribute instance my_instance : nontrivial_complete_boolean_algebra 𝔹_collapse := by {unfold 𝔹_collapse, apply_instance}
+attribute instance 𝔹_collapse_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹_collapse := by {unfold 𝔹_collapse, apply_instance}
 
 local notation `β` := 𝔹_collapse
 
