@@ -18,6 +18,12 @@ local infix `≼`:70 := (λ x y, injects_into x y)
 
 @[reducible]private noncomputable definition ℵ₁ : pSet := (card_ex $ aleph 1)
 
+@[simp]lemma aleph_one_check_exists_mem {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹] {Γ : 𝔹} : Γ ≤ exists_mem ℵ₁̌  :=
+begin
+  simp only [show ℵ₁ = card_ex (aleph ↑1), by simp],
+  from check_exists_mem card_ex_aleph_exists_mem
+end
+
 local notation `ω` := (bSet.omega)
 
 local attribute [instance, priority 0] classical.prop_decidable
@@ -39,7 +45,7 @@ begin
   have := @aleph_one_satisfies_spec _ _ Γ, unfold aleph_one_Ord_spec at this,
   bv_split, bv_split_at this_left,
   refine this_right (ℵ₁ ̌) (by simp) _, dsimp at H, rw ←imp_bot at ⊢ H,
-  bv_imp_intro H', exact H (larger_than_of_surjects_onto $ surjects_onto_of_injects_into ‹_›)
+  bv_imp_intro H', refine H (larger_than_of_surjects_onto $ surjects_onto_of_injects_into ‹_› $ by simp),
 end
 
 theorem CH_true_aux
@@ -601,9 +607,7 @@ begin
     by {exfalso, from ex_no_surj_omega_aleph_one ‹_›},
   suffices : Γ_3 ≤ surjects_onto ω ℵ₁̌ ,
     by {from surjection_reflect H this},
-  refine surjects_onto_of_larger_than_and_exists_mem ‹_› _,
-  simp only [show ℵ₁ = card_ex (aleph ↑1), by simp],
-  from check_exists_mem card_ex_aleph_exists_mem
+  refine surjects_onto_of_larger_than_and_exists_mem ‹_› (by simp),
 end
 
 lemma aleph_one_check_universal_property (Γ : β) : Γ ≤ aleph_one_weak_universal_property (ℵ₁̌  : bSet β) :=

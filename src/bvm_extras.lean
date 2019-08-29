@@ -497,7 +497,7 @@ def image (x y f : bSet 𝔹) : bSet 𝔹 := subset.mk (λ j : y.type, ⨆ z, z 
 @[simp]lemma image_subset  {x y f : bSet 𝔹} {Γ} : Γ ≤ (image x y f) ⊆ᴮ y :=
 subset.mk_subset
 
-@[simp]lemma mem_image {x y a b f : bSet 𝔹} {Γ} (H_mem : Γ ≤ pair a b ∈ᴮ f) (H_mem'' : Γ ≤ a ∈ᴮ x)(H_mem' : Γ ≤ b ∈ᴮ y) : Γ ≤ b ∈ᴮ image x y f :=
+@[simp]lemma mem_image {x y a b f : bSet 𝔹} {Γ} (H_mem : Γ ≤ pair a b ∈ᴮ f) (H_mem'' : Γ ≤ a ∈ᴮ x) (H_mem' : Γ ≤ b ∈ᴮ y) : Γ ≤ b ∈ᴮ image x y f :=
 begin
   rw[image, mem_subset.mk_iff],
   rw[mem_unfold] at H_mem', bv_cases_at H_mem' i Hi, apply bv_use i,
@@ -505,6 +505,17 @@ begin
   apply bv_use a, refine le_inf ‹_› _,
   apply @bv_rw' _ _ _ _ _ (bv_symm Hi_right) (λ z, pair a z ∈ᴮ f),
   exact B_ext_pair_mem_right, from ‹_›
+end
+
+lemma mem_image_iff {x y b f : bSet 𝔹} {Γ} : Γ ≤ b ∈ᴮ image x y f ↔ (Γ ≤ b ∈ᴮ y ) ∧ Γ ≤ ⨆ z, z ∈ᴮ x ⊓ pair z b ∈ᴮ f :=
+begin
+  refine ⟨_,_⟩; intro H,
+    refine ⟨_,_⟩,
+    { from mem_of_mem_subset (image_subset) ‹_› },
+    { unfold image at H, rw mem_subset.mk_iff at H, bv_cases_at H i Hi, bv_split_at Hi,
+      bv_split_at Hi_right, bv_cases_at Hi_right_left z Hz, apply bv_use z, refine le_inf (bv_and.left ‹_›) _,
+      change _ ≤ (λ w, w ∈ᴮ f) _, apply bv_rw' Hi_left, simp, from bv_and.right Hz },
+    { cases H with _ H, bv_cases_at H z Hz, apply mem_image, from bv_and.right ‹_›, from bv_and.left ‹_›, from ‹_› },
 end
 
 -- bounded preimage
@@ -676,10 +687,6 @@ local infix `≺`:70 := (λ x y, -(larger_than x y))
 local infix `≼`:70 := (λ x y, injects_into x y)
 
 def CH : 𝔹 := - ⨆ x, ⨆y, (omega ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(omega))
-
-def surjection_of_injection (f : bSet 𝔹) : bSet 𝔹 := sorry -- use pointed_extension
-
-lemma surjects_onto_of_injects_into {x y : bSet 𝔹} {Γ} (H_inj : Γ ≤ injects_into x y) : Γ ≤ surjects_onto y x := sorry
 
 -- aka AC -- TODO
 -- lemma injects_into_of_surjects_onto {x y : bSet 𝔹} {Γ} (H_inj : Γ ≤ surjects_onto x y) : Γ ≤ injects_into y x := sorry
@@ -1418,6 +1425,92 @@ end
 
 
 end function_mk'
+
+section inj_inverse
+
+variables {x y f : bSet 𝔹} {Γ : 𝔹} (H_func : Γ ≤ is_func' x y f) (H_inj : Γ ≤ is_inj f)
+
+include H_func H_inj
+
+def inj_inverse : bSet 𝔹 :=
+subset.mk (λ pr : (prod (image x y f) x).type, pair (x.func pr.2) ((image x y f).func pr.1) ∈ᴮ f)
+
+lemma mem_inj_inverse_iff {Γ'} {b a : bSet 𝔹} : Γ' ≤ pair b a ∈ᴮ inj_inverse H_func H_inj ↔ Γ' ≤ a ∈ᴮ x ∧ Γ' ≤ b ∈ᴮ y ∧ Γ' ≤ pair a b ∈ᴮ f :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { unfold inj_inverse at H, rw mem_subset.mk_iff at H,
+      refine ⟨_,_,_⟩,
+        { bv_cases_at H pr Hpr, cases pr with i j, bv_split_at Hpr, erw pair_eq_pair_iff at Hpr_left,
+          cases Hpr_left, simp at Hpr_right, change _ ≤ (λ w, w ∈ᴮ x) _, apply bv_rw' Hpr_left_right, simp,
+          apply mem.mk'', from Hpr_right.right.right  },
+        { bv_cases_at H pr Hpr, cases pr with i j, bv_split_at Hpr, erw pair_eq_pair_iff at Hpr_left,
+          cases Hpr_left, simp at Hpr_right, change _ ≤ (λ w, w ∈ᴮ y) _, apply bv_rw' Hpr_left_left, simp,
+          apply mem_of_mem_subset (image_subset) _, tactic.rotate 2, apply mem.mk'', from Hpr_right.right.left },
+        { bv_cases_at H pr Hpr, cases pr with i j, bv_split_at Hpr, erw pair_eq_pair_iff at Hpr_left,
+          cases Hpr_left, simp at Hpr_right, apply bv_rw' Hpr_left_right, from B_ext_pair_mem_left,
+          apply bv_rw' Hpr_left_left, from B_ext_pair_mem_right, from Hpr_right.left  } },
+    { erw mem_subset.mk_iff, rcases H with ⟨H₁, H₂, H₃⟩, rw mem_unfold at H₁ H₂,
+      bv_cases_at H₁ i Hi, bv_cases_at H₂ j Hj, apply bv_use (j,i), refine le_inf _ _,
+        { erw pair_eq_pair_iff, refine ⟨_,_⟩,
+          { change _ ≤ _ =ᴮ y.func _, bv_split, bv_cc },
+          { change _ ≤ _ =ᴮ x.func _, bv_split, bv_cc } },
+        { refine le_inf _ _,
+          {  bv_split_at Hi, bv_split_at Hj, simp,
+             apply @bv_rw' _ _ _ _ _ (bv_symm Hi_right) (λ w, pair w ((y).func j) ∈ᴮ f), from B_ext_pair_mem_left,
+             apply @bv_rw' _ _ _ _ _ (bv_symm Hj_right) (λ w, pair a w ∈ᴮ f), from B_ext_pair_mem_right,
+             from ‹_›  },
+          { bv_split, dsimp, refine le_inf (le_inf _ ‹_›) Hi_left,
+            apply bv_use (func x i), refine le_inf (mem.mk'' ‹_›) _,
+            apply @bv_rw' _ _ _ _ _ (bv_symm Hi_right) (λ w, pair w ((y).func j) ∈ᴮ f), from B_ext_pair_mem_left,
+             apply @bv_rw' _ _ _ _ _ (bv_symm Hj_right) (λ w, pair a w ∈ᴮ f), from B_ext_pair_mem_right,
+             from ‹_› }} }
+end
+
+
+lemma inj_inverse.is_func : Γ ≤ is_func (inj_inverse H_func H_inj) :=
+begin
+  bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂, bv_imp_intro' H,
+  bv_split_at H, bv_imp_intro H_eq,
+  rw mem_inj_inverse_iff at H_left H_right,
+  repeat {auto_cases},
+  refine H_inj v₁ v₂ w₁ w₂ _, bv_split_goal
+end
+
+lemma inj_inverse.is_total : Γ ≤ is_total (image x y f) x (inj_inverse H_func H_inj) :=
+begin
+  bv_intro z, bv_imp_intro' Hz, rw mem_image_iff at Hz, cases Hz with Hz₁ Hz₂,
+  bv_cases_at Hz₂ z' Hz', apply bv_use z', refine le_inf _ _,
+    { from bv_and.left ‹_› },
+    { rw mem_inj_inverse_iff, from ⟨bv_and.left ‹_›, ‹_›, bv_and.right ‹_›⟩ }
+end
+
+lemma inj_inverse.is_func' : Γ ≤ is_func' (image x y f) x (inj_inverse H_func H_inj) :=
+begin
+  refine le_inf _ _,
+    { apply inj_inverse.is_func },
+    { apply inj_inverse.is_total },
+end
+
+lemma inj_inverse.is_surj : Γ ≤ is_surj (image x y f) x (inj_inverse H_func H_inj) :=
+begin
+  bv_intro z, bv_imp_intro' Hz_mem,
+  have := is_total_of_is_func' H_func,
+  replace this := this z Hz_mem, bv_cases_at this w₂ Hw₂, bv_split_at Hw₂,
+  apply bv_use w₂, refine le_inf _ _,
+    { rw mem_image_iff, refine ⟨‹_›, _⟩, apply bv_use z, from le_inf ‹_› ‹_› },
+    { rw mem_inj_inverse_iff, from ⟨‹_›,‹_›,‹_›⟩ }
+end
+
+end inj_inverse
+
+lemma surjects_onto_of_injects_into {x y : bSet 𝔹} {Γ} (H_inj : Γ ≤ injects_into x y) (H_exists_mem : Γ ≤ exists_mem x) : Γ ≤ surjects_onto y x :=
+begin
+  refine surjects_onto_of_larger_than_and_exists_mem _ ‹_›,
+  bv_cases_at H_inj f Hf, bv_split_at Hf,
+  apply bv_use (image x y f), apply bv_use (inj_inverse ‹_› ‹_›),
+  refine le_inf (le_inf image_subset _) _, by apply inj_inverse.is_func',
+  by apply inj_inverse.is_surj
+end
 
 section dom_cover
 
