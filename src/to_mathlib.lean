@@ -302,6 +302,9 @@ by rw [coe_nonempty_iff_ne_empty, classical.not_not]
   s ⊆ ⋂₀ C ↔ ∀ t ∈ C, s ⊆ t :=
 by simp [sInter_eq_bInter]
 
+lemma ne_empty_of_subset {α} {s t : set α} (h : s ⊆ t) (hs : s ≠ ∅) : t ≠ ∅ :=
+by { rw [set.ne_empty_iff_exists_mem] at hs ⊢, cases hs with x hx, exact ⟨x, h hx⟩ }
+
 end set
 
 section topological_space
@@ -339,6 +342,15 @@ begin
   rw [subset_bInter_iff] at h1t,
   rw [mem_bInter_iff], intros y hy, rw [mem_interior],
   refine ⟨t, h1t y hy, h2t, h3t⟩
+end
+
+lemma nonempty_basis_subset {b : set (set α)}
+  (hb : is_topological_basis b) {u : set α} (hu : u ≠ ∅) (ou : _root_.is_open u) :
+  ∃v ∈ b, v ≠ ∅ ∧ v ⊆ u :=
+begin
+  simp only [set.ne_empty_iff_exists_mem] at hu ⊢, cases hu with x hx,
+  rcases mem_basis_subset_of_mem_open hb hx ou with ⟨o, h1o, h2x, h2o⟩,
+  exact ⟨o, h1o, ⟨x, h2x⟩, h2o⟩
 end
 
 end topological_space

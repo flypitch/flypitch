@@ -198,17 +198,7 @@ def has_dense_omega_closed_subset (α : Type*) [nontrivial_complete_boolean_alge
 
 section
 local attribute [instance, priority 10] regular_open_algebra
-lemma ne_empty_of_subset {α} {s t : set α} (h : s ⊆ t) (hs : s ≠ ∅) : t ≠ ∅ :=
-by { rw [set.ne_empty_iff_exists_mem] at hs ⊢, cases hs with x hx, exact ⟨x, h hx⟩ }
 
-lemma nonempty_basis_subset {α} [topological_space α] {b : set (set α)}
-  (hb : is_topological_basis b) {u : set α} (hu : u ≠ ∅) (ou : _root_.is_open u) :
-  ∃v ∈ b, v ≠ ∅ ∧ v ⊆ u :=
-begin
-  simp only [set.ne_empty_iff_exists_mem] at hu ⊢, cases hu with x hx,
-  rcases mem_basis_subset_of_mem_open hb hx ou with ⟨o, h1o, h2x, h2o⟩,
-  exact ⟨o, h1o, ⟨x, h2x⟩, h2o⟩
-end
 
 /- this lemma is false
 lemma omega_closed_regular_opens {α : Type*} [topological_space α] [hα : nonempty α]
