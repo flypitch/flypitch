@@ -1208,8 +1208,96 @@ end
 --   apply bv_use (S ∩ᴮ (preimage S S' f)), sorry
 -- end
 
+section is_func'_comp
+variables {x y z f g: bSet 𝔹} {Γ : 𝔹} (Hf_func : Γ ≤ is_func' x y f) (Hg_func : Γ ≤ is_func' y z g)
+
+include Hf_func Hg_func
+
+def is_func'_comp : bSet 𝔹 := 
+subset.mk (λ pr : (prod x z).type, ⨆ b, b ∈ᴮ y ⊓ pair (x.func pr.1) b ∈ᴮ f ⊓ pair b (z.func pr.2) ∈ᴮ g)
+
+lemma mem_is_func'_comp_iff {Γ'} {a c : bSet 𝔹} : Γ' ≤ pair a c ∈ᴮ is_func'_comp Hf_func Hg_func ↔ Γ' ≤ a ∈ᴮ x ∧ Γ' ≤ c ∈ᴮ z ∧ Γ' ≤ ⨆ b, b ∈ᴮ y ⊓ (pair a b ∈ᴮ f ⊓ pair b c ∈ᴮ g) :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { refine ⟨_,_,_⟩,
+      { suffices : Γ' ≤ pair a c ∈ᴮ prod x z,
+         by {rw mem_prod_iff at this, from this.left },
+        refine mem_of_mem_subset (subset.mk_subset) H },
+      { suffices : Γ' ≤ pair a c ∈ᴮ prod x z,
+         by {rw mem_prod_iff at this, from this.right },
+        refine mem_of_mem_subset (subset.mk_subset) H },
+      { erw mem_subset.mk_iff₂ at H, 
+        bv_cases_at H pr Hpr, cases pr with i k,
+        bv_split_at Hpr, bv_split_at Hpr_right, bv_cases_at Hpr_right_right b Hb,
+        bv_split_at Hb, apply bv_use b, refine le_inf (bv_and.left ‹_›) _,
+        erw pair_eq_pair_iff at Hpr_right_left,
+        cases Hpr_right_left with H₁ H₂,
+        refine le_inf _ _,
+        apply bv_rw' H₁, from B_ext_pair_mem_left, from bv_and.right ‹_›,
+        apply bv_rw' H₂, from B_ext_pair_mem_right, from ‹_› }},
+    { erw mem_subset.mk_iff₂, rcases H with ⟨H_mem₁, H_mem₂, H⟩,
+      rw mem_unfold at H_mem₁ H_mem₂, bv_cases_at H_mem₁ i Hi, bv_cases_at H_mem₂ k Hk,
+      apply bv_use (i,k), refine le_inf (le_inf (bv_and.left ‹_›) (bv_and.left ‹_›)) (le_inf _ _),
+      erw pair_eq_pair_iff, from ⟨bv_and.right ‹_›, bv_and.right ‹_›⟩,
+      bv_cases_at H b Hb, bv_split_at Hb, apply bv_use b,
+      bv_split_at Hi, bv_split_at Hk,
+      refine le_inf (le_inf _ _) _,
+        { from ‹_› },
+        { apply @bv_rw' _ _ _ _ _ (bv_symm Hi_right) (λ w, pair w b ∈ᴮ f),
+          from B_ext_pair_mem_left, from bv_and.left ‹_›  },
+        { apply @bv_rw' _ _ _ _ _ (bv_symm Hk_right) (λ w, pair b w ∈ᴮ g),
+          from B_ext_pair_mem_right, from bv_and.right ‹_› }}
+end
+
+lemma is_func'_comp_is_func : Γ ≤ is_func (is_func'_comp Hf_func Hg_func) :=
+begin
+  bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂, bv_imp_intro' H, bv_imp_intro H_eq,
+  bv_split_at H, rw mem_is_func'_comp_iff at H_left H_right,
+  rcases H_right with ⟨Hw₂_mem, Hv₂_mem, Hb₂⟩, rcases H_left with ⟨Hw₁_mem, Hv₁_mem, Hb₁⟩,
+  bv_cases_at Hb₁ b₁ Hb₁', bv_split_at Hb₁', bv_cases_at Hb₂ b₂ Hb₂', bv_split_at Hb₂',
+  bv_split_at Hb₁'_right, bv_split_at Hb₂'_right,
+  refine (is_func_of_is_func' Hg_func b₁ b₂ v₁ v₂ (le_inf ‹_› ‹_›) _),
+  from (is_func_of_is_func' Hf_func w₁ w₂ b₁ b₂ (le_inf ‹_› ‹_›) ‹_›)
+end
+
+lemma is_func'_comp_is_total : Γ ≤ is_total x z (is_func'_comp Hf_func Hg_func) :=
+begin
+  bv_intro a, bv_imp_intro' Ha, have := (is_total_of_is_func' Hf_func) a Ha,
+  bv_cases_at this b Hb, bv_split_at Hb,
+  have := (is_total_of_is_func' Hg_func) b Hb_left,
+  bv_cases_at' this c Hc, bv_split_at Hc,
+  apply bv_use c, refine le_inf ‹_› _,
+  rw mem_is_func'_comp_iff, refine ⟨‹_›,‹_›,_⟩,
+  apply bv_use b, from le_inf ‹_› (le_inf ‹_› ‹_›)
+end
+
+lemma is_func'_comp_is_func' : Γ ≤ is_func' x z (is_func'_comp Hf_func Hg_func) :=
+le_inf (is_func'_comp_is_func _ _) (is_func'_comp_is_total _ _)
+
+variables (Hf_inj : Γ ≤ is_inj f) (Hg_inj : Γ ≤ is_inj g)
+
+include Hf_inj Hg_inj
+
+lemma is_func'_comp_inj : Γ ≤ is_inj (is_func'_comp Hf_func Hg_func) :=
+begin
+  bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂, bv_imp_intro' H,
+  bv_split_at H, bv_split_at H_left,
+  rw mem_is_func'_comp_iff at H_left_left H_left_right,
+  rcases H_left_left with ⟨Hw₁, Hv₁, Hb₁⟩, rcases H_left_right with ⟨Hw₂, Hv₂, Hb₂⟩,
+  bv_cases_at Hb₁ b₁ Hb₁', bv_cases_at Hb₂ b₂ Hb₂', bv_split_at Hb₁', bv_split_at Hb₂',
+  bv_split, refine Hf_inj w₁ w₂ b₁ b₂ _, refine le_inf (le_inf ‹_› ‹_›) _,
+  from Hg_inj b₁ b₂ v₁ v₂ (le_inf (le_inf ‹_› ‹_›) ‹_›)
+end
+
+end is_func'_comp
+
 lemma injects_into_trans {x y z} {Γ : 𝔹} (H₁ : Γ ≤ injects_into x y) (H₂ : Γ ≤ injects_into y z): Γ ≤ injects_into x z :=
-sorry
+begin
+  bv_cases_at H₁ f Hf, bv_cases_at H₂ g Hg,
+  bv_split_at Hf, bv_split_at Hg,
+  apply bv_use (is_func'_comp Hf_left Hg_left),
+  from le_inf (is_func'_comp_is_func' _ _) (is_func'_comp_inj _ _ Hf_right Hg_right)
+end
 
 lemma AE_of_check_func_check₀ (x y : pSet.{u}) {f : bSet 𝔹} {Γ : 𝔹}
   (H : Γ ≤ is_func' (x̌) (y̌) f) (H_nonzero : ⊥ < Γ) :
