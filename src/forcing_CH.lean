@@ -28,6 +28,43 @@ local notation `ω` := (bSet.omega)
 
 local attribute [instance, priority 0] classical.prop_decidable
 
+/- For this release, we axiomatize the existence of ℵ₁ and its specification. -/
+
+-- there exists a least ordinal not injecting into ω
+axiom aleph_one_exists_axiom {𝔹 : Type*} [nontrivial_complete_boolean_algebra 𝔹] {Γ : 𝔹} : Γ ≤ ⨆x, aleph_one_Ord_spec x
+
+-- ℵ₁̌  ⊆ ℵ₁. This is generally true for all nontrivial 𝔹 and cardinals κ.
+axiom aleph_one_check_sub_aleph_one_axiom  {𝔹 : Type*} [nontrivial_complete_boolean_algebra 𝔹] {Γ : 𝔹}
+  : Γ ≤ (pSet.card_ex (aleph 1))̌  ⊆ᴮ classical.some (maximum_principle aleph_one_Ord_spec (by simp))
+
+-- ℵ₁ is the successor cardinal of ω
+axiom aleph_one_le_of_omega_lt_axiom {𝔹 : Type*} [nontrivial_complete_boolean_algebra 𝔹] {Γ : 𝔹}
+  : Γ ≤ le_of_omega_lt (classical.some (maximum_principle aleph_one_Ord_spec (by simp)))
+
+section aleph_one
+
+variables {𝔹 : Type*} [nontrivial_complete_boolean_algebra 𝔹]
+
+lemma aleph_one_exists {Γ : 𝔹} : Γ ≤ ⨆x, aleph_one_Ord_spec x :=
+aleph_one_exists_axiom
+
+noncomputable def aleph_one : bSet 𝔹 :=
+classical.some (maximum_principle aleph_one_Ord_spec (by simp))
+
+lemma aleph_one_satisfies_spec {Γ : 𝔹} : Γ ≤ aleph_one_Ord_spec (aleph_one) :=
+begin
+  let p := _, change Γ ≤ aleph_one_Ord_spec (classical.some p),
+  rw ←(classical.some_spec p), from aleph_one_exists
+end
+
+lemma aleph_one_check_sub_aleph_one {Γ : 𝔹} : Γ ≤ (pSet.card_ex (aleph 1))̌  ⊆ᴮ aleph_one :=
+aleph_one_check_sub_aleph_one_axiom
+
+lemma aleph_one_le_of_omega_lt {Γ : 𝔹} : Γ ≤ le_of_omega_lt (aleph_one) :=
+aleph_one_le_of_omega_lt_axiom
+
+end aleph_one
+
 section lemmas
 
 variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
@@ -49,13 +86,13 @@ begin
 end
 
 theorem CH_true_aux
-  (H_aleph_one : ∀{Γ : 𝔹}, Γ ≤ aleph_one_weak_universal_property (ℵ₁̌ ))
+  (H_aleph_one : ∀{Γ : 𝔹}, Γ ≤ le_of_omega_lt (ℵ₁̌ ))
   (H_not_lt    : ∀{Γ : 𝔹}, Γ ≤ - ((ℵ₁)̌  ≺ 𝒫(ω)))
   : ∀{Γ : 𝔹}, Γ ≤ CH :=
 begin
   intro Γ, unfold CH, rw[<-imp_bot], bv_imp_intro,
   bv_cases_at H x, bv_cases_at H_1 y, clear H H_1, bv_split, bv_split,
-  unfold aleph_one_weak_universal_property at H_aleph_one,
+  unfold le_of_omega_lt at H_aleph_one,
   replace H_aleph_one := @H_aleph_one Γ_3 x ‹_›,
   suffices H_aleph_one_lt_continuum : Γ_3 ≤ (ℵ₁)̌  ≺ 𝒫(ω),
     from bv_absurd _ H_aleph_one_lt_continuum H_not_lt,
@@ -685,11 +722,11 @@ begin
   refine surjects_onto_of_larger_than_and_exists_mem ‹_› (by simp),
 end
 
-lemma aleph_one_check_universal_property (Γ : β) : Γ ≤ aleph_one_weak_universal_property (ℵ₁̌  : bSet β) :=
+lemma aleph_one_check_le_of_omega_lt (Γ : β) : Γ ≤ le_of_omega_lt (ℵ₁̌  : bSet β) :=
 begin
   apply bv_rw' (aleph_one_check_is_aleph_one_of_omega_lt (omega_lt_aleph_one)),
   { simp },
-  { exact aleph_one_satisfies_universal_property }
+  { exact aleph_one_le_of_omega_lt }
 end
 
 lemma continuum_le_continuum_check {Γ : β} :
@@ -715,7 +752,7 @@ begin
 end
 
 theorem CH_true : (⊤ : β) ≤ CH :=
-CH_true_aux aleph_one_check_universal_property (by apply aleph_one_not_lt_powerset_omega)
+CH_true_aux aleph_one_check_le_of_omega_lt (by apply aleph_one_not_lt_powerset_omega)
 
 theorem CH₂_true : (⊤ : β) ≤ CH₂ :=
 le_inf (by apply aleph_one_not_lt_powerset_omega) (omega_lt_aleph_one)

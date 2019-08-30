@@ -2464,29 +2464,11 @@ le_inf (check_ewo pSet.is_ewo_omega) (check_is_transitive pSet.is_transitive_ome
 /--
 The universal property of ℵ₁ is that it injects into any set which is larger than ω
 -/
-@[reducible]def aleph_one_weak_universal_property (x : bSet 𝔹) : 𝔹 := ⨅ z, (bSet.omega ≺ z) ⟹ (x ≼ z)
+@[reducible]def le_of_omega_lt (x : bSet 𝔹) : 𝔹 := ⨅ z, (bSet.omega ≺ z) ⟹ (x ≼ z)
 
-@[simp] lemma B_ext_aleph_one_weak_universal_property :
-  B_ext (aleph_one_weak_universal_property : bSet 𝔹 → 𝔹) :=
-by { delta aleph_one_weak_universal_property, simp }
-
-lemma aleph_one_exists {Γ : 𝔹} : Γ ≤ ⨆x, aleph_one_Ord_spec x :=
-begin
-  sorry -- TODO
-end
-
-noncomputable def aleph_one : bSet 𝔹 :=
-classical.some (maximum_principle aleph_one_Ord_spec (by simp))
-
-lemma aleph_one_satisfies_spec {Γ : 𝔹} : Γ ≤ aleph_one_Ord_spec (aleph_one) :=
-begin
-  let p := _, change Γ ≤ aleph_one_Ord_spec (classical.some p),
-  rw ←(classical.some_spec p), from aleph_one_exists
-end
-
-lemma aleph_one_check_sub_aleph_one {Γ : 𝔹} : Γ ≤ (pSet.card_ex (aleph 1))̌  ⊆ᴮ aleph_one := sorry
-
-lemma aleph_one_satisfies_universal_property {Γ : 𝔹} : Γ ≤ aleph_one_weak_universal_property (aleph_one) := sorry
+@[simp] lemma B_ext_le_of_omega_lt :
+  B_ext (le_of_omega_lt : bSet 𝔹 → 𝔹) :=
+by { delta le_of_omega_lt, simp }
 
 end ordinals
 
