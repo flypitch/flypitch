@@ -1089,30 +1089,76 @@ begin
   use i, from Hj
 end
 
-lemma mem_sep_iff {p : set pSet} {x : pSet} {w : pSet} : w ∈ {z ∈ x | p z} ↔ w ∈ x ∧ p w :=
+def P_ext : set pSet → Prop := λ χ, (∀ x y, equiv x y → χ x → χ y)
+
+lemma mem_sep_iff {p : set pSet} {x : pSet} {w : pSet} (H_congr : P_ext p) : w ∈ {z ∈ x | p z} ↔ w ∈ x ∧ p w :=
 begin
   refine ⟨_,_⟩; intro H,
     { refine ⟨_,_⟩,
-      { sorry },
-      { sorry }},
-    { sorry }
+      { cases x, unfold has_sep.sep pSet.sep at H,
+        rw mem_unfold at H ⊢, cases H with j Hj,
+        use j.1, convert Hj },
+      { cases x, unfold has_sep.sep pSet.sep at H,
+        rw mem_unfold at H, cases H with j Hj,
+        have := j.2, exact H_congr _ w (equiv.symm Hj) this }},
+    { cases x, unfold has_sep.sep pSet.sep,
+      cases H, rw mem_unfold at ⊢ H_left, cases H_left with j Hj,
+      have := H_congr w _ (Hj) ‹_›,
+      use ⟨j, this⟩, exact Hj }
 end
 
-lemma sep_equiv_iff {p₁ p₂ : set pSet} {x : pSet} : equiv {z ∈ x | p₁ z}  {z ∈ x | p₂ z} ↔ (∀ z, z ∈ x ∧ p₁ z ↔ z ∈ x ∧ p₂ z) :=
+lemma sep_equiv_iff {p₁ p₂ : set pSet} {x : pSet} (H_congr₁ : P_ext p₁) (H_congr₂ : P_ext p₂) : equiv {z ∈ x | p₁ z}  {z ∈ x | p₂ z} ↔ (∀ z, z ∈ x ∧ p₁ z ↔ z ∈ x ∧ p₂ z) :=
 begin
   refine ⟨_,_⟩; intro H,
-    { rw ext_iff at H, simp [mem_sep_iff] at H, from ‹_› },
-    { apply mem.ext, simp [mem_sep_iff], exact H  }
+    { rw ext_iff at H, simp only [mem_sep_iff H_congr₁] at H, simp only [mem_sep_iff H_congr₂] at H, from ‹_› },
+    { apply mem.ext, simp only [mem_sep_iff H_congr₁], simp only [mem_sep_iff H_congr₂], exact H  }
+end
+
+lemma mem_two {x : pSet.{u}} (H : x ∈ (of_nat 2 : pSet.{u})) : equiv x (of_nat 0 : pSet.{u}) ∨ equiv x (of_nat 1 : pSet.{u}) :=
+begin
+  rw mem_unfold at H, cases H with j Hj,
+  repeat {cases j},
+    { right, from ‹_› },
+    { left, from ‹_› }
+end
+
+lemma pair_mem.congr_right {a b c x : pSet.{u}} (H : equiv b c) : pair a b ∈ x ↔ pair a c ∈ x :=
+begin
+  suffices : equiv (pair a b) (pair a c),
+    by rw mem.congr_left this,
+  rw ←eq_iff_eq_pair, simp*
+end
+
+@[simp]lemma P_ext_pair_mem_right {b c : pSet} : P_ext (λ w, pair b w ∈ c) :=
+begin
+  intros x y H Hx, rwa pair_mem.congr_right H at Hx
+end
+
+lemma pair_mem.congr_left {a b c x : pSet.{u}} (H : equiv b c) : pair b a ∈ x ↔ pair c a ∈ x :=
+begin
+  suffices : equiv (pair b a) (pair c a),
+    by rw mem.congr_left this,
+  rw ←eq_iff_eq_pair, simp*
+end
+
+@[simp]lemma P_ext_pair_mem_left {b c : pSet} : P_ext (λ w, pair w b ∈ c) :=
+begin
+  intros x y H Hx, rwa pair_mem.congr_left H at Hx
 end
 
 section injects_powerset
 variable {x : pSet.{u}}
-local notation `fx2` := functions x (of_nat 2)
+local notation `fx2` := functions x (of_nat 2 : pSet.{u})
 
-def f2ip.F := (λ χ, {z ∈ x | (pSet.pair z (of_nat 0)) ∈ ((fx2).func χ)} : (functions x (of_nat 2)).type → pSet.{u})
+def f2ip.F := (λ χ, {z ∈ x | (pSet.pair z (of_nat 0 : pSet.{u})) ∈ ((fx2).func χ)} : (functions x (of_nat 2 : pSet.{u})).type → pSet.{u})
 
-lemma mem_f2ip.F_iff {χ : (fx2).type} {w : pSet} : w ∈ f2ip.F χ ↔ w ∈ x ∧ pSet.pair w (of_nat 0) ∈ ((fx2).func χ) :=
-by erw mem_sep_iff
+@[simp]lemma f2ip.P_ext {χ} {b} : P_ext (λ z, pair z b ∈ ((fx2).func χ)) :=
+begin
+  intros a b H_eqv Ha, rwa pair_mem.congr_left H_eqv at Ha
+end
+
+lemma mem_f2ip.F_iff {χ : (fx2).type} {w : pSet} : w ∈ f2ip.F χ ↔ w ∈ x ∧ pSet.pair w (of_nat 0 : pSet.{u}) ∈ ((fx2).func χ) :=
+by erw mem_sep_iff f2ip.P_ext
 
 
 lemma f2ip.F_ext : ∀ i j, pSet.equiv ((fx2).func i) ((fx2).func j) → pSet.equiv (f2ip.F i) (f2ip.F j) :=
@@ -1122,7 +1168,7 @@ begin
     { refine ⟨‹_›, _⟩, rw equiv_iff_eq at H_eqv, rw mem_sound at *,
      rwa ←H_eqv  },
     { refine ⟨‹_›, _⟩, rw equiv_iff_eq at H_eqv, rw mem_sound at *,
-      rwa H_eqv }
+      rwa H_eqv }, repeat {simp}
 end
 
 def f2ip (x : pSet.{u}) : pSet.{u} := pSet.function.mk  (@f2ip.F x) f2ip.F_ext
@@ -1137,7 +1183,10 @@ begin
         { rw mem.congr_left Hpr₂, rw mem_powerset, apply sep_subset },
         { suffices : equiv (f2ip.F pr) {z ∈ x | pair z (of_nat 0) ∈ a},
             by {rw equiv_iff_eq at *, cc},
-          sorry  }}, -- easy but tedious
+          change equiv {z ∈ x | _} _, rw sep_equiv_iff,
+          intro z, refine ⟨_,_⟩; intro H; cases H; refine ⟨‹_›, _⟩,
+            { rwa mem.congr_right Hpr₁ },
+            { rwa mem.congr_right (equiv.symm Hpr₁) }, simp, simp }}, -- easy but tedious
     { rcases H with ⟨H₁, H₂, H₃⟩, rw mem_unfold at H₁ H₂ ⊢,
       cases H₁ with χ Hχ, cases H₂ with S HS, use χ, change equiv (pair a b) (pair _ _),
       rw ←eq_iff_eq_pair,
@@ -1145,7 +1194,93 @@ begin
         { from ‹_› },
         { suffices : equiv (f2ip.F χ) {z ∈ x | pair z (of_nat 0) ∈ a},
             by { rw equiv_iff_eq at *, cc},
-         sorry }} -- same proof
+         change equiv {z ∈ x | _} _, rw sep_equiv_iff,
+          intro z, refine ⟨_,_⟩; intro H; cases H; refine ⟨‹_›, _⟩,
+            { rwa mem.congr_right Hχ },
+            { rwa mem.congr_right (equiv.symm Hχ) }, simp, simp }} -- same proof
+end
+
+lemma rel_eq_iff {x y f g : pSet.{u}} (H₁ : f ⊆ prod x y) (H₂ : g ⊆ prod x y) :
+equiv f g ↔ ∀ a ∈ x, ∀ b ∈ y, pair a b ∈ f ↔ pair a b ∈ g :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { intros a Ha b Hb, rw mem.congr_right H },
+    { apply mem.ext, intro p, rw subset_iff_all_mem at H₁ H₂, refine ⟨_,_⟩; intro H',
+        {specialize H₁ _ ‹_›, rw mem_unfold at H₁, cases H₁ with pr Hpr, cases pr with i j,
+         specialize H (x.func i) (by simp) (y.func j) (by simp),
+         repeat {erw mem.congr_left (equiv.symm Hpr) at H}, finish},
+        { specialize H₂ _ ‹_›, rw mem_unfold at H₂, cases H₂ with pr Hpr, cases pr with i j,
+         specialize H (x.func i) (by simp) (y.func j) (by simp),
+         repeat {erw mem.congr_left (equiv.symm Hpr) at H}, finish }}
+end
+
+lemma false_of_zero_eq_one (H : equiv (of_nat 0 : pSet.{u}) (of_nat 1 : pSet.{u})) : false :=
+begin
+  let a := _, let b := _, change equiv a b at H,
+  have : a ∈ b,
+    by {apply of_nat_mem_of_lt, exact dec_trivial},
+  rw mem.congr_left H at this, from mem_self ‹_›
+end
+
+lemma function_to_2_eq_aux₂ {x w : pSet} (Hfunc : is_func x (of_nat 2) w) {a} :
+  pair a (of_nat 0) ∈ w → pair a (of_nat 1) ∈ w → false :=
+begin
+  intros H₁ H₂, rw is_func_iff at Hfunc, cases Hfunc with H_sub H,
+  specialize H a _, rcases H with ⟨w', ⟨Hw', H_unq⟩⟩,
+  have this₁ := H_unq (of_nat 0) ‹_›, have this₂ := H_unq (of_nat 1) ‹_›,
+  suffices : equiv (of_nat 0) (of_nat 1),
+    by {exact false_of_zero_eq_one ‹_›},
+  rw equiv_iff_eq at *, rw this₁, rw this₂,
+  rw subset_iff_all_mem at H_sub, specialize H_sub _ H₁,
+  rw mem_unfold at H_sub, cases H_sub with pr Hpr,
+  cases pr with i j,
+  rw mem_unfold, use i, erw ←eq_iff_eq_pair at Hpr,
+  from and.left ‹_›
+end
+
+lemma function_to_2_eq_aux {x w₁ w₂ : pSet} (Hfunc₁ : is_func x (of_nat 2) w₁) (Hfunc₂ : is_func x (of_nat 2) w₂) (H_eq : equiv {z ∈ x | pair z (of_nat 0) ∈ w₁} {z ∈ x | pair z (of_nat 0) ∈ w₂}) : equiv {z ∈ x | pair z (of_nat 1) ∈ w₁} {z ∈ x | pair z (of_nat 1) ∈ w₂} :=
+begin
+  apply mem.ext, intro w, refine ⟨_,_⟩; intro H; rw mem_sep_iff at ⊢ H; try {cases H}; try {refine ⟨‹_›, _⟩},
+
+    { by_contra, have := is_total_of_is_func Hfunc₂ _ H_left, rcases this with ⟨k, Hk₁, Hk₂⟩,
+      cases mem_two Hk₁ with H_zero H_one,
+        { suffices :  w ∈ {z ∈ x | pair z (of_nat 0) ∈ w₁},
+            by {rw mem_sep_iff at this, from function_to_2_eq_aux₂ Hfunc₁ this.right ‹_›, simp},
+           rw mem.congr_right H_eq, rw mem_sep_iff, refine ⟨‹_›, _⟩,
+           rwa pair_mem.congr_right (equiv.symm H_zero), simp },
+        { rw pair_mem.congr_right H_one at Hk₂, contradiction }}, simp, simp,
+    {  by_contra, have := is_total_of_is_func Hfunc₁ _ H_left, rcases this with ⟨k, Hk₁, Hk₂⟩,
+      cases mem_two Hk₁ with H_zero H_one,
+        { suffices :  w ∈ {z ∈ x | pair z (of_nat 0) ∈ w₂},
+            by {rw mem_sep_iff at this, from function_to_2_eq_aux₂ Hfunc₂ this.right ‹_›, simp},
+           rw mem.congr_right (equiv.symm H_eq), rw mem_sep_iff, refine ⟨‹_›, _⟩,
+           rwa pair_mem.congr_right (equiv.symm H_zero), simp },
+        { rw pair_mem.congr_right H_one at Hk₂, contradiction } }, simp, simp
+end
+
+lemma functions_to_2_eq {x : pSet} {w₁ w₂ : pSet} (H_eq : equiv {z ∈ x | pair z (of_nat 0) ∈ w₁} {z ∈ x | pair z (of_nat 0) ∈ w₂}) (H₁₁ : w₁ ∈ functions x (of_nat 2)) (H₂₁ : w₂ ∈ functions x (of_nat 2)) : equiv w₁ w₂ :=
+begin
+  have H'₁₁ := H₁₁, have H'₂₁ := H₂₁,
+  rw mem_functions_iff at H₁₁ H₂₁ H'₁₁ H'₂₁, rw is_func_iff at H₁₁ H₂₁, cases H₁₁ with H₁_sub H₁, cases H₂₁ with H₂_sub H₂,
+  rw rel_eq_iff H₁_sub H₂_sub, intros a Ha b Hb, refine ⟨_,_⟩; intro H; cases mem_two ‹_› with H_zero H_one,
+    { rw pair_mem.congr_right H_zero at H ⊢,
+      suffices : a ∈ {z ∈ x | pair z (of_nat 0) ∈ w₂},
+        by {rw mem_sep_iff at this, exact this.right, simp},
+      rw mem.congr_right (equiv.symm H_eq), rw mem_sep_iff, from ⟨‹_›,‹_›⟩, simp },
+    { replace H_eq := function_to_2_eq_aux H'₁₁ ‹_› H_eq,
+      rw pair_mem.congr_right H_one at H ⊢,
+      suffices : a ∈ {z ∈ x | pair z (of_nat 1) ∈ w₂},
+        by {rw mem_sep_iff at this, exact this.right, simp},
+      rw mem.congr_right (equiv.symm H_eq), rw mem_sep_iff, from ⟨‹_›,‹_›⟩, simp },
+    { rw pair_mem.congr_right H_zero at H ⊢,
+      suffices : a ∈ {z ∈ x | pair z (of_nat 0) ∈ w₁},
+        by {rw mem_sep_iff at this, exact this.right, simp},
+      rw mem.congr_right (H_eq), rw mem_sep_iff, from ⟨‹_›,‹_›⟩, simp },
+    { replace H_eq := function_to_2_eq_aux H'₁₁ ‹_›H_eq,
+      rw pair_mem.congr_right H_one at H ⊢,
+      suffices : a ∈ {z ∈ x | pair z (of_nat 1) ∈ w₁},
+        by {rw mem_sep_iff at this, exact this.right, simp},
+      rw mem.congr_right (H_eq), rw mem_sep_iff, from ⟨‹_›,‹_› ⟩, simp }
 end
 
 lemma functions_2_injects_into_powerset (x : pSet.{u}) : ∃ (f : pSet.{u}), is_injective_function (pSet.functions x (pSet.of_nat 2) : pSet.{u}) (pSet.powerset x : pSet.{u}) f :=
@@ -1156,9 +1291,9 @@ begin
     { intros w₁ w₂ v₁ v₂ H, rcases H with ⟨H₁,H₂, H_eq⟩,
       rw mem_f2ip_iff at H₁ H₂,
       have : equiv {z ∈ x | pair z (of_nat 0) ∈ w₁} {z ∈ x | pair z (of_nat 0) ∈ w₂},
-        by sorry, -- congruence closure
-      sorry -- use function extensionality + finiteness of 2
-        }
+        by {repeat {auto_cases}, rw equiv_iff_eq at *, cc},
+      rcases H₁ with ⟨H₁₁, H₁₂, H₁₃⟩, rcases H₂ with ⟨H₂₁, H₂₂, H₂₃⟩,
+      exact functions_to_2_eq ‹_› H₁₁ ‹_› }
 end
 
 
