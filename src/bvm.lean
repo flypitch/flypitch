@@ -1546,6 +1546,12 @@ begin
     { simp* }
 end
 
+lemma check_eq_reflect {x y : pSet} {Γ : 𝔹} (H_lt : ⊥ < Γ) (H_mem : Γ ≤ x̌ =ᴮ y̌) : pSet.equiv x y  :=
+begin
+  have := check_bv_eq_nonzero_iff_eq_top.mp (lt_of_lt_of_le H_lt H_mem),
+  rwa ←check_bv_eq_iff at this
+end
+
 @[simp]lemma check_insert (a b : pSet) : (pSet.insert a b)̌  = (bSet.insert1 (ǎ) (b̌) : bSet 𝔹) :=
 by {induction a, induction b, simp[pSet.insert, bSet.insert1], split; ext; cases x; simp}
 
@@ -1599,6 +1605,12 @@ begin
     { simp* }
 end
 
+lemma check_mem_reflect {x y : pSet} {Γ : 𝔹} (H_lt : ⊥ < Γ) (H_mem : Γ ≤ (x̌ : bSet 𝔹) ∈ᴮ y̌) : x ∈ y :=
+begin
+  have := check_mem_nonzero_iff_eq_top.mp (lt_of_lt_of_le H_lt H_mem),
+  rwa ←check_mem_iff at this
+end
+
 @[simp]lemma check_mem {x y : pSet} {Γ} (h_mem : x ∈ y) : (Γ : 𝔹) ≤ x̌ ∈ᴮ y̌ :=
 begin
   rw[mem_unfold], cases y, unfold has_mem.mem pSet.mem at h_mem,
@@ -1619,7 +1631,13 @@ lemma check_subset {x y : pSet} {Γ : 𝔹} (h_subset : x ⊆ y) : Γ ≤ x̌ �
 
 lemma check_not_subset {x y : pSet} (H : ¬ x ⊆ y) {Γ} : (Γ : 𝔹) ≤ -(x̌ ⊆ᴮ y̌) :=
 begin
-  rw[subset_unfold], simp only with bv_push_neg, sorry -- TODO(jesse): finish this
+  rw[subset_unfold], simp only with bv_push_neg,
+  rw pSet.subset_iff_all_mem at H, push_neg at H,
+  rcases H with ⟨z,Hz₁,Hz₂⟩, rw pSet.mem_unfold at Hz₁,
+  cases Hz₁ with j Hj, apply bv_use (check_cast.symm j),
+  refine le_inf (by simp) _, rw ←imp_bot, bv_imp_intro H,
+  apply check_not_mem Hz₂, change _ ≤ (λ w, w ∈ᴮ y̌) _, apply bv_rw' (check_eq Hj),
+  simp, cases x, exact H
 end
 
 
@@ -2416,13 +2434,13 @@ function.injective_of_left_inverse dom_left_inv_check
 -- end
 
 -- should follow from induction (every member of a check_shadow is a check_shadow)
-@[simp]lemma B_congr_check_shadow : B_congr (check_shadow : bSet 𝔹 → bSet 𝔹)
-| x@⟨α,A,B⟩ x'@⟨α',A',B'⟩ Γ H :=
-begin
-  unfold check_shadow, rw[bv_eq_unfold] at H ⊢, refine le_inf _ _; bv_intro i; simp at ⊢ H; cases H with H H',
-    { sorry },
-    { sorry },
-end
+-- @[simp]lemma B_congr_check_shadow : B_congr (check_shadow : bSet 𝔹 → bSet 𝔹)
+-- | x@⟨α,A,B⟩ x'@⟨α',A',B'⟩ Γ H :=
+-- begin
+--   unfold check_shadow, rw[bv_eq_unfold] at H ⊢, refine le_inf _ _; bv_intro i; simp at ⊢ H; cases H with H H',
+--     { sorry },
+--     { sorry },
+-- end
 
 
 end bSet

@@ -952,6 +952,13 @@ begin
       use (i,j), rw ←eq_iff_eq_pair, from ⟨‹_›,‹_›⟩ }
 end
 
+lemma mem_prod_iff {x y a b : pSet.{u}} : pair a b ∈ prod x y ↔ a ∈ x ∧ b ∈ y :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { rw [mem_sound, pair_sound, prod_sound, Set.pair_mem_prod] at H, simpa [mem_sound.symm] using H },
+    { rw [mem_sound, pair_sound, prod_sound, Set.pair_mem_prod], simpa [mem_sound] using H }
+end
+
 @[reducible]def is_inj (f : pSet.{u}) : Prop := ∀ w₁ w₂ v₁ v₂ : pSet.{u}, pair w₁ v₁ ∈ f ∧ pair w₂ v₂ ∈ f ∧ pSet.equiv v₁ v₂ → pSet.equiv w₁ w₂
 
 def is_injective_function (x y f : pSet.{u}) : Prop := is_func x y f ∧ is_inj f
@@ -987,6 +994,17 @@ begin
           rw ←equiv_iff_eq, solve_by_elim  }}
 end
 
+lemma subset_prod_of_is_func {x y f : pSet.{u}} (H_func : is_func x y f) : f ⊆ prod x y :=
+begin
+  unfold is_func Set.is_func at H_func,
+  suffices this : Set.subset ⟦f⟧ (Set.prod ⟦x⟧ ⟦y⟧) → f ⊆ prod x y,
+    by exact this H_func.left,
+  intro H,
+  suffices this : Set.subset ⟦f⟧ ⟦prod x y⟧,
+    by { rwa subset_sound },
+  rwa prod_sound
+end
+
 def is_total (x y f : pSet.{u}) : Prop := ∀ z ∈ x, ∃ w ∈ y, pair z w ∈ f
 
 lemma is_total_of_is_func {x y f : pSet.{u}} (H_func : is_func x y f)  : is_total x y f  :=
@@ -1001,17 +1019,6 @@ begin
 end
 
 lemma powerset_sound {x : pSet.{u}} : ⟦pSet.powerset x⟧ = Set.powerset ⟦x⟧ := rfl
-
-lemma subset_prod_of_is_func {x y f : pSet.{u}} (H_func : is_func x y f) : f ⊆ prod x y :=
-begin
-  unfold is_func Set.is_func at H_func,
-  suffices this : Set.subset ⟦f⟧ (Set.prod ⟦x⟧ ⟦y⟧) → f ⊆ prod x y,
-    by exact this H_func.left,
-  intro H,
-  suffices this : Set.subset ⟦f⟧ ⟦prod x y⟧,
-    by { rwa subset_sound },
-  rwa prod_sound
-end
 
 def set_of_indicator {x : pSet.{u}} (χ : x.type → Prop) : pSet.{u} :=
 ⟨{i // χ i}, λ p, x.func (p.1)⟩
@@ -1298,6 +1305,19 @@ end
 
 
 end injects_powerset
+
+
+lemma eq_of_is_func_of_eq {a b c d x y f : pSet.{u}} (H_func : pSet.is_func x y f) (H₁ : pair a c ∈ f) (H₂ : pair b d ∈ f) (H_eq : equiv a b) : equiv c d :=
+begin
+  rw is_func_iff at H_func, cases H_func with H_sub H,
+  rw subset_iff_all_mem at H_sub,
+  have this₁ := H_sub _ H₁, have this₂ := H_sub _ H₂,
+  rw mem_prod_iff at this₁ this₂, cases this₁, cases this₂,
+  rcases H _ this₁_left with ⟨w,Hw₁, Hw₂⟩,
+  rw pair_mem.congr_left (equiv.symm H_eq) at H₂,
+  have := Hw₂ _ H₂, have := Hw₂ _ H₁,
+  rw equiv_iff_eq at *, cc
+end
 
 
 end pSet

@@ -387,10 +387,46 @@ end
  Γ ≤ pair x y ∈ᴮ prod v w :=
 mem_prod_iff.mpr (by simp*)
 
--- TODO(jesse): finish these
-lemma check_pair {x y : pSet.{u}} {Γ} : Γ ≤ (pSet.pair x y)̌  =ᴮ bSet.pair (x̌) (y̌ : bSet 𝔹) := sorry
+@[simp]lemma check_singleton {x : pSet.{u}} {Γ : 𝔹} : Γ ≤ {x}̌  =ᴮ {x̌} :=
+begin
+  unfold singleton, unfold has_insert.insert, simp
+end
 
-lemma check_prod {x y : pSet.{u}} {Γ : 𝔹} : Γ ≤ (pSet.prod x y)̌  =ᴮ bSet.prod x̌ y̌ := sorry
+@[simp]lemma check_unordered_pair {x y : pSet.{u}} {Γ} : Γ ≤ ({x,y})̌ =ᴮ ({x̌, y̌} : bSet 𝔹) :=
+begin
+  unfold has_insert.insert, simp
+end
+
+-- TODO add B_congr lemmas for insert1
+@[simp]lemma eq_unordered_pair_of_eq {a b c d : bSet 𝔹} {Γ} (H₁ : Γ ≤ a =ᴮ c) (H₂ : Γ ≤ b =ᴮ d)
+  : Γ ≤ {a,b} =ᴮ {c,d} :=
+begin
+  have : _ ≤ {_, b} =ᴮ {_,b} := @subst_congr_insert1_right'' _ _ _ _ _ _ H₁,
+  refine bv_trans this _, apply subst_congr_insert1_left', from ‹_›
+end
+
+lemma check_pair {x y : pSet.{u}} {Γ} : Γ ≤ (pSet.pair x y)̌  =ᴮ bSet.pair (x̌) (y̌ : bSet 𝔹) :=
+begin
+  unfold pSet.pair, unfold bSet.pair,
+  have : Γ ≤ {{x}, {x, y}}̌  =ᴮ {{x}̌ , {x,y}̌ } := check_unordered_pair,
+  refine bv_trans this _,
+  refine eq_unordered_pair_of_eq _ _, simp, simp
+end
+
+lemma check_prod {x y : pSet.{u}} {Γ : 𝔹} : Γ ≤ (pSet.prod x y)̌  =ᴮ bSet.prod x̌ y̌ :=
+begin
+  rw bv_eq_unfold, refine le_inf _ _; bv_intro pr; bv_imp_intro Hbvpr,
+    { cases pr with i j, rw mem_unfold, apply bv_use (check_cast.symm i, check_cast.symm j),
+      refine le_inf (by simp) _, change Γ_1 ≤ (pSet.pair (x.func i) (y.func j))̌  =ᴮ pair _ _,
+      refine bv_trans check_pair _, rw pair_eq_pair_iff,
+      refine ⟨_,_⟩,
+        { cases x, from bv_refl },
+        { cases y, from bv_refl }},
+    { cases pr with i j, change _ ≤ pair _ _ ∈ᴮ _,
+      dsimp only, rw check_func, rw check_func,
+      change _ ≤ (λ w, w ∈ᴮ (pSet.prod x y)̌ ) _, apply bv_rw' (bv_symm check_pair), simp,
+      apply check_mem, simp [pSet.mem_prod_iff] }
+end
 
 -- /-- f is =ᴮ-extensional on x if for every w₁ and w₂ ∈ x, if w₁ =ᴮ w₂, then for every v₁ and v₂, if (w₁,v₁) ∈ f and (w₂,v₂) ∈ f, then v₁ =ᴮ v₂ -/
 -- @[reducible]def is_extensional (x f : bSet 𝔹) : 𝔹 :=
@@ -564,9 +600,39 @@ end
 lemma check_is_func {x y f : pSet.{u}} (H_func : pSet.is_func x y f) {Γ : 𝔹} : Γ ≤ is_function x̌ y̌ f̌ :=
 begin
   refine le_inf (le_inf _ _) _,
-    { sorry }, -- this is annoying but doable
+    { have : Γ ≤ f̌ ⊆ᴮ _ := check_subset (pSet.subset_prod_of_is_func ‹_›),
+      bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂, bv_imp_intro H, bv_split_at H, bv_imp_intro H_eq,
+      have H_left' := H_left, have H_right' := H_right,
+      replace H_left := mem_of_mem_subset this H_left, replace H_right := mem_of_mem_subset this H_right,
+      change _ ≤ (λ w, (pair w₁ v₁) ∈ᴮ w) (pSet.prod x y)̌  at H_left, change _ ≤ (λ w, (pair w₂ v₂) ∈ᴮ w) (pSet.prod x y)̌  at H_right,
+      replace H_left :=  bv_rw'' (check_prod) H_left,
+      replace H_right :=  bv_rw'' (check_prod) H_right,
+      rw mem_prod_iff at H_left H_right,
+      rcases H_left with ⟨H₁, H₂⟩, rcases H_right with ⟨H₃, H₄⟩, rw mem_unfold at H₁ H₂ H₃ H₄,
+      bv_cases_at H₁ i₁ Hi₁, bv_cases_at H₂ j₁ Hj₁, bv_cases_at H₃ i₂ Hi₂, bv_cases_at H₄ j₂ Hj₂,
+      simp at Hi₁ Hj₁ Hi₂ Hj₂, rw check_func at *,
+      suffices : Γ_6 ≤ (pSet.func y (check_cast j₁))̌  =ᴮ (pSet.func y (check_cast j₂))̌ ,
+        by bv_cc,
+      classical, by_cases H_bot : (⊥ < Γ_6), swap,
+      {rw le_bot_iff_not_bot_lt at H_bot, from le_trans H_bot bot_le},
+      apply check_eq,
+      refine pSet.eq_of_is_func_of_eq H_func _ _
+               (_ : pSet.equiv (pSet.func x (check_cast i₁)) (pSet.func x (check_cast i₂))),
+        { apply check_mem_reflect ‹_›,
+          let A := _, change _ ≤ A ∈ᴮ _,
+          suffices this : Γ_6 ≤ A =ᴮ pair w₁ v₁,
+            by {change _ ≤ (λ w, w ∈ᴮ f̌) _, apply bv_rw' this, simp, from ‹_› },
+          refine bv_trans check_pair _, rw pair_eq_pair_iff,
+          refine ⟨_,_⟩; apply bv_symm; assumption  },
+        { apply check_mem_reflect ‹_›,
+          let A := _, change _ ≤ A ∈ᴮ _,
+          suffices this : Γ_6 ≤ A =ᴮ pair w₂ v₂,
+            by {change _ ≤ (λ w, w ∈ᴮ f̌) _, apply bv_rw' this, simp, from ‹_› },
+          refine bv_trans check_pair _, rw pair_eq_pair_iff,
+          refine ⟨_,_⟩; apply bv_symm; assumption   },
+        { apply check_eq_reflect ‹_›, bv_cc }},
     { from check_is_total (pSet.is_total_of_is_func ‹_›) },
-    {  apply bv_rw' (bv_symm check_prod), {simp},
+    {  apply bv_rw' (bv_symm check_prod), { simp },
        from check_subset (pSet.subset_prod_of_is_func ‹_›) }
 end
 
@@ -1600,11 +1666,11 @@ begin
   by apply inj_inverse.is_surj
 end
 
-section dom_cover
+-- section dom_cover
 
-def dom_section : Π (x : bSet 𝔹), bSet 𝔹
-| x@⟨α,A,B⟩ := function.mk' (check_shadow_cast_symm : x.type → (check_shadow x).type) (x.bval)
-    (by {intros i j Γ, apply B_congr_check_shadow}) (by {intros, simpa[*, check_shadow]})
+-- def dom_section : Π (x : bSet 𝔹), bSet 𝔹
+-- | x@⟨α,A,B⟩ := function.mk' (check_shadow_cast_symm : x.type → (check_shadow x).type) (x.bval)
+--     (by {intros i j Γ, apply B_congr_check_shadow}) (by {intros, simpa[*, check_shadow]})
 
 -- def dom_cover : bSet 𝔹 := sorry -- use surjects_onto_of_injects_into
 
@@ -1616,8 +1682,7 @@ def dom_section : Π (x : bSet 𝔹), bSet 𝔹
 
 -- lemma dom_cover_surjection : is_surj (check_shadow )  :=
 
-
-end dom_cover
+-- end dom_cover
 
 def function.mk {u : bSet 𝔹} (F : u.type → bSet 𝔹) (h_congr : ∀ i j, u.func i =ᴮ u.func j ≤ F i =ᴮ F j) : bSet 𝔹 :=
 ⟨u.type, λ a, pair (u.func a) (F a), u.bval⟩

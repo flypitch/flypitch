@@ -89,8 +89,7 @@ def V : bStructure L_ZFC' (β) :=
         tidy_context, from bv_union_congr ‹_›},
       {intros x y, cases x, cases y, cases x_xs, cases y_xs,
         change (_ ⊓ (_ ⊓ _) : β) ≤ pair x_x x_xs_x =ᴮ pair y_x y_xs_x,
-        cases x_xs_xs, cases y_xs_xs, simp,
-        tidy_context, simp[*,pair_congr]}
+        cases x_xs_xs, cases y_xs_xs, simp }
   end,
   rel_congr :=
   begin
@@ -188,8 +187,7 @@ def axiom_of_pairing : sentence L_ZFC' :=
 lemma bSet_models_pairing : ⊤ ⊩[V β] axiom_of_pairing :=
 begin
   change ⊤ ≤ _, simp[axiom_of_pairing], intros a b x y, tidy,
-  from eq_of_eq_pair_left, from eq_of_eq_pair_right,
-  simp[pair_congr]
+  from eq_of_eq_pair_left, from eq_of_eq_pair_right
 end
 
 -- axiom of extensionality
