@@ -8,7 +8,7 @@ universe u
 
 @[class]def forcing_notion (α : Type u) : Type u := order_top α
 
-@[instance]def has_top_forcing_notion (α : Type u) [H : forcing_notion α] : has_top α := sorry
+-- @[instance]def has_top_forcing_notion (α : Type u) [H : forcing_notion α] : has_top α := sorry
 
 instance partial_order_of_forcing_notion (α : Type u) [H : forcing_notion α] : partial_order α :=
 { le := H.le,
@@ -74,8 +74,8 @@ def pSet_equiv_trivial_name : pSet.{u} ≃ (punit-name : Type (u+1)) :=
   right_inv :=
     λ y, by induction y; finish }
 
-def Pcheck {P} [forcing_notion P] : pSet.{u} → (P-name : Type (u+1))
-| ⟨α, A⟩ := ⟨α, λ a, Pcheck (A a), λ _, ⊤⟩
+-- def Pcheck {P} [forcing_notion P] : pSet.{u} → (P-name : Type (u+1))
+-- | ⟨α, A⟩ := ⟨α, λ a, Pcheck (A a), λ _, ⊤⟩
 
 
 namespace pfilter
@@ -100,7 +100,7 @@ def eval_image {P : Type u} [forcing_notion P] (𝒢 : pfilter P): Type (u + 1) 
 
 --TODO 6.8. 6.9, and 6.10 from Moore's notes
 
-def foo {P : Type u} [forcing_notion P] (𝒢 : pfilter P)  : pSet.{u} → (eval_image.{u} 𝒢) := λ x, ⟨eval 𝒢 (Pcheck x), ⟨_, rfl⟩⟩
+-- def foo {P : Type u} [forcing_notion P] (𝒢 : pfilter P)  : pSet.{u} → (eval_image.{u} 𝒢) := λ x, ⟨eval 𝒢 (Pcheck x), ⟨_, rfl⟩⟩
 
 -- now foo is the canonical map from pSet to eval_image
 -- need to check that (foo x) is "equivalent" to x again in some way

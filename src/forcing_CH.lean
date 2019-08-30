@@ -646,7 +646,7 @@ begin
   rw[<-bSet.mem_functions_iff] at Hf_left,
   suffices this : Γ_1 ≤ f ∈ᴮ (pSet.functions pSet.omega (ℵ₁))̌ ,
     by { by_contra H', rw[<-bot_lt_iff_not_le_bot] at H',
-         replace this := eq_check_of_mem_check H' _ _ this,
+         replace this := eq_check_of_mem_check H' this,
          rcases this with ⟨i_g, Γ', H₁,H₂,H₃⟩,
          apply_at Hf_right le_trans H₂,
          apply_at Hf_left le_trans H₂,

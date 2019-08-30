@@ -20,6 +20,10 @@ local infix ` ⇔ `:50 := lattice.biimp
 
 local prefix `#`:70 := cardinal.mk
 
+local infix `≺`:70 := (λ x y, -(larger_than x y))
+
+local infix `≼`:70 := (λ x y, injects_into x y)
+
 universe u
 
 namespace bSet
@@ -28,34 +32,29 @@ local notation `ω` := cardinal.omega
 variables {𝔹 : Type u} [I : nontrivial_complete_boolean_algebra 𝔹]
 
 include I
-lemma AE_of_check_larger_than_check (x y : pSet.{u}) {f : bSet 𝔹} {Γ}
-  (H : Γ ≤ (is_func f) ⊓ ⨅v, v ∈ᴮ y̌ ⟹ ⨆w, w ∈ᴮ x̌ ⊓ pair w v ∈ᴮ f) (h_nonzero : ⊥ < Γ) :
-  ∀ i : y.type, ∃ j : x.type, ⊥ < (is_func f) ⊓ (pair ((x.func j)̌ ) ((y.func i)̌ )) ∈ᴮ f :=
-begin
-  intro i_v, bv_split_at H, replace H_right := H_right ((y.func i_v)̌ ), simp[check_mem'] at H_right,
-  have H' : Γ ≤ is_func f ⊓ ⨆ (w : bSet 𝔹), w ∈ᴮ x̌  ⊓ pair w (y.func i_v)̌   ∈ᴮ f,
-    from context_and_intro ‹_› ‹_›,
-  rw[inf_supr_eq] at H',
-  replace H' := le_trans H' (by {apply supr_le, intro i, recover, show 𝔹,
-    from ⨆ (i : bSet 𝔹), i ∈ᴮ x̌ ⊓ (is_func f ⊓ pair i (pSet.func y i_v)̌  ∈ᴮ f),
-    apply bv_use i, apply le_of_eq, ac_refl}),
-  replace H' := lt_of_lt_of_le h_nonzero H',
-  have := @bounded_exists 𝔹 _ (x̌) (λ z, is_func f ⊓ pair z ((y.func i_v)̌ ) ∈ᴮ f),
-  rw[<-this] at H', swap,
-    {intros x' y',
-    apply poset_yoneda, intros Γ_1 a,
-    simp only [le_inf_iff] at a ⊢, cases a, cases a_right, refine ⟨‹_›, _⟩,
-    have : Γ_1 ≤ pair x' ((y.func i_v)̌ ) =ᴮ pair y' ((y.func i_v)̌ ),
-     from subst_congr_pair_left' ‹_›, apply subst_congr_mem_left'; from ‹_›},
-    {cases x, cases y, convert nonzero_wit H', ext1,
-      dsimp with cleanup, rw[top_inf_eq]}
-end
 
-lemma AE_of_check_larger_than_check' (x y : pSet.{u}) {f : bSet 𝔹} {Γ}
-  (H : Γ ≤ (is_func' x̌ y̌ f) ⊓ ⨅v, v ∈ᴮ y̌ ⟹ ⨆w, w ∈ᴮ x̌ ⊓ pair w v ∈ᴮ f) (h_nonzero : ⊥ < Γ) :
-  ∀ i : y.type, ∃ j : x.type, ⊥ < (is_func f) ⊓ (pair ((x.func j)̌ ) ((y.func i)̌ )) ∈ᴮ f :=
-by {apply AE_of_check_larger_than_check, repeat {assumption},
-    refine le_inf (is_func_of_is_func' $ bv_and.left ‹_›) _, from bv_and.right ‹_› }
+/--
+  extract an element witnessing a 𝔹-valued existential
+-/
+lemma exists_convert {ϕ : bSet 𝔹 → 𝔹} {Γ : 𝔹} (H : Γ ≤ ⨆x, ϕ x) (H_congr : B_ext ϕ . H_congr_handler) : ∃ u, Γ ≤ ϕ u :=
+by {rcases (maximum_principle ϕ ‹_›) with ⟨u, Hu⟩, use u, finish}
+
+lemma AE_of_check_larger_than_check {x y : pSet.{u}} {Γ : 𝔹} (H_nonzero : ⊥ < Γ)
+  (H : Γ ≤ larger_than x̌ y̌) (H_mem : ∃ z, z ∈ y) : ∃ f : bSet 𝔹, ∀ i : y.type, ∃ j : x.type, ⊥ < (is_func f) ⊓ (pair (x.func j)̌  (y.func i)̌  ∈ᴮ f) :=
+begin
+  replace H := surjects_onto_of_larger_than_and_exists_mem H (check_exists_mem ‹_›),
+  unfold surjects_onto at H, have := maximum_principle (λ w, is_func' x̌ y̌ w ⊓ is_surj x̌ (y̌ : bSet 𝔹) w) _,
+  cases this with f Hf, rw Hf at H, swap, {simp},
+  use f, intro i_v, bv_split_at H,
+  replace H_right := H_right (y.func i_v)̌ , simp [check_mem'] at H_right,
+  replace H_right := exists_convert H_right _, cases H_right with w Hw, bv_split_at Hw,
+  rcases eq_check_of_mem_check ‹_› Hw_left with ⟨j,Γ',HΓ'₁,HΓ'₂,H_eq⟩,
+  use j, refine lt_of_lt_of_le HΓ'₁ (le_inf _ _),
+    { exact le_trans HΓ'₂ (is_func_of_is_func' ‹_›) },
+    { apply @bv_rw' _ _ _ _ _ (bv_symm H_eq) (λ z, pair z (y.func i_v)̌  ∈ᴮ f), exact B_ext_pair_mem_left,
+      from le_trans ‹_› ‹_› },
+  exact B_ext_inf (by simp) B_ext_pair_mem_left
+end
 
 variables
   (η₁ η₂ : pSet.{u}) (H_infinite : ω ≤ #(η₁.type))
@@ -87,7 +86,8 @@ begin
 
     rw[β₁_property] at a_left_right,
     have H_le_eq : Γ ≤ ((η₂.func β₁_val)̌ ) =ᴮ ((η₂.func β₂_val)̌ ),
-     by {apply eq_of_is_func_of_eq, from a_right_left, repeat {sorry} },
+     by {apply eq_of_is_func_of_eq, from a_right_left, tactic.rotate 1,
+         from ‹_›, from ‹_›, from bv_refl },
     from le_trans H_le_eq
            (by {rw[le_bot_iff], apply check_bv_eq_bot_of_not_equiv, apply H_inj₂, tidy})},
    intro H_CCC, specialize H_CCC (g⁻¹'{ξ}) ‹_› ‹_› ‹_›,
@@ -162,9 +162,6 @@ begin
   apply eq_of_heq, suffices : x.fst == p.fst, from heq.trans this H_y,
   apply pi₂_cast₁, from eq₀.symm, from H_x.symm
 end
-
--- lemma eq₁_cast' {ξ : (ℵ₂̌  : bSet 𝔹).type} {n : ℕ} {prf : ((type (ℵ₂̌  : bSet 𝔹)) × ℕ) = (((type ℵ₂) × ℕ))} {prf' : (type (ℵ₂̌  : bSet 𝔹)) = (ℵ₂.type)} : cast prf (ξ, n) = (cast prf' ξ, n) :=
--- by apply eq₁_cast
 
 lemma eq₁_cast' (p : (((type ℵ₂) × ℕ))) {prf : ((type (ℵ₂̌  : bSet 𝔹)) × ℕ) = (((type ℵ₂) × ℕ))} {prf' : (type (ℵ₂̌  : bSet 𝔹)) = (ℵ₂.type)} : cast prf.symm p = (cast prf'.symm p.1, p.2) :=
 begin
@@ -354,12 +351,6 @@ by {intros H₁ H₂, rw[le_iff_subset'], tidy}
 namespace cohen_real
 section cohen_real
 
--- attribute [instance, priority 0] 𝔹_boolean_algebra
-
--- variable [σ : nontrivial_complete_boolean_algebra 𝔹]
-
--- attribute [instance, priority 1000] σ
--- include σ
 /-- `cohen_real.χ ν` is the indicator function on ℕ induced by every ordinal less than ℵ₂ -/
 def χ (ν : (ℵ₂̌  : bSet 𝔹).type) : ℕ → 𝔹 :=
   λ n, principal_open ν n
@@ -380,8 +371,6 @@ by simp [mk, subset_unfold]; from λ _, by rw[<-deduction]; convert omega_defini
 
 /-- bSet 𝔹 believes that each `mk ν` is an element of 𝒫(ω) -/
 lemma definite' {ν} {Γ} : Γ ≤ mk ν ∈ᴮ bv_powerset omega := bv_powerset_spec.mp definite
-
--- TODO(jesse) refactor this proof to use axiom of extensionality instead, or prove a more general version
 
 lemma sep {n} {Γ} {ν₁ ν₂} (H₁ : Γ ≤ (of_nat n) ∈ᴮ (mk ν₁)) (H₂ : Γ ≤ (- ((of_nat n) ∈ᴮ (mk ν₂)))) :
   Γ ≤ (- ((mk ν₁) =ᴮ (mk ν₂))) :=
@@ -449,11 +438,10 @@ end cohen_real
 
 section neg_CH
 
+local attribute [irreducible] regular_opens 𝔹_cohen
+
 local notation `ℵ₀` := (omega : bSet 𝔹)
 local notation `𝔠` := (bv_powerset ℵ₀ : bSet 𝔹)
-local infix `≺`:70 := (λ x y, -(larger_than x y))
-
-local infix `≼`:70 := (λ x y, injects_into x y)
 
 lemma uncountable_fiber_of_regular' (κ₁ κ₂ : cardinal) (H_inf : cardinal.omega ≤ κ₁) (H_lt : κ₁ < κ₂) (H : cof (ord κ₂) = κ₂) (α : Type u) (H_α : #α = κ₁) (β : Type u) (H_β : #β = κ₂) (g : β → α)
   : ∃ (ξ : α), cardinal.omega < #↥(g⁻¹' {ξ}) :=
@@ -473,46 +461,42 @@ begin
   from uncountable_fiber_of_regular' (aleph k₁) (aleph k₂) ‹_› ‹_› ‹_› _ (by simp) _ (by simp) g
 end
 
-lemma cardinal_inequality_of_regular (κ₁ κ₂ : cardinal) (H_reg₁ : cardinal.is_regular κ₁) (H_reg₂ : cardinal.is_regular κ₂) (H_inf : (omega : cardinal) ≤ κ₁) (H_lt : κ₁ < κ₂) : (⊤ : 𝔹) ≤ (pSet.ordinal.mk (ord κ₁))̌  ≺ (pSet.ordinal.mk (ord κ₂))̌  :=
+lemma cardinal_inequality_of_regular (κ₁ κ₂ : cardinal) (H_reg₁ : cardinal.is_regular κ₁) (H_reg₂ : cardinal.is_regular κ₂) (H_inf : (omega : cardinal) ≤ κ₁) (H_lt : κ₁ < κ₂) {Γ : 𝔹} : Γ ≤ (card_ex κ₁)̌  ≺ (card_ex κ₂)̌  :=
 begin
-  sorry
-  -- simp[larger_than, -top_le_iff], rw[<-imp_bot],
-  -- bv_imp_intro, bv_cases_at'' H f, by_contra,
-  -- have := classical.axiom_of_choice
-  --           (AE_of_check_larger_than_check _ _ H_1 (bot_lt_iff_not_le_bot.mpr ‹_›)),
-  -- cases this with g g_spec,
-  -- suffices : ¬ CCC 𝔹, from absurd 𝔹_CCC this,
-  -- apply not_CCC_of_uncountable_fiber; try{assumption},
-  --   {have := (@cardinal.exists_aleph κ₁).mp ‹_›, cases this with k' H_k', subst H_k', simp*},
-  --   {have := (@cardinal.exists_aleph κ₁).mp ‹_›, cases this with k' H_k', subst H_k', simp*,
-  --    have := (@exists_aleph κ₂).mp (le_of_lt (lt_of_le_of_lt ‹_› ‹_›)), cases this with k₂ h,
-  --    subst h, simp*},
-  --   {intros i₁ i₂ H_neq, from ordinal.mk_inj _ _ _ ‹_›},
-  --   {dsimp at g,
-  --    apply uncountable_fiber_of_regular' κ₁ κ₂; try{simp*},
-  --    from H_reg₂.right,
-  --    have := (@exists_aleph κ₂).mp (le_of_lt (lt_of_le_of_lt ‹_› ‹_›)), cases this with k₂ h,
-  --    subst h; apply mk_type_mk_eq, from ‹_›, apply mk_type_mk_eq,
-  --    from le_of_lt (lt_of_le_of_lt ‹_› ‹_›)}
+  dsimp only, rw ←imp_bot, bv_imp_intro H_larger_than,
+  by_contra H_nonzero, rw ←bot_lt_iff_not_le_bot at H_nonzero,
+  rcases AE_of_check_larger_than_check H_nonzero ‹_› (exists_mem_of_regular ‹_›) with ⟨f,Hf⟩,
+  rcases classical.axiom_of_choice Hf with ⟨g, g_spec⟩,
+    suffices : ¬ CCC 𝔹, from absurd 𝔹_CCC this,
+    apply not_CCC_of_uncountable_fiber; try{assumption},
+    {have := (@cardinal.exists_aleph κ₁).mp ‹_›, cases this with k' H_k', subst H_k', simp*},
+    {have := (@cardinal.exists_aleph κ₁).mp ‹_›, cases this with k' H_k', subst H_k', simp*,
+     have := (@exists_aleph κ₂).mp (le_of_lt (lt_of_le_of_lt ‹_› ‹_›)), cases this with k₂ h,
+     subst h, simp*},
+    {intros i₁ i₂ H_neq, from ordinal.mk_inj _ _ _ ‹_›},
+    {dsimp at g,
+     apply uncountable_fiber_of_regular' κ₁ κ₂; try{simp*},
+     from H_reg₂.right,
+     have := (@exists_aleph κ₂).mp (le_of_lt (lt_of_le_of_lt ‹_› ‹_›)), cases this with k₂ h,
+     subst h; apply mk_type_mk_eq, from ‹_›, apply mk_type_mk_eq,
+     from le_of_lt (lt_of_le_of_lt ‹_› ‹_›)}
 end
 
 lemma ℵ₀_lt_ℵ₁ : (⊤ : 𝔹)  ≤ ℵ₀ ≺ ℵ₁̌  :=
-begin sorry
-  -- simp[larger_than, -top_le_iff], rw[<-imp_bot],
-  -- bv_imp_intro, bv_cases_at'' H S,
-  -- bv_cases_at'' H_1 f, conv_rhs at H_1_1 {rw [inf_assoc]},
-  -- bv_split_at H_1_1,
-  -- have := classical.axiom_of_choice
-  --           (AE_of_check_larger_than_check' _ _ H_1_1_right (bot_lt_iff_not_le_bot.mpr ‹_›)),
-  -- cases this with g g_spec,
-  -- suffices : ¬ CCC 𝔹, from absurd 𝔹_CCC this,
-  -- apply not_CCC_of_uncountable_fiber; try{assumption},
-  --   {from le_of_eq (by simp)},
-  --   {simp},
-  --   {intros i₁ i₂ H_neq, from ordinal.mk_inj _ _ _ ‹_›},
-  --   {dsimp at g,
-  --    apply uncountable_fiber_of_regular' (aleph 0) (aleph 1); try{simp*},
-  --    from is_regular_aleph_one.right}
+begin
+  dsimp only, rw ←imp_bot, bv_imp_intro H_larger_than,
+  by_contra H_nonzero, rw ←bot_lt_iff_not_le_bot at H_nonzero,
+  rcases AE_of_check_larger_than_check ‹_› ‹_› _ with ⟨f,Hf⟩,
+  rcases (classical.axiom_of_choice Hf) with ⟨g,g_spec⟩,
+  suffices : ¬ CCC 𝔹, from absurd 𝔹_CCC this,
+  apply not_CCC_of_uncountable_fiber; try{assumption},
+    {from le_of_eq (by simp)},
+    {simp},
+    {intros i₁ i₂ H_neq, from ordinal.mk_inj _ _ _ ‹_›},
+    {dsimp at g,
+     apply uncountable_fiber_of_regular' (aleph 0) (aleph 1); try{simp*},
+     from is_regular_aleph_one.right},
+  from exists_mem_of_regular is_regular_aleph_one
 end
 
 
@@ -565,18 +549,16 @@ begin
   from ℵ₂_le_𝔠
 end
 
--- lemma lt_of_lt_of_le' {x y z : bSet 𝔹} {Γ} (hxy : Γ ≤ x ≺ y) (hyz : Γ ≤ y ≼ z) : Γ ≤ x ≺ z :=
--- begin
---   dsimp only at hxy hyz ⊢, sorry
--- end
-
 def CH' : 𝔹 := - ⨆ x, (ℵ₀ ≺ x) ⊓ (x ≺ 𝒫(ℵ₀))
 
 theorem neg_CH' : ⊤ ≤ -CH' :=
 begin
-  rw [CH', lattice.neg_neg], apply bv_use (ℵ₁̌ ),
-  simp only [lattice.le_inf_iff], sorry
-  -- refine ⟨ℵ₀_lt_ℵ₁, bSet_lt_of_lt_of_le _ _ ℵ₁_lt_ℵ₂' (bv_use neg_CH_func)⟩, exact ℵ₂_le_𝔠
+  have := neg_CH, unfold CH at this,
+  erw lattice.neg_neg at this ⊢, bv_cases_at this x Hx,
+  bv_cases_at Hx y Hy,
+  apply bv_use x, bv_split_at Hy, bv_split_at Hy_left,
+  refine le_inf ‹_› _, refine bSet_lt_of_lt_of_le _ _ _ _ _,
+  tactic.rotate 2, exact Hy_right, exact Hy_left_right
 end
 
 end neg_CH

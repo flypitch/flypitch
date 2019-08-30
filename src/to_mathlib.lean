@@ -393,6 +393,9 @@ begin
       refine cardinal.add_le_add _ _; from ‹_› }
 end
 
+lemma nonzero_of_regular {κ : cardinal} (H_reg : cardinal.is_regular κ) : 0 < κ.ord :=
+by {rw cardinal.lt_ord, from lt_of_lt_of_le omega_pos H_reg.left}
+
 end cardinal_lemmas
 
 end cardinal

@@ -242,10 +242,10 @@ by simp[H]
 
 example {y z : bSet 𝔹} : ⊤ ≤ ({y,z} : bSet 𝔹) =ᴮ ({z,y}) := insert1_symm _ _
 
-lemma B_ext_pair_mem_left {x y : bSet 𝔹} : B_ext (λ z, pair z x ∈ᴮ y) :=
+@[simp]lemma B_ext_pair_mem_left {x y : bSet 𝔹} : B_ext (λ z, pair z x ∈ᴮ y) :=
 B_ext_term (λ w, w ∈ᴮ y) (λ z, pair z x)
 
-lemma B_ext_pair_mem_right {x y : bSet 𝔹} : B_ext (λ z, pair x z ∈ᴮ y) :=
+@[simp]lemma B_ext_pair_mem_right {x y : bSet 𝔹} : B_ext (λ z, pair x z ∈ᴮ y) :=
 B_ext_term (λ w, w ∈ᴮ y) (λ z, pair x z)
 
 lemma eq_of_eq_pair'_left {x z y : bSet 𝔹} : pair x y =ᴮ pair z y ≤ x =ᴮ z :=
@@ -585,7 +585,7 @@ begin
   bv_intro z, bv_imp_intro Hz,
   apply bv_by_contra, bv_imp_intro H,
   classical, by_contra H_nonzero, rw ←bot_lt_iff_not_le_bot at H_nonzero,
-  rcases eq_check_of_mem_check ‹_› _ _ Hz with ⟨i, Γ', H₁, H₂, H₃⟩,
+  rcases eq_check_of_mem_check ‹_› Hz with ⟨i, Γ', H₁, H₂, H₃⟩,
   simp only with bv_push_neg at H,
   rcases (H_total (x.func i) (by simp)) with ⟨b, Hb_mem, Hb_pair_mem⟩,
   replace H := le_trans H₂ (H (b̌)), suffices this : Γ' ≤ ⊥, by {exact false_of_bot_lt_and_le_bot H₁ ‹_› },
@@ -1004,7 +1004,7 @@ begin
       replace H'_total := H'_total (ž) (by simp*), bv_cases_at H'_total w Hw,
       bv_split_at Hw, classical, by_contra H_nonzero,
       rw ←bot_lt_iff_not_le_bot at H_nonzero,
-      rcases eq_check_of_mem_check ‹_› _ _ Hw_left with ⟨i, Γ', HΓ'_nonzero, HΓ'_le, Hi⟩,
+      rcases eq_check_of_mem_check ‹_› Hw_left with ⟨i, Γ', HΓ'_nonzero, HΓ'_le, Hi⟩,
       have Hz₁ := Hz (y.func i), cases Hz₁ with H_not_total H_not_func,
         { suffices this : Γ' ≤ ⊥, by exact false_of_bot_lt_and_le_bot HΓ'_nonzero ‹_›,
           refine check_not_mem H_not_total _,

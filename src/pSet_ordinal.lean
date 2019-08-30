@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 Authors: Jesse Han, Floris van Doorn
 -/
-import set_theory.ordinal set_theory.zfc tactic.tidy set_theory.cofinality .to_mathlib data.nat.enat
+import set_theory.ordinal set_theory.zfc tactic.tidy set_theory.cofinality .to_mathlib
 
 open ordinal
 
@@ -69,7 +69,7 @@ by {convert @typein_lt_type _ (ξ.out.r) (ξ.out.wo) i, simp}
 
 @[reducible]def ordinal.mk : ordinal.{u} → pSet.{u} :=
 λ η, limit_rec_on η ∅ (λ ξ mk_ξ, pSet.succ mk_ξ)
-  (λ ξ h_limit ih, ⟨ξ.out.α, λ i, ih (@typein _ ξ.out.r ξ.out.wo i) (by simp)⟩)
+  (λ ξ h_limit ih, ⟨ξ.out.α, λ i, ih (@typein _ ξ.out.r ξ.out.wo i) (by apply typein_lt_type')⟩)
 
 def card_ex : cardinal.{u} → pSet.{u} := λ κ, ordinal.mk (ord κ)
 
@@ -618,6 +618,9 @@ begin
   rw[ordinal.mk_limit_type (aleph_is_limit (k))], convert card_ord (aleph k),
   rw[<-(@card_type _ (aleph k).ord.out.r (aleph k).ord.out.wo)], simp
 end
+
+@[simp]lemma mk_type_mk_eq''''' {k} : #(card_ex $ aleph k).type = (aleph k) :=
+by simp[card_ex]
 
 lemma zero_aleph : cardinal.omega = (aleph 0) := by simp
 
@@ -1319,5 +1322,10 @@ begin
   rw equiv_iff_eq at *, cc
 end
 
+lemma exists_mem_of_nonzero {η : ordinal} (H_nonzero : 0 < η) : ∃ z : pSet, z ∈ (ordinal.mk η) :=
+by {have := mk_mem_mk_of_lt H_nonzero, finish}
+
+lemma exists_mem_of_regular {κ : cardinal} (H_reg : cardinal.is_regular κ) : ∃ z : pSet, z ∈ (card_ex κ) :=
+exists_mem_of_nonzero $ nonzero_of_regular H_reg
 
 end pSet

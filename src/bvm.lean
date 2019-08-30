@@ -1555,7 +1555,7 @@ end
 @[simp]lemma check_insert (a b : pSet) : (pSet.insert a b)̌  = (bSet.insert1 (ǎ) (b̌) : bSet 𝔹) :=
 by {induction a, induction b, simp[pSet.insert, bSet.insert1], split; ext; cases x; simp}
 
-lemma mem_check_witness {y x : pSet.{u}} {Γ : 𝔹} {h_nonzero : ⊥ < Γ} (H : Γ ≤ y̌ ∈ᴮ (x̌)) : ∃ i : x.type, Γ ≤ y̌ =ᴮ (x.func i)̌  :=
+lemma mem_check_witness {y x : pSet.{u}} {Γ : 𝔹} (h_nonzero : ⊥ < Γ) (H : Γ ≤ y̌ ∈ᴮ (x̌)) : ∃ i : x.type, Γ ≤ y̌ =ᴮ (x.func i)̌  :=
 begin
   rw[mem_unfold] at H, simp at H,
   have := supr_eq_Gamma_max _ _ _, cases this with w h,
@@ -1573,7 +1573,7 @@ begin
     { cases y, unfold has_mem.mem pSet.mem at H,
       cases H with b Hb, rw[<-top_le_iff], apply bv_use b,
       refine le_inf (by refl) (by rwa[top_le_iff, <-check_bv_eq_iff]) },
-    { cases y, rw[<-top_le_iff] at H, replace H := mem_check_witness H, swap, by simp,
+    { cases y, rw[<-top_le_iff] at H, replace H := mem_check_witness (by simp) H,
       cases H with b Hb, exact ⟨b, by rwa[top_le_iff, <-check_bv_eq_iff] at Hb⟩}
 end
 
@@ -1703,7 +1703,7 @@ bot_lt_resolve_right H_nonzero (instantiate_existential_over_check_spec ‹_› 
 -/
 
 -- we really need the stronger version
-lemma eq_check_of_mem_check {Γ : 𝔹} (h_nonzero : ⊥ < Γ) (x : pSet.{u}) (y : bSet 𝔹) (H_mem : Γ ≤ y ∈ᴮ x̌) :
+lemma eq_check_of_mem_check {Γ : 𝔹} (h_nonzero : ⊥ < Γ) {x : pSet.{u}} {y : bSet 𝔹} (H_mem : Γ ≤ y ∈ᴮ x̌) :
   ∃ (i : x.type) (Γ' : 𝔹) (H_nonzero : ⊥ < Γ') (H_le : Γ' ≤ Γ), Γ' ≤ y =ᴮ (x.func i)̌  :=
 begin
   let ϕ : bSet 𝔹 → 𝔹 := λ z, y =ᴮ z,
@@ -1719,7 +1719,7 @@ lemma eq_check_of_mem_check₂ {Γ : 𝔹} (h_nonzero : ⊥ < Γ) (x : pSet.{u})
   ∃ i : x.type, ⊥ < y =ᴮ (x.func i)̌  :=
   -- ∃ Γ' (H_le : Γ' ≤ Γ) (z) (H_mem : z ∈ x), (Γ' ≤ y =ᴮ ž) :=
 begin
-  rcases (eq_check_of_mem_check ‹_› x y ‹_›) with ⟨i, Γ', HΓ'₁, HΓ'₂, HΓ'₃⟩,
+  rcases (eq_check_of_mem_check ‹_› ‹_›) with ⟨i, Γ', HΓ'₁, HΓ'₂, HΓ'₃⟩,
   use i, from lt_of_lt_of_le HΓ'₁ ‹_›
 end
 
