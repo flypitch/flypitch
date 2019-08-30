@@ -402,7 +402,9 @@ include τ
 
 
 variable (α)
-@[reducible]def regular_opens := {S : set α // is_regular S}
+def regular_opens := {S : set α // is_regular S}
+
+local attribute [reducible] regular_opens
 
 local attribute [reducible] perp
 
