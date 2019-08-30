@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 Authors: Jesse Han, Floris van Doorn
 -/
-import .bvm .bfol .bvm_extras .forcing .pSet_ordinal .forcing_CH_old
+import .bvm .bfol .bvm_extras .forcing .pSet_ordinal .forcing_CH
 
 open lattice
 

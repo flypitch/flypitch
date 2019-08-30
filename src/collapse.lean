@@ -657,6 +657,38 @@ by { simp [trivial_extension, mem_principal_open_iff],
 
 end collapse_poset
 
+section omega_closed_dense_subset
+
+variables {α : Type*} [nontrivial_complete_boolean_algebra α]
+
+-- any ω-indexed downward chain in D has an intersection in D
+def omega_closed (D : set α) : Prop :=
+∀ (s : ℕ → α) (s_sub_D : ∀n, s n ∈ D) (H_nonzero : ∀ n, ⊥ < s n) (H_chain : ∀ n, s (n+1) ≤ s n), (⨅n, s n) ∈ D
+
+def dense_subset {α : Type*} [order_bot α] (D : set α) : Prop :=
+⊥ ∉ D ∧ ∀x, ⊥ < x → ∃ y ∈ D, y < x
+
+@[reducible]def dense_omega_closed_subset (D : set α) : Prop :=
+dense_subset D ∧ omega_closed D
+
+variable (α)
+def has_dense_omega_closed_subset : Prop :=
+∃ D : set α, dense_omega_closed_subset D
+
+variable {α}
+
+lemma nonzero_of_mem_dense_omega_closed_subset {x : α} {D : set α} (H : dense_omega_closed_subset D) (H_mem : x ∈ D) : ⊥ < x :=
+by {have := H.left.left, by_contra H', finish [le_bot_iff_not_bot_lt]}
+
+lemma nonzero_infi_of_mem_dense_omega_closed_subset {s : ℕ → α} {D : set α} (H : dense_omega_closed_subset D) (H_chain : ∀ n, s (n + 1) ≤ s n) (H_mem : ∀ n, s n ∈ D) : ⊥ < ⨅ n, s n :=
+begin
+  apply nonzero_of_mem_dense_omega_closed_subset H, refine H.right s ‹_› _ ‹_›,
+  intro n, specialize H_mem n, from nonzero_of_mem_dense_omega_closed_subset H ‹_›
+end
+
+end omega_closed_dense_subset
+
+
 local attribute [instance, priority 9000] collapse_space
 
 section collapse_algebra
@@ -671,13 +703,16 @@ regular_open_algebra
 
 end collapse_algebra
 
-def collapse_poset.inclusion {X Y : Type u} (p : collapse_poset X Y cardinal.omega.succ) :
+section collapse_poset_dense
+variables {X Y : Type u}
+
+def collapse_poset.inclusion (p : collapse_poset X Y cardinal.omega.succ) :
   collapse_algebra X Y :=
 ⟨collapse_poset.principal_open p, collapse_poset.is_regular_principal_open p⟩
 
 local notation `ι`:65 := collapse_poset.inclusion
 
-lemma collapse_poset_dense_basis {X Y : Type u} : ∀ T ∈ @collapse_space_basis X Y,
+lemma collapse_poset_dense_basis : ∀ T ∈ @collapse_space_basis X Y,
   ∀ h_nonempty : T ≠ ∅, ∃ p : collapse_poset X Y cardinal.omega.succ, (ι p).val ⊆ T :=
 begin
   intros T H_mem_basis _,
@@ -685,7 +720,7 @@ begin
   rcases H with ⟨_,⟨_,H₂⟩⟩, exact ⟨‹_›, by simp[H₂, collapse_poset.inclusion]⟩
 end
 
-lemma collapse_poset_dense {X Y : Type u} [nonempty (X → Y)] {b : collapse_algebra X Y}
+lemma collapse_poset_dense [nonempty (X → Y)] {b : collapse_algebra X Y}
   (H : ⊥ < b) : ∃ p : (collapse_poset X Y cardinal.omega.succ), ι p ≤ b :=
 begin
   cases (classical.choice (classical.nonempty_of_not_empty _ H.right.symm)) with S_wit H_wit,
@@ -698,6 +733,11 @@ begin
   cases (collapse_poset_dense_basis ‹_› ‹_› ‹_›) with p H_p, exact ⟨p, set.subset.trans H_p ‹_›⟩
 end
 
+lemma principal_opens_dense_omega_closed [nonempty $ X → Y] : @dense_omega_closed_subset _ (collapse_algebra_boolean_algebra) (set.range ι : set $ collapse_algebra X Y) :=
+sorry
+
+end collapse_poset_dense
+
 local notation `𝔹` := collapse_algebra ((ℵ₁ : pSet).type) (powerset omega : pSet).type
 
 instance nonempty_aleph_one_powerset_omega : nonempty $ ((ℵ₁).type) → (powerset omega).type :=
@@ -705,3 +745,5 @@ instance nonempty_aleph_one_powerset_omega : nonempty $ ((ℵ₁).type) → (pow
 
 def collapse_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 :=
 by apply_instance
+
+
