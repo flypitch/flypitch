@@ -33,12 +33,6 @@ variables {𝔹 : Type u} [I : nontrivial_complete_boolean_algebra 𝔹]
 
 include I
 
-/--
-  extract an element witnessing a 𝔹-valued existential
--/
-lemma exists_convert {ϕ : bSet 𝔹 → 𝔹} {Γ : 𝔹} (H : Γ ≤ ⨆x, ϕ x) (H_congr : B_ext ϕ . H_congr_handler) : ∃ u, Γ ≤ ϕ u :=
-by {rcases (maximum_principle ϕ ‹_›) with ⟨u, Hu⟩, use u, finish}
-
 lemma AE_of_check_larger_than_check {x y : pSet.{u}} {Γ : 𝔹} (H_nonzero : ⊥ < Γ)
   (H : Γ ≤ larger_than x̌ y̌) (H_mem : ∃ z, z ∈ y) : ∃ f : bSet 𝔹, ∀ i : y.type, ∃ j : x.type, ⊥ < (is_func f) ⊓ (pair (x.func j)̌  (y.func i)̌  ∈ᴮ f) :=
 begin

@@ -566,7 +566,6 @@ by {rw[subset_unfold'] at H₂, from H₂ x ‹_›}
 --        apply le_inf, refl, rw[bv_eq_refl], apply le_top}
 -- end
 
-
 lemma subst_congr_subset_left {x v u} : ((v ⊆ᴮ u) ⊓ (x =ᴮ v) : 𝔹) ≤ (x ⊆ᴮ u) :=
 begin
   simp only [subset_unfold],
@@ -1064,7 +1063,6 @@ begin
 end
 end smallness
 
-
 lemma maximum_principle (ϕ : bSet 𝔹 → 𝔹) (h_congr : B_ext ϕ) : ∃ u, (⨆(x:bSet 𝔹), ϕ x) = ϕ u :=
 begin
   have := classical.indefinite_description _ (@well_ordering_thm (type (@B_small_witness _ _ ϕ))),
@@ -1087,6 +1085,10 @@ begin
    from le_trans H2 H1, apply supr_antichain2_contains},
     {apply le_supr}
 end
+
+/--  extract an element witnessing a 𝔹-valued existential -/
+lemma exists_convert {ϕ : bSet 𝔹 → 𝔹} {Γ : 𝔹} (H : Γ ≤ ⨆x, ϕ x) (H_congr : B_ext ϕ . H_congr_handler) : ∃ u, Γ ≤ ϕ u :=
+by {rcases (maximum_principle ϕ ‹_›) with ⟨u, Hu⟩, use u, finish}
 
 lemma maximum_principle_verbose {ϕ : bSet 𝔹 → 𝔹} {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} {b : 𝔹} (h_eq_top L : (⨆(x:bSet 𝔹), ϕ x) = b) : ∃ u, ϕ u = b :=
  by cases maximum_principle ϕ h_congr with w h; from ⟨w, by finish⟩
@@ -1640,7 +1642,6 @@ begin
   simp, cases x, exact H
 end
 
-
 @[simp]lemma check_exists_mem {y : pSet} (H_exists_mem : ∃ z, z ∈ y ) {Γ : 𝔹} : Γ ≤ exists_mem y̌ :=
 by { rcases H_exists_mem with ⟨z,Hz⟩, apply bv_use ž, simp* }
 
@@ -1926,7 +1927,6 @@ prefix `𝒫`:80 := bv_powerset
 -- },
 --   {sorry}
 -- end
-
 
 
 lemma bSet_axiom_of_powerset' {Γ : 𝔹} (u : bSet 𝔹) : Γ ≤ ⨅(x : bSet 𝔹), x∈ᴮ 𝒫 u ⇔ ⨅(y : x.type), x.bval y ⟹ (x.func y ∈ᴮ u) :=
@@ -2315,7 +2315,6 @@ begin
   apply subst_congr_subset_right
 end
 
-
 /- ∀ x, x ≠ ∅ ∧ ((∀ y, y ⊆ x ∧ ∀ w₁ w₂ ∈ y, w₁ ⊆ w₂ ∨ w₂ ⊆ w₁) → (⋃y) ∈ x)
       → ∃ c ∈ x, ∀ z ∈ x, c ⊆ x → c = x -/
 theorem bSet_zorns_lemma (X : bSet 𝔹) (H_nonempty : -(X =ᴮ ∅) = ⊤) (H : ⊤ ≤ (⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
@@ -2382,7 +2381,6 @@ begin
         apply bv_use z, exact le_inf (bv_and.left ‹_›) (le_inf bv_refl $ bv_and.right ‹_›) }}
 end
 
-
 end comprehension
 
 -- /-- This is the abbreviated version of AC found at http://us.metamath.org/mpeuni/ac3.html
@@ -2441,6 +2439,5 @@ function.injective_of_left_inverse dom_left_inv_check
 --     { sorry },
 --     { sorry },
 -- end
-
 
 end bSet
