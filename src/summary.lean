@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 Authors: Jesse Han, Floris van Doorn
 -/
-import .zfc' .completeness .print_formula .forcing_CH
+import .zfc' .completeness .print_formula .bfol
 
 open fol bSet pSet lattice collapse_algebra
 
@@ -95,7 +95,9 @@ def CH_sentence := CH_f
 theorem CH_unprovable_from_ZFC : ¬ (ZFC' ⊢' CH_sentence) :=
 unprovable_of_model_neg _ (fundamental_theorem_of_forcing) (nontrivial.bot_lt_top) neg_CH_f
 
-theorem neg_CH_unprovable_from_ZFC : ¬ (ZFC' ⊢' ∼CH_sentence) := sorry
+theorem neg_CH_unprovable_from_ZFC : ¬ (ZFC' ⊢' ∼CH_sentence) :=
+unprovable_of_model_neg (V 𝔹_collapse) (bSet_models_ZFC' _)
+  (nontrivial.bot_lt_top) (by {rw forced_in_not, from V_𝔹_collapse_models_CH})
 
 def independent {L : Language} (T : Theory L) (f : sentence L) : Prop :=
 ¬ (T ⊢' f ∨ T ⊢' ∼f)
@@ -109,3 +111,9 @@ end
 
 #print axioms CH_unprovable_from_ZFC
 /- `propext` (propositional extensionality), `classical.choice` (a type-theoretic choice principle) and `quot.sound` (quotients) are the standard axioms in Lean. -/
+
+#print axioms neg_CH_unprovable_from_ZFC
+/- same as above, plus axiomatization of ℵ₁ -/
+
+#print axioms independence_of_CH
+/- same as above, plus axiomatization of ℵ₁ -/

@@ -8,7 +8,7 @@ A conventional human-readable account of the proof written in type-theoretic fou
 *** Compilation
 To compile the Flypitch project, you will need [[https://leanprover.github.io/][Lean 3.4.2]]. Installation instructions for Lean can be found [[https://github.com/leanprover-community/mathlib/blob/master/README.md][here]].
 
-Since the project is under active development, we recommend using [[https://github.com/flypitch/flypitch/releases][the latest release]].
+The ~master~ branch is frozen at the same commit as [[https://github.com/flypitch/flypitch/releases][the latest release]]. The project is being actively developed on the ~dev~ branch.
 
 The ~leanpkg.toml~ file points to a certain commit of ~mathlib~, which will be cloned into the project directory. After cloning or extracting the repository to ~flypitch~, navigate to ~flypitch~ and run
 #+BEGIN_SRC

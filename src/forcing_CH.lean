@@ -410,14 +410,6 @@ begin
       apply @bv_rw' _ _ _ _ _ (bv_symm check_pair) (λ z, z ∈ᴮ  (function_reflect.f' H_nonzero H AE)̌ ), simp,
       refine check_mem _, convert pSet.function.mk_mem, refl}
 end
--- begin
---   rw ←bounded_forall, swap, {change B_ext _, simp},
---   bv_intro pr, simp only [prod_check_bval, top_imp],
---   rcases pr with ⟨⟨i⟩, j⟩,
---   refine le_inf _ _; bv_imp_intro H',
---     { sorry },
---     { sorry }
--- end
 
 include H_docs
 lemma function_reflect_of_omega_closed : ∃ (f : pSet.{u}) (Γ' : 𝔹) (H_nonzero' : ⊥ < Γ') (H_le' : Γ' ≤ Γ), (Γ' ≤ f̌ =ᴮ g) ∧ is_func omega y f :=
@@ -452,10 +444,6 @@ def 𝔹_collapse : Type u := collapse_algebra ((ℵ₁ : pSet.{u}).type) (power
 attribute instance 𝔹_collapse_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹_collapse := by {unfold 𝔹_collapse, apply_instance}
 
 local notation `β` := 𝔹_collapse
-
--- local notation `β` := collapse_algebra ((ℵ₁ : pSet.{u}).type) (powerset omega : pSet.{u}).type
-
--- TODO(floris)
 
 section AE_of_check_func_check'
 
@@ -596,30 +584,30 @@ lemma π_af_anti : ∀ (i : type (ℵ₁̌  : bSet β)) (j₁ j₂ : type ((powe
     j₁ ≠ j₂ → π_af i j₁ ⊓ π_af i j₂ ≤ ⊥ :=
 λ _ _ _ _ _ h, by cases h; finish
 
--- TODO(jesse) refactor the proof of the suffices into a more general lemma
-lemma aleph_one_inj : (∀ i₁ i₂, ⊥ < (func (ℵ₁̌  : bSet β) i₁) =ᴮ (func (ℵ₁̌  : bSet β) i₂) → i₁ = i₂) :=
+lemma check_index_inj_of_pSet_index_inj {x : pSet.{u}} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) : ∀ i₁ i₂ : (x̌ : bSet β).type, ⊥ < x̌.func i₁ =ᴮ x̌.func i₂ → i₁ = i₂ :=
 begin
-  suffices this : ∀ (x y : type (ℵ₁)),
-    x ≠ y → ¬equiv (func (ℵ₁) x) (func (ℵ₁) y),
-    by {intros i₁ i₂ H, haveI : decidable (i₁ = i₂) := classical.prop_decidable _,
+  have : ∀ i₁ i₂ : x.type, i₁ ≠ i₂ → ¬ equiv (func x i₁) (func x i₂),
+    by finish,
+  {intros i₁ i₂ H, haveI : decidable (i₁ = i₂) := classical.prop_decidable _,
         by_contra,
-        have H_cast_eq : (cast eq₀ i₁) ≠ (cast eq₀ i₂),
-          by {intro, apply a, cc},
-        specialize this (cast eq₀ i₁) (cast eq₀ i₂) ‹_›,
+        have H_cast_eq : (check_cast i₁) ≠ (check_cast i₂),
+          by { intro H_eq, apply a, unfold check_cast at H_eq, cc },
+        specialize this (check_cast i₁) (check_cast i₂) ‹_›,
         have this₀ := check_bv_eq_bot_of_not_equiv this,
-        suffices this₁ : func (ℵ₁̌ ) i₁ =ᴮ func (ℵ₁̌ ) i₂ = ⊥,
+        suffices this₁ : x̌.func i₁ =ᴮ x̌.func i₂ = ⊥,
           by {exfalso, rw[eq_bot_iff] at this₀, rw[bot_lt_iff_not_le_bot] at H,
-              suffices : func (ℵ₁̌  : bSet β) i₁ =ᴮ func (ℵ₁ ̌) i₂ ≤ ⊥, by contradiction,
-              convert_to (func ℵ₁ (cast eq₀ i₁))̌   =ᴮ (func ℵ₁ (cast eq₀ i₂)) ̌ ≤ ⊥,
+              suffices : x̌.func i₁ =ᴮ x̌.func i₂ ≤ ⊥, by contradiction,
+              convert_to (func x (check_cast i₁))̌   =ᴮ (func x (check_cast i₂)) ̌ ≤ ⊥,
               apply check_func, apply check_func, from ‹_›},
-        convert this₀; apply check_func},
-  exact λ _ _ _, ordinal.mk_inj _ _ _ ‹_›
+        convert this₀; apply check_func}
 end
+
+lemma aleph_one_inj : (∀ i₁ i₂, ⊥ < (func (ℵ₁̌  : bSet β) i₁) =ᴮ (func (ℵ₁̌  : bSet β) i₂) → i₁ = i₂) :=
+check_index_inj_of_pSet_index_inj $
+  by {intros _ _ H, contrapose H, apply ordinal.mk_inj, from ‹_› }
 
 noncomputable def π : bSet β :=
 rel_of_array (ℵ₁̌  : bSet β) ((powerset omega)̌ ) π_af
-
--- noncomputable def π : bSet β := @set_of_indicator (β : Type u) _ (prod (ℵ₁̌ ) ((powerset omega)̌ )) (λ z, π_χ (cast eq₁ z))
 
 lemma π_is_func {Γ} : Γ ≤ is_func π :=
 begin
@@ -647,29 +635,8 @@ lemma π_spec {Γ : β} : Γ ≤ (is_func π) ⊓ ⨅v, v ∈ᴮ (powerset omega
 
 lemma π_spec' {Γ : β} : Γ ≤ (is_func' ((card_ex $ aleph 1)̌ ) ((powerset omega)̌ ) π) ⊓ is_surj ((card_ex $ aleph 1)̌ ) ((powerset omega)̌ ) π:=  le_inf π_is_func' π_is_surj
 
--- lemma π_spec' {Γ : β} : Γ ≤ (is_func π) ⊓ ⨅v, v ∈ᴮ (powerset omega)̌  ⟹ (⨆w, w ∈ᴮ (ℵ₁̌ ) ⊓ pair w v ∈ᴮ π) := sorry
--- le_inf π_is_func' π_is_surj
-
 lemma ℵ₁_larger_than_continuum {Γ : β} : Γ ≤ larger_than (ℵ₁ ̌) ((powerset omega)̌ ) :=
 by { apply bv_use (ℵ₁ ̌), apply bv_use π, rw[inf_assoc], from le_inf subset_self π_spec' }
-
--- for these two lemmas, need 2.17 (iv) in Bell, which follows from (i) ⟹ (ii)
--- i.e. If β has a dense subset P which is ω-closed, then for any η < ℵ₁, and any x,
--- bSet β ⊩ Func(η̌, x̌) = Func(η, x)̌ .
-
-/-
-Proof sketch:
-Let p : P be such that p ⊩ f is a function from η̌ to x̌. Using the ω-closed assumption, find a descending sequence {p_i : P} and a set {y_i ∈ x} such that for each i, pᵢ ⊩ f(i) = y_i.
-
-If q ∈ P satisfies q ≤ pᵢ for all i (i.e. is a witness to the ω-closed assumption),
-and g is the function attached to the collection of pairs (i, y_i), show that q ⊩ f = ǧ.
--/
-
--- lemma distributive {x : pSet.{u}} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) (af : pSet.omega.type → x.type → β) :
---    ⨅ i : pSet.omega.type, (⨆ j : x.type, af i j) = ⨆(f : pSet.omega.type → x.type), ⨅(i : pSet.omega.type), af i (f i)
---  := sorry
-
--- lemma pSet.func_eq_of_inj {x : pSet.{u}} (H_inj : ∀ i₁ i₂ : x.type, pSet.equiv (x.func i₁) (x.func i₂) → i₁ = i₂) : sorry := sorry
 
 lemma surjection_reflect {Γ : β} (H_bot_lt : ⊥ < Γ) (H_surj : Γ ≤ surjects_onto (bSet.omega : bSet.{u} β) ((ℵ₁)̌  : bSet β))
 : ∃ (f : pSet.{u}), is_func omega (ordinal.mk (ord (aleph 1))) f

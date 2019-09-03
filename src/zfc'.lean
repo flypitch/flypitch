@@ -371,22 +371,44 @@ end
 --   simp[is_func_f, bSet.is_func],
 -- end
 
-def is_func'_f : bounded_formula L_ZFC' 3 :=
-  (is_func_f.cast (dec_trivial)) ⊓' (∀' (&'0 ∈' &'3 ⟹ (∃' (&'0 ∈' &'3 ⊓' (pair' &'1 &'0 ∈' &'2)))))
+def is_total'_f : bounded_formula L_ZFC' 3 :=
+(∀' (&'0 ∈' &'3 ⟹ (∃' (&'0 ∈' &'3 ⊓' (pair' &'1 &'0 ∈' &'2)))))
 
-@[simp]lemma realize_is_func'_f {x y f : V β} : boolean_realize_bounded_formula (by exact [f, y, x]) is_func'_f dvector.nil = is_func' x y f :=
+@[simp]lemma realize_is_total'_f {x y f : V β} : boolean_realize_bounded_formula (by exact [f, y, x]) is_total'_f dvector.nil = is_total x y f :=
 begin
-  simp[is_func'_f]
+  simp [bSet.is_total, is_total'_f]
 end
 
+-- is_total'_f₂ S y f is the same as is_total'_f₂ y S f
+def is_total'_f₂ : bounded_formula L_ZFC' 3 :=
+(∀' (&'0 ∈' &'2 ⟹ (∃' (&'0 ∈' &'4 ⊓' (pair' &'1 &'0 ∈' &'2)))))
+
+@[simp]lemma realize_is_total'_f₂ {x y f : V β} : boolean_realize_bounded_formula (by exact [f, y, x]) is_total'_f₂ dvector.nil = is_total y x f :=
+begin
+  rw [bSet.is_total, is_total'_f₂], simp, refl
+end
+
+def is_func'_f : bounded_formula L_ZFC' 3 :=
+  (is_func_f.cast (dec_trivial)) ⊓' is_total'_f
+
+def is_func'_f₂ : bounded_formula L_ZFC' 3 :=
+(is_func_f.cast dec_trivial) ⊓' is_total'_f₂
+
+@[simp]lemma realize_is_func'_f {x y f : V β} : boolean_realize_bounded_formula (by exact [f, y, x]) is_func'_f dvector.nil = is_func' x y f :=
+by simp [is_func'_f, is_func']
+
+@[simp]lemma realize_is_func'_f₂ {x y f : V β} : boolean_realize_bounded_formula (by exact [f, y, x]) is_func'_f₂ dvector.nil = is_func' y x f :=
+by simp [is_func'_f₂, is_func']
+
+-- ⨆ S, ⨆f, S ⊆ᴮ x ⊓ (is_func' S y f) ⊓ (is_surj S y f)
 def larger_than_f : bounded_formula L_ZFC' 2 :=
-∃' (is_func'_f.cast (dec_trivial) ⊓
-   ∀' ( &0 ∈' &2 ⟹ (∃' (&'0 ∈' &'4 ⊓' pair' &'0 &'1 ∈' &'2))))
+∃' (∃' (((&'1 ⊆' &'3) ⊓' (is_func'_f₂).cast (dec_trivial)) ⊓'
+        ∀' ( &0 ∈' &3 ⟹ (∃' (&'0 ∈' &'3 ⊓' pair' &'0 &'1 ∈' &'2)))))
 
 @[simp]lemma realize_larger_than_f {x y : V β} :
   boolean_realize_bounded_formula (by exact [y,x]) larger_than_f dvector.nil = larger_than x y :=
 begin
-  simp[larger_than, larger_than_f, is_func, is_func_f, is_func'_f], sorry
+  simp[larger_than, larger_than_f, is_func]
 end
 
 def is_inj_f : bounded_formula L_ZFC' 1 :=
@@ -403,24 +425,27 @@ def injects_into_f : bounded_formula L_ZFC' 2 :=
   boolean_realize_bounded_formula (by exact [y,x]) injects_into_f dvector.nil = injects_into x y :=
 by {simp[injects_into_f, injects_into]}
 
--- @[simp]lemma realize_injects_into_subst0 {y : V β} {t : bounded_term L_ZFC' 1}:
---   -- boolean_realize_bounded_formula (by exact [boolean_realize_closed_term t])
---   boolean_realize_bounded_formula (by exact [y]) (injects_into_f[t /0]) dvector.nil = injects_into (by exact (boolean_realize_bounded_term (by exact [y]) t dvector.nil)) y :=
--- sorry
-
 --⨆ x, ⨆y, (ℵ₀ ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(ℵ₀))
 
 def CH_f : sentence L_ZFC' :=
 (∀' (∀' (∼((∼(substmax_bounded_formula (larger_than_f) ω' ↑ 1) ⊓'
   ∼larger_than_f ⊓' (injects_into_f[(Powerset omega) /0].cast1))))))
 
--- lemma subst_unfold₁ : ((substmax_bounded_formula (larger_than_f) ω' ↑ 1)) =
---   ∃' ((is_func'_f.cast (dec_trivial)) ⊓
---     ∀' (&0 ∈' &3 ⟹ (∃' (&'0 ∈' (ω') ⊓' pair' &'0 &'1 ∈' &'2)))) := rfl
+lemma subst_unfold₁ : ((substmax_bounded_formula (larger_than_f) ω' ↑ 1)) =
+∃' (∃' (((&'1 ⊆' ω') ⊓' ( is_func'_f₂↑' 1 # 2)) ⊓'
+        ∀' ( &0 ∈' &4 ⟹ (∃' (&'0 ∈' &'3 ⊓' pair' &'0 &'1 ∈' &'2))))) := rfl
+ -- ∃' ∃' ((is_func'_f.cast (dec_trivial)) ⊓
+ --    ∀' (&0 ∈' &3 ⟹ (∃' (&'0 ∈' (ω') ⊓' pair' &'0 &'1 ∈' &'2)))) := rfl
 
 lemma subst_unfold₂ : (injects_into_f[P' omega /0]) = ∃'(((is_func_f.cast (dec_trivial) ⊓'
   (∀' (&'0 ∈' &'2 ⟹ (∃' (&'0 ∈' (Powerset omega) ⊓' (pair' &'1 &'0 ∈' &'2))))))
   ⊓' is_inj_f.cast (dec_trivial))) := rfl
+
+lemma subst_unfold₃ : (is_func'_f₂ ↑' 1 # 2) =
+ is_func_f.cast (dec_trivial) ⊓'
+  ∀' (&0 ∈' &2 ⟹ (∃' (&'0 ∈' &'5 ⊓' pair' &'1 &'0 ∈' &'2))) := rfl
+
+example : (is_func_f) ↑' 1 # 2 = (is_func_f.cast dec_trivial : bounded_formula L_ZFC' 2) := by refl
 
 variable {β}
 lemma CH_f_is_CH : ⟦CH_f⟧[V β] = CH :=
@@ -428,8 +453,10 @@ begin
   unfold CH_f, simp [-substmax_bounded_formula,CH, neg_supr],
   congr, ext, congr, ext, 
   simp only [sup_assoc], congr,
-  swap, rw subst_unfold₂, simp[-top_le_iff], refl,
-  sorry -- TODO(jesse): update subst_unfold₁, is_func'_f
+  swap, rw subst_unfold₂, simp[-top_le_iff], refl, rename x_1 y,
+  rw subst_unfold₁, unfold larger_than, simp, congr, ext S,
+  congr, ext f, congr' 1, congr, 
+  rw subst_unfold₃, unfold is_func', simp, congr,
 end
 
 lemma CH_f_sound {Γ : β} : Γ ⊩[V β] CH_f ↔ Γ ≤ CH :=
@@ -448,16 +475,6 @@ section CH_unprovable
 lemma neg_CH_f : ⊤ ⊩[V 𝔹_cohen] ∼CH_f :=
 begin
   rw neg_CH_f_sound, from neg_CH
-
-  -- change ⊤ ≤ _, simp[-top_le_iff, CH_f], simp only [neg_infi],
-  -- apply bv_use (ℵ₁̌ ), apply bv_use (ℵ₂ ̌), simp[-top_le_iff],
-  -- refine ⟨_,ℵ₁_lt_ℵ₂,_⟩,
-  -- {have := ℵ₀_lt_ℵ₁, unfold larger_than at this, have := subst_unfold₁,
-  -- unfold substmax_bounded_formula at this, rw[this],
-  -- simp[-top_le_iff], simp only [neg_supr] at *, bv_intro f,
-  -- bv_specialize_at this (f), from sorry }, --this_1},
-  -- {have := ℵ₂_le_𝔠, rw[subst_unfold₂], simp[-top_le_iff],
-  --   apply bv_use (neg_CH_func), from this}
 end
 
 instance V_𝔹_nonempty : nonempty (V 𝔹_cohen) := ⟨bSet.empty⟩
@@ -475,5 +492,9 @@ instance V_𝔹_collapse_nonempty : nonempty (V 𝔹_collapse) := ⟨bSet.empty�
 
 lemma V_𝔹_collapse_models_CH : ⊤ ⊩[V 𝔹_collapse] CH_f :=
 by rw CH_f_sound; from CH_true
+
+theorem neg_CH_f_unprovable : ¬ (ZFC' ⊢' ∼CH_f) :=
+unprovable_of_model_neg (V 𝔹_collapse) (bSet_models_ZFC' _)
+  (nontrivial.bot_lt_top) (by {rw forced_in_not, from V_𝔹_collapse_models_CH})
 
 end neg_CH_unprovable

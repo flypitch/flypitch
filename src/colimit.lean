@@ -198,11 +198,6 @@ lemma same_fiber_as_push_to_l {F : directed_diagram ℕ'} {j} (x : F.obj j) (i) 
      canonical_map j x = canonical_map (i+j) (push_to_sum_l x i)  :=
 by {have := (cocone_of_colimit F).h_compat, have := @this i (i+j) (by simp), tidy}
 
-namespace nat
-@[simp]lemma le_of_le_and_ne_succ {x y : ℕ} (H : x ≤ y + 1) (H' : x ≠ y + 1) : x ≤ y :=
-by simp only [*, nat.lt_of_le_and_ne, nat.le_of_lt_succ, ne.def, not_false_iff]
-end nat
-
 end colimit
 namespace omega_colimit
 open colimit
@@ -247,7 +242,7 @@ refine ⟨F, by {apply diagram.mk.map, assumption}, _⟩,
          all_goals{try{apply nat.le_of_le_and_ne_succ, repeat{assumption}}},
         have := @z_ih h_y h_x,
         dsimp[diagram.mk.map],
-        simp only [h, h', dif_neg, not_false_iff, colimit.nat.le_of_le_and_ne_succ, this]}
+        simp only [h, h', dif_neg, not_false_iff, nat.le_of_le_and_ne_succ, this]}
 end
 
 -- TODO refactor henkin_language_chain et al in terms of diagram.mk

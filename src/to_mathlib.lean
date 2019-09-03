@@ -294,6 +294,15 @@ lemma disjoint_iff_eq_empty {α} {s t : set α} : disjoint s t ↔ s ∩ t = ∅
 @[simp] lemma not_nonempty_iff {α} {s : set α} : ¬nonempty s ↔ s = ∅ :=
 by rw [coe_nonempty_iff_ne_empty, classical.not_not]
 
+lemma neq_neg_of_nonempty {α : Type*} {P : set α} (H_nonempty : nonempty α) : P ≠ - P :=
+begin
+  intro H_eq, let a : α := classical.choice (by apply_instance),
+  have := congr_fun H_eq a,
+  classical, by_cases HP : P a,
+    {from absurd HP (by rwa this at HP)},
+    {from absurd (by rwa this) HP}
+end
+
 @[simp] lemma subset_bInter_iff {α β} {s : set α} {t : set β} {u : α → set β} :
   t ⊆ (⋂ x ∈ s, u x) ↔ ∀ x ∈ s, t ⊆ u x :=
 ⟨λ h x hx y hy, by { have := h hy, rw mem_bInter_iff at this, exact this x hx }, subset_bInter⟩
@@ -408,6 +417,10 @@ end cardinal
 namespace nat
 protected lemma pred_lt_iff_lt_succ {m n : ℕ} (H : 1 ≤ m) : pred m < n ↔ m < succ n :=
 nat.sub_lt_right_iff_lt_add H
+
+@[simp]lemma le_of_le_and_ne_succ {x y : ℕ} (H : x ≤ y + 1) (H' : x ≠ y + 1) : x ≤ y :=
+by simp only [*, nat.lt_of_le_and_ne, nat.le_of_lt_succ, ne.def, not_false_iff]
+
 end nat
 
 namespace tactic

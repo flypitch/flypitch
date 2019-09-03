@@ -640,15 +640,6 @@ end
 lemma shift_neg_right {a b : (regular_opens α)} (h : a = -b) : -a = b :=
 by {rw[h], from lattice.neg_neg}
 
--- variables {α : Type*} [τ : topological_space α]
-
--- local postfix `ᵖ`:80 := perp
-
--- local notation `cl`:65 := closure
-
--- local notation `int`:65 := interior
-
--- include τ
 lemma regular_open_infi_sup_le_sup_Inf : ∀(a : (regular_opens α)) s, (⨅ b ∈ s, a ⊔ b) ≤ a ⊔ Inf s :=
 begin
   intros A 𝒜,
@@ -763,7 +754,10 @@ end
 lemma fst_infi [nonempty α] {ι} {f : ι → regular_opens α} : ↑(⨅ i, f i) = (⨅ i, (f i).1)ᵖᵖ :=
 by { rw [infi, fst_Inf], congr' 3, rw [range_comp] }
 
-lemma fst_infi' [nonempty α] {ι} {f : ι → regular_opens α} : ↑(⨅ i, f i) = int (⨅ i, (f i).1) :=
-sorry
+lemma fst_infi' [nonempty α] {ι} {f : ι → regular_opens α} : (⨅ i, f i).1 = (⨅ i, (f i).1)ᵖᵖ :=
+by { convert fst_infi, from ‹_› }
+
+-- lemma fst_infi' [nonempty α] {ι} {f : ι → regular_opens α} : ↑(⨅ i, f i) = int (⨅ i, (f i).1) :=
+-- sorry
 
 end regular_algebra

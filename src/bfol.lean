@@ -626,6 +626,9 @@ x ≤ ⨅(f ∈ T), boolean_realize_sentence S f
 
 notation x ` ⊩[`:52 S `] `:0 T:52 := all_forced_in x S T
 
+@[simp]lemma forced_in_not {f : sentence L} {b} : b ⊩[S] ∼∼f ↔ b ⊩[S] f :=
+by {change _ ≤ _ ↔ _ ≤ _, simp}
+
 -- lemma all_boolean_realize_sentence_axm {f : sentence L} {T : Theory L} :
 --   ∀ (H : S ⊨ᵇ insert f T = ⊤), S ⊨ᵇ f = ⊤ ∧ S ⊨ᵇ T = ⊤ :=
 -- sorry --λ H, ⟨by {apply H, exact or.inl rfl}, by {intros ψ hψ, apply H, exact or.inr hψ}⟩

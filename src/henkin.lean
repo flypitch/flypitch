@@ -730,7 +730,7 @@ begin
          (on_bounded_formula (henkin_language_chain_maps L j (j + 1) _)
             (on_bounded_formula (Lhom.id (henkin_language_chain_objects j))
                (on_bounded_formula (henkin_language_chain_maps L i j _) f)))),
-  simp only [id_bounded_formula 0 0, not_false_iff, colimit.nat.le_of_le_and_ne_succ, fol.Lhom.on_bounded_formula]
+  simp only [id_bounded_formula 0 0, not_false_iff, nat.le_of_le_and_ne_succ, fol.Lhom.on_bounded_formula]
 end
 
 @[simp]lemma iota_inclusion_of_le {L} {T : Theory L} : Π{i : ℕ} {j : ℕ} (h : i ≤ j), (@ι _ T i) ⊆ (@ι _ T j)

@@ -540,18 +540,9 @@ extend_via_neg h
 lemma le_trivial_extension (f : α →. β) (y : β) : f ≤ ↑(trivial_extension f y) :=
 le_extend_via _ _
 
--- lemma coyoneda_iff {f g : α →. β} :
---   (∀(h : α → β), f ≤ h → g ≤ h) ↔ g ≤ f :=
--- begin
---   refine ⟨λ h x y hy, _, λ h Γ h', le_trans h h'⟩,
---   have := h _ (le_trivial_extension f y) x y hy,
---   -- let h : α → β := λ x, if hx : f.dom x then f.fn x hx else y,
--- end
-
 end pfun
 
 section collapse_poset
-
 
 structure collapse_poset (X Y : Type u) (κ : cardinal.{u}) : Type u :=
 (f        : X →. Y)
@@ -565,18 +556,12 @@ open pfun
 
 variables {X Y : Type u} {κ : cardinal.{u}}
 
-/- TODO: separate out the lemma `#f.ran ≤ #f.dom` -/
 lemma collapse_poset.mk_ran_lt (p : collapse_poset X Y κ) : # p.f.ran < κ :=
 lt_of_le_of_lt (mk_ran_le_mk_dom p.f) p.Hc
 
 def collapse_poset.inter (p₁ p₂ : collapse_poset X Y κ) : collapse_poset X Y κ :=
 { f := p₁.f ⊓ p₂.f,
   Hc := lt_of_le_of_lt (mk_le_mk_of_subset $ dom_subset_dom_of_le inf_le_left) p₁.Hc }
-
--- @[simp] lemma dom_reduce {D : X → Prop} {D_get : Π x (H : D x), Y} :
---   pfun.dom (λ x, roption.mk (D x) (D_get x) : X →. Y) = D := rfl
-
--- @[simp] lemma fn_reduce {D : X → Prop} {D_get : Πx (H : D x), Y} {x} {H} : pfun.fn (λ x, roption.mk (D x) (D_get x) : X →. Y) x H = D_get x H := rfl
 
 noncomputable def collapse_poset.union (p₁ p₂ : collapse_poset X Y κ) (h : omega ≤ κ) :
   collapse_poset X Y κ :=
@@ -670,8 +655,10 @@ def singleton_collapse_poset (x : X) (y : Y) (hκ : 1 < κ) : collapse_poset X Y
 @[simp] lemma singleton_collapse_poset_principal_open {x : X} {y : Y} {hκ : 1 < κ} :
   principal_open (singleton_collapse_poset x y hκ) = {g : X → Y | g x = y} :=
 begin
-/- `tidy` says -/ ext1, cases hκ, induction κ, work_on_goal 0 { dsimp at *, fsplit, work_on_goal 0 { intros a }, work_on_goal 1 { intros a x_2 y_1 a_1, cases a_1, induction a, induction a_1_h, induction a_1_w, dsimp at *, simp at *, refl } }, work_on_goal 1 { refl },
-  rw [←lift_eq_some_iff], apply eq_some_of_subfun a, simp [singleton_collapse_poset]
+  ext f, refine ⟨_,_⟩; intro H,
+    { rw mem_principal_open_iff at H,
+      apply H, finish[singleton_collapse_poset] },
+    { tidy }
 end
 
 lemma collapse_poset.compl_principal_open_is_Union (hκ : 1 < κ) (p : collapse_poset X Y κ) :
@@ -865,6 +852,18 @@ begin
   rw [← pfun.some_fn px, ← pfun.some_fn qx, this]
 end
 
+local postfix `ᵖ`:80 := perp
+
+lemma principal_open_eq_infi_of_eq_inter [nonempty $ X → Y] {I : Type*} {s : I → collapse_algebra X Y}
+  {s_infty : collapse_algebra X Y} (H_eq_inter: s_infty.val = ⋂n, (s n).val)
+  : s_infty = ⨅ n, s n :=
+begin
+  rw subtype.ext, rw fst_infi',
+  have s_infty_p_p : s_infty.val = s_infty.valᵖᵖ,
+    by {rw is_regular_eq_p_p, exact s_infty.property},
+  rw s_infty_p_p, simp*
+end
+
 lemma principal_opens_dense_omega_closed [nonempty $ X → Y] :
   dense_omega_closed_subset (set.range ι : set (collapse_algebra X Y)) :=
 begin
@@ -888,33 +887,22 @@ begin
         simp only [cardinal.omega, (lift_succ _).symm, lift_lt, lt_succ_self] },
       { apply le_of_lt (lt_succ_self _) } },
     refine ⟨P, _⟩,
-    rw [subtype.ext],
     have : ∀ {{i j : ℕ}}, i ≤ j → ι (g j) ≤ ι (g i),
     { intros i j h, induction h, exact le_refl _, exact le_trans (h3f _) h_ih },
     have : ∀ (i j : ℕ), pfun.compatible ((g i).f) ((g j).f),
     { intros, cases le_total i j with h h, rw [pfun.compatible_comm],
       apply compatible_of_inclusion_le_inclusion (this h),
       apply compatible_of_inclusion_le_inclusion (this h) },
-    simp [collapse_poset.inclusion, subtype.val_eq_coe, fst_infi'],
-    ext f,
-    simp [mem_interior_of_is_topological_basis collapse_space_basis_spec, set.subset_Inter_iff],
-    transitivity ∃ (p : collapse_poset X Y cardinal.omega.succ),
-      (∀ (i : ℕ), collapse_poset.principal_open p ⊆ {f : X → Y | (g i).f ≤ ↑f}) ∧
-      f ∈ collapse_poset.principal_open p,
-    swap,
-    { split,
-      { rintro ⟨p, h1p, h2p⟩, refine ⟨collapse_poset.principal_open p, h1p, _, h2p⟩,
-        right, apply set.mem_image_of_mem _ (set.mem_univ _) },
-      { rintro ⟨t, h1t, h2t, h3t⟩,
-        rcases or.resolve_left h2t (set.ne_empty_of_mem h3t) with ⟨p, _, rfl⟩,
-        refine ⟨p, h1t, h3t⟩ } },
-    dsimp [collapse_poset.principal_open], simp,
-    split,
-    { intro h, refine ⟨P, λ i f' hf', le_trans _ hf', h⟩,
-      simp [P, collapse_poset.Sup_lift], exact pfun.le_Sup this i },
-    { rintro ⟨p, h1p, h2p⟩, simp [P, collapse_poset.Sup_lift, pfun.Sup_le this],
-      intro i, apply h1p, exact h2p }
-    }
+    simp [collapse_poset.inclusion, subtype.val_eq_coe],
+    apply principal_open_eq_infi_of_eq_inter, ext f,
+    refine ⟨_,_⟩; intro H,
+      { rw set.mem_Inter, intro k,
+        rw mem_principal_open_iff at H ⊢, intros x y Hy,
+        apply H, dsimp[P, collapse_poset.Sup_lift],
+        rw (pfun.mem_Sup ‹_›), use k, from ‹_›},
+      { rw mem_principal_open_iff, dsimp[P, collapse_poset.Sup_lift],
+        intros x y H_mem, rw set.mem_Inter at H, rw (pfun.mem_Sup ‹_›) at H_mem,
+        simp only [mem_principal_open_iff] at H, finish }}
 end
 
 end collapse_poset_dense
@@ -926,5 +914,3 @@ instance nonempty_aleph_one_powerset_omega : nonempty $ ((ℵ₁).type) → (pow
 
 def collapse_boolean_algebra : nontrivial_complete_boolean_algebra 𝔹 :=
 by apply_instance
-
-
