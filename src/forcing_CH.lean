@@ -473,12 +473,12 @@ begin
   have := H_docs.left, rcases this with ⟨H_dense₁, H_dense₂⟩,
   specialize H_dense₂ _ Hj, rcases H_dense₂ with ⟨Γ', HΓ'₁, HΓ'₂⟩,
   use j, use Γ', use (nonzero_of_mem_dense_omega_closed_subset H_docs ‹_›),
-  use le_of_lt ‹_›, from ‹_›
+  use ‹_›, from ‹_›
 end
 
 lemma AE_of_check_func_check' (x y : pSet) {f : bSet (collapse_algebra (type ℵ₁) (type (powerset omega)))}
   {Γ : collapse_algebra (type ℵ₁) (type (powerset omega))}
-   (H :  Γ ≤ is_func' x̌  y̌  f) 
+   (H :  Γ ≤ is_func' x̌  y̌  f)
     (H_nonzero : ⊥ < Γ )
     (i : type x) :
       ∃ (j : type y) (Γ' : collapse_algebra (type ℵ₁) (type (powerset omega))) (H_nonzero' : ⊥ < Γ')
@@ -487,7 +487,7 @@ lemma AE_of_check_func_check' (x y : pSet) {f : bSet (collapse_algebra (type ℵ
           Γ' ≤ pair (func x i)̌  (func y j)̌  ∈ᴮ f ∧ Γ' ∈ set.range ι :=
 begin
   have := is_total_of_is_func' H ((x.func i)̌ ) (by simp),
-  
+
   have H' : Γ ≤ (is_func' (x̌) (y̌) f) ⊓ ⨆ w, w ∈ᴮ (y̌) ⊓ pair (x.func i)̌  w ∈ᴮ f ,
     by exact le_inf ‹_› ‹_›,
   erw[←bounded_exists] at H', swap, {exact B_ext_pair_mem_right},
@@ -564,13 +564,13 @@ begin
    simp at Hp, subst Hp,
    refine set.ne_empty_of_exists_mem _,
    { cases exists_mem_compl_dom_of_unctbl p aleph_one_type_uncountable with η Hη,
-     use trivial_extension p.f S, use trivial_extension_mem_principal_open,
+     use p.f.trivial_extension S, use trivial_extension_mem_principal_open,
      change ∃ x, _, use (π_af (cast eq₀.symm η) S).val,
      refine ⟨_, _⟩, change ∃ x, _, refine ⟨_,_⟩,
      apply π_af (cast eq₀.symm η) S, refine ⟨_,_⟩,
        { exact set.mem_range_self _ },
        { refl },
-     { unfold trivial_extension, dsimp,
+     { unfold pfun.trivial_extension pfun.extend_via, dsimp,
        suffices this : (cast eq₀ (cast eq₀.symm η) ∉ pfun.dom (p.f)),
          by {simpa*},
        intro, apply Hη, cc } }

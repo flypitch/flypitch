@@ -508,22 +508,37 @@ by { ext x', simp [singleton, mem_dom_iff_dom] }
 
 lemma mk_dom_singleton {x : α} {y : β} : # (singleton x y).dom = 1 := by simp
 
+/-- Extend `f` using `g` for all values where `f` is undefined -/
+noncomputable def extend_via (f : α →. β) (g : α → β) : α → β :=
+λ x, if hx : x ∈ f.dom then f.fn x hx else g x
+
+lemma extend_via_pos {f : α →. β} {g : α → β} {x : α} (h : x ∈ f.dom) :
+  extend_via f g x = f.fn x h :=
+by simp [h, extend_via]
+
+lemma extend_via_neg {f : α →. β} {g : α → β} {x : α} (h : x ∉ f.dom) :
+  extend_via f g x = g x :=
+by simp [h, extend_via]
+
+lemma le_extend_via (f : α →. β) (g : α → β) : f ≤ ↑(extend_via f g) :=
+λ x y hy, by { simp [mem_dom_of_mem hy, extend_via], symmetry, rwa [fn_eq_iff_mem] }
+
 /--
 Given a partial function f : X →. Y and a point y : Y, define an extension g of f to X such that g(x) = y whenever x ∉ f.dom
 -/
 noncomputable def trivial_extension (f : α →. β) (y : β) : α → β :=
-λ x, if hx : x ∈ f.dom then f.fn x hx else y
+extend_via f (λ _, y)
 
 lemma trivial_extension_pos {f : α →. β} {y : β} {x : α} (h : x ∈ f.dom) :
   trivial_extension f y x = f.fn x h :=
-by simp [h, trivial_extension]
+extend_via_pos h
 
 lemma trivial_extension_neg {f : α →. β} {y : β} {x : α} (h : x ∉ f.dom) :
   trivial_extension f y x = y :=
-by simp [h, trivial_extension]
+extend_via_neg h
 
 lemma le_trivial_extension (f : α →. β) (y : β) : f ≤ ↑(trivial_extension f y) :=
-λ x y hy, by { simp [mem_dom_of_mem hy, trivial_extension], symmetry, rwa [fn_eq_iff_mem] }
+le_extend_via _ _
 
 -- lemma coyoneda_iff {f g : α →. β} :
 --   (∀(h : α → β), f ≤ h → g ≤ h) ↔ g ≤ f :=
@@ -758,8 +773,8 @@ by {rw [<-singleton_collapse_poset_principal_open], exact is_regular_singleton_r
 
 lemma trivial_extension_mem_principal_open {p : collapse_poset X Y κ} {y : Y}
   : (trivial_extension p.f y) ∈ collapse_poset.principal_open p :=
-by { simp [trivial_extension, mem_principal_open_iff],
-     intros x y hy, simp [mem_dom_of_mem hy, fn_eq_of_mem hy] }
+by { rw [mem_principal_open_iff],
+     intros x y hy, simp [trivial_extension_pos, mem_dom_of_mem hy, fn_eq_of_mem hy] }
 
 end collapse_poset
 
@@ -772,7 +787,7 @@ def omega_closed (D : set α) : Prop :=
 ∀ (s : ℕ → α) (s_sub_D : ∀n, s n ∈ D) (H_nonzero : ∀ n, ⊥ < s n) (H_chain : ∀ n, s (n+1) ≤ s n), (⨅n, s n) ∈ D
 
 def dense_subset {α : Type*} [order_bot α] (D : set α) : Prop :=
-⊥ ∉ D ∧ ∀x, ⊥ < x → ∃ y ∈ D, y < x
+⊥ ∉ D ∧ ∀x, ⊥ < x → ∃ y ∈ D, y ≤ x
 
 @[reducible]def dense_omega_closed_subset (D : set α) : Prop :=
 dense_subset D ∧ omega_closed D
@@ -839,12 +854,7 @@ begin
   cases (collapse_poset_dense_basis ‹_› ‹_› ‹_›) with p H_p, exact ⟨p, set.subset.trans H_p ‹_›⟩
 end
 
--- set_option pp.universes true
--- #print collapse_poset.Sup
--- #print pfun.Sup
-
-
-/- note: this lemma almost always implies that q.f ≤ p.f, except when `Y` is a singleton -/
+/- note: the hypothesis in this lemma almost always implies that q.f ≤ p.f, except when `Y` is a singleton -/
 def compatible_of_inclusion_le_inclusion [nonempty $ X → Y]
   {p q : collapse_poset X Y cardinal.omega.succ} (h : ι p ≤ ι q) : p.f.compatible q.f :=
 begin
@@ -859,15 +869,17 @@ lemma principal_opens_dense_omega_closed [nonempty $ X → Y] :
   dense_omega_closed_subset (set.range ι : set (collapse_algebra X Y)) :=
 begin
   refine ⟨⟨_, _⟩, _⟩,
-  { rintro ⟨f, hs⟩, sorry },
+  { rintro ⟨p, hp⟩, have := congr_arg subtype.val hp,
+    simp [collapse_poset.inclusion, collapse_poset.principal_open] at this,
+    erw [set.eq_empty_iff_forall_not_mem] at this,
+    have := _inst_1, cases this with g,
+    exact this (p.f.extend_via g) (p.f.le_extend_via g) },
   { intros o ho,
-    have h2o : o.1 ≠ ∅, sorry,
+    have h2o : o.1 ≠ ∅ := ho.2.symm,
     rcases nonempty_basis_subset collapse_space_basis_spec h2o (is_open_of_is_regular o.2)
       with ⟨u, hu, h2u, h3u⟩,
     rcases or.resolve_left hu h2u with ⟨u', hu', rfl⟩,
-    refine ⟨ι u', set.mem_range_self u', _⟩,
-    sorry
-     },
+    refine ⟨ι u', set.mem_range_self u', h3u⟩ },
   { intros f hf h2f h3f, choose g hg using hf,
     simp only [(hg _).symm] at h3f h2f ⊢, clear hg f,
     let P : collapse_poset X Y _,

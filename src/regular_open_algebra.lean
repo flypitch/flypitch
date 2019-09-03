@@ -465,6 +465,8 @@ def regular_open_bounded_lattice : bounded_lattice (regular_opens α) :=
 
 local attribute [instance] regular_open_bounded_lattice
 
+lemma coe_bot : ((⊥ : regular_opens α) : set α) = ∅ := by refl
+
 def regular_open.neg : (regular_opens α) → (regular_opens α) := λ x, ⟨xᵖ, by {rw[regular_iff_p_p], symmetry, apply p_eq_p_p_p,
                        from is_open_of_is_regular x.property}⟩
 
