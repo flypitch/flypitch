@@ -4,7 +4,84 @@ import .regular_open_algebra .pSet_ordinal
   Defining the collapsing poset/topology/boolean algebra and proving properties about them
 -/
 
-universe variable u
+universe variables u v
+
+lemma poset_yoneda_iff {β : Type*} [partial_order β] {a b : β} : (∀Γ : β, Γ ≤ a → Γ ≤ b) ↔ a ≤ b :=
+⟨ lattice.poset_yoneda, λ h Γ, lattice.poset_yoneda_inv Γ h⟩
+
+lemma poset_coyoneda_iff {β : Type*} [partial_order β] {a b : β} :
+  (∀Γ : β, a ≤ Γ → b ≤ Γ) ↔ b ≤ a :=
+⟨λ h, h a (le_refl a), λ h Γ h', le_trans h h'⟩
+
+namespace set
+
+theorem subset_Inter_iff {α β} {t : set β} {s : α → set β} : t ⊆ (⋂ i, s i) ↔ ∀ i, t ⊆ s i :=
+by { simp [subset_def], conv_rhs { rw [forall_swap] }, apply forall_congr, intro x, rw [forall_swap] }
+
+end set
+namespace subtype
+
+definition val_eq_coe {α} {p : α → Prop} (x : subtype p) : x.val = x := by refl
+
+end subtype
+
+namespace cardinal -- todo: move
+open cardinal set
+
+theorem sum_const_lift (ι : Type u) (a : cardinal.{max u v}) :
+  sum (λ _:ι, a) = lift.{_ v} (mk ι) * a :=
+quotient.induction_on a $ λ α, by simp; exact
+  quotient.sound ⟨(equiv.sigma_equiv_prod _ _).trans (equiv.prod_congr equiv.ulift.symm (by refl))⟩
+
+theorem sum_le_sup_lift {ι : Type u} (f : ι → cardinal.{max u v}) :
+  sum f ≤ lift.{_ v} (mk ι) * sup f :=
+by rw ← sum_const_lift; exact sum_le_sum _ _ (le_sup _)
+
+-- TODO: replace mk_Union_le_sum_mk
+theorem mk_Union_le_sum_mk' {ι : Type u} {α : Type (max u v)} {f : ι → set α} :
+  mk (set.Union f) ≤ sum (λ i, mk (f i)) :=
+calc mk (set.Union f) ≤ mk (Σ i, f i) : mk_le_of_surjective (set.surjective_sigma_to_Union f)
+  ... = sum (λ i, mk (f i)) : (sum_mk _).symm
+
+lemma mk_Union_le_lift {ι : Type u} {α : Type (max u v)} (f : ι → set α) :
+  mk (set.Union f) ≤ lift.{_ v} (mk ι) * cardinal.sup (λ i, mk (f i)) :=
+le_trans mk_Union_le_sum_mk' (sum_le_sup_lift _)
+
+end cardinal
+
+namespace ordinal
+
+open cardinal
+
+theorem sup_lt_ord_lift {ι : Type u} (f : ι → ordinal.{max u v}) {c : ordinal}
+  (H1 : cardinal.lift.{_ v} (mk ι) < c.cof) (H2 : ∀ i, f i < c) : sup f < c :=
+begin
+  apply lt_of_le_of_ne,
+  { rw [sup_le], exact λ i, le_of_lt (H2 i) },
+  rintro h, apply not_le_of_lt H1,
+  simpa [sup_ord, H2, h] using cof_sup_le_lift.{u} f
+end
+
+theorem sup_lt_lift {ι : Type u} (f : ι → cardinal.{max u v}) {c : cardinal.{max u v}}
+  (H1 : cardinal.lift.{_ v} (cardinal.mk ι) < c.ord.cof)
+  (H2 : ∀ i, f i < c) : cardinal.sup f < c :=
+by { rw [←ord_lt_ord, ←sup_ord], apply sup_lt_ord_lift _ H1, intro i, rw ord_lt_ord, apply H2 }
+
+end ordinal
+
+namespace topological_space
+
+lemma mem_interior_of_is_topological_basis {α} [topological_space α] {B : set (set α)}
+  (hB : is_topological_basis B) {s : set α} {x : α} : x ∈ interior s ↔ ∃ t ⊆ s, t ∈ B ∧ x ∈ t :=
+begin
+  rw [mem_interior], split,
+  { rintro ⟨t, h1t, h2t, h3t⟩,
+    rcases mem_basis_subset_of_mem_open hB h3t h2t with ⟨u, h1u, h2u, h3u⟩,
+    exact ⟨u, set.subset.trans h3u h1t, h1u, h2u⟩ },
+  { rintro ⟨t, h1t, h2t, h3t⟩, exact ⟨t, h1t, is_open_of_is_topological_basis hB h2t, h3t⟩ }
+end
+
+end topological_space
 
 open lattice topological_space cardinal pSet
 
@@ -18,7 +95,7 @@ local infix ` ⇔ `:50 := lattice.biimp
 
 local attribute [instance, priority 0] classical.prop_decidable
 
-local prefix `#`:50 := cardinal.mk
+local prefix `#`:max := cardinal.mk
 
 /- to_mathlib -/
 @[simp] lemma iff_or_self_left {p q : Prop} : (p ↔ p ∨ q) ↔ (q → p) :=
@@ -83,8 +160,6 @@ end
 end roption
 
 namespace pfun
-
-section pfun_lemmas
 
 variables {ι : Sort*} {α : Type*} {β : Type*} {f f₁ f₂ : α →. β}
 
@@ -387,6 +462,13 @@ end
 lemma le_Sup {f : ι → α →. β} (hf : ∀i j, compatible (f i) (f j)) (i : ι) : f i ≤ Sup f :=
 by { intros x y hy, rw [mem_Sup hf], exact ⟨i, hy⟩ }
 
+lemma Sup_le {f : ι → α →. β} (hf : ∀i j, compatible (f i) (f j))
+  {g : α →. β} : Sup f ≤ g ↔ ∀i, f i ≤ g :=
+begin
+  simp only [le_def, mem_Sup hf, exists_imp_distrib],
+  conv_rhs { rw [forall_swap] }, apply forall_congr, intro x, rw [forall_swap]
+end
+
 lemma fn_mem_ran {X Y} {f : X →. Y} {x : X} {Hx : x ∈ f.dom} :
   (fn f x Hx) ∈ f.ran :=
 by use x; tidy
@@ -426,7 +508,30 @@ by { ext x', simp [singleton, mem_dom_iff_dom] }
 
 lemma mk_dom_singleton {x : α} {y : β} : # (singleton x y).dom = 1 := by simp
 
-end pfun_lemmas
+/--
+Given a partial function f : X →. Y and a point y : Y, define an extension g of f to X such that g(x) = y whenever x ∉ f.dom
+-/
+noncomputable def trivial_extension (f : α →. β) (y : β) : α → β :=
+λ x, if hx : x ∈ f.dom then f.fn x hx else y
+
+lemma trivial_extension_pos {f : α →. β} {y : β} {x : α} (h : x ∈ f.dom) :
+  trivial_extension f y x = f.fn x h :=
+by simp [h, trivial_extension]
+
+lemma trivial_extension_neg {f : α →. β} {y : β} {x : α} (h : x ∉ f.dom) :
+  trivial_extension f y x = y :=
+by simp [h, trivial_extension]
+
+lemma le_trivial_extension (f : α →. β) (y : β) : f ≤ ↑(trivial_extension f y) :=
+λ x y hy, by { simp [mem_dom_of_mem hy, trivial_extension], symmetry, rwa [fn_eq_iff_mem] }
+
+-- lemma coyoneda_iff {f g : α →. β} :
+--   (∀(h : α → β), f ≤ h → g ≤ h) ↔ g ≤ f :=
+-- begin
+--   refine ⟨λ h x y hy, _, λ h Γ h', le_trans h h'⟩,
+--   have := h _ (le_trivial_extension f y) x y hy,
+--   -- let h : α → β := λ x, if hx : f.dom x then f.fn x hx else y,
+-- end
 
 end pfun
 
@@ -505,13 +610,24 @@ by { rw [set.mem_compl_iff, mem_principal_open_iff'], push_neg }
 by { intro H_mem, rw [mem_principal_open_iff] at H,
      use x, rw [H x (p.f.fn x H_mem) (fn_mem _)], exact roption.get_mem H_mem }
 
-def collapse_poset.Sup {ι} (p : ι → collapse_poset X Y κ) (h : #ι < (ord κ).cof)
+def collapse_poset.Sup {ι : Type u} (p : ι → collapse_poset X Y κ) (h : #ι < (ord κ).cof)
   (hκ : cardinal.omega ≤ κ) : collapse_poset X Y κ :=
 ⟨Sup $ λ i, (p i).f,
   begin
     rw [dom_Sup], apply lt_of_le_of_lt (mk_Union_le _) _,
     apply mul_lt_of_lt hκ (lt_of_lt_of_le h (ordinal.cof_ord_le κ)),
     exact ordinal.sup_lt _ h (λ i, collapse_poset.Hc _)
+  end⟩
+
+def collapse_poset.Sup_lift {ι : Type u} {X Y : Type (max u v)} {κ : cardinal.{max u v}}
+  (p : ι → collapse_poset X Y κ)
+  (h : cardinal.lift.{_ v} #ι < (ord κ).cof)
+  (hκ : cardinal.omega ≤ κ) : collapse_poset X Y κ :=
+⟨Sup $ λ i, (p i).f,
+  begin
+    rw [dom_Sup], apply lt_of_le_of_lt (mk_Union_le_lift.{u v} _) _,
+    apply mul_lt_of_lt hκ (lt_of_lt_of_le h (ordinal.cof_ord_le κ)),
+    refine ordinal.sup_lt_lift _ h (λ i, collapse_poset.Hc _)
   end⟩
 
 def collapse_space : topological_space (X → Y) :=
@@ -582,11 +698,13 @@ begin
   rw [union, mem_sup_of_compatible H, or_imp_distrib]
 end
 
+variables (X Y)
 def collapse_space_basis : set $ set (X → Y) :=
 insert (∅ : set (X → Y))
   (collapse_poset.principal_open '' (set.univ : set (collapse_poset X Y cardinal.omega.succ)))
 
-def collapse_space_basis_spec : @is_topological_basis (X → Y) collapse_space collapse_space_basis :=
+variables {X Y}
+def collapse_space_basis_spec : is_topological_basis (collapse_space_basis X Y) :=
 begin
   refine ⟨λ P HP P' HP' f H_mem_inter, _,_,_⟩,
     { rw [collapse_space_basis] at HP HP',
@@ -637,18 +755,6 @@ collapse_poset.is_regular_principal_open _
 @[simp] lemma is_regular_singleton_regular_open' {x : X} {y : Y} :
   is_regular {g : X → Y | g x = y} :=
 by {rw [<-singleton_collapse_poset_principal_open], exact is_regular_singleton_regular_open}
-
-/--
-Given a partial function f : X →. Y and a point y : Y, define an extension g of f to X such that g(x) = y whenever x ∉ f.dom
--/
-noncomputable def trivial_extension (f : X →. Y) (y : Y) : X → Y :=
-λ x,
-  begin
-    haveI : decidable (x ∈ f.dom) := classical.prop_decidable _,
-    by_cases x ∈ f.dom,
-    { exact fn f x ‹_› },
-    { exact y }
-  end
 
 lemma trivial_extension_mem_principal_open {p : collapse_poset X Y κ} {y : Y}
   : (trivial_extension p.f y) ∈ collapse_poset.principal_open p :=
@@ -712,7 +818,7 @@ def collapse_poset.inclusion (p : collapse_poset X Y cardinal.omega.succ) :
 
 local notation `ι`:65 := collapse_poset.inclusion
 
-lemma collapse_poset_dense_basis : ∀ T ∈ @collapse_space_basis X Y,
+lemma collapse_poset_dense_basis : ∀ T ∈ collapse_space_basis X Y,
   ∀ h_nonempty : T ≠ ∅, ∃ p : collapse_poset X Y cardinal.omega.succ, (ι p).val ⊆ T :=
 begin
   intros T H_mem_basis _,
@@ -721,20 +827,83 @@ begin
 end
 
 lemma collapse_poset_dense [nonempty (X → Y)] {b : collapse_algebra X Y}
-  (H : ⊥ < b) : ∃ p : (collapse_poset X Y cardinal.omega.succ), ι p ≤ b :=
+  (H : ⊥ < b) : ∃ p : collapse_poset X Y cardinal.omega.succ, ι p ≤ b :=
 begin
   cases (classical.choice (classical.nonempty_of_not_empty _ H.right.symm)) with S_wit H_wit,
   change ∃ p, (ι p).val ⊆ b.val,
-  have := mem_basis_subset_of_mem_open (collapse_space_basis_spec) H_wit (is_open_of_is_regular b.property),
+  have := mem_basis_subset_of_mem_open collapse_space_basis_spec H_wit (is_open_of_is_regular b.property),
   rcases (mem_basis_subset_of_mem_open
-           (collapse_space_basis_spec) H_wit (is_open_of_is_regular b.property))
+           collapse_space_basis_spec H_wit (is_open_of_is_regular b.property))
          with ⟨v, Hv₁, Hv₂, Hv₃⟩,
   have : v ≠ ∅, by {intro H, rw [H] at Hv₂, cases Hv₂},
   cases (collapse_poset_dense_basis ‹_› ‹_› ‹_›) with p H_p, exact ⟨p, set.subset.trans H_p ‹_›⟩
 end
 
-lemma principal_opens_dense_omega_closed [nonempty $ X → Y] : @dense_omega_closed_subset _ (collapse_algebra_boolean_algebra) (set.range ι : set $ collapse_algebra X Y) :=
-sorry
+-- set_option pp.universes true
+-- #print collapse_poset.Sup
+-- #print pfun.Sup
+
+
+/- note: this lemma almost always implies that q.f ≤ p.f, except when `Y` is a singleton -/
+def compatible_of_inclusion_le_inclusion [nonempty $ X → Y]
+  {p q : collapse_poset X Y cardinal.omega.succ} (h : ι p ≤ ι q) : p.f.compatible q.f :=
+begin
+  simp [collapse_poset.inclusion, le_iff_subset, collapse_poset.principal_open] at h,
+  intros x px qx,
+  have := h _ (pfun.le_trivial_extension p.f (p.f.fn x px)) x (q.f.fn x qx) (pfun.fn_mem _),
+  simp [pfun.trivial_extension_pos px] at this,
+  rw [← pfun.some_fn px, ← pfun.some_fn qx, this]
+end
+
+lemma principal_opens_dense_omega_closed [nonempty $ X → Y] :
+  dense_omega_closed_subset (set.range ι : set (collapse_algebra X Y)) :=
+begin
+  refine ⟨⟨_, _⟩, _⟩,
+  { rintro ⟨f, hs⟩, sorry },
+  { intros o ho,
+    have h2o : o.1 ≠ ∅, sorry,
+    rcases nonempty_basis_subset collapse_space_basis_spec h2o (is_open_of_is_regular o.2)
+      with ⟨u, hu, h2u, h3u⟩,
+    rcases or.resolve_left hu h2u with ⟨u', hu', rfl⟩,
+    refine ⟨ι u', set.mem_range_self u', _⟩,
+    sorry
+     },
+  { intros f hf h2f h3f, choose g hg using hf,
+    simp only [(hg _).symm] at h3f h2f ⊢, clear hg f,
+    let P : collapse_poset X Y _,
+    { refine collapse_poset.Sup_lift g _ _,
+      { simp [(succ_is_regular (by refl)).2],
+        simp only [cardinal.omega, (lift_succ _).symm, lift_lt, lt_succ_self] },
+      { apply le_of_lt (lt_succ_self _) } },
+    refine ⟨P, _⟩,
+    rw [subtype.ext],
+    have : ∀ {{i j : ℕ}}, i ≤ j → ι (g j) ≤ ι (g i),
+    { intros i j h, induction h, exact le_refl _, exact le_trans (h3f _) h_ih },
+    have : ∀ (i j : ℕ), pfun.compatible ((g i).f) ((g j).f),
+    { intros, cases le_total i j with h h, rw [pfun.compatible_comm],
+      apply compatible_of_inclusion_le_inclusion (this h),
+      apply compatible_of_inclusion_le_inclusion (this h) },
+    simp [collapse_poset.inclusion, subtype.val_eq_coe, fst_infi'],
+    ext f,
+    simp [mem_interior_of_is_topological_basis collapse_space_basis_spec, set.subset_Inter_iff],
+    transitivity ∃ (p : collapse_poset X Y cardinal.omega.succ),
+      (∀ (i : ℕ), collapse_poset.principal_open p ⊆ {f : X → Y | (g i).f ≤ ↑f}) ∧
+      f ∈ collapse_poset.principal_open p,
+    swap,
+    { split,
+      { rintro ⟨p, h1p, h2p⟩, refine ⟨collapse_poset.principal_open p, h1p, _, h2p⟩,
+        right, apply set.mem_image_of_mem _ (set.mem_univ _) },
+      { rintro ⟨t, h1t, h2t, h3t⟩,
+        rcases or.resolve_left h2t (set.ne_empty_of_mem h3t) with ⟨p, _, rfl⟩,
+        refine ⟨p, h1t, h3t⟩ } },
+    dsimp [collapse_poset.principal_open], simp,
+    split,
+    { intro h, refine ⟨P, λ i f' hf', le_trans _ hf', h⟩,
+      simp [P, collapse_poset.Sup_lift], exact pfun.le_Sup this i },
+    { rintro ⟨p, h1p, h2p⟩, simp [P, collapse_poset.Sup_lift, pfun.Sup_le this],
+      intro i, apply h1p, exact h2p }
+    }
+end
 
 end collapse_poset_dense
 

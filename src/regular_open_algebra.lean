@@ -761,4 +761,7 @@ end
 lemma fst_infi [nonempty α] {ι} {f : ι → regular_opens α} : ↑(⨅ i, f i) = (⨅ i, (f i).1)ᵖᵖ :=
 by { rw [infi, fst_Inf], congr' 3, rw [range_comp] }
 
+lemma fst_infi' [nonempty α] {ι} {f : ι → regular_opens α} : ↑(⨅ i, f i) = int (⨅ i, (f i).1) :=
+sorry
+
 end regular_algebra
