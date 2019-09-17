@@ -175,6 +175,8 @@ instance mem_of_pSet : has_mem (quotient pSet.setoid) (quotient pSet.setoid) :=
 
 lemma mem_iff {x y : pSet} : x ∈ y ↔ ⟦x⟧ ∈ ⟦y⟧ := by refl
 
+lemma not_mem_iff {x y : pSet} : x ∉ y ↔ ¬ (⟦x⟧ ∈ ⟦y⟧) := by refl
+
 lemma mem_sound {x y : pSet} : x ∈ y ↔ ⟦x⟧ ∈ ⟦y⟧ := mem_iff
 
 lemma mem_insert {x y z : pSet} (H : x ∈ insert y z) : equiv x y ∨ x ∈ z :=
@@ -223,6 +225,8 @@ subset_iff_all_mem.mp (H_trans y H₂) x H₁
 
 lemma empty_empty : (∅ : Set) = ⟦(∅ : pSet)⟧ := by refl
 
+@[simp]lemma empty_type : pSet.type ∅ = ulift empty := rfl
+
 lemma exists_mem_of_nonempty {x : pSet.{u}} (H : ¬ equiv x (∅ : pSet.{u})) : ∃ y, y ∈ x :=
 begin
   have := (Set.eq_empty ⟦x⟧).mpr, by_contra,
@@ -234,6 +238,21 @@ end
 
 lemma not_empty_of_not_equiv_empty {x : pSet.{u}} (H : ¬ equiv x (∅ : pSet.{u})) : ⟦x⟧ ≠ (∅ : Set) :=
 by {intro H', apply H, from equiv_of_eq H'}
+
+lemma is_epsilon_well_founded (x : pSet.{u}) : ∀ (u : pSet.{u}), u ⊆ x → ¬equiv u (∅ : pSet.{u}) → (∃ (y : pSet), y ∈ u ∧ ∀ (z' : pSet), z' ∈ u → z' ∉ y) :=
+begin
+  intros u Hu Hu_ne_empty, classical,
+     by_contra, push_neg at a,
+     replace Hu_ne_empty := Set.regularity ⟦u⟧ (not_empty_of_not_equiv_empty ‹_›),
+     rcases Hu_ne_empty with ⟨y,⟨Hy₁, Hy₂⟩⟩,
+     specialize a (quotient.out y), cases a, suffices : y ∉ ⟦u⟧, by contradiction,
+     {rw[mem_iff] at a, convert a, rw[quotient.out_eq]},
+     cases a with z Hz, cases Hz with Hz₁ Hz₂,
+     have : ⟦z⟧ ∈ (⟦u⟧ ∩ y : Set),
+       by {apply Set.mem_inter.mpr, rw[<-mem_iff], use ‹_›,
+           rw[mem_iff] at Hz₂, convert Hz₂, rw[quotient.out_eq]},
+     apply Set.mem_empty ⟦z⟧, rwa[Hy₂] at this
+end
 
 @[simp]lemma Ord_empty : Ord (∅ : pSet.{u}) :=
 begin
@@ -622,6 +641,15 @@ end
 @[simp]lemma mk_type_mk_eq''''' {k} : #(card_ex $ aleph k).type = (aleph k) :=
 by simp[card_ex]
 
+lemma ordinal.mk_card {η : ordinal} : #(ordinal.mk η).type = card η :=
+begin
+  apply limit_rec_on η,
+    { simp, exact fintype_card (ulift empty) },
+    { intros ρ H_eq, simp* },
+    { intros ρ H_limit IH, simp only [*, ordinal.mk_limit, mk_type],
+      rw ←(@card_type _ ρ.out.r ρ.out.wo), simp }
+end
+
 lemma zero_aleph : cardinal.omega = (aleph 0) := by simp
 
 @[simp]lemma mk_type_omega_eq : #(ordinal.mk (cardinal.omega).ord).type = cardinal.omega :=
@@ -668,6 +696,8 @@ lt_trans (omega_lt_aleph_one) (by simp)
 
 lemma subset_refl {x : pSet} : x ⊆ x :=
 by {apply subset_of_all_mem, from λ _ _, by assumption}
+
+@[simp]lemma subset_self {x : pSet} : x ⊆ x := subset_refl
 
 lemma subset_trans {x y z : pSet} : x ⊆ y → y ⊆ z → x ⊆ z :=
 by {simp only [subset_iff_all_mem], tidy}
@@ -753,17 +783,7 @@ begin
      right, right, rw[mem.congr_left ‹_›], rw[mem.congr_right Hy_h],
      from of_nat_mem_of_lt ‹_›, right, left, rw[mem.congr_left Hy_h], rw[mem.congr_right Hz_h],
      from of_nat_mem_of_lt ‹_›},
-    {intros u Hu Hu_ne_empty,
-     by_contra, push_neg at a,
-     replace Hu_ne_empty := Set.regularity ⟦u⟧ (not_empty_of_not_equiv_empty ‹_›),
-     rcases Hu_ne_empty with ⟨y,⟨Hy₁, Hy₂⟩⟩,
-     specialize a (quotient.out y), cases a, suffices : y ∉ ⟦u⟧, by contradiction,
-     {rw[mem_iff] at a, convert a, rw[quotient.out_eq]},
-     cases a with z Hz, cases Hz with Hz₁ Hz₂,
-     have : ⟦z⟧ ∈ (⟦u⟧ ∩ y : Set),
-       by {apply Set.mem_inter.mpr, rw[<-mem_iff], use ‹_›,
-           rw[mem_iff] at Hz₂, convert Hz₂, rw[quotient.out_eq]},
-     apply Set.mem_empty ⟦z⟧, rwa[Hy₂] at this}
+    { apply is_epsilon_well_founded }
 end
 
 lemma Ord_omega : Ord (omega : pSet) := ⟨is_ewo_omega, is_transitive_omega⟩
@@ -966,6 +986,8 @@ end
 
 def is_injective_function (x y f : pSet.{u}) : Prop := is_func x y f ∧ is_inj f
 
+def injects_into (x y : pSet.{u}) : Prop := ∃ f, is_injective_function x y f
+
 -- ∃ x, p x ∧ ∀ y, p y → y = x
 
 lemma Set.is_func_iff {x y f : Set.{u}} : (Set.is_func x y f) ↔ (f ⊆ Set.prod x y ∧ ∀ z, z ∈ x → (∃ w, Set.pair z w ∈ f ∧
@@ -1089,6 +1111,25 @@ begin
           rw equiv_iff_eq at *; cc }}
 end
 
+lemma Set.mk_unfold {x : pSet.{u}} : Set.mk x = ⟦x⟧ := by refl
+
+meta def pSet_cc : tactic unit :=
+  `[{try{simp only [equiv_iff_eq] at *},
+     try{simp only [mem_iff] at *},
+     try{simp only [not_mem_iff] at *},
+     try{simp only [subset_sound] at *},
+     try{simp only [Set.mk_unfold] at *},
+     cc}]
+
+lemma pSet.function.mk_inj_of_inj {x : pSet.{u}} (ψ : x.type → pSet.{u}) (H_ext : ∀ i j, pSet.equiv (x.func i) (x.func j) → pSet.equiv (ψ i) (ψ j)) (H_inj : ∀ i₁ i₂, equiv (ψ i₁) (ψ i₂) → equiv (x.func i₁) (x.func i₂)) : is_inj (pSet.function.mk ψ H_ext) :=
+begin
+  rintros w₁ w₂ v₁ v₂ ⟨Hpr₁, Hpr₂, H_eq⟩, rw mem_unfold at Hpr₁ Hpr₂,
+  rcases Hpr₁ with ⟨i,Hi⟩, rcases Hpr₂ with ⟨j,Hj⟩, erw ←eq_iff_eq_pair at Hi Hj,
+  suffices : equiv (x.func i) (x.func j),
+   by pSet_cc,
+  apply H_inj, pSet_cc
+end
+
 @[simp]lemma sep_subset {p : set pSet} {x : pSet} : {z ∈ x | p z} ⊆ x :=
 begin
   rw subset_iff_all_mem, intros w Hw,
@@ -1100,6 +1141,23 @@ begin
 end
 
 def P_ext : set pSet → Prop := λ χ, (∀ x y, equiv x y → χ x → χ y)
+
+@[simp]lemma P_ext_mem_left {y : pSet} : P_ext (λ x, x ∈ y) :=
+by {intros z₁ z₂ H_eq H_mem, rwa mem.congr_left H_eq at H_mem}
+
+@[simp]lemma P_ext_mem_right {x : pSet} : P_ext (λ y, x ∈ y) :=
+by {intros z₁ z₂ H_eq H_mem, rwa mem.congr_right H_eq at H_mem}
+
+@[simp]lemma P_ext_neg {χ : set pSet} (H : P_ext χ) : P_ext (λ z, ¬ (χ z)) :=
+begin
+  intros x y H_eq H', contrapose H', push_neg at H' ⊢, exact H y x (equiv.symm ‹_›) ‹_›
+end
+
+@[simp]lemma P_ext_injects_into_left {y : pSet.{u}} : P_ext (λ x, injects_into x y) :=
+begin
+  intros x₁ x₂ H_eq H, unfold injects_into at H ⊢, rcases H with ⟨f,Hf₁,Hf₂⟩, use f,
+  unfold is_injective_function is_func at Hf₁ ⊢, refine ⟨_,‹_›⟩, pSet_cc
+end
 
 lemma mem_sep_iff {p : set pSet} {x : pSet} {w : pSet} (H_congr : P_ext p) : w ∈ {z ∈ x | p z} ↔ w ∈ x ∧ p w :=
 begin
@@ -1329,3 +1387,4 @@ lemma exists_mem_of_regular {κ : cardinal} (H_reg : cardinal.is_regular κ) : �
 exists_mem_of_nonzero $ nonzero_of_regular H_reg
 
 end pSet
+

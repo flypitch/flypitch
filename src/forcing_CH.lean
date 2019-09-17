@@ -1,4 +1,4 @@
-import .bvm_extras .collapse
+import .bvm_extras .collapse .aleph_one
 
 /-
   Forcing the continuum hypothesis.
@@ -12,56 +12,32 @@ local infix ` ⟹ `:65 := lattice.imp
 
 local infix ` ⇔ `:50 := lattice.biimp
 
-local infix `≺`:70 := (λ x y, -(larger_than x y))
+local infix `≺`:70 := (λ x y, -(bSet.larger_than x y))
 
-local infix `≼`:70 := (λ x y, injects_into x y)
+local infix `≼`:70 := (λ x y, bSet.injects_into x y)
 
 @[reducible]private noncomputable definition ℵ₁ : pSet := (card_ex $ aleph 1)
-
-@[simp]lemma aleph_one_check_exists_mem {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹] {Γ : 𝔹} : Γ ≤ exists_mem ℵ₁̌  :=
-begin
-  simp only [show ℵ₁ = card_ex (aleph ↑1), by simp],
-  from check_exists_mem card_ex_aleph_exists_mem
-end
 
 local notation `ω` := (bSet.omega)
 
 local attribute [instance, priority 0] classical.prop_decidable
 
-/- For this release, we axiomatize the existence of ℵ₁ and its specification. -/
-
--- there exists a least ordinal not injecting into ω
-axiom aleph_one_exists_axiom {𝔹 : Type*} [nontrivial_complete_boolean_algebra 𝔹] {Γ : 𝔹} : Γ ≤ ⨆x, aleph_one_Ord_spec x
-
--- ℵ₁̌  ⊆ ℵ₁. This is generally true for all nontrivial 𝔹 and cardinals κ.
-axiom aleph_one_check_sub_aleph_one_axiom  {𝔹 : Type*} [nontrivial_complete_boolean_algebra 𝔹] {Γ : 𝔹}
-  : Γ ≤ (pSet.card_ex (aleph 1))̌  ⊆ᴮ classical.some (maximum_principle aleph_one_Ord_spec (by simp))
-
--- ℵ₁ is the successor cardinal of ω
-axiom aleph_one_le_of_omega_lt_axiom {𝔹 : Type*} [nontrivial_complete_boolean_algebra 𝔹] {Γ : 𝔹}
-  : Γ ≤ le_of_omega_lt (classical.some (maximum_principle aleph_one_Ord_spec (by simp)))
+namespace bSet
 
 section aleph_one
 
 variables {𝔹 : Type*} [nontrivial_complete_boolean_algebra 𝔹]
 
-lemma aleph_one_exists {Γ : 𝔹} : Γ ≤ ⨆x, aleph_one_Ord_spec x :=
-aleph_one_exists_axiom
-
-noncomputable def aleph_one : bSet 𝔹 :=
-classical.some (maximum_principle aleph_one_Ord_spec (by simp))
+noncomputable def aleph_one : bSet 𝔹 := a1
 
 lemma aleph_one_satisfies_spec {Γ : 𝔹} : Γ ≤ aleph_one_Ord_spec (aleph_one) :=
-begin
-  let p := _, change Γ ≤ aleph_one_Ord_spec (classical.some p),
-  rw ←(classical.some_spec p), from aleph_one_exists
-end
+a1_spec
 
 lemma aleph_one_check_sub_aleph_one {Γ : 𝔹} : Γ ≤ (pSet.card_ex (aleph 1))̌  ⊆ᴮ aleph_one :=
-aleph_one_check_sub_aleph_one_axiom
+aleph_one_check_sub_aleph_one_aux a1_Ord a1_spec
 
 lemma aleph_one_le_of_omega_lt {Γ : 𝔹} : Γ ≤ le_of_omega_lt (aleph_one) :=
-aleph_one_le_of_omega_lt_axiom
+a1_le_of_omega_lt
 
 end aleph_one
 
@@ -79,9 +55,9 @@ lemma check_forall (x : pSet.{u}) (ϕ : bSet 𝔹 → 𝔹) {h : B_ext ϕ} {b : 
 lemma aleph_one_check_is_aleph_one_of_omega_lt {Γ : 𝔹} (H : Γ ≤ bSet.omega ≺ (ℵ₁)̌ ): Γ ≤ (ℵ₁̌ ) =ᴮ (aleph_one) :=
 begin
   refine subset_ext aleph_one_check_sub_aleph_one _,
-  have := @aleph_one_satisfies_spec _ _ Γ, unfold aleph_one_Ord_spec at this,
-  bv_split, bv_split_at this_left,
-  refine this_right (ℵ₁ ̌) (by simp) _, dsimp at H, rw ←imp_bot at ⊢ H,
+  have := @bSet.aleph_one_satisfies_spec _ _ Γ, unfold aleph_one_Ord_spec at this,
+  bv_split, bv_split_at this_right,
+  refine this_right_right (ℵ₁ ̌) (by simp) _, dsimp at H, rw ←imp_bot at ⊢ H,
   bv_imp_intro H', refine H (larger_than_of_surjects_onto $ surjects_onto_of_injects_into ‹_› $ by simp),
 end
 
@@ -90,17 +66,14 @@ theorem CH_true_aux
   (H_not_lt    : ∀{Γ : 𝔹}, Γ ≤ - ((ℵ₁)̌  ≺ 𝒫(ω)))
   : ∀{Γ : 𝔹}, Γ ≤ CH :=
 begin
-  intro Γ, unfold CH, rw[<-imp_bot], bv_imp_intro,
-  bv_cases_at H x, bv_cases_at H_1 y, clear H H_1, bv_split, bv_split,
-  unfold le_of_omega_lt at H_aleph_one,
-  replace H_aleph_one := @H_aleph_one Γ_3 x ‹_›,
-  suffices H_aleph_one_lt_continuum : Γ_3 ≤ (ℵ₁)̌  ≺ 𝒫(ω),
-    from bv_absurd _ H_aleph_one_lt_continuum H_not_lt,
-  from bSet_lt_of_lt_of_le _ y _ (bSet_lt_of_le_of_lt _ x _ ‹_› ‹_›) ‹_›
+  intro Γ, unfold CH, rw ←imp_bot, bv_imp_intro H_CH,
+  suffices H_aleph_lt_continuum : Γ_1 ≤ (ℵ₁)̌  ≺ 𝒫(ω),
+    by {refine bv_absurd _ ‹Γ_1 ≤ (ℵ₁)̌  ≺ 𝒫(ω)› (by solve_by_elim) },
+  bv_cases_at H_CH x Hx, bv_split_at Hx, bv_split_at Hx_right, bv_cases_at Hx_right_right y Hy,
+  bv_split_at Hy, bv_split_at Hy_left, bv_split_at Hy_left_left,
+  refine bSet_lt_of_lt_of_le _ _ _ (bSet_lt_of_le_of_lt _ _ _ _ ‹_›) ‹_›,
+  refine @H_aleph_one Γ_3 x _ ‹_› ‹_›, from ‹_›
 end
-
--- note: CH₂ assumes that ℵ₁̌  ≼ ℵ₁, but this is always true for general 𝔹 (see 1.42ii in Bell)
-noncomputable def CH₂ : 𝔹 := (-(ℵ₁̌  ≺ 𝒫(ω))) ⊓ (ω ≺ ℵ₁̌ )
 
 def rel_of_array
   (x y : bSet 𝔹) (af : x.type → y.type → 𝔹)
@@ -119,13 +92,13 @@ begin
      apply bv_rw' Hz_1,
        { apply B_ext_supr, intro i,
        from @B_ext_pair_right 𝔹 _ (λ z, z ∈ᴮ rel_of_array x y af) (by simp) _},
-       { rw[rel_of_array], simp, rw[supr_comm],
+       { rw[rel_of_array], simp, erw[supr_comm],
          transitivity ⨆ (j : type x), af j i ⊓
            pair (func x j) (func y i) =ᴮ pair (func x j) (func y i),
-        conv {congr, skip, congr, funext, rw[bv_eq_refl _]}, simp[H_wide],
-        clear_except, tidy_context,
-        bv_cases_at a j, refine bv_use (j,i),
-        refine bv_use j, from ‹_›}},
+         conv {congr, skip, congr, funext, rw[bv_eq_refl _]}, simp[H_wide],
+         clear_except, tidy_context,
+         bv_cases_at a j, refine bv_use (j,i),
+         refine bv_use j, from ‹_›}},
     { change B_ext _, from B_ext_term _ _ (B_ext_mem_left) (by simp) }
 end
 
@@ -211,7 +184,7 @@ lemma rel_of_array_is_func'  (x y : bSet 𝔹) (af : x.type → y.type → 𝔹)
 begin
   refine le_inf (by apply rel_of_array_extensional; assumption) _, rw bSet.is_total,
   rw[<-bounded_forall], bv_intro i_x, bv_imp_intro Hi_x, rw[<-bounded_exists],
-    { simp[*,rel_of_array, -Γ_1], rw[supr_comm, supr_prod],
+    { simp[*,rel_of_array, -Γ_1], erw[supr_comm, supr_prod],
       apply bv_use i_x,
       transitivity ⨆ (j : type y),
       af ((i_x, j).fst) ((i_x, j).snd) ⊓ pair (func x i_x) (func y j) =ᴮ pair (func x ((i_x, j).fst)) (func y ((i_x, j).snd)),
@@ -221,54 +194,6 @@ begin
     { change B_ext _, apply B_ext_supr, intro, apply B_ext_inf,
       { simp },
       { from B_ext_term _ _ (B_ext_mem_left) (by simp) }}
-end
-
-section
-local attribute [instance, priority 10] regular_open_algebra
-
-
-/- this lemma is false
-lemma omega_closed_regular_opens {α : Type*} [topological_space α] [hα : nonempty α]
-  (B : set (set α)) (hB : is_topological_basis B)
-  (h : ∀(s : ℕ → B) (H_nonzero : ∀ n, (s n).1 ≠ ∅) (H_chain : ∀ n, s (n+1) ≤ s n),
-  ∃t ∈ B, (t : set α) ≠ ∅ ∧ t ⊆ ⨅ n, (s n).1) :
-  omega_closed (regular_opens α) :=
-begin
-  intros s h1s h2s,
-  have : ∀(b : B), (∀n, b.1 ∩ s n ≠ ∅) → ∀ n, ∃(b' : B), b'.1 ≠ ∅ ∧ b'.1 ⊆ s n ∩ b'.1 ∧
-    (∀m, b.1 ∩ s m ≠ ∅),
-  { },
-  have : ∀(b : B) (n : ℕ), b.1 ∩ s n ≠ ∅ → ∃(b' : B), b'.1 ≠ ∅ ∧ b'.1 ⊆ s n ∧ b'.1 ⊆ b.1,
-  { intros b n hb,
-    let o := b.1 ∩ (s n),
-    have ho : is_open o,
-    { apply _root_.is_open_inter, apply is_open_of_is_topological_basis hB b.2,
-      exact is_open_of_is_regular (s n).2 },
-    rcases nonempty_basis_subset hB hb ho with ⟨o', h1o', h2o', h3o'⟩,
-    rw [set.subset_inter_iff] at h3o',
-    refine ⟨⟨o', h1o'⟩, h2o', h3o'.2, h3o'.1⟩ },
-  have : ∃(s' : ℕ → B), ∀ n, (s' n).1 ≠ ∅ ∧ (s' n).1 ⊆ s n ∧ (s' (n+1)).1 ⊆ (s' n).1,
-  { sorry
-    -- apply @classical.axiom_of_choice _ _ (λ n (sn : B), sn.1 ≠ ∅ ∧ sn.1 ⊆ s n ∧ ),
-    -- intro n, specialize h1s n, rw [regular_open.bot_lt] at h1s,
-    -- cases h1s with x hx,
-    -- have := mem_basis_subset_of_mem_open hB hx (is_open_of_is_regular (s n).2),
-    -- rcases this with ⟨s, hsB, hxs, hs⟩,
-    -- use ⟨s, hsB⟩, dsimp only, rw [set.ne_empty_iff_exists_mem],
-    -- exact ⟨⟨x, hxs⟩, hs⟩
-    },
-  cases this with s' hs',
-  rw [forall_and_distrib, forall_and_distrib] at hs', rcases hs' with ⟨h1s', h2s', h3s'⟩,
-  rw [regular_open.bot_lt, ←set.ne_empty_iff_exists_mem],
-  rcases h s' h1s' h3s' with ⟨t, h1t, h2t, h3t⟩,
-  apply ne_empty_of_subset _ h2t,
-  rw [fst_infi],
-  refine set.subset.trans (in_p_p_of_open $ is_open_of_is_topological_basis hB h1t) _,
-  apply p_p_mono, refine set.subset.trans h3t _,
-  show (⨅ (n : ℕ), (s' n).val) ≤ ⨅ (i : ℕ), (s i).val,
-  refine infi_le_infi _, exact h2s'
-end
--/
 end
 
 section function_reflect
@@ -283,9 +208,9 @@ variables {D : set 𝔹}
           (AE : ∀ (x y : pSet) {f : bSet 𝔹} {Γ : 𝔹},
                   Γ ≤ is_func' x̌  y̌  f →
                     ⊥ < Γ →
-                      ∀ (i : type x),
-                        ∃ (j : type y) (Γ' : 𝔹) (H_nonzero' : ⊥ < Γ') (H_le : Γ' ≤ Γ),
-                          Γ' ≤ is_func' x̌  y̌  f ∧ Γ' ≤ pair (func x i)̌  (func y j)̌  ∈ᴮ f ∧ Γ' ∈ D )
+                      ∀ (i : pSet.type x),
+                        ∃ (j : pSet.type y) (Γ' : 𝔹) (H_nonzero' : ⊥ < Γ') (H_le : Γ' ≤ Γ),
+                          Γ' ≤ is_func' x̌  y̌  f ∧ Γ' ≤ pair (pSet.func x i)̌  (pSet.func y j)̌  ∈ᴮ f ∧ Γ' ∈ D )
 
 
 local notation `ae₀` := AE pSet.omega y H H_nonzero
@@ -384,13 +309,13 @@ include H_function
 lemma function_reflect.B_infty_le_function : (⨅ n, (function_reflect.B H_nonzero H AE n)) ≤ is_function ω y̌ g :=
 le_trans (by apply function_reflect.B_infty_le_Γ) H_function
 
-lemma function_reflect_aux₃ : (⨅n, function_reflect.B H_nonzero H AE n) ≤ ⨅ (p : bSet 𝔹), p ∈ᴮ prod omegǎ  y̌  ⟹ (p ∈ᴮ (function_reflect.f' H_nonzero H AE)̌  ⇔ p ∈ᴮ g) :=
+lemma function_reflect_aux₃ : (⨅n, function_reflect.B H_nonzero H AE n) ≤ ⨅ (p : bSet 𝔹), p ∈ᴮ prod pSet.omegǎ  y̌  ⟹ (p ∈ᴮ (function_reflect.f' H_nonzero H AE)̌  ⇔ p ∈ᴮ g) :=
 begin
   rw ←bounded_forall, swap, {change B_ext _, simp},
   bv_intro pr, rcases pr with ⟨⟨i⟩, j⟩, simp only [prod_check_bval, top_imp, prod_func],
   have := (function_reflect_aux₂ H_nonzero H AE) i, bv_split_at this,
   refine le_inf _ _; bv_imp_intro H',
-    { have this' : Γ_1 ≤ (pair (func omegǎ  {down := i}) (func y̌  j)) =ᴮ (pair (func omega {down := i})̌  (func y (function_reflect.f H_nonzero H AE i))̌ ),
+    { have this' : Γ_1 ≤ (pair (func pSet.omegǎ  {down := i}) (func y̌  j)) =ᴮ (pair (pSet.func pSet.omega {down := i})̌  (pSet.func y (function_reflect.f H_nonzero H AE i))̌ ),
         by {rw pair_eq_pair_iff, refine ⟨bv_refl, _⟩,
             refine eq_of_is_func'_of_eq (is_func'_of_is_function _) _ _ _, show _ ≤ is_function bSet.omega y̌ (function_reflect.f' H_nonzero H AE)̌ ,
             refine check_is_func _, apply pSet.function.mk_is_func, intro n, cases n, simp,
@@ -401,10 +326,10 @@ begin
       have := (inf_le_right : Γ_1 ≤ _),
       exact le_trans this (le_trans
               (by apply function_reflect_aux) (infi_le_of_le i (by refl)))},
-    { have this' : Γ_1 ≤ (pair (func omegǎ  {down := i}) (func y̌  j)) =ᴮ (pair (func omega {down := i})̌  (func y (function_reflect.f H_nonzero H AE i))̌ ),
+    { have this' : Γ_1 ≤ (pair (func pSet.omegǎ  {down := i}) (func y̌  j)) =ᴮ (pair (pSet.func pSet.omega {down := i})̌  (pSet.func y (function_reflect.f H_nonzero H AE i))̌ ),
         by {rw pair_eq_pair_iff, refine ⟨bv_refl, _⟩,
             refine eq_of_is_func'_of_eq (is_func'_of_is_function _) _ _ _, show _ ≤ is_function _ _ _, refine le_trans inf_le_right (function_reflect.B_infty_le_function _ _ _ H_function),
-            show _ ≤ _ =ᴮ _, from (bv_refl : _ ≤ (func omegǎ  {down := i}) =ᴮ _), from H',
+            show _ ≤ _ =ᴮ _, from (bv_refl : _ ≤ (func pSet.omegǎ  {down := i}) =ᴮ _), from H',
         refine le_trans (inf_le_right) (infi_le_of_le i _), apply function_reflect.B_pair },
       apply @bv_rw' _ _ _ _ _ this' (λ z, z ∈ᴮ ((function_reflect.f' H_nonzero H AE)̌ )), simp,
       apply @bv_rw' _ _ _ _ _ (bv_symm check_pair) (λ z, z ∈ᴮ  (function_reflect.f' H_nonzero H AE)̌ ), simp,
@@ -412,7 +337,7 @@ begin
 end
 
 include H_docs
-lemma function_reflect_of_omega_closed : ∃ (f : pSet.{u}) (Γ' : 𝔹) (H_nonzero' : ⊥ < Γ') (H_le' : Γ' ≤ Γ), (Γ' ≤ f̌ =ᴮ g) ∧ is_func omega y f :=
+lemma function_reflect_of_omega_closed : ∃ (f : pSet.{u}) (Γ' : 𝔹) (H_nonzero' : ⊥ < Γ') (H_le' : Γ' ≤ Γ), (Γ' ≤ f̌ =ᴮ g) ∧ pSet.is_func pSet.omega y f :=
 begin
   refine ⟨function_reflect.f' H_nonzero H AE,_⟩,
     { use (⨅ n, function_reflect.B H_nonzero H AE n), -- this is Γ'
@@ -432,7 +357,11 @@ end function_reflect
 
 end lemmas
 
+end bSet
+
 namespace collapse_algebra
+
+open bSet
 
 local prefix `#`:50 := cardinal.mk
 local attribute [instance] collapse_space
@@ -531,9 +460,6 @@ private lemma eq₀ : ((ℵ₁)̌  : bSet β).type = (ℵ₁).type := by simp
 private lemma eq₀' : ((powerset omega)̌  : bSet.{u} β).type = (powerset omega).type := by simp
 
 private lemma eq₁ : ((ℵ₁̌  : bSet β).type × ((powerset omega)̌  : bSet β).type) = ((ℵ₁).type × (powerset omega : pSet.{u}).type ):= by simp
-
--- lemma aleph_one_type_uncountable' : (aleph 0) < # ℵ₁.type :=
--- by simp only [succ_le, cardinal.aleph_zero, pSet.omega_lt_aleph_one, pSet.mk_type_mk_eq''']
 
 lemma aleph_one_type_uncountable : cardinal.omega.succ ≤ # ℵ₁.type :=
 by simp only [succ_le, pSet.omega_lt_aleph_one, pSet.mk_type_mk_eq''']
@@ -701,7 +627,7 @@ lemma continuum_le_continuum_check {Γ : β} :
 begin
     refine injects_into_trans _ _, tactic.rotate 1, from powerset_injects_into_functions,
   have : (Γ : β) ≤ injects_into (functions pSet.omega (of_nat 2) : pSet.{u})̌  (powerset (omega) : pSet.{u})̌ ,
-    by {  refine injects_into_of_is_injective_function _,
+    by { rw injects_into_iff_injection_into,
          rcases functions_2_injects_into_powerset (pSet.omega : pSet.{u}) with ⟨f,Hf⟩,
          apply bv_use f̌, refine check_is_injective_function _, from Hf
  },
@@ -720,8 +646,5 @@ end
 
 theorem CH_true : (⊤ : β) ≤ CH :=
 CH_true_aux aleph_one_check_le_of_omega_lt (by apply aleph_one_not_lt_powerset_omega)
-
-theorem CH₂_true : (⊤ : β) ≤ CH₂ :=
-le_inf (by apply aleph_one_not_lt_powerset_omega) (omega_lt_aleph_one)
 
 end collapse_algebra

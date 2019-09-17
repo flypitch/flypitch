@@ -20,7 +20,7 @@ local prefix `∼` := bd_not
 local infixr ` ⊓' `:70 := bd_and
 local infixr ` ⊔' `:70 := bd_or
 
--- local infix ` ⟹ `:62 := bd_imp
+local infix ` ⟹'' `:62 := bd_imp
 
 local infix ` ⇔' `:50 := lattice.biimp
 
@@ -427,9 +427,28 @@ by {simp[injects_into_f, injects_into]}
 
 --⨆ x, ⨆y, (ℵ₀ ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(ℵ₀))
 
+def is_transitive_f : bounded_formula L_ZFC' 1 := ∀' ((&'0 ∈' &'1) ⟹ &'0 ⊆' &'1)
+
+def epsilon_trichotomy_f : bounded_formula L_ZFC' 1 :=
+∀' ((&'0 ∈' &'1) ⟹''(∀' (&'0 ∈' &'2 ⟹'' (&'1 ≃ &'0 ⊔' &'1 ∈' &'0) ⊔' &'0 ∈' &'1)))
+
+def epsilon_well_founded_f : bounded_formula L_ZFC' 1 :=
+∀' (((&'0 ⊆' &'1) ⟹'' ((∼(&'0 ≃ ∅')) ⟹'' ∃' (&'0 ∈' &'1 ⊓' (∀' (&'0 ∈' &'2 ⟹'' ∼(&'0 ∈' &'1)))))))
+
+def ewo_f : bounded_formula L_ZFC' 1 := epsilon_trichotomy_f ⊓' epsilon_well_founded_f
+
+def Ord_f : bounded_formula L_ZFC' 1 := ewo_f ⊓' is_transitive_f
+
+@[simp]lemma Ord_f_is_Ord {x : V β} : boolean_realize_bounded_formula (by exact [x]) Ord_f dvector.nil = Ord x :=
+by {simp [Ord_f,ewo_f,is_transitive_f,epsilon_well_founded_f, epsilon_trichotomy_f], refl}
+
+def non_empty_f : bounded_formula L_ZFC' 1 := ∼(&'0 ≃ ∅')
+
+@[simp]lemma non_empty_f_is_non_empty {x : V β} : boolean_realize_bounded_formula (by exact [x]) non_empty_f dvector.nil = not_empty x := by {simp[non_empty_f], refl}
+
 def CH_f : sentence L_ZFC' :=
-(∀' (∀' (∼((∼(substmax_bounded_formula (larger_than_f) ω' ↑ 1) ⊓'
-  ∼larger_than_f ⊓' (injects_into_f[(Powerset omega) /0].cast1))))))
+(∀' (non_empty_f ⟹ (Ord_f ⟹'' (∀' ((Ord_f.cast1) ⟹'' (∼((∼(substmax_bounded_formula (larger_than_f) ω' ↑ 1) ⊓'
+  ∼larger_than_f ⊓' (injects_into_f[(Powerset omega) /0].cast1)))))))))
 
 lemma subst_unfold₁ : ((substmax_bounded_formula (larger_than_f) ω' ↑ 1)) =
 ∃' (∃' (((&'1 ⊆' ω') ⊓' ( is_func'_f₂↑' 1 # 2)) ⊓'
@@ -450,11 +469,11 @@ example : (is_func_f) ↑' 1 # 2 = (is_func_f.cast dec_trivial : bounded_formula
 variable {β}
 lemma CH_f_is_CH : ⟦CH_f⟧[V β] = CH :=
 begin
-  unfold CH_f, simp [-substmax_bounded_formula,CH, neg_supr],
-  congr, ext, congr, ext, 
-  simp only [sup_assoc], congr,
+  unfold CH_f, simp [-substmax_bounded_formula,CH, neg_supr, lattice.imp],
+  congr, ext, congr, simp, ext, 
+  simp only [sup_assoc], congr, 
   swap, rw subst_unfold₂, simp[-top_le_iff], refl, rename x_1 y,
-  rw subst_unfold₁, unfold larger_than, simp, congr, ext S,
+  erw subst_unfold₁, unfold larger_than, simp, congr, ext S,
   congr, ext f, congr' 1, congr, 
   rw subst_unfold₃, unfold is_func', simp, congr,
 end
@@ -472,7 +491,7 @@ open pSet cardinal
 section CH_unprovable
 
 
-lemma neg_CH_f : ⊤ ⊩[V 𝔹_cohen] ∼CH_f :=
+lemma V_𝔹_cohen_models_neg_CH : ⊤ ⊩[V 𝔹_cohen] ∼CH_f :=
 begin
   rw neg_CH_f_sound, from neg_CH
 end
@@ -480,7 +499,7 @@ end
 instance V_𝔹_nonempty : nonempty (V 𝔹_cohen) := ⟨bSet.empty⟩
 
 theorem CH_f_unprovable : ¬ (ZFC' ⊢' CH_f) :=
-unprovable_of_model_neg _ (bSet_models_ZFC' _) (nontrivial.bot_lt_top) neg_CH_f
+unprovable_of_model_neg _ (bSet_models_ZFC' _) (nontrivial.bot_lt_top) V_𝔹_cohen_models_neg_CH
 
 end CH_unprovable
 

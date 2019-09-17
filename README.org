@@ -1,6 +1,6 @@
 #+TITLE: Flypitch
 *** Goals
-The Flypitch project aims to produce a formal proof of the [[https://en.wikipedia.org/wiki/Continuum_hypothesis#Independence_from_ZFC][independence of the continuum hypothesis]].
+The Flypitch project aimed to produce a formal proof of the [[https://en.wikipedia.org/wiki/Continuum_hypothesis#Independence_from_ZFC][independence of the continuum hypothesis]].
 
 *** Documentation
 A conventional human-readable account of the proof written in type-theoretic foundations, upon which some parts of the formalization will be based, is [[https://www.github.com/flypitch/flypitch-notes/][located here]].
@@ -48,8 +48,7 @@ Our paper /A formalization of forcing and the unprovability of the continuum hyp
   series    = {LIPIcs},
   volume    = {141},
   publisher = {Schloss Dagstuhl - Leibniz-Zentrum fuer Informatik},
-  year      = {2019},
-  note      = {To appear}
+  year      = {2019}
 }
 #+end_src
 

@@ -108,15 +108,17 @@ end tactic
 
 -- #eval (@expr.to_raw_fmt tt test').to_string
 
-def my_little_formula : preformula L_empty 0 :=
-by parse_formula (∀ x : ℕ, x = x)
+constant α : Type
 
-def my_larger_formula : preformula L_empty _ :=
-by parse_formula (∀ x y : ℕ, (x = y))
+def my_little_formula : preformula L_empty 0 :=
+by parse_formula (∀ x : α, x = x)
+
+def my_larger_formula : preformula L_empty 0 :=
+by parse_formula (∀ x y : α, (x = y))
 
 -- #reduce my_little_formula -- it works!
 -- ∀'(&0 ≃ &0)
 
--- #reduce my_larger_formula -- it still works!
+-- #print my_larger_formula -- it still works!
 -- ∀'∀'(&1 ≃ &0)
 

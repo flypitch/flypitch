@@ -42,7 +42,7 @@ meta def str_formula : ∀ {n : ℕ}, bounded_formula L_ZFC' n → ℕ → strin
  | n ((∀' (f ⟹ bd_falsum)) ⟹ bd_falsum) m := "∃x" ++ to_string(m + 1) ++ "," ++ str_formula f (m+1)
  | n (∀' f) m := "(∀x"++ to_string(m + 1) ++ "," ++ (str_formula f (m+1) ) ++ ")"
  | _ bd_falsum _ := "⊥"
-| n (f ⟹ bd_falsum) m := "~" ++ str_formula f m
+| n (f ⟹ bd_falsum) m := "¬ " ++ str_formula f m
  | n (bd_apprel (bd_apprel (bd_rel ((ε : L_ZFC'.relations 2))) a) b) m := str_preterm _ _ m a ++ " ∈ " ++ str_preterm _ _ m b
  | n (bd_apprel (f₁) f₂) m := str_preformula n 1 m f₁ ++ "(" ++ str_term n m f₂ ++ ")"
  | n (bd_imp a b) m := "(" ++ str_formula a m ++ " ⟹ " ++ str_formula b m ++ ")"
@@ -67,4 +67,5 @@ meta def testsentence : sentence L_ZFC' := ∀' ∀' (&1 ≃ &0 ⟹ ∀' (&0 ≃
 -- #eval print_formula axiom_of_infinity
 -- -- "(∅ ∈ ω∧(∀x1,(x1 ∈ ω ⟹ ∃x2,(x2 ∈ ω∧x1 ∈ x2))))"
 -- #eval print_formula_list ([axiom_of_emptyset, axiom_of_pairing])
+-- #eval print_formula axiom_of_regularity
 end test

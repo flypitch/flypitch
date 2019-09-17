@@ -535,24 +535,21 @@ refine le_inf _ _,
   {refine mk_inj_of_inj _ _, from λ _ _ _, cohen_real.inj ‹_›},
 end
 
+lemma ℵ₁_Ord {Γ : 𝔹} : Γ ≤ Ord (ℵ₁̌ ) := by simp
+
+lemma ℵ₂_Ord {Γ : 𝔹} : Γ ≤ Ord (ℵ₂̌ ) := by simp
+
 theorem neg_CH : (⊤ : 𝔹) ≤ -CH :=
 begin
-  dsimp [CH], rw[lattice.neg_neg], apply bv_use (ℵ₁̌ ),
-  apply bv_use (ℵ₂̌ ), simp only [lattice.le_inf_iff],
-  refine ⟨⟨ℵ₀_lt_ℵ₁, ℵ₁_lt_ℵ₂⟩, bv_use neg_CH_func⟩,
-  from ℵ₂_le_𝔠
-end
-
-def CH' : 𝔹 := - ⨆ x, (ℵ₀ ≺ x) ⊓ (x ≺ 𝒫(ℵ₀))
-
-theorem neg_CH' : ⊤ ≤ -CH' :=
-begin
-  have := neg_CH, unfold CH at this,
-  erw lattice.neg_neg at this ⊢, bv_cases_at this x Hx,
-  bv_cases_at Hx y Hy,
-  apply bv_use x, bv_split_at Hy, bv_split_at Hy_left,
-  refine le_inf ‹_› _, refine bSet_lt_of_lt_of_le _ _ _ _ _,
-  tactic.rotate 2, exact Hy_right, exact Hy_left_right
+  dsimp [CH], rw[lattice.neg_neg],
+  apply bv_use (ℵ₁̌ ),
+  refine le_inf (by {rw [nonempty_iff_exists_mem], exact aleph_one_check_exists_mem}) _,
+  refine le_inf (ℵ₁_Ord) _,
+  apply bv_use (ℵ₂̌ ),
+  refine le_inf (le_inf (le_inf ℵ₂_Ord _) _) _,
+    { from ℵ₀_lt_ℵ₁ },
+    { from ℵ₁_lt_ℵ₂ },
+    { apply bv_use neg_CH_func, from ℵ₂_le_𝔠 }
 end
 
 end neg_CH

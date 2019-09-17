@@ -405,6 +405,19 @@ end
 lemma nonzero_of_regular {κ : cardinal} (H_reg : cardinal.is_regular κ) : 0 < κ.ord :=
 by {rw cardinal.lt_ord, from lt_of_lt_of_le omega_pos H_reg.left}
 
+lemma injection_of_mk_le {α β : Type u} (H_le : #α ≤ #β) : ∃ f : α → β, function.injective f :=
+begin
+  rw cardinal.out_embedding at H_le,
+  have := classical.choice H_le,
+  cases this with f Hf,
+  suffices : ∃ g₁ : α → quotient.out (#α), function.injective g₁ ∧ ∃ g₂ : quotient.out (#β) → β, function.injective g₂,
+    by {rcases this with ⟨g₁,Hg₁,g₂,Hg₂⟩, use g₂ ∘ f ∘ g₁, simp[function.injective_comp, *] },
+  have this₁ : #(quotient.out (#α)) = #α := mk_out _, have this₂ : #(quotient.out _) = #β := mk_out _,
+  erw quotient.eq' at this₁ this₂, replace this₁ := classical.choice this₁, replace this₂ := classical.choice this₂,
+  cases this₁, cases this₂,
+  refine ⟨this₁_inv_fun, _, this₂_to_fun, _⟩; apply function.injective_of_left_inverse; from ‹_›
+end
+
 end cardinal_lemmas
 
 end cardinal
@@ -833,6 +846,12 @@ lemma biimp_mp {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⇔ a�
 lemma biimp_mpr {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⇔ a₂) ≤ (a₂ ⟹ a₁) :=
   by apply inf_le_right
 
+lemma biimp_comm {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⇔ a₂) = (a₂ ⇔ a₁) :=
+by {unfold biimp, rw lattice.inf_comm}
+
+lemma biimp_symm {α : Type*} [boolean_algebra α] {a₁ a₂ : α} {Γ : α} : Γ ≤ (a₁ ⇔ a₂) ↔ Γ ≤ (a₂ ⇔ a₁) :=
+by rw biimp_comm
+
 @[simp]lemma imp_le_of_right_le {α : Type*} [boolean_algebra α] {a a₁ a₂ : α} {h : a₁ ≤ a₂} : a ⟹ a₁ ≤ (a ⟹ a₂) :=
 sup_le (by apply le_sup_left) $ le_sup_right_of_le h
 
@@ -1042,11 +1061,15 @@ end
 @[simp]lemma top_le_imp_top {β : Type*} {b : β} [boolean_algebra β] : ⊤ ≤ b ⟹ ⊤ :=
 by rw[<-deduction]; apply le_top
 
+lemma poset_yoneda_iff {β : Type*} [partial_order β] {a b : β} : a ≤ b ↔ (∀ {Γ : β}, Γ ≤ a → Γ ≤ b) := ⟨λ _, by finish, λ H, by specialize @H a; finish⟩
+
+lemma poset_yoneda_top {β : Type*} [bounded_lattice β] {b : β} : ⊤ ≤ b ↔ (∀ {Γ : β}, Γ ≤ b) := ⟨λ _, by finish, λ H, by apply H⟩
+
 lemma poset_yoneda {β : Type*} [partial_order β] {a b : β} (H : ∀ Γ : β, Γ ≤ a → Γ ≤ b) : a ≤ b :=
-by specialize H a; finish
+by rwa poset_yoneda_iff
 
 lemma poset_yoneda_inv {β : Type*} [partial_order β] {a b : β} (Γ : β) (H : a ≤ b) :
-  Γ ≤ a → Γ ≤ b := λ _, le_trans ‹_› ‹_›
+  Γ ≤ a → Γ ≤ b := by rw poset_yoneda_iff at H; apply H
 
 lemma split_context {β : Type*} [lattice β] {a₁ a₂ b : β} {H : ∀ Γ : β, Γ ≤ a₁ ∧ Γ ≤ a₂ → Γ ≤ b} : a₁ ⊓ a₂ ≤ b :=
 by {apply poset_yoneda, intros Γ H', apply H, finish}
@@ -1277,6 +1300,28 @@ do  v_a <- target >>= lhs_of_le,
                          succeeds (unify Γ_new e'') >>
                    tactic.replace (get_name H) ``(_ : %%Γ_new ≤ _) >> swap >> assumption)
 
+meta def specialize_context_assumption_core (Γ_old : expr) : tactic unit :=
+do  v_a <- target >>= lhs_of_le,
+    tp <- infer_type Γ_old,
+    Γ_name <- get_unused_name "Γ",
+    v <- mk_mvar, v' <- mk_mvar,
+    Γ_new <- pose Γ_name none v,
+    -- TODO(jesse) try replacing to_expr with an expression via mk_app instead
+    new_goal <- to_expr ``((%%Γ_new : %%tp) ≤ %%v'),
+    tactic.change new_goal,
+    ctx <- local_context,
+    ctx' <- ctx.mfilter
+      (λ e, (do infer_type e >>= lhs_of_le >>= λ e', succeeds $ is_def_eq Γ_old e') <|> return ff),
+      ctx'.mmap' (λ H, tactic.replace (get_name H) ``(le_trans (by exact inf_le_right <|> assumption : %%Γ_new ≤ _) %%H)),
+    ctx2 <- local_context,
+    ctx2' <- ctx.mfilter (λ e, (do infer_type e >>= lhs_of_le >>= instantiate_mvars >>= λ e', succeeds $ is_def_eq Γ_new e') <|> return ff),
+    -- trace ctx2',
+    ctx2'.mmap' (λ H, do H_tp <- infer_type H,
+                         e'' <- lhs_of_le H_tp,
+                         succeeds (unify Γ_new e'') >>
+                   tactic.replace (get_name H) ``(_ : %%Γ_new ≤ _) >> swap >> assumption)
+
+
 
 /-- If the goal is an inequality `a ≤ b`, extracts `a` and attempts to specialize all
   facts in context of the form `Γ ≤ d` to `a ≤ d` (this requires a ≤ Γ) -/
@@ -1284,6 +1329,11 @@ meta def specialize_context (Γ : parse texpr) : tactic unit :=
 do
   Γ_old <- i_to_expr Γ,
   specialize_context_core Γ_old
+
+meta def specialize_context_assumption (Γ : parse texpr) : tactic unit :=
+do
+  Γ_old <- i_to_expr Γ,
+  specialize_context_assumption_core Γ_old
 
 meta def specialize_context' (Γ : parse texpr) : tactic unit :=
 do

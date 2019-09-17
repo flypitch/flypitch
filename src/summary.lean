@@ -93,10 +93,11 @@ theorem ZFC'_is_consistent {β : Type} [nontrivial_complete_boolean_algebra β] 
 def CH_sentence := CH_f
 
 theorem CH_unprovable_from_ZFC : ¬ (ZFC' ⊢' CH_sentence) :=
-unprovable_of_model_neg _ (fundamental_theorem_of_forcing) (nontrivial.bot_lt_top) neg_CH_f
+unprovable_of_model_neg (V 𝔹_cohen) fundamental_theorem_of_forcing
+  (nontrivial.bot_lt_top) V_𝔹_cohen_models_neg_CH
 
 theorem neg_CH_unprovable_from_ZFC : ¬ (ZFC' ⊢' ∼CH_sentence) :=
-unprovable_of_model_neg (V 𝔹_collapse) (bSet_models_ZFC' _)
+unprovable_of_model_neg (V 𝔹_collapse) fundamental_theorem_of_forcing
   (nontrivial.bot_lt_top) (by {rw forced_in_not, from V_𝔹_collapse_models_CH})
 
 def independent {L : Language} (T : Theory L) (f : sentence L) : Prop :=
@@ -113,7 +114,7 @@ end
 /- `propext` (propositional extensionality), `classical.choice` (a type-theoretic choice principle) and `quot.sound` (quotients) are the standard axioms in Lean. -/
 
 #print axioms neg_CH_unprovable_from_ZFC
-/- same as above, plus axiomatization of ℵ₁ -/
+/- same as above  -/
 
 #print axioms independence_of_CH
-/- same as above, plus axiomatization of ℵ₁ -/
+/- same as above -/

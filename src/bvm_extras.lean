@@ -39,8 +39,19 @@ by {rw[mem_unfold], apply bv_use none, unfold singleton, simp}
 lemma eq_of_mem_singleton' {x y : bSet 𝔹} : y ∈ᴮ {x} ≤ x =ᴮ y :=
 by {rw[mem_unfold], apply bv_Or_elim, intro i, cases i, simp[bv_eq_symm], repeat{cases i}}
 
-lemma eq_of_mem_singleton {x y : bSet 𝔹} {c : 𝔹} {h : c ≤ y ∈ᴮ {x}} : c ≤ x =ᴮ y :=
+lemma eq_of_mem_singleton {x y : bSet 𝔹} {c : 𝔹} (h : c ≤ y ∈ᴮ {x}) : c ≤ x =ᴮ y :=
 le_trans h (by apply eq_of_mem_singleton')
+
+lemma eq_mem_singleton {x y : bSet 𝔹} {Γ : 𝔹} : Γ ≤ y ∈ᴮ {x} → Γ ≤ y =ᴮ x :=
+λ _, bv_symm $ eq_of_mem_singleton ‹_›
+
+lemma eq_zero_of_mem_one {x : bSet 𝔹} {Γ : 𝔹} : Γ ≤ x ∈ᴮ 1 → Γ ≤ x =ᴮ 0 :=
+begin
+  intro H_mem,
+  suffices : Γ ≤ x ∈ᴮ {0},
+    by exact eq_mem_singleton this,
+  apply bv_rw' (bv_symm one_eq_singleton_zero), simpa
+end
 
 lemma mem_singleton_of_eq {x y : bSet 𝔹} {c : 𝔹} {h : c ≤ x =ᴮ y} : c ≤ y ∈ᴮ {x} :=
 begin
@@ -80,7 +91,7 @@ infix ` ∩ᴮ `:81 := _root_.bSet.binary_inter
 
 @[simp, cleanup] lemma binary_inter_func {x y : bSet 𝔹} {i} : (x ∩ᴮ y).func i = x.func i := rfl
 
-lemma binary_inter_mem_iff {x y z : bSet 𝔹} {Γ} : Γ ≤ z ∈ᴮ (x ∩ᴮ y) ↔ (Γ ≤ z ∈ᴮ x ∧ Γ ≤ z ∈ᴮ y) :=
+lemma mem_binary_inter_iff {x y z : bSet 𝔹} {Γ} : Γ ≤ z ∈ᴮ (x ∩ᴮ y) ↔ (Γ ≤ z ∈ᴮ x ∧ Γ ≤ z ∈ᴮ y) :=
 begin
   refine ⟨_,_⟩; intro H,
     { rw[mem_unfold] at H, refine ⟨_,_⟩,
@@ -98,29 +109,43 @@ begin
       bv_split, bv_split_goal, bv_cc },
 end
 
+lemma subset_binary_inter_iff {x y z : bSet 𝔹} {Γ} : Γ ≤ z ⊆ᴮ x ∩ᴮ y ↔ (Γ ≤ z ⊆ᴮ x ∧ Γ ≤ z ⊆ᴮ y) :=
+begin
+  refine ⟨_,_⟩; intro H,
+    { refine ⟨_,_⟩,
+      { rw subset_unfold' at H ⊢, bv_intro w, bv_imp_intro Hw,
+        exact (mem_binary_inter_iff.mp (H w ‹_›)).left },
+      { rw subset_unfold' at H ⊢, bv_intro w, bv_imp_intro Hw,
+        exact (mem_binary_inter_iff.mp (H w ‹_›)).right }},
+    { cases H with H₁ H₂, rw subset_unfold', bv_intro w, bv_imp_intro Hw, rw mem_binary_inter_iff,
+      refine ⟨_,_⟩,
+        { exact mem_of_mem_subset H₁ ‹_› },
+        { exact mem_of_mem_subset H₂ ‹_› }}
+end
+
 lemma binary_inter_symm {x y : bSet 𝔹} {Γ} : Γ ≤ x ∩ᴮ y =ᴮ y ∩ᴮ x :=
 begin
   apply mem_ext;
-    {bv_intro z, bv_imp_intro H_mem, simp[binary_inter_mem_iff] at H_mem ⊢, simp*}
+    {bv_intro z, bv_imp_intro H_mem, simp[mem_binary_inter_iff] at H_mem ⊢, simp*}
 end
 
 lemma B_congr_binary_inter_left {y : bSet 𝔹} : B_congr (λ x, x ∩ᴮ y) :=
 begin
   intros x₁ x₂ Γ H_eq, dsimp, apply mem_ext;
-    {bv_intro z, bv_imp_intro H_mem, simp[binary_inter_mem_iff] at *,
+    {bv_intro z, bv_imp_intro H_mem, simp[mem_binary_inter_iff] at *,
     cases H_mem, exact ⟨by bv_cc, ‹_›⟩ }
 end
 
 lemma B_congr_binary_inter_right {y : bSet 𝔹} : B_congr (λ x, y ∩ᴮ x) :=
 begin
   intros x₁ x₂ Γ H_eq, dsimp, apply mem_ext;
-    {bv_intro z, bv_imp_intro H_mem, simp[binary_inter_mem_iff] at *,
+    {bv_intro z, bv_imp_intro H_mem, simp[mem_binary_inter_iff] at *,
     cases H_mem, exact ⟨‹_›, by bv_cc⟩ }
 end
 
 lemma binary_inter_subset_left {x y : bSet 𝔹} {Γ} : Γ ≤ x ∩ᴮ y ⊆ᴮ x :=
 by { rw[subset_unfold'], bv_intro z, bv_imp_intro Hz,
-       from (binary_inter_mem_iff.mp Hz).left }
+       from (mem_binary_inter_iff.mp Hz).left }
 
 lemma binary_inter_subset_right {x y : bSet 𝔹} {Γ} : Γ ≤ x ∩ᴮ y ⊆ᴮ y :=
 begin -- TODO(jesse): why isn't the motive being computed correctly here?
@@ -387,6 +412,80 @@ end
  Γ ≤ pair x y ∈ᴮ prod v w :=
 mem_prod_iff.mpr (by simp*)
 
+@[simp]lemma B_congr_prod_left {y : bSet 𝔹} : B_congr (λ x, prod x y) :=
+begin
+  intros a b Γ H_eq,
+  dsimp, rw bv_eq_unfold,
+  refine le_inf _ _,
+    { bv_intro pr, bv_imp_intro Hpr, erw mem_prod_iff, refine ⟨_,_⟩,
+      { apply bv_rw' (bv_symm H_eq), simp, simp at Hpr, from mem.mk'' (Hpr.left) },
+      { simp at Hpr, from mem.mk'' (Hpr.right) }},
+    { bv_intro pr, bv_imp_intro Hpr, erw mem_prod_iff, refine ⟨_,_⟩,
+      { apply bv_rw' (H_eq), simp, simp at Hpr, from mem.mk'' (Hpr.left) },
+      { simp at Hpr, from mem.mk'' (Hpr.right) } }
+end
+
+@[simp]lemma B_congr_prod_right {x : bSet 𝔹} : B_congr (λ y, prod x y) :=
+begin
+  intros a b Γ H_eq,
+  dsimp, rw bv_eq_unfold,
+  refine le_inf _ _,
+    { bv_intro pr, bv_imp_intro Hpr, erw mem_prod_iff, refine ⟨_,_⟩,
+      { apply bv_rw' (bv_symm H_eq), simp, simp at Hpr, from mem.mk'' (Hpr.left) },
+      { simp at Hpr, apply bv_rw' (bv_symm H_eq), simp, exact mem.mk'' Hpr.right }},
+    { bv_intro pr, bv_imp_intro Hpr, erw mem_prod_iff, refine ⟨_,_⟩,
+      { apply bv_rw' (H_eq), simp, simp at Hpr, from mem.mk'' (Hpr.left) },
+      { simp at Hpr, apply bv_rw' (H_eq), simp, exact mem.mk'' Hpr.right } }
+end
+
+lemma prod_congr {x₁ x₂ y₁ y₂ : bSet 𝔹} {Γ} (H₁ : Γ ≤ x₁ =ᴮ x₂) (H₂ : Γ ≤ y₁ =ᴮ y₂) : Γ ≤ prod x₁ y₁ =ᴮ prod x₂ y₂ :=
+begin
+  have := B_congr_prod_left H₁, show bSet 𝔹, from y₁,
+  dsimp at this, refine bv_trans this _,
+  from B_congr_prod_right H₂
+end
+
+lemma mem_prod_iff₂ {x y z : bSet 𝔹} {Γ} : Γ ≤ z ∈ᴮ prod x y ↔ ∃ (v) (Hv : Γ ≤ v ∈ᴮ x) (w) (Hw : Γ ≤ w ∈ᴮ y), Γ ≤ z =ᴮ pair v w :=
+begin
+  refine ⟨_,_⟩; intro H, swap,
+    { rcases H with ⟨v,Hv,w,Hw,H_eq⟩, apply bv_rw' H_eq, simp, rw mem_prod_iff, simp* },
+    { suffices : Γ ≤ ⨆ v, v ∈ᴮ x ⊓ ⨆ w, w ∈ᴮ y ⊓ z =ᴮ pair v w,
+        by {rcases (exists_convert this) with ⟨v, H'v⟩,
+            use v, bv_split_at H'v, use ‹_›,
+            rcases (exists_convert H'v_right) with ⟨w, H'w⟩,
+            use w, bv_split_at H'w, from ⟨‹_›,‹_›⟩},
+      rw mem_unfold at H, bv_cases_at H pr Hpr, bv_split_at Hpr,
+      apply bv_use (x.func pr.1), simp at Hpr_left, cases Hpr_left, refine le_inf _ _,
+        { from mem.mk'' ‹_› },
+        { apply bv_use (y.func pr.2), refine le_inf _ _,
+          { from mem.mk'' ‹_› },
+          { from Hpr_right } } }
+end
+
+lemma prod_ext {S₁ S₂ x y : bSet 𝔹} {Γ : 𝔹} (H₁ : Γ ≤ S₁ ⊆ᴮ prod x y) (H₂ : Γ ≤ S₂ ⊆ᴮ prod x y) (H_prod_ext : Γ ≤ ⨅ v, v ∈ᴮ x ⟹ ⨅ w, w∈ᴮ y ⟹ (pair v w ∈ᴮ S₁ ⇔ pair v w ∈ᴮ S₂)) : Γ ≤ S₁ =ᴮ S₂ :=
+begin
+  apply mem_ext,
+    {bv_intro z, bv_imp_intro Hz_mem,
+    have Hz_mem' : Γ_1 ≤ z ∈ᴮ prod x y := mem_of_mem_subset ‹_› ‹_›,
+    rw mem_prod_iff₂ at Hz_mem', rcases Hz_mem' with ⟨v,Hv,w,Hw,H_eq⟩,
+    replace H_prod_ext := H_prod_ext v,
+    replace H_prod_ext := H_prod_ext ‹_›,
+    replace H_prod_ext := H_prod_ext w,
+    replace H_prod_ext := H_prod_ext ‹_›,
+    bv_split_at H_prod_ext,
+    apply bv_rw' H_eq, simp, have := bv_rw'' H_eq Hz_mem, exact H_prod_ext_left ‹_›},
+    {bv_intro z, bv_imp_intro Hz_mem,
+    have Hz_mem' : Γ_1 ≤ z ∈ᴮ prod x y := mem_of_mem_subset H₂ ‹_›,
+    rw mem_prod_iff₂ at Hz_mem', rcases Hz_mem' with ⟨v,Hv,w,Hw,H_eq⟩,
+    replace H_prod_ext := H_prod_ext v,
+    replace H_prod_ext := H_prod_ext ‹_›,
+    replace H_prod_ext := H_prod_ext w,
+    replace H_prod_ext := H_prod_ext ‹_›,
+    bv_split_at H_prod_ext,
+    apply bv_rw' H_eq, simp, have := bv_rw'' H_eq Hz_mem, exact H_prod_ext_right ‹_›}
+end
+
+
 @[simp]lemma check_singleton {x : pSet.{u}} {Γ : 𝔹} : Γ ≤ {x}̌  =ᴮ {x̌} :=
 begin
   unfold singleton, unfold has_insert.insert, simp
@@ -554,6 +653,24 @@ begin
     { cases H with _ H, bv_cases_at H z Hz, apply mem_image, from bv_and.right ‹_›, from bv_and.left ‹_›, from ‹_› },
 end
 
+@[simp]lemma B_congr_image_left {y f : bSet 𝔹} : B_congr (λ x, image x y f) :=
+begin
+  intros x y Γ H_eq, refine mem_ext _ _,
+    { bv_intro z, bv_imp_intro Hz, rw mem_image_iff at ⊢ Hz,
+      rcases Hz with ⟨Hz_mem_y, H⟩, refine ⟨‹_›,_⟩, apply bv_rw' (bv_symm H_eq), simp, repeat { from ‹_› } },
+    { bv_intro z, bv_imp_intro Hz, rw mem_image_iff at ⊢ Hz,
+      rcases Hz with ⟨Hz_mem_y, H⟩, refine ⟨‹_›,_⟩, apply bv_rw' H_eq, simp, repeat { from ‹_› } }
+end
+
+@[simp]lemma B_congr_image_right {x y : bSet 𝔹} : B_congr (λ f, image x y f) :=
+begin
+  intros x y Γ H_eq, refine mem_ext _ _,
+    { bv_intro z, bv_imp_intro Hz, rw mem_image_iff at ⊢ Hz,
+      rcases Hz with ⟨Hz_mem_y, H⟩, refine ⟨‹_›,_⟩, apply bv_rw' (bv_symm H_eq), simp, repeat { from ‹_› } },
+    { bv_intro z, bv_imp_intro Hz, rw mem_image_iff at ⊢ Hz,
+      rcases Hz with ⟨Hz_mem_y, H⟩, refine ⟨‹_›,_⟩, apply bv_rw' H_eq, simp, repeat { from ‹_› } }
+end
+
 -- bounded preimage
 def preimage (x y f : bSet 𝔹) : bSet 𝔹 := subset.mk (λ i : x.type, ⨆ b, b ∈ᴮ y ⊓
  pair (x.func i) b ∈ᴮ f)
@@ -574,11 +691,58 @@ end
 @[reducible]def is_function (x y f : bSet 𝔹) : 𝔹 :=
   is_func' x y f ⊓ (f ⊆ᴮ prod x y)
 
+@[simp]lemma B_ext_is_function_left {y f : bSet 𝔹} : B_ext (λ x, is_function x y f) :=
+by simp[is_function]
+
 @[simp]lemma B_ext_is_function_right {x y: bSet 𝔹} : B_ext (λ f, is_function x y f) := by simp
 
 lemma is_func'_of_is_function {Γ : 𝔹} {x y f} (H_func : Γ ≤ is_function x y f) : Γ ≤ is_func' x y f := bv_and.left H_func
 
+lemma eq_of_is_function_of_eq {a b x y f x' y' : bSet 𝔹} {Γ : 𝔹} (H_is_function : Γ ≤ is_function a b f) (H_eq₁ : Γ ≤ x =ᴮ y) (H_mem₁ : Γ ≤ pair x x' ∈ᴮ f) (H_mem₂ : Γ ≤ pair y y' ∈ᴮ f) : Γ ≤ x' =ᴮ y' :=
+by {apply eq_of_is_func'_of_eq, from is_func'_of_is_function ‹_›, repeat {assumption}}
+
 lemma subset_prod_of_is_function {Γ : 𝔹} {x y f} (H_func : Γ ≤ is_function x y f) : Γ ≤ f ⊆ᴮ prod x y := bv_and.right H_func
+
+lemma is_total_of_is_function {x y f : bSet 𝔹} {Γ} (H_func : Γ ≤ is_function x y f) : Γ ≤ is_total x y f :=
+is_total_of_is_func' (is_func'_of_is_function H_func)
+
+lemma mem_domain_of_is_function {x y f : bSet 𝔹} {Γ} {z w : bSet 𝔹} (H_mem : Γ ≤ pair z w ∈ᴮ f) (H_func : Γ ≤ is_function x y f) : Γ ≤ z ∈ᴮ x :=
+begin
+  have : Γ ≤ pair z w ∈ᴮ prod x y,
+    by { exact mem_of_mem_subset (bv_and.right H_func) ‹_› },
+  rw mem_prod_iff at this, from this.left
+end
+
+lemma mem_codomain_of_is_function {x y f : bSet 𝔹} {Γ} {z w : bSet 𝔹} (H_mem : Γ ≤ pair z w ∈ᴮ f) (H_func : Γ ≤ is_function x y f) : Γ ≤ w ∈ᴮ y :=
+begin
+  have : Γ ≤ pair z w ∈ᴮ prod x y,
+    by { exact mem_of_mem_subset (bv_and.right H_func) ‹_› },
+  rw mem_prod_iff at this, from this.right
+end
+
+lemma factor_image_is_func' { x y f : bSet 𝔹 } { Γ } (H_is_func' : Γ ≤ is_func' x y f) : Γ ≤ is_func' x (image x y f) f :=
+begin
+  refine le_inf (bv_and.left ‹_›) _,
+  bv_intro w₁, bv_imp_intro Hw₁,
+  have := is_total_of_is_func' H_is_func',
+  replace this := this w₁ Hw₁, bv_cases_at this w₂ Hw₂,
+  apply bv_use w₂, refine le_inf _ (bv_and.right ‹_›),
+  rw mem_image_iff, refine ⟨bv_and.left ‹_›, _⟩,
+  apply bv_use w₁, from le_inf ‹_› (bv_and.right ‹_›)
+end
+
+lemma factor_image_is_function { x y f : bSet 𝔹 } { Γ } (H_is_function : Γ ≤ is_function x y f) : Γ ≤ is_function x (image x y f) f :=
+begin
+  refine le_inf _ _,
+    { exact factor_image_is_func' (is_func'_of_is_function ‹_›) },
+    { rw subset_unfold', bv_intro w, bv_imp_intro Hw,
+      have Hw_mem_prod : Γ_1 ≤ w ∈ᴮ prod x y,
+        by { apply mem_of_mem_subset (subset_prod_of_is_function ‹_›) ‹_› },
+      rw mem_prod_iff₂ at Hw_mem_prod, rcases Hw_mem_prod with ⟨v,Hv,w',Hw', H_eq⟩,
+      rw mem_prod_iff₂, use v, use ‹_›, use w',
+      refine ⟨_,‹_›⟩,
+        { rw mem_image_iff, refine ⟨‹_›, _⟩, apply bv_use v, refine le_inf ‹_› _, bv_cc }}
+end
 
 lemma check_is_total {x y f : pSet.{u}} (H_total : pSet.is_total x y f)  {Γ : 𝔹} : Γ ≤ is_total x̌ y̌ f̌ :=
 begin
@@ -645,12 +809,28 @@ lemma function_of_func'_subset {x y f : bSet 𝔹} {Γ} {H_is_func' : Γ ≤ is_
 binary_inter_subset_left
 
 lemma mem_function_of_func'_iff {x y f : bSet 𝔹} {Γ} {H_is_func' : Γ ≤ is_func' x y f} {z} :
-Γ ≤ z ∈ᴮ (function_of_func' H_is_func') ↔ Γ ≤ z ∈ᴮ f ∧ Γ ≤ z ∈ᴮ (prod x y) := binary_inter_mem_iff
+Γ ≤ z ∈ᴮ (function_of_func' H_is_func') ↔ Γ ≤ z ∈ᴮ f ∧ Γ ≤ z ∈ᴮ (prod x y) := mem_binary_inter_iff
 
 @[reducible]def is_inj (f : bSet 𝔹) : 𝔹 :=
   ⨅w₁, ⨅ w₂, ⨅v₁, ⨅ v₂, (pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⊓ v₁ =ᴮ v₂) ⟹ w₁ =ᴮ w₂
 
 @[reducible]def is_injective_function (x y f : bSet 𝔹) : 𝔹 := is_function x y f ⊓ is_inj f
+
+lemma is_inj_of_is_injective_function { x y f : bSet 𝔹 } { Γ : 𝔹 } : Γ ≤ is_injective_function x y f → Γ ≤ is_inj f := λ _, bv_and.right ‹_›
+
+lemma factor_image_is_injective_function { x y f : bSet 𝔹 } { Γ : 𝔹 } (H_is_function : Γ ≤ is_injective_function x y f) : Γ ≤ is_injective_function x (image x y f) f :=
+begin
+  refine le_inf _ _,
+    { apply factor_image_is_function, from bv_and.left ‹_› },
+    from bv_and.right ‹_›
+end
+
+@[simp]lemma B_ext_is_injective_function_left {y f : bSet 𝔹} : B_ext (λ x, is_injective_function x y f) :=
+by simp
+
+lemma is_func'_of_is_injective_function {x y f : bSet 𝔹} {Γ}
+  (H : Γ ≤ is_injective_function x y f) : Γ ≤ is_func' x y f :=
+is_func'_of_is_function $ bv_and.left H
 
 lemma check_is_injective_function {x y f : pSet.{u}} (H_inj : pSet.is_injective_function x y f) {Γ : 𝔹}
   : Γ ≤ bSet.is_injective_function x̌ y̌ f̌ :=
@@ -721,6 +901,51 @@ end
 /-- x is larger than y if there is a subset S ⊆ X which surjects onto y. -/
 def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆ S, ⨆f, S ⊆ᴮ x ⊓ (is_func' S y f) ⊓ (is_surj S y f)
 
+lemma function_of_func'_is_function {x y f : bSet 𝔹} {Γ} (H_is_func' : Γ ≤ is_func' x y f) : Γ ≤ is_function x y (function_of_func' H_is_func') :=
+begin
+  refine le_inf (le_inf _ _) _,
+    { exact is_func_subset_of_is_func (is_func_of_is_func' ‹_›) function_of_func'_subset },
+    { bv_intro w₁, rw[<-deduction, inf_comm], let Γ_1 := w₁ ∈ᴮ x ⊓ Γ,
+      change Γ_1 ≤ _, have H : Γ_1 ≤ w₁ ∈ᴮ x := by simp[Γ_1, inf_le_right],
+      have : Γ_1 ≤ is_func' x y f := le_trans inf_le_right H_is_func',
+      have H_total := bv_and.right this w₁ H, bv_cases_at H_total w₂ H_w₂,
+      apply bv_use w₂, bv_split, refine le_inf ‹_› _,
+      erw[mem_binary_inter_iff], simp* },
+    { exact binary_inter_subset_right }
+end
+
+lemma function_of_func'_surj_of_surj {x y f : bSet 𝔹} {Γ} (H_is_func' : Γ ≤ is_func' x y f) (H_is_surj : Γ ≤ is_surj x y f) : Γ ≤ is_surj x y (function_of_func' H_is_func')  :=
+begin
+  bv_intro z, bv_imp_intro' Hz,
+  have := H_is_surj z Hz, bv_cases_at' this w Hw,
+  apply bv_use w, bv_split, refine le_inf ‹_› _,
+  erw[mem_binary_inter_iff], simp*
+end
+
+lemma function_of_func'_inj_of_inj {x y f : bSet 𝔹} {Γ} {H : Γ ≤ is_func' x y f}
+  (H_is_surj : Γ ≤ is_inj f) : Γ ≤ is_inj (function_of_func' H) :=
+begin
+  bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂,
+  bv_imp_intro' H', bv_split_at H', bv_split_at H'_left,
+  suffices : Γ_1 ≤ pair w₁ v₁ ∈ᴮ f ∧ Γ_1 ≤ pair w₂ v₂ ∈ᴮ f,
+    by {refine H_is_surj w₁ w₂ v₁ v₂ _, simp*},
+  refine ⟨_,_⟩; from mem_of_mem_subset (by {apply function_of_func'_subset, from ‹_›}) ‹_›
+end
+
+lemma surj_image { x y f : bSet 𝔹 } { Γ } (H_func : Γ ≤ is_func' x y f) : Γ ≤ is_surj x (image x y f) f := 
+begin
+  bv_intro w, bv_imp_intro H_mem,
+  rw mem_image_iff at H_mem, cases H_mem with H_mem₁ H_mem₂,
+  exact H_mem₂
+end
+
+lemma image_eq_codomain_of_surj {x y f : bSet 𝔹} {Γ} (H_surj : Γ ≤ is_surj x y f) : Γ ≤ image x y f =ᴮ y :=
+begin
+  refine subset_ext (by apply image_subset) _,
+  rw subset_unfold', bv_intro z, bv_imp_intro Hz,
+  rw mem_image_iff, exact ⟨‹_›,H_surj z ‹_›⟩
+end
+
 -- TODO: maybe move the S ⊆ᴮ x outside of the inner ⨆?
 @[simp]lemma larger_than_domain_subset {Γ : 𝔹} {x y S : bSet 𝔹} (HS : Γ ≤ ⨆ f, S ⊆ᴮ x ⊓ (is_func' S y f) ⊓ (is_surj S y f))
   : Γ ≤ S ⊆ᴮ x :=
@@ -728,10 +953,33 @@ by {bv_cases_at HS f Hf, exact bv_and.left (bv_and.left ‹_›)}
 
 def injects_into (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ is_inj f
 
-lemma injects_into_of_is_injective_function {x y : bSet 𝔹} {Γ} (H_inj : Γ ≤ ⨆f, is_injective_function x y f) : Γ ≤ injects_into x y :=
+def injection_into (x y : bSet 𝔹) : 𝔹 := ⨆f, is_injective_function x y f
+
+lemma injection_into_of_injects_into {x y : bSet 𝔹} {Γ} (H : Γ ≤ injects_into x y) : Γ ≤ injection_into x y :=
+begin
+  bv_cases_at H f Hf, bv_split_at Hf,
+  apply bv_use (function_of_func' Hf_left),
+  refine le_inf _ _,
+    { from function_of_func'_is_function _ },
+    { from function_of_func'_inj_of_inj ‹_› }
+end
+
+lemma injects_into_of_injection_into {x y : bSet 𝔹} {Γ} (H_inj : Γ ≤ injection_into x y) : Γ ≤ injects_into x y :=
 begin
   bv_cases_at H_inj f Hf, apply bv_use f, bv_split_at Hf,
   from le_inf (is_func'_of_is_function ‹_›) ‹_›
+end
+
+lemma injects_into_iff_injection_into {x y : bSet 𝔹} {Γ} : Γ ≤ injects_into x y ↔ Γ ≤ injection_into x y :=
+⟨λ _, injection_into_of_injects_into ‹_›, λ _, injects_into_of_injection_into ‹_›⟩
+
+lemma check_injects_into {x y : pSet.{u}} (H_inj : pSet.injects_into x y) {Γ : 𝔹} : Γ ≤ bSet.injects_into x̌ y̌ :=
+begin
+  cases H_inj with f H_f_inj, apply bv_use f̌,
+  have : Γ ≤ _ := check_is_injective_function H_f_inj,
+  change _ ≤ _ ⊓ _ at this,
+  refine le_inf _ (bv_and.right ‹_›),
+  from is_func'_of_is_function (bv_and.left ‹_›)
 end
 
 def surjects_onto (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ (is_surj x y f)
@@ -751,8 +999,6 @@ by simp[injects_into]
 local infix `≺`:70 := (λ x y, -(larger_than x y))
 
 local infix `≼`:70 := (λ x y, injects_into x y)
-
-def CH : 𝔹 := - ⨆ x, ⨆y, (omega ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(omega))
 
 -- aka AC -- TODO
 -- lemma injects_into_of_surjects_onto {x y : bSet 𝔹} {Γ} (H_inj : Γ ≤ surjects_onto x y) : Γ ≤ injects_into y x := sorry
@@ -1355,7 +1601,39 @@ begin
   from Hg_inj b₁ b₂ v₁ v₂ (le_inf (le_inf ‹_› ‹_›) ‹_›)
 end
 
+lemma is_func'_comp_surj (H₁ : Γ ≤ is_surj x y f) (H₂ : Γ ≤ is_surj y z g ) : Γ ≤ is_surj x z (is_func'_comp Hf_func Hg_func) :=
+begin
+  bv_intro wz, bv_imp_intro' Hwz_mem,
+  replace H₂ :=  H₂ wz ‹_›, bv_cases_at H₂ wy Hwy,
+  bv_split_at Hwy, replace H₁ := H₁ wy ‹_›,
+  bv_cases_at H₁ wx Hwz, apply bv_use wx, refine le_inf (bv_and.left ‹_›) _,
+  rw mem_is_func'_comp_iff, bv_split_at Hwz, refine ⟨‹_›,‹_›,_⟩,
+  apply bv_use wy, bv_split_goal
+end
+
 end is_func'_comp
+
+def function_comp {x y z f g : bSet 𝔹} {Γ : 𝔹} (H₁ : Γ ≤ is_function x y f) (H₂ : Γ ≤ is_function y z g) : bSet 𝔹 :=
+is_func'_comp (is_func'_of_is_function H₁) (is_func'_of_is_function H₂)
+
+lemma function_comp_is_function {x y z f g : bSet 𝔹} {Γ : 𝔹} {H₁ : Γ ≤ is_function x y f} {H₂ : Γ ≤ is_function y z g} : Γ ≤ is_function x z (function_comp H₁ H₂) :=
+begin
+  refine le_inf _ _,
+    { apply is_func'_comp_is_func' },
+    { apply subset.mk_subset }
+end
+
+def injective_function_comp {x y z f g : bSet 𝔹} {Γ : 𝔹} (H₁ : Γ ≤ is_injective_function x y f) (H₂ : Γ ≤ is_injective_function y z g) : bSet 𝔹 :=
+is_func'_comp (is_func'_of_is_injective_function H₁) (is_func'_of_is_injective_function H₂)
+
+lemma injective_function_comp_is_injective_function {x y z f g : bSet 𝔹} {Γ : 𝔹} {H₁ : Γ ≤ is_injective_function x y f} {H₂ : Γ ≤ is_injective_function y z g} : Γ ≤ is_injective_function x z (injective_function_comp H₁ H₂) :=
+begin
+  refine le_inf (by {apply function_comp_is_function; from bv_and.left ‹_›}) _,
+  apply is_func'_comp_inj; from bv_and.right ‹_›
+end
+
+lemma injective_function_comp_is_function {x y z f g : bSet 𝔹} {Γ : 𝔹} {H₁ : Γ ≤ is_injective_function x y f} {H₂ : Γ ≤ is_injective_function y z g} : Γ ≤ is_function x z (injective_function_comp H₁ H₂) :=
+bv_and.left (by apply injective_function_comp_is_injective_function)
 
 lemma injects_into_trans {x y z} {Γ : 𝔹} (H₁ : Γ ≤ injects_into x y) (H₂ : Γ ≤ injects_into y z): Γ ≤ injects_into x z :=
 begin
@@ -1364,6 +1642,9 @@ begin
   apply bv_use (is_func'_comp Hf_left Hg_left),
   from le_inf (is_func'_comp_is_func' _ _) (is_func'_comp_inj _ _ Hf_right Hg_right)
 end
+
+lemma injection_into_trans {x y z} {Γ : 𝔹} (H₁ : Γ ≤ injection_into x y) (H₂ : Γ ≤ injection_into y z): Γ ≤ injection_into x z :=
+by {rw ←injects_into_iff_injection_into at H₁ H₂ ⊢, from injects_into_trans H₁ H₂}
 
 lemma AE_of_check_func_check₀ (x y : pSet.{u}) {f : bSet 𝔹} {Γ : 𝔹}
   (H : Γ ≤ is_func' (x̌) (y̌) f) (H_nonzero : ⊥ < Γ) :
@@ -1417,36 +1698,6 @@ end
 
 -- note: primed version of 𝔹-valued casing tactics will only note instead of replacing hypotheses
 -- this circumvents dependency issues that occasionally pop up
-lemma function_of_func'_is_function {x y f : bSet 𝔹} {Γ} (H_is_func' : Γ ≤ is_func' x y f) : Γ ≤ is_function x y (function_of_func' H_is_func') :=
-begin
-  refine le_inf (le_inf _ _) _,
-    { exact is_func_subset_of_is_func (is_func_of_is_func' ‹_›) function_of_func'_subset },
-    { bv_intro w₁, rw[<-deduction, inf_comm], let Γ_1 := w₁ ∈ᴮ x ⊓ Γ,
-      change Γ_1 ≤ _, have H : Γ_1 ≤ w₁ ∈ᴮ x := by simp[Γ_1, inf_le_right],
-      have : Γ_1 ≤ is_func' x y f := le_trans inf_le_right H_is_func',
-      have H_total := bv_and.right this w₁ H, bv_cases_at H_total w₂ H_w₂,
-      apply bv_use w₂, bv_split, refine le_inf ‹_› _,
-      erw[binary_inter_mem_iff], simp* },
-    { exact binary_inter_subset_right }
-end
-
-lemma function_of_func'_surj_of_surj {x y f : bSet 𝔹} {Γ} (H_is_func' : Γ ≤ is_func' x y f) (H_is_surj : Γ ≤ is_surj x y f) : Γ ≤ is_surj x y (function_of_func' H_is_func')  :=
-begin
-  bv_intro z, bv_imp_intro' Hz,
-  have := H_is_surj z Hz, bv_cases_at' this w Hw,
-  apply bv_use w, bv_split, refine le_inf ‹_› _,
-  erw[binary_inter_mem_iff], simp*
-end
-
-lemma function_of_func'_inj_of_inj {x y f : bSet 𝔹} {Γ} {H : Γ ≤ is_func' x y f}
-  (H_is_surj : Γ ≤ is_inj f) : Γ ≤ is_inj (function_of_func' H) :=
-begin
-  bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂,
-  bv_imp_intro' H', bv_split_at H', bv_split_at H'_left,
-  suffices : Γ_1 ≤ pair w₁ v₁ ∈ᴮ f ∧ Γ_1 ≤ pair w₂ v₂ ∈ᴮ f,
-    by {refine H_is_surj w₁ w₂ v₁ v₂ _, simp*},
-  refine ⟨_,_⟩; from mem_of_mem_subset (by {apply function_of_func'_subset, from ‹_›}) ‹_›
-end
 
 lemma exists_surjection_of_surjects_onto {x y : bSet 𝔹} {Γ : 𝔹} (H_surj : Γ ≤ surjects_onto x y)
   : Γ ≤ ⨆ f, is_function x y f ⊓ is_surj x y f :=
@@ -1655,7 +1906,60 @@ begin
     { rw mem_inj_inverse_iff, from ⟨‹_›,‹_›,‹_›⟩ }
 end
 
+lemma inj_inverse.subset_prod : Γ ≤ inj_inverse H_func H_inj ⊆ᴮ prod (image x y f) x := by { apply subset.mk_subset }
+
+lemma inj_inverse.is_function : Γ ≤ is_function (image x y f) x (inj_inverse H_func H_inj) :=
+le_inf (by apply inj_inverse.is_func') (by apply inj_inverse.subset_prod)
+
+lemma inj_inverse.is_inj : Γ ≤ is_inj (inj_inverse H_func H_inj) :=
+begin
+  bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂,
+  bv_imp_intro' H, bv_split_at H, bv_split_at H_left,
+  rw mem_inj_inverse_iff at H_left_left H_left_right,
+  apply eq_of_is_func'_of_eq H_func H_right, tidy
+end
+
 end inj_inverse
+
+section injective_function_inverse
+
+def injective_function_inverse {x y f : bSet 𝔹} { Γ : 𝔹 } (H_inj : Γ ≤ is_injective_function x y f) : bSet 𝔹 :=
+inj_inverse (is_func'_of_is_injective_function H_inj) (is_inj_of_is_injective_function H_inj)
+
+lemma injective_function_inverse_is_injective_function { x y f : bSet 𝔹 } { Γ : 𝔹 } { H_inj : Γ ≤ is_injective_function x y f } : Γ ≤ is_injective_function (image x y f) x (injective_function_inverse H_inj) :=
+le_inf (by apply inj_inverse.is_function) (by apply inj_inverse.is_inj)
+
+lemma injective_function_inverse_is_inj { x y f : bSet 𝔹 } { Γ : 𝔹 } { H_inj : Γ ≤ is_injective_function x y f } : Γ ≤ is_inj (injective_function_inverse H_inj) := bv_and.right (by apply injective_function_inverse_is_injective_function)
+
+end injective_function_inverse
+
+section function_eval
+variables { x y f : bSet 𝔹 } { Γ : 𝔹 } (H_func : Γ ≤ is_function x y f)
+
+include H_func
+noncomputable def function_eval (z : bSet 𝔹) (H_mem : Γ ≤ z ∈ᴮ x) : bSet 𝔹 :=
+begin
+  have H_total := (is_total_of_is_function H_func z ‹_›),
+  exact classical.some (exists_convert H_total)
+end
+
+variable { H_func }
+
+lemma function_eval_spec { z : bSet 𝔹 } { H_mem : Γ ≤ z ∈ᴮ x } : Γ ≤ (function_eval H_func z H_mem) ∈ᴮ y ⊓ pair z (function_eval H_func z H_mem) ∈ᴮ f :=
+begin
+  let p := _,
+  change _ ≤ _ ⊓ pair z (classical.some p) ∈ᴮ _,
+  exact classical.some_spec p
+end
+
+lemma function_eval_mem_codomain { z : bSet 𝔹 } { H_mem : Γ ≤ z ∈ᴮ x } : Γ ≤ (function_eval H_func z H_mem) ∈ᴮ y :=
+bv_and.left (by apply function_eval_spec)
+
+lemma function_eval_pair_mem { z : bSet 𝔹 } { H_mem : Γ ≤ z ∈ᴮ x } : Γ ≤ pair z (function_eval H_func z H_mem) ∈ᴮ f :=
+bv_and.right (by apply function_eval_spec)
+
+end function_eval
+
 
 lemma surjects_onto_of_injects_into {x y : bSet 𝔹} {Γ} (H_inj : Γ ≤ injects_into x y) (H_exists_mem : Γ ≤ exists_mem x) : Γ ≤ surjects_onto y x :=
 begin
@@ -1665,7 +1969,6 @@ begin
   refine le_inf (le_inf image_subset _) _, by apply inj_inverse.is_func',
   by apply inj_inverse.is_surj
 end
-
 -- section dom_cover
 
 -- def dom_section : Π (x : bSet 𝔹), bSet 𝔹
@@ -1810,7 +2113,7 @@ end
 
 lemma bot_of_mem_self {x : bSet 𝔹} : ⊤ ≤ (x ∈ᴮ x ⟹ ⊥) :=
 begin
-  induction x, simp[-imp_bot], intro i, specialize x_ih i,
+  induction x, simp[-imp_bot, bv_eq,mem], intro i, specialize x_ih i,
   apply bot_unique, apply bv_have_true x_ih, tidy_context,
   bv_mp a_left_left (show x_B i ≤ x_A i ∈ᴮ mk x_α x_A x_B, by apply mem.mk),
   change Γ ≤ (x_A i ∈ᴮ mk x_α x_A x_B) at a_left_left_1,
@@ -1841,7 +2144,7 @@ bot_of_mem_self' $ by {apply bv_rw' H, simp, from zero_mem_one}
 lemma bot_of_mem_mem (x y : bSet 𝔹) : ⊤ ≤ ((x ∈ᴮ y ⊓ y ∈ᴮ x) ⟹ ⊥) :=
 begin
   induction x generalizing y, induction y,
-  simp[-imp_bot, -top_le_iff], apply bv_imp_intro, rw[top_inf_eq],
+  simp[-imp_bot, -top_le_iff, mem], apply bv_imp_intro, rw[top_inf_eq],
   apply bv_cases_right, intro a', apply bv_cases_left, intro a'',
   specialize x_ih a', tidy_context,
   specialize y_ih a'',
@@ -1857,6 +2160,13 @@ begin
   apply subst_congr_mem_right,
   specialize x_ih (y_A a''), specialize_context_at x_ih Γ,
   bv_to_pi x_ih, apply x_ih, bv_split_goal
+end
+
+lemma bot_of_mem_mem' (x y : bSet 𝔹) {Γ} (H : Γ ≤ x ∈ᴮ y) (H' : Γ ≤ y ∈ᴮ x) : Γ ≤ ⊥ :=
+begin
+  have : Γ ≤ ((x ∈ᴮ y ⊓ y ∈ᴮ x) ⟹ ⊥),
+    by {refine le_trans le_top (bot_of_mem_mem _ _) },
+  exact this (le_inf ‹_› ‹_›)
 end
 
 end extras
@@ -1948,51 +2258,6 @@ parameters {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 parameter (x : bSet 𝔹)
 
 local notation `fx2` := functions x 𝟚
-/- The function from 2^x to P(x) -/
--- def set_of_indicator (x : bSet 𝔹) : bSet 𝔹 :=
--- begin
---   refine subset.mk (_ : (functions x 𝟚).type → 𝔹),
---   dsimp [functions, bv_powerset], intro f,
--- end
-
-/- I am working on the injection P(ω) ↪ 2 ^ ω ↪ (2 ^ ω) ✓ ↪ P(ω) ✓ -/
-
--- def indicator_of_set' (x : bSet 𝔹) : bSet 𝔹 :=
--- subset.mk (λ sχ, ⨅(a : type x), sχ.2 (a, option.none) ⇔ sχ.1 a : ((bv_powerset x).prod (functions x 𝟚)).type → 𝔹)
-
--- lemma is_func'_indicator_of_set' {Γ : 𝔹} (x : bSet 𝔹) :
---   Γ ≤ is_func' (bv_powerset x) (functions x 𝟚) (indicator_of_set' x) :=
--- begin
---   apply bv_and_intro,
---   { bv_intro s₁, bv_intro s₂, bv_intro χ₁, bv_intro χ₂, bv_imp_intro h₁, bv_imp_intro h₂,
---     bv_split_at h₁,
---     apply subset_ext,
---     { rw [subset_unfold'], bv_intro y, bv_imp_intro hy,
---       rw [indicator_of_set', mem_subset.mk_iff] at h₁_left h₁_right,
---       bv_cases_at h₁_left sχ h₃, clear h₁_left, cases sχ with s χ, bv_split_at h₃,
---       dsimp at h₃_left, sorry
---       -- dsimp at *,
---       -- have := eq_of_is_func'_of_eq,
---       },
---     {sorry }},
---   { sorry }
--- end
-
--- lemma is_inj_indicator_of_set' {Γ : 𝔹} (x : bSet 𝔹) : Γ ≤ is_inj (indicator_of_set' x) :=
--- begin
---   sorry
--- end
-
--- def indicator_of_set (Γ : 𝔹) (x : bSet 𝔹) : bSet 𝔹 :=
--- function_of_func' $ (is_func'_indicator_of_set' x : Γ ≤ _)
-
--- lemma is_function_indicator_of_set {Γ : 𝔹} (x : bSet 𝔹) :
---   Γ ≤ is_function (bv_powerset x) (functions x 𝟚) (indicator_of_set Γ x) :=
--- function_of_func'_is_function _
-
--- lemma is_inj_indicator_of_set {Γ : 𝔹} (x : bSet 𝔹) :
---   Γ ≤ is_inj (indicator_of_set Γ x) :=
--- function_of_func'_inj_of_inj $ is_inj_indicator_of_set' x --todo: function_of_func'_inj_of_inj
 
 def powerset_injects.F : (bv_powerset x).type → (functions x 𝟚).type :=
 λ χ, λ pr, ((x.func pr.1 ∈ᴮ set_of_indicator χ ⊓ (𝟚.func (pr.2) =ᴮ 0)) ⊔ ((x.func pr.1) ∈ᴮ (subset.mk (λ i, - ((x.func i) ∈ᴮ set_of_indicator χ))) ⊓ (𝟚.func (pr.2) =ᴮ 1)))
@@ -2166,9 +2431,15 @@ end powerset
 
 section ordinals
 variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
+
+@[reducible]def epsilon_trichotomy (x : bSet 𝔹) : 𝔹 := (⨅y, y∈ᴮ x ⟹ (⨅z, z ∈ᴮ x ⟹ (y =ᴮ z ⊔ y ∈ᴮ z ⊔ z ∈ᴮ y)))
+
+@[reducible]def epsilon_well_founded (x : bSet 𝔹) : 𝔹 := (⨅u, u ⊆ᴮ x ⟹ (- (u =ᴮ ∅) ⟹ ⨆y, y∈ᴮ u ⊓ (⨅z', z' ∈ᴮ u ⟹ (- (z' ∈ᴮ y)))))
+
 def epsilon_well_orders (x : bSet 𝔹) : 𝔹 :=
-(⨅y, y∈ᴮ x ⟹ (⨅z, z ∈ᴮ x ⟹ (y =ᴮ z ⊔ y ∈ᴮ z ⊔ z ∈ᴮ y))) ⊓
-  (⨅u, u ⊆ᴮ x ⟹ (- (u =ᴮ ∅) ⟹ ⨆y, y∈ᴮ u ⊓ (⨅z', z' ∈ᴮ u ⟹ (- (z' ∈ᴮ y)))))
+epsilon_trichotomy x ⊓ epsilon_well_founded x
+
+@[reducible]def ewo (x : bSet 𝔹) : 𝔹 := epsilon_well_orders x
 
 @[simp]lemma B_ext_ewo : B_ext (λ w : bSet 𝔹, epsilon_well_orders w) :=
 by simp[epsilon_well_orders]
@@ -2190,13 +2461,17 @@ by {intros x y, unfold is_transitive, revert x y, change B_ext _, simp}
 
 def Ord (x : bSet 𝔹) : 𝔹 := epsilon_well_orders x ⊓ is_transitive x
 
+lemma epsilon_trichotomy_of_Ord {x a b : bSet 𝔹} {Γ} (Ha_mem : Γ ≤ a ∈ᴮ x) (Hb_mem : Γ ≤ b ∈ᴮ x) (H_Ord : Γ ≤ Ord x)
+  : Γ ≤ a =ᴮ b ⊔ a ∈ᴮ b ⊔ b ∈ᴮ a :=
+bv_and.left (bv_and.left H_Ord) a Ha_mem b Hb_mem
+
 local infix `≺`:70 := (λ x y, -(larger_than x y))
 
 local infix `≼`:70 := (λ x y, injects_into x y)
 
-lemma bSet_le_of_subset {x y : bSet 𝔹} {Γ} (H : Γ ≤ x ⊆ᴮ y) : Γ ≤ x ≼ y :=
+lemma injects_into_of_subset {x y : bSet 𝔹} {Γ} (H : Γ ≤ x ⊆ᴮ y) : Γ ≤ x ≼ y :=
 begin
-  refine bv_use _,
+    refine bv_use _,
     {refine set_of_indicator _, show bSet 𝔹, exact prod x y,
      rintro ⟨a,b⟩, exact (x.func a) =ᴮ (y.func b) ⊓ x.bval a ⊓ y.bval b  },
     { refine le_inf _ _,
@@ -2230,6 +2505,12 @@ begin
             bv_split, simp only [le_inf_iff] at H_1_left_right_1_left H_1_left_left_1_left,
             apply_all eq_of_eq_pair, repeat{auto_cases}, bv_cc }}
 end
+
+lemma bSet_le_of_subset {x y : bSet 𝔹} {Γ} (H : Γ ≤ x ⊆ᴮ y) : Γ ≤ x ≼ y :=
+injects_into_of_subset H
+
+lemma injection_into_of_subset {x y : bSet 𝔹} {Γ} (H : Γ ≤ x ⊆ᴮ y) : Γ ≤ injection_into x y :=
+injects_into_iff_injection_into.mp $ injects_into_of_subset ‹_›
 
 def Card (y : bSet 𝔹) : 𝔹 := Ord(y) ⊓ ⨅x, x ∈ᴮ y ⟹ (- larger_than y x)
 
@@ -2298,8 +2579,12 @@ begin
  from H_right w ‹_› ‹_›}
 end
 
-theorem Ord_of_mem_Ord (y x : bSet 𝔹) : Ord x ⊓ y ∈ᴮ x ≤ Ord y :=
-  le_inf (is_ewo_of_mem_Ord _ _) (is_transitive_of_mem_Ord _ _)
+theorem Ord_of_mem_Ord {x y : bSet 𝔹} {Γ : 𝔹} (H_mem : Γ ≤ x ∈ᴮ y) (H_Ord : Γ ≤ Ord y) : Γ ≤ Ord x :=
+begin
+  refine le_inf _ _,
+    { have := is_ewo_of_mem_Ord x y, exact le_trans (le_inf H_Ord H_mem) ‹_› },
+    { have := is_transitive_of_mem_Ord x y, exact le_trans (le_inf H_Ord H_mem) ‹_› }
+end
 
 open ordinal
 open cardinal
@@ -2447,30 +2732,42 @@ begin
       convert H₂ A ‹_›, from check_succ_eq_succ_check}}
 end
 
-lemma Ord_omega {Γ : 𝔹} : Γ ≤ Ord(omega) :=
+lemma Ord_omega {Γ : 𝔹} : Γ ≤ Ord (omega) :=
 le_inf (check_ewo pSet.is_ewo_omega) (check_is_transitive pSet.is_transitive_omega)
 
+lemma Ord_of_nat {Γ : 𝔹} {n : ℕ} : Γ ≤ Ord (of_nat n) := Ord_of_mem_Ord of_nat_mem_omega Ord_omega
+
+lemma Ord_one { Γ : 𝔹 } : Γ ≤ Ord 1 := Ord_of_nat
+
+lemma Ord_zero { Γ : 𝔹 } : Γ ≤ Ord 0 := Ord_of_nat
+
+lemma of_nat_subset_omega {n : ℕ} {Γ : 𝔹} : Γ ≤ of_nat n ⊆ᴮ omega :=
+subset_of_mem_transitive (bv_and.right Ord_omega) of_nat_mem_omega
+
 /-- ℵ₁ is defined as: the least ordinal which does not inject into ω -/
--- @[reducible]def aleph_one_Ord_spec (x : bSet 𝔹) : 𝔹 :=
---   (Ord x) ⊓
---   (⨅y, (Ord(y) ⟹ (-larger_than bSet.omega y ⟹ x ⊆ᴮ y)))
-
 @[reducible]def aleph_one_Ord_spec (x : bSet 𝔹) : 𝔹 :=
-  (Ord x) ⊓ (⨅ y, (Ord y) ⟹ ((- injects_into y bSet.omega) ⟹ x ⊆ᴮ y))
+ (-(x ≼ omega)) ⊓ ((Ord x) ⊓ (⨅ y, (Ord y) ⟹ ((- injects_into y bSet.omega) ⟹ x ⊆ᴮ y)))
 
--- TODO(jesse)
+@[simp]lemma aleph_one_check_exists_mem {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹] {Γ : 𝔹} : Γ ≤ exists_mem (pSet.card_ex $ aleph 1)̌   :=
+begin
+  simp only [show _ = pSet.card_ex (aleph ↑1), by simp],
+  from check_exists_mem pSet.card_ex_aleph_exists_mem
+end
+
 @[simp]lemma B_ext_Ord : B_ext (Ord : bSet 𝔹 → 𝔹) := B_ext_inf (by simp) (by simp)
 
 /--
 The universal property of ℵ₁ is that it injects into any set which is larger than ω
 -/
-@[reducible]def le_of_omega_lt (x : bSet 𝔹) : 𝔹 := ⨅ z, (bSet.omega ≺ z) ⟹ (x ≼ z)
+@[reducible]def le_of_omega_lt (x : bSet 𝔹) : 𝔹 := ⨅ z, (- (z =ᴮ ∅)) ⟹ (Ord z ⟹ ((bSet.omega ≺ z) ⟹ (x ≼ z)))
 
 @[simp] lemma B_ext_le_of_omega_lt :
   B_ext (le_of_omega_lt : bSet 𝔹 → 𝔹) :=
 by { delta le_of_omega_lt, simp }
 
 end ordinals
+
+section zorns_lemma
 
 variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 
@@ -2512,5 +2809,22 @@ begin
     apply bv_exfalso, apply bot_of_mem_empty, show bSet 𝔹, from w,
     bv_cc
 end
+
+
+end zorns_lemma
+
+section CH
+
+variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
+
+local infix `≺`:70 := (λ x y, -(larger_than x y))
+
+local infix `≼`:70 := (λ x y, injects_into x y)
+
+def CH : 𝔹 := - ⨆ x, not_empty x ⊓ (Ord x ⊓ (⨆y, Ord y ⊓ (omega ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(omega))))
+
+def CH₂ : 𝔹 := - ⨆x, not_empty x ⊓ Ord x ⊓ (omega ≺ x) ⊓ (x ≺ 𝒫(omega))
+
+end CH
 
 end bSet
