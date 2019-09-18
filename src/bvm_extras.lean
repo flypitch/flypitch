@@ -608,6 +608,15 @@ lemma is_total_of_is_func' {x y f : bSet 𝔹} {Γ : 𝔹} (H_is_func' : Γ ≤ 
   : Γ ≤ is_total x y f :=
 bv_and.right ‹_›
 
+lemma is_func'_empty {Γ : 𝔹} {x} : Γ ≤ is_func' (∅ : bSet 𝔹) x ∅ :=
+begin
+  refine le_inf _ _,
+  bv_intro x, bv_intro y, bv_intro z, bv_intro w,
+  bv_imp_intro H, bv_exfalso,
+  exact bot_of_mem_empty (bv_and.left H),
+  apply forall_empty
+end
+
 -- aka function extensionality
 @[simp]lemma eq_of_is_func_of_eq {x y f x' y' : bSet 𝔹} {Γ : 𝔹} (H_is_func : Γ ≤ is_func f)  (H_eq₁ : Γ ≤ x =ᴮ y)
   (H_mem₁ : Γ ≤ pair x x' ∈ᴮ f) (H_mem₂ : Γ ≤ pair y y' ∈ᴮ f) : Γ ≤ x' =ᴮ y' :=
@@ -901,6 +910,9 @@ end
 /-- x is larger than y if there is a subset S ⊆ X which surjects onto y. -/
 def larger_than (x y : bSet 𝔹) : 𝔹 := ⨆ S, ⨆f, S ⊆ᴮ x ⊓ (is_func' S y f) ⊓ (is_surj S y f)
 
+lemma is_surj_empty {Γ : 𝔹} : Γ ≤ is_surj (∅ : bSet 𝔹) ∅ ∅ :=
+forall_empty
+
 lemma function_of_func'_is_function {x y f : bSet 𝔹} {Γ} (H_is_func' : Γ ≤ is_func' x y f) : Γ ≤ is_function x y (function_of_func' H_is_func') :=
 begin
   refine le_inf (le_inf _ _) _,
@@ -932,7 +944,7 @@ begin
   refine ⟨_,_⟩; from mem_of_mem_subset (by {apply function_of_func'_subset, from ‹_›}) ‹_›
 end
 
-lemma surj_image { x y f : bSet 𝔹 } { Γ } (H_func : Γ ≤ is_func' x y f) : Γ ≤ is_surj x (image x y f) f := 
+lemma surj_image { x y f : bSet 𝔹 } { Γ } (H_func : Γ ≤ is_func' x y f) : Γ ≤ is_surj x (image x y f) f :=
 begin
   bv_intro w, bv_imp_intro H_mem,
   rw mem_image_iff at H_mem, cases H_mem with H_mem₁ H_mem₂,
@@ -1525,7 +1537,7 @@ variables {x y z f g: bSet 𝔹} {Γ : 𝔹} (Hf_func : Γ ≤ is_func' x y f) (
 
 include Hf_func Hg_func
 
-def is_func'_comp : bSet 𝔹 := 
+def is_func'_comp : bSet 𝔹 :=
 subset.mk (λ pr : (prod x z).type, ⨆ b, b ∈ᴮ y ⊓ pair (x.func pr.1) b ∈ᴮ f ⊓ pair b (z.func pr.2) ∈ᴮ g)
 
 lemma mem_is_func'_comp_iff {Γ'} {a c : bSet 𝔹} : Γ' ≤ pair a c ∈ᴮ is_func'_comp Hf_func Hg_func ↔ Γ' ≤ a ∈ᴮ x ∧ Γ' ≤ c ∈ᴮ z ∧ Γ' ≤ ⨆ b, b ∈ᴮ y ⊓ (pair a b ∈ᴮ f ⊓ pair b c ∈ᴮ g) :=
@@ -1538,7 +1550,7 @@ begin
       { suffices : Γ' ≤ pair a c ∈ᴮ prod x z,
          by {rw mem_prod_iff at this, from this.right },
         refine mem_of_mem_subset (subset.mk_subset) H },
-      { erw mem_subset.mk_iff₂ at H, 
+      { erw mem_subset.mk_iff₂ at H,
         bv_cases_at H pr Hpr, cases pr with i k,
         bv_split_at Hpr, bv_split_at Hpr_right, bv_cases_at Hpr_right_right b Hb,
         bv_split_at Hb, apply bv_use b, refine le_inf (bv_and.left ‹_›) _,
@@ -2293,11 +2305,11 @@ begin
       cases H with H₁ H₂,
       bv_or_elim_at Hρ_left,
         { rename Hρ_left.left Hρ_left, bv_split_at Hρ_left,
-      apply bv_use (i,j), 
+      apply bv_use (i,j),
       refine le_inf (bv_or_left $ le_inf _ _) _, tactic.rotate 1,
       from ‹_›, from Hρ_right, refine mem_of_mem_subset H₁ ‹_›  },
         { rename Hρ_left.right Hρ_left, bv_split_at Hρ_left,
-      apply bv_use (i,j), 
+      apply bv_use (i,j),
       refine le_inf (bv_or_right $ le_inf _ _) _, tactic.rotate 1,
       from ‹_›, from Hρ_right,
       rw mem_subset.mk_iff at Hρ_left_left ⊢,
@@ -2315,11 +2327,11 @@ begin
       cases H with H₁ H₂,
       bv_or_elim_at Hρ_left,
         { rename Hρ_left.left Hρ_left, bv_split_at Hρ_left,
-      apply bv_use (i,j), 
+      apply bv_use (i,j),
       refine le_inf (bv_or_left $ le_inf _ _) _, tactic.rotate 1,
       from ‹_›, from Hρ_right, refine mem_of_mem_subset H₂ ‹_›  },
         { rename Hρ_left.right Hρ_left, bv_split_at Hρ_left,
-      apply bv_use (i,j), 
+      apply bv_use (i,j),
       refine le_inf (bv_or_right $ le_inf _ _) _, tactic.rotate 1,
       from ‹_›, from Hρ_right,
       rw mem_subset.mk_iff at Hρ_left_left ⊢,
@@ -2759,7 +2771,7 @@ end
 /--
 The universal property of ℵ₁ is that it injects into any set which is larger than ω
 -/
-@[reducible]def le_of_omega_lt (x : bSet 𝔹) : 𝔹 := ⨅ z, (- (z =ᴮ ∅)) ⟹ (Ord z ⟹ ((bSet.omega ≺ z) ⟹ (x ≼ z)))
+@[reducible]def le_of_omega_lt (x : bSet 𝔹) : 𝔹 := ⨅ z, Ord z ⟹ ((bSet.omega ≺ z) ⟹ (x ≼ z))
 
 @[simp] lemma B_ext_le_of_omega_lt :
   B_ext (le_of_omega_lt : bSet 𝔹 → 𝔹) :=
@@ -2817,13 +2829,13 @@ section CH
 
 variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 
-local infix `≺`:70 := (λ x y, -(larger_than x y))
+local infix `≺`:75 := (λ x y, -(larger_than x y))
 
-local infix `≼`:70 := (λ x y, injects_into x y)
+local infix `≼`:75 := (λ x y, injects_into x y)
 
-def CH : 𝔹 := - ⨆ x, not_empty x ⊓ (Ord x ⊓ (⨆y, Ord y ⊓ (omega ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(omega))))
+def CH : 𝔹 := - ⨆ x, Ord x ⊓ ⨆y, Ord y ⊓ omega ≺ x ⊓ x ≺ y ⊓ y ≼ 𝒫 omega
 
-def CH₂ : 𝔹 := - ⨆x, not_empty x ⊓ Ord x ⊓ (omega ≺ x) ⊓ (x ≺ 𝒫(omega))
+def CH₂ : 𝔹 := - ⨆x, Ord x ⊓ (omega ≺ x) ⊓ (x ≺ 𝒫(omega))
 
 end CH
 

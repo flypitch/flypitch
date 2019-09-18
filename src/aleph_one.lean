@@ -79,7 +79,7 @@ begin
     { intro H_ex_mem, intro H_eq, cases H_ex_mem with y Hy, apply pSet.mem_empty y, pSet_cc }
 end
 
-lemma nonempty_compl_of_ne {x y : pSet.{u}} (H_ne : ¬ equiv x y) : (non_empty $ compl x y) ∨ (non_empty $ compl y x) := 
+lemma nonempty_compl_of_ne {x y : pSet.{u}} (H_ne : ¬ equiv x y) : (non_empty $ compl x y) ∨ (non_empty $ compl y x) :=
 begin
   rw equiv_unfold' at H_ne, push_neg at H_ne, cases H_ne,
     { rcases H_ne with ⟨z,Hz₁,Hz₂⟩, left, rw nonempty_iff_exists_mem, use z, simp[mem_compl_iff, *] },
@@ -322,7 +322,7 @@ begin
       have Ha₁_mem : Γ_2 ≤ (x.func a₁) ∈ᴮ x' := bv_rw'' H_eq (mem.mk'' ‹_›),
       have Ha₂_mem : Γ_2 ≤ (x.func a₂) ∈ᴮ x' := bv_rw'' H_eq (mem.mk'' ‹_›),
       rw mem_unfold at Ha₁_mem Ha₂_mem, bv_cases_at Ha₁_mem a₁' Ha₁',
-      
+
       bv_cases_at Ha₂_mem a₂' Ha₂', apply bv_use ((a₁', a₂'), (b₁, b₂)),
       bv_split_at Ha₁', bv_split_at Ha₂',
       refine le_inf (le_inf (le_inf ‹_› ‹_›) (le_inf ‹_› ‹_›) ) (le_inf _ (le_inf _ _)),
@@ -869,15 +869,21 @@ begin
       from le_trans this bot_le }
 end
 
-
 lemma a1_le_of_omega_lt {Γ : 𝔹} : Γ ≤ le_of_omega_lt a1 :=
 begin
-  bv_intro x, bv_imp_intro H_nonempty, bv_imp_intro H_Ord, bv_imp_intro H_no_surj,
-  have H_no_inj : Γ_3 ≤ -(injects_into x omega),
+  bv_intro x, bv_imp_intro H_Ord, bv_imp_intro H_no_surj,
+  have H_no_inj : Γ_2 ≤ -(injects_into x omega),
     by { rw ←imp_bot, bv_imp_intro H_contra,
-         refine bv_absurd _ _ H_no_surj, apply larger_than_of_surjects_onto,
-         refine surjects_onto_of_injects_into ‹_› _, rwa ←nonempty_iff_exists_mem },
-  have H_not_mem_a1 : Γ_3 ≤ -(x ∈ᴮ a1),
+         refine bv_absurd _ _ H_no_surj,
+         bv_cases_on x =ᴮ ∅,
+         { apply bv_use (∅ : bSet 𝔹), apply bv_use (∅ : bSet 𝔹),
+          refine le_inf _ _,
+          refine le_inf empty_subset _,
+          exact is_func'_empty,
+          apply bv_rw' H.left, simp, apply is_surj_empty },
+         { apply larger_than_of_surjects_onto,
+           refine surjects_onto_of_injects_into ‹_› _, rwa ←nonempty_iff_exists_mem } },
+  have H_not_mem_a1 : Γ_2 ≤ -(x ∈ᴮ a1),
     by { rw ←imp_bot, bv_imp_intro H_contra, rw mem_a1_iff ‹_›at H_contra,
          have := injects_into_of_injection_into H_contra, bv_contradiction },
   refine injects_into_of_subset _,

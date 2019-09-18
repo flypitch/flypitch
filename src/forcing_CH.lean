@@ -69,10 +69,10 @@ begin
   intro Γ, unfold CH, rw ←imp_bot, bv_imp_intro H_CH,
   suffices H_aleph_lt_continuum : Γ_1 ≤ (ℵ₁)̌  ≺ 𝒫(ω),
     by {refine bv_absurd _ ‹Γ_1 ≤ (ℵ₁)̌  ≺ 𝒫(ω)› (by solve_by_elim) },
-  bv_cases_at H_CH x Hx, bv_split_at Hx, bv_split_at Hx_right, bv_cases_at Hx_right_right y Hy,
+  bv_cases_at H_CH x Hx, bv_split_at Hx, bv_cases_at Hx_right y Hy,
   bv_split_at Hy, bv_split_at Hy_left, bv_split_at Hy_left_left,
   refine bSet_lt_of_lt_of_le _ _ _ (bSet_lt_of_le_of_lt _ _ _ _ ‹_›) ‹_›,
-  refine @H_aleph_one Γ_3 x _ ‹_› ‹_›, from ‹_›
+  refine @H_aleph_one Γ_3 x _ ‹_›, from ‹_›
 end
 
 def rel_of_array

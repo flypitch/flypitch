@@ -543,7 +543,6 @@ theorem neg_CH : (⊤ : 𝔹) ≤ -CH :=
 begin
   dsimp [CH], rw[lattice.neg_neg],
   apply bv_use (ℵ₁̌ ),
-  refine le_inf (by {rw [nonempty_iff_exists_mem], exact aleph_one_check_exists_mem}) _,
   refine le_inf (ℵ₁_Ord) _,
   apply bv_use (ℵ₂̌ ),
   refine le_inf (le_inf (le_inf ℵ₂_Ord _) _) _,
