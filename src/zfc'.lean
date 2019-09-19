@@ -96,8 +96,7 @@ by { convert realize_subst_bf f t ([]) v ([]) _ using 1, simp [subst0_bounded_fo
 
 def bSet_model_fun_map : Π {n : ℕ}, L_ZFC'.functions n → dvector (bSet β) n → bSet β :=
 begin
-  intros n S,
-    induction S,
+  intros n S, induction S,
   from λ _, bSet.empty,
   from λ x, by {cases x, refine bSet.pair x_x _, cases x_xs, from x_xs_x},
   from λ _, bSet.omega,
@@ -228,7 +227,7 @@ lemma bSet_models_emptyset : ⊤ ⊩[V β] axiom_of_emptyset :=
 by {change ⊤ ≤ _, simp[axiom_of_emptyset, -top_le_iff], intro x, from empty_spec}
 
 def axiom_of_pairing : sentence L_ZFC' :=
- ∀' ∀' ∀' ∀'(((pair' &'3 &'2 ≃pair' &'1 &'0)) ⇔ (&'3 ≃ &'1 ⊓ &'2 ≃ &'0))
+ ∀' ∀' ∀' ∀'(((pair' &'3 &'2 ≃ pair' &'1 &'0)) ⇔ (&'3 ≃ &'1 ⊓ &'2 ≃ &'0))
 
 lemma bSet_models_pairing : ⊤ ⊩[V β] axiom_of_pairing :=
 begin
@@ -250,7 +249,7 @@ by { simp [forced_in, axiom_of_extensionality], exact bSet_axiom_of_extensionali
 
 def axiom_of_collection (ϕ' : bounded_formula L_ZFC' 2) : sentence L_ZFC' :=
 ∀' ((∀' (&'0 ∈' &'1 ⟹ ∃' ϕ'.cast1)) ⟹
-(∃' ∀'(&'0 ∈' &'2 ⟹ ∃' (&'0 ∈' &'2 ⊓ ϕ'.cast dec_trivial))))
+(∃' ∀'(&'0 ∈' &'2 ⟹ ∃' (&'0 ∈' &'2 ⊓ ϕ'.cast (dec_trivial : 2 ≤ 4)))))
 
 -- note: should write a lemma which says given the full congr lemma for a 2-ary formula, can extract left and right congr lemmas
 lemma bSet_models_collection (ϕ : bounded_formula L_ZFC' 2) : ⊤ ⊩[V β] axiom_of_collection ϕ :=
@@ -303,7 +302,7 @@ begin
 end
 
 -- axiom of powerset
--- ∀ u x, x ∈ P(x) ↔ ∀ y ∈ x, y ∈ u
+-- ∀ u x, x ∈ P(u) ↔ ∀ y ∈ x, y ∈ u
 
 def axiom_of_powerset : sentence L_ZFC' :=
   ∀' ∀' (&'0 ∈' P' &'1 ⇔ (∀' (&'0 ∈' &'1 ⟹ &'0 ∈' &'2)))
@@ -329,7 +328,7 @@ begin
 end
 
 -- axiom of regularity
--- ∀ x, x ≠ ∅ ⟹ ∃ y ∈ x, ∀ z' ∈ x, ¬ (z' ∈ y)
+-- ∀ x, x ≠ ∅ ⟹ ∃ y ∈ x, ∀ z ∈ x, ¬ (z ∈ y)
 
 def axiom_of_regularity : sentence L_ZFC' :=
   ∀' (∼(&0 ≃ ∅') ⟹ (∃' (&'0 ∈' &'1 ⊓ ∀' (&'0 ∈' &'2 ⟹ ∼(&'0 ∈' &'1)))))
