@@ -338,65 +338,53 @@ def axiom_of_collection {n} (ϕ : bounded_formula L_ZFC' (n+2)) : sentence L_ZFC
 bd_alls (n+1) $ (∀' (&'0 ∈' &'1 ⟹ ∃' (ϕ ↑' 1 # 2))) ⟹
 (∃' ∀'(&'0 ∈' &'2 ⟹ ∃' (&'0 ∈' &'2 ⊓ (ϕ ↑' 1 # 2 ↑' 1 # 2))))
 
-lemma foo {n k : ℕ} {ϕ : bounded_formula L_ZFC' n} {xs : dvector (V β) n}
-  : B_ext (λ x : V β, boolean_realize_bounded_formula (xs.replace x k) ϕ ([])) :=
+lemma B_ext_left_realize_bounded_formula {n : ℕ} (ϕ : bounded_formula L_ZFC' (n + 1)) (xs : dvector (V β) n) : ∀ (x y : V β), x =ᴮ y ⊓ (boolean_realize_bounded_formula (x::xs) ϕ dvector.nil) ≤ boolean_realize_bounded_formula (y::xs) ϕ dvector.nil :=
 begin
-  intros x y, 
+  intros x y,
+  suffices : (x =ᴮ y = ⨅ (m : fin (n+1)), (V β).eq ((x::xs).nth _ m.is_lt) ((y::xs).nth _ m.is_lt)),
+    by {rw this, apply boolean_realize_bounded_formula_congr, apply_instance},
+  refine le_antisymm _ _,
+    { apply le_infi, rintro ⟨m,Hm⟩,
+      cases m,
+        { refl },
+        { rw [dvector.nth_cons, dvector.nth_cons],
+          {exact bSet.bv_refl, { exact nat.lt_of_succ_lt_succ Hm }},
+      }},
+    { tidy_context, exact a ⟨0, dec_trivial⟩ }
 end
 
--- note: should write a lemma which says given the full congr lemma for a 2-ary formula, can extract left and right congr lemmas
+lemma B_ext_right_realize_bounded_formula {n : ℕ} (ϕ : bounded_formula L_ZFC' (n + 2)) (xs : dvector (V β) n) : ∀ (x y z : V β), x =ᴮ y ⊓ (boolean_realize_bounded_formula (z::x::xs) ϕ dvector.nil) ≤ boolean_realize_bounded_formula (z::y::xs) ϕ dvector.nil :=
+begin
+  intros x y z,
+  suffices : (x =ᴮ y = ⨅ (m : fin (n+2)), (V β).eq ((z::x::xs).nth _ m.is_lt) ((z::y::xs).nth _ m.is_lt)),
+    by {rw this, apply boolean_realize_bounded_formula_congr, apply_instance},
+  refine le_antisymm _ _,
+    { apply le_infi, rintro ⟨m,Hm⟩,
+      cases m,
+        { exact bSet.bv_refl },
+        { cases m,
+          { refl },
+          { repeat {rw dvector.nth_cons},
+            { exact bSet.bv_refl, apply nat.lt_of_succ_lt_succ,
+              apply nat.lt_of_succ_lt_succ, from ‹_› }} }},
+    { tidy_context, exact a ⟨1, dec_trivial⟩ }
+end
+
 lemma bSet_models_collection {n} (ϕ : bounded_formula L_ZFC' (n+2)) : ⊤ ⊩[V β] axiom_of_collection ϕ :=
 begin
   change ⊤ ≤ _, simp only [axiom_of_collection, boolean_realize_sentence_bd_alls],
   bv_intro xs, cases xs with _ u xs,
-  have := bSet_axiom_of_collection' (λ a b : V β, boolean_realize_bounded_formula (b :: a :: xs) ϕ ([])) _ _ u,
+  simp only
+    [ boolean_realize_bounded_formula_and,
+      boolean_realize_bounded_term, imp_top_iff_le,
+      boolean_realize_bounded_formula_ex, top_le_iff,
+      boolean_realize_bounded_formula, boolean_realize_formula_insert_lift2 ],
+  have := bSet_axiom_of_collection'
+            (λ a b : V β, boolean_realize_bounded_formula (b :: a :: xs) ϕ ([])) _ _ u,
   simp only [lattice.top_le_iff, bSet.mem, lattice.imp_top_iff_le, lattice.le_infi_iff] at this,
-  simp only [boolean_realize_bounded_formula_mem,
- fin_0,
- fin_2,
- boolean_realize_cast1_bounded_formula,
- boolean_realize_bounded_formula_and,
- V_exists,
- boolean_realize_bounded_term,
- imp_top_iff_le,
- boolean_realize_bounded_formula_ex,
- top_le_iff,
- boolean_realize_bounded_formula,
- dvector.nth,
- V_forall,
- dvector.trunc,
- fin_1, boolean_realize_formula_insert_lift2],
   exact this u,
-  -- convert this u using 0,
-  -- ext, congr',
-  -- { intros,
-  --   let v₁ : ℕ → V β := λ n, nat.rec_on n x (λ _ _, z),
-  --   let v₂ : ℕ → V β := λ n, nat.rec_on n y (λ _ _, z),
-  --   have h₁ : ∀(k : ℕ) (hk : k < 2), v₁ k = dvector.nth ([x, z]) k hk,
-  --   { intros, cases k, refl, cases k, refl, exfalso, apply not_le_of_gt hk,
-  --     apply nat.succ_le_succ, apply nat.succ_le_succ, apply nat.zero_le },
-  --   have h₂ : ∀(k : ℕ) (hk : k < 2), v₂ k = dvector.nth ([y, z]) k hk,
-  --   { intros, cases k, refl, cases k, refl, exfalso, apply not_le_of_gt hk,
-  --     apply nat.succ_le_succ, apply nat.succ_le_succ, apply nat.zero_le },
-  --   rw [←boolean_realize_bounded_formula_eq h₁, ←boolean_realize_bounded_formula_eq h₂],
-  --   convert boolean_realize_formula_congr _ _ _ _,
-  --   apply le_antisymm, apply le_infi, intro n, cases n,
-  --   refl, simp only [v₁, v₂, bStructure.eq_refl, le_top],
-  --   apply infi_le _ 0 },
-  -- { intros,
-  --   let v₁ : ℕ → V β := λ n, nat.rec_on n z (λ _ _, x),
-  --   let v₂ : ℕ → V β := λ n, nat.rec_on n z (λ _ _, y),
-  --   have h₁ : ∀(k : ℕ) (hk : k < 2), v₁ k = dvector.nth ([z, x]) k hk,
-  --   { intros, cases k, refl, cases k, refl, exfalso, apply not_le_of_gt hk,
-  --     apply nat.succ_le_succ, apply nat.succ_le_succ, apply nat.zero_le },
-  --   have h₂ : ∀(k : ℕ) (hk : k < 2), v₂ k = dvector.nth ([z, y]) k hk,
-  --   { intros, cases k, refl, cases k, refl, exfalso, apply not_le_of_gt hk,
-  --     apply nat.succ_le_succ, apply nat.succ_le_succ, apply nat.zero_le },
-  --   rw [←boolean_realize_bounded_formula_eq h₁, ←boolean_realize_bounded_formula_eq h₂],
-  --   convert boolean_realize_formula_congr _ _ _ _,
-  --   apply le_antisymm, apply le_infi, intro n, cases n,
-  --   simp only [v₁, v₂, bStructure.eq_refl, le_top], refl,
-  --   apply infi_le _ 1 },
+  { intros, apply B_ext_left_realize_bounded_formula },
+  { intros, apply B_ext_right_realize_bounded_formula },
 end
 
 -- axiom of union
