@@ -48,17 +48,7 @@ end ZFC'
 section ZFC'
 variables {β : Type 0} [nontrivial_complete_boolean_algebra β]
 
-@[simp] lemma cast_cons {α} : ∀{n m} (h : n + 1 = m + 1) (x : α) (v : dvector α n),
-  (x::v).cast h = x :: v.cast (nat.succ_inj h) :=
-by { intros, cases h, refl }
-
-@[simp] lemma cast_append_nil {α} : ∀{n} (v : dvector α n) (h : 0 + n = n),
-  (v.append ([])).cast h = v
-| _ ([])   h := by refl
-| _ (x::v) h := by { simp only [true_and, dvector.append, cast_cons, eq_self_iff_true],
-  exact cast_append_nil v (by simp only [zero_add]) }
-
-lemma realize_subst_bt {L : Language} {S : bStructure L β} : ∀{n n' l}
+/-lemma realize_subst_bt {L : Language} {S : bStructure L β} : ∀{n n' l}
   (t : bounded_preterm L (n+n'+1) l)
   (s : bounded_term L n') (v : dvector S n) (v' : dvector S n') (v'' : dvector S l),
   boolean_realize_bounded_term ((v.append v').cast (add_comm n' n))
@@ -102,7 +92,7 @@ lemma realize_subst0_bf {L : Language} {n} (f : bounded_formula L (n+1)) (t : bo
   {S : bStructure L β} (v : dvector S n) :
   boolean_realize_bounded_formula v (f[t/0]) ([]) =
   boolean_realize_bounded_formula (boolean_realize_bounded_term v t ([])::v) f ([]) :=
-by { convert realize_subst_bf f t ([]) v ([]) _ using 1, simp [subst0_bounded_formula], refl }
+by { convert realize_subst_bf f t ([]) v ([]) _ using 1, simp [subst0_bounded_formula], refl }-/
 
 def bSet_model_fun_map : Π {n : ℕ}, L_ZFC'.functions n → dvector (bSet β) n → bSet β :=
 begin
@@ -528,8 +518,15 @@ example : (is_func_f) ↑' 1 # 2 = (is_func_f.cast dec_trivial : bounded_formula
 variable {β}
 lemma CH_f_is_CH : ⟦CH_f⟧[V β] = CH₂ :=
 begin
-  simp [-substmax_bounded_formula, CH_f, CH₂, neg_supr, sup_assoc, realize_substmax_bf,
-    realize_subst0_bf], refl
+  have h1 : ∀(x : V β), boolean_realize_bounded_formula ([x])
+    (substmax_bounded_formula larger_than_f omega) ([]) =
+    boolean_realize_bounded_formula ([x,omega]) larger_than_f ([]),
+  { intro, refl },
+  have h2 : ∀(x : V β), boolean_realize_bounded_formula ([x]) (larger_than_f[P' omega /0]) ([]) =
+    boolean_realize_bounded_formula (([bv_powerset omega, x] : dvector (V β) 2)) larger_than_f ([]),
+  { intro, refl },
+  -- note: once we have proven realize_substmax_bf and realize_subst0_bf, we can add them to this simp set
+  simp [-substmax_bounded_formula, CH_f, CH₂, neg_supr, sup_assoc, h1, h2, lattice.imp]
 end
 
 lemma CH_f_sound {Γ : β} : Γ ⊩[V β] CH_f ↔ Γ ≤ CH₂ :=

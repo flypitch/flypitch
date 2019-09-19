@@ -198,6 +198,16 @@ by { subst p, refl }
 @[simp] protected lemma cast_trans {n m o} {p : n = m} {q : m = o} {v : dvector α n} : (v.cast p).cast q = v.cast (trans p q) :=
 by { subst p, subst q, refl }
 
+@[simp] lemma cast_cons {α} : ∀{n m} (h : n + 1 = m + 1) (x : α) (v : dvector α n),
+  (x::v).cast h = x :: v.cast (nat.succ_inj h) :=
+by { intros, cases h, refl }
+
+@[simp] lemma cast_append_nil {α} : ∀{n} (v : dvector α n) (h : 0 + n = n),
+  (v.append ([])).cast h = v
+| _ ([])   h := by refl
+| _ (x::v) h := by { simp only [true_and, dvector.append, cast_cons, eq_self_iff_true],
+  exact cast_append_nil v (by simp only [zero_add]) }
+
 @[simp] protected def remove_mth : ∀ {n : ℕ} (m : ℕ) (xs : dvector α (n+1)) , dvector α (n)
   | 0 _ _  := dvector.nil
   | n 0 (dvector.cons y ys) := ys
