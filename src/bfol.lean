@@ -732,12 +732,29 @@ lemma boolean_realize_subst_term {n} (v : dvector S n) (s : closed_term L)
   boolean_realize_bounded_term (v.concat (boolean_realize_closed_term S s)) t ([]) :=
 by apply boolean_realize_subst_preterm t ([]) s v
 
+lemma boolean_realize_sentence_bd_alls {f : bounded_formula L n} {S : bStructure L β} :
+  boolean_realize_sentence S (bd_alls n f) =
+  ⨅ xs : dvector S n, boolean_realize_bounded_formula xs f ([]) :=
+begin
+  induction n,
+  { simp [-alls'_alls], apply le_antisymm,
+    { rw [le_infi_iff], intro xs, cases xs, refl },
+    { exact infi_le _ ([]) }},
+  { rw [bd_alls, n_ih], --have := @n_ih (∀' f),
+    apply le_antisymm,
+    { rw [le_infi_iff], intro xs, cases xs with _ x xs,
+      refine le_trans (infi_le _ xs) _,
+      exact infi_le _ x },
+    { rw [le_infi_iff], intro xs, rw [boolean_realize_bounded_formula, le_infi_iff], intro x,
+      exact infi_le _ (x::xs) }}
+end
+
 end bfol
 
 section consis_lemma
 variables {L : Language} {β : Type u}
 
-lemma consis_of_exists_bmodel [nontrivial_complete_boolean_algebra β] {T : Theory L} {S : bStructure L β} [h_nonempty : nonempty S] (H : ⊤ ⊩[S] T) : 
+lemma consis_of_exists_bmodel [nontrivial_complete_boolean_algebra β] {T : Theory L} {S : bStructure L β} [h_nonempty : nonempty S] (H : ⊤ ⊩[S] T) :
   is_consistent T :=
 begin
   intro H_inconsis,
@@ -750,6 +767,7 @@ end
 end consis_lemma
 
 end fol
+
 -- lemma boolean_realize_subst_formula0 (S : bStructure L β) (f : bounded_formula L 1) (t : closed_term L) :
 --   S ⊨ᵇ f[t/0] = boolean_realize_bounded_formula ([boolean_realize_closed_term S t]) f ([]) :=
 -- iff.trans (by rw [substmax_eq_subst0_formula]) (by apply boolean_realize_subst_formula S f t ([]))
@@ -1089,48 +1107,6 @@ end fol
 -- @[simp] lemma in_theory_iff_satisfied {L : Language} {f : sentence L} : f ∈ Th S = S ⊨ᵇ f :=
 --   by refl
 
--- section bd_alls
-
--- /-- Given a nat k and a 0-formula ψ, return ψ with ∀' applied k times to it --/
--- @[simp] def alls {L : Language}  :  Π n : ℕ, formula L → formula L
--- --:= nat.iterate all n
--- | 0 f := f
--- | (n+1) f := ∀' alls n f
-
--- /-- generalization of bd_alls where we can apply less than n ∀'s--/
--- @[simp] def bd_alls' {L : Language} : Π k n : ℕ, bounded_formula L (n + k) → bounded_formula L n
--- | 0 n         f := f
--- | (k+1) n     f := bd_alls' k n (∀' f)
-
--- @[simp] def bd_alls {L : Language}  : Π n : ℕ, bounded_formula L n → sentence L
--- | 0     f := f
--- | (n+1) f := bd_alls n (∀' f) -- bd_alls' (n+1) 0 (f.cast_eqr (zero_add (n+1)))
-
--- @[simp] lemma alls'_alls {L : Language} : Π n (ψ : bounded_formula L n), bd_alls n ψ = bd_alls' n 0 (ψ.cast_eq (zero_add n).symm) :=
---   by {intros n ψ, induction n, swap, simp[n_ih (∀' ψ)], tidy}
-
--- @[simp] lemma alls'_all_commute {L : Language} {n} {k} {f : bounded_formula L (n+k+1)} : (bd_alls' k n (∀' f)) = ∀' bd_alls' k (n+1) (f.cast_eq (by simp))-- by {refine ∀' bd_alls' k (n+1) _, simp, exact f}
--- :=
---   by {induction k; dsimp only [bounded_preformula.cast_eq], swap, simp[@k_ih (∀'f)], tidy}
-
--- @[simp] lemma bd_alls'_substmax {L} {n} {f : bounded_formula L (n+1)} {t : closed_term L} : (bd_alls' n 1 (f.cast_eq (by simp)))[t /0] = (bd_alls' n 0 (substmax_bounded_formula (f.cast_eq (by simp)) t)) := by {induction n, {tidy}, have := @n_ih (∀' f), simp[bounded_preformula.cast_eq] at *, exact this}
-
--- lemma boolean_realize_sentence_bd_alls {L} {n} {f : bounded_formula L n} : S ⊨ᵇ (bd_alls n f) = (∀ xs : dvector S n, boolean_realize_bounded_formula xs f dvector.nil) :=
--- begin
---   induction n,
---     {split; dsimp; intros; try{cases xs}; apply a},
---     {have := @n_ih (∀' f),
---      cases this with this_mp this_mpr, split,
---      {intros H xs, rcases xs with ⟨x,xs⟩, revert xs_xs xs_x, exact this_mp H},
---      {intro H, exact this_mpr (by {intros xs x, exact H (x :: xs)})}}
--- end
-
--- @[simp] lemma alls_0 {L : Language} (ψ : formula L) : alls 0 ψ = ψ := by refl
-
 -- @[simp] lemma alls_all_commute {L : Language} (f : formula L) {k : ℕ} : (alls k ∀' f) = (∀' alls k f) := by {induction k, refl, dunfold alls, rw[k_ih]}
 
 -- @[simp] lemma alls_succ_k {L : Language} (f : formula L) {k : ℕ} : alls (k + 1) f = ∀' alls k f := by constructor
-
--- end bd_alls
-
--- end fol

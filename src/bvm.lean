@@ -1818,7 +1818,7 @@ theorem bSet_axiom_of_collection' (ϕ : bSet 𝔹 → bSet 𝔹 → 𝔹)
   (h_congr_right : ∀ x y z, x =ᴮ y ⊓ ϕ z x ≤ ϕ z y)
   (h_congr_left : ∀ x y z, x =ᴮ y ⊓ ϕ x z ≤ ϕ y z)
   (u : bSet 𝔹) :
-⊤ ≤ ⨅u, ((⨅x, x ∈ᴮ u ⟹ ⨆y, ϕ x y) ⟹ (⨆v, ⨅w, w ∈ᴮ u ⟹ (⨆w', w' ∈ᴮ v ⊓ ϕ w w'))) :=
+  ⊤ ≤ ⨅u, (⨅x, x ∈ᴮ u ⟹ ⨆y, ϕ x y) ⟹ ⨆v, ⨅w, w ∈ᴮ u ⟹ ⨆w', w' ∈ᴮ v ⊓ ϕ w w' :=
 begin
   bv_intro u, bv_imp_intro,
   have := bSet_axiom_of_collection ϕ ‹_› ‹_› u,

@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 Authors: Jesse Han, Floris van Doorn
 -/
-import .bvm .bfol .bvm_extras .forcing .pSet_ordinal .forcing_CH
+import .bfol .forcing .forcing_CH
 
 open lattice
 
@@ -243,48 +243,49 @@ def axiom_of_extensionality : sentence L_ZFC' :=
 lemma bSet_models_extensionality : ⊤ ⊩[V β] axiom_of_extensionality :=
 by { simp [forced_in, axiom_of_extensionality], exact bSet_axiom_of_extensionality }
 
--- axiom of collection
--- For every formula ϕ(x,y),
--- ∀ u, (∀ x ∈ u, ∃ y, ϕ(x,y)) ⟹ (∃ v, ∀ z ∈ u, ∃ w ∈ v, ϕ(z,w))
+-- axiom schema of collection
+-- For every formula ϕ(x,y,p) with (n+2) free variables (p is a vector of length n),
+-- ∀ p ∀ u, (∀ x ∈ u, ∃ y, ϕ(x,y,p)) ⟹ (∃ v, ∀ z ∈ u, ∃ w ∈ v, ϕ(z,w,p))
 
-def axiom_of_collection (ϕ' : bounded_formula L_ZFC' 2) : sentence L_ZFC' :=
-∀' ((∀' (&'0 ∈' &'1 ⟹ ∃' ϕ'.cast1)) ⟹
-(∃' ∀'(&'0 ∈' &'2 ⟹ ∃' (&'0 ∈' &'2 ⊓ ϕ'.cast (dec_trivial : 2 ≤ 4)))))
+def axiom_of_collection {n} (ϕ : bounded_formula L_ZFC' (n+2)) : sentence L_ZFC' :=
+bd_alls n $ ∀' ((∀' (&'0 ∈' &'1 ⟹ ∃' ϕ.cast1)) ⟹
+(∃' ∀'(&'0 ∈' &'2 ⟹ ∃' (&'0 ∈' &'2 ⊓ ϕ.cast (by { rw [add_le_add_iff_left], exact dec_trivial } : n + 2 ≤ n + 4)))))
 
 -- note: should write a lemma which says given the full congr lemma for a 2-ary formula, can extract left and right congr lemmas
-lemma bSet_models_collection (ϕ : bounded_formula L_ZFC' 2) : ⊤ ⊩[V β] axiom_of_collection ϕ :=
+lemma bSet_models_collection {n} (ϕ : bounded_formula L_ZFC' (n+2)) : ⊤ ⊩[V β] axiom_of_collection ϕ :=
 begin
-  change ⊤ ≤ _, bv_intro u, simp, have := bSet_axiom_of_collection' _ _ _ u,
-  simp only [lattice.top_le_iff, bSet.mem, lattice.imp_top_iff_le, lattice.le_infi_iff] at this,
-  exact this u,
-  { intros,
-    let v₁ : ℕ → V β := λ n, nat.rec_on n x (λ _ _, z),
-    let v₂ : ℕ → V β := λ n, nat.rec_on n y (λ _ _, z),
-    have h₁ : ∀(k : ℕ) (hk : k < 2), v₁ k = dvector.nth ([x, z]) k hk,
-    { intros, cases k, refl, cases k, refl, exfalso, apply not_le_of_gt hk,
-      apply nat.succ_le_succ, apply nat.succ_le_succ, apply nat.zero_le },
-    have h₂ : ∀(k : ℕ) (hk : k < 2), v₂ k = dvector.nth ([y, z]) k hk,
-    { intros, cases k, refl, cases k, refl, exfalso, apply not_le_of_gt hk,
-      apply nat.succ_le_succ, apply nat.succ_le_succ, apply nat.zero_le },
-    rw [←boolean_realize_bounded_formula_eq h₁, ←boolean_realize_bounded_formula_eq h₂],
-    convert boolean_realize_formula_congr _ _ _ _,
-    apply le_antisymm, apply le_infi, intro n, cases n,
-    refl, simp only [v₁, v₂, bStructure.eq_refl, le_top],
-    apply infi_le _ 0 },
-  { intros,
-    let v₁ : ℕ → V β := λ n, nat.rec_on n z (λ _ _, x),
-    let v₂ : ℕ → V β := λ n, nat.rec_on n z (λ _ _, y),
-    have h₁ : ∀(k : ℕ) (hk : k < 2), v₁ k = dvector.nth ([z, x]) k hk,
-    { intros, cases k, refl, cases k, refl, exfalso, apply not_le_of_gt hk,
-      apply nat.succ_le_succ, apply nat.succ_le_succ, apply nat.zero_le },
-    have h₂ : ∀(k : ℕ) (hk : k < 2), v₂ k = dvector.nth ([z, y]) k hk,
-    { intros, cases k, refl, cases k, refl, exfalso, apply not_le_of_gt hk,
-      apply nat.succ_le_succ, apply nat.succ_le_succ, apply nat.zero_le },
-    rw [←boolean_realize_bounded_formula_eq h₁, ←boolean_realize_bounded_formula_eq h₂],
-    convert boolean_realize_formula_congr _ _ _ _,
-    apply le_antisymm, apply le_infi, intro n, cases n,
-    simp only [v₁, v₂, bStructure.eq_refl, le_top], refl,
-    apply infi_le _ 1 },
+  sorry
+  -- change ⊤ ≤ _, bv_intro u, simp, have := bSet_axiom_of_collection' _ _ _ u,
+  -- simp only [lattice.top_le_iff, bSet.mem, lattice.imp_top_iff_le, lattice.le_infi_iff] at this,
+  -- exact this u,
+  -- { intros,
+  --   let v₁ : ℕ → V β := λ n, nat.rec_on n x (λ _ _, z),
+  --   let v₂ : ℕ → V β := λ n, nat.rec_on n y (λ _ _, z),
+  --   have h₁ : ∀(k : ℕ) (hk : k < 2), v₁ k = dvector.nth ([x, z]) k hk,
+  --   { intros, cases k, refl, cases k, refl, exfalso, apply not_le_of_gt hk,
+  --     apply nat.succ_le_succ, apply nat.succ_le_succ, apply nat.zero_le },
+  --   have h₂ : ∀(k : ℕ) (hk : k < 2), v₂ k = dvector.nth ([y, z]) k hk,
+  --   { intros, cases k, refl, cases k, refl, exfalso, apply not_le_of_gt hk,
+  --     apply nat.succ_le_succ, apply nat.succ_le_succ, apply nat.zero_le },
+  --   rw [←boolean_realize_bounded_formula_eq h₁, ←boolean_realize_bounded_formula_eq h₂],
+  --   convert boolean_realize_formula_congr _ _ _ _,
+  --   apply le_antisymm, apply le_infi, intro n, cases n,
+  --   refl, simp only [v₁, v₂, bStructure.eq_refl, le_top],
+  --   apply infi_le _ 0 },
+  -- { intros,
+  --   let v₁ : ℕ → V β := λ n, nat.rec_on n z (λ _ _, x),
+  --   let v₂ : ℕ → V β := λ n, nat.rec_on n z (λ _ _, y),
+  --   have h₁ : ∀(k : ℕ) (hk : k < 2), v₁ k = dvector.nth ([z, x]) k hk,
+  --   { intros, cases k, refl, cases k, refl, exfalso, apply not_le_of_gt hk,
+  --     apply nat.succ_le_succ, apply nat.succ_le_succ, apply nat.zero_le },
+  --   have h₂ : ∀(k : ℕ) (hk : k < 2), v₂ k = dvector.nth ([z, y]) k hk,
+  --   { intros, cases k, refl, cases k, refl, exfalso, apply not_le_of_gt hk,
+  --     apply nat.succ_le_succ, apply nat.succ_le_succ, apply nat.zero_le },
+  --   rw [←boolean_realize_bounded_formula_eq h₁, ←boolean_realize_bounded_formula_eq h₂],
+  --   convert boolean_realize_formula_congr _ _ _ _,
+  --   apply le_antisymm, apply le_infi, intro n, cases n,
+  --   simp only [v₁, v₂, bStructure.eq_refl, le_top], refl,
+  --   apply infi_le _ 1 },
 end
 
 -- axiom of union
@@ -366,9 +367,9 @@ begin
 end
 
 def ZFC' : Theory L_ZFC' :=
-  {axiom_of_emptyset, axiom_of_pairing, axiom_of_extensionality,
-  axiom_of_union, axiom_of_powerset, axiom_of_infinity,
-  axiom_of_regularity, zorns_lemma} ∪ (axiom_of_collection '' (set.univ))
+  {axiom_of_emptyset, axiom_of_pairing, axiom_of_extensionality, axiom_of_union,
+   axiom_of_powerset, axiom_of_infinity, axiom_of_regularity, zorns_lemma} ∪
+  set.Union (λ(n : ℕ), axiom_of_collection '' (set.univ : set $ bounded_formula L_ZFC' (n+2)))
 
 theorem bSet_models_ZFC' : ⊤ ⊩[V β] ZFC' :=
 begin
