@@ -12,9 +12,9 @@ local infix ` ⟹ `:65 := lattice.imp
 
 local infix ` ⇔ `:50 := lattice.biimp
 
-local infix `≺`:70 := (λ x y, -(bSet.larger_than x y))
+local infix `≺`:75 := (λ x y, -(bSet.larger_than x y))
 
-local infix `≼`:70 := (λ x y, bSet.injects_into x y)
+local infix `≼`:75 := (λ x y, bSet.injects_into x y)
 
 @[reducible]private noncomputable definition ℵ₁ : pSet := (card_ex $ aleph 1)
 
@@ -70,14 +70,13 @@ begin
   suffices H_aleph_lt_continuum : Γ_1 ≤ (ℵ₁)̌  ≺ 𝒫(ω),
     by {refine bv_absurd _ ‹Γ_1 ≤ (ℵ₁)̌  ≺ 𝒫(ω)› (by solve_by_elim) },
   bv_cases_at H_CH x Hx, bv_split_at Hx, bv_cases_at Hx_right y Hy,
-  bv_split_at Hy, bv_split_at Hy_left, bv_split_at Hy_left_left,
-  refine bSet_lt_of_lt_of_le _ _ _ (bSet_lt_of_le_of_lt _ _ _ _ ‹_›) ‹_›,
-  refine @H_aleph_one Γ_3 x _ ‹_›, from ‹_›
+  bv_split_at Hy, bv_split_at Hy_left,
+  refine bSet_lt_of_lt_of_le _ Hy_right,
+  refine bSet_lt_of_le_of_lt _ Hy_left_right,
+  refine @H_aleph_one Γ_3 x Hx_left Hy_left_left
 end
 
-def rel_of_array
-  (x y : bSet 𝔹) (af : x.type → y.type → 𝔹)
-  : bSet 𝔹 :=
+def rel_of_array (x y : bSet 𝔹) (af : x.type → y.type → 𝔹) : bSet 𝔹 :=
 set_of_indicator (λ pr, (af pr.1 pr.2) : (prod x y).type → 𝔹)
 
 lemma rel_of_array_surj (x y : bSet 𝔹) (af : x.type → y.type → 𝔹)
@@ -641,10 +640,13 @@ lemma aleph_one_not_lt_powerset_omega : ∀ {Γ : β}, Γ ≤ - (ℵ₁̌ ≺ �
 begin
   intro Γ, rw[<-imp_bot], dsimp, bv_imp_intro H,
   refine bv_absurd _ ℵ₁_larger_than_continuum _,
-  exact bSet_lt_of_lt_of_le _ _ _ H continuum_le_continuum_check
+  exact bSet_lt_of_lt_of_le H continuum_le_continuum_check
 end
 
 theorem CH_true : (⊤ : β) ≤ CH :=
 CH_true_aux aleph_one_check_le_of_omega_lt (by apply aleph_one_not_lt_powerset_omega)
+
+theorem CH₂_true : (⊤ : β) ≤ CH₂ :=
+CH_iff_CH₂.mp CH_true
 
 end collapse_algebra

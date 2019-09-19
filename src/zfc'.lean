@@ -48,6 +48,62 @@ end ZFC'
 section ZFC'
 variables {β : Type 0} [nontrivial_complete_boolean_algebra β]
 
+@[simp] lemma cast_cons {α} : ∀{n m} (h : n + 1 = m + 1) (x : α) (v : dvector α n),
+  (x::v).cast h = x :: v.cast (nat.succ_inj h) :=
+by { intros, cases h, refl }
+
+@[simp] lemma cast_append_nil {α} : ∀{n} (v : dvector α n) (h : 0 + n = n),
+  (v.append ([])).cast h = v
+| _ ([])   h := by refl
+| _ (x::v) h := by { simp only [true_and, dvector.append, cast_cons, eq_self_iff_true],
+  exact cast_append_nil v (by simp only [zero_add]) }
+
+lemma realize_subst_bt {L : Language} {S : bStructure L β} : ∀{n n' l}
+  (t : bounded_preterm L (n+n'+1) l)
+  (s : bounded_term L n') (v : dvector S n) (v' : dvector S n') (v'' : dvector S l),
+  boolean_realize_bounded_term ((v.append v').cast (add_comm n' n))
+    (subst_bounded_term t s) v'' =
+  boolean_realize_bounded_term
+    (((v.concat $ boolean_realize_bounded_term v' s ([])).append v').cast $
+      (by simp only [add_comm, add_right_inj, add_left_comm])) t v'' :=
+begin
+  intros, induction t,
+  { apply decidable.lt_by_cases t.1 n; intro h, simp [h, subst_bounded_term],  repeat {sorry} },
+  { sorry },
+  { sorry },
+end
+
+lemma realize_subst_bf {L : Language} {S : bStructure L β} : ∀{n n' n'' l}
+  (f : bounded_preformula L n'' l)
+  (s : bounded_term L n') (v : dvector S n) (v' : dvector S n') (v'' : dvector S l)
+  (h : n+n'+1 = n''),
+  boolean_realize_bounded_formula ((v.append v').cast (add_comm n' n))
+    (subst_bounded_formula f s h) v'' =
+  boolean_realize_bounded_formula
+    (((v.concat $ boolean_realize_bounded_term v' s ([])).append v').cast $
+      eq.trans (by simp only [add_comm, add_right_inj, add_left_comm]) h) f v'' :=
+begin
+  intros, induction f generalizing n n'; induction h,
+  { refl },
+  { simp [realize_subst_bt] },
+  { refl },
+  { simp [realize_subst_bt, f_ih] },
+  { simp [f_ih_f₁, f_ih_f₂], },
+  { simp, congr, ext, sorry /-have := f_ih ([]) s v,-/ },
+end
+
+lemma realize_substmax_bf {L : Language} {n} (f : bounded_formula L (n+1)) (t : closed_term L)
+  {S : bStructure L β} (v : dvector S n) :
+  boolean_realize_bounded_formula v (substmax_bounded_formula f t) ([]) =
+  boolean_realize_bounded_formula (v.concat $ boolean_realize_closed_term S t) f ([]) :=
+by { convert realize_subst_bf f t v ([]) ([]) _, rw [cast_append_nil], simp, }
+
+lemma realize_subst0_bf {L : Language} {n} (f : bounded_formula L (n+1)) (t : bounded_term L n)
+  {S : bStructure L β} (v : dvector S n) :
+  boolean_realize_bounded_formula v (f[t/0]) ([]) =
+  boolean_realize_bounded_formula (boolean_realize_bounded_term v t ([])::v) f ([]) :=
+by { convert realize_subst_bf f t ([]) v ([]) _ using 1, simp [subst0_bounded_formula], refl }
+
 def bSet_model_fun_map : Π {n : ℕ}, L_ZFC'.functions n → dvector (bSet β) n → bSet β :=
 begin
   intros n S,
@@ -406,7 +462,7 @@ def larger_than_f : bounded_formula L_ZFC' 2 :=
         ∀' ( &0 ∈' &3 ⟹ (∃' (&'0 ∈' &'3 ⊓' pair' &'0 &'1 ∈' &'2)))))
 
 @[simp]lemma realize_larger_than_f {x y : V β} :
-  boolean_realize_bounded_formula (by exact [y,x]) larger_than_f dvector.nil = larger_than x y :=
+  boolean_realize_bounded_formula ([y,x]) larger_than_f dvector.nil = larger_than x y :=
 begin
   simp[larger_than, larger_than_f, is_func]
 end
@@ -447,14 +503,17 @@ def non_empty_f : bounded_formula L_ZFC' 1 := ∼(&'0 ≃ ∅')
 @[simp]lemma non_empty_f_is_non_empty {x : V β} : boolean_realize_bounded_formula (by exact [x]) non_empty_f dvector.nil = not_empty x := by {simp[non_empty_f], refl}
 
 def CH_f : sentence L_ZFC' :=
-(∀' (non_empty_f ⟹ (Ord_f ⟹'' (∀' ((Ord_f.cast1) ⟹'' (∼((∼(substmax_bounded_formula (larger_than_f) ω' ↑ 1) ⊓'
-  ∼larger_than_f ⊓' (injects_into_f[(Powerset omega) /0].cast1)))))))))
-
-lemma subst_unfold₁ : ((substmax_bounded_formula (larger_than_f) ω' ↑ 1)) =
+∀' (Ord_f ⟹ (∼(∼(substmax_bounded_formula larger_than_f ω') ⊓' ∼larger_than_f[Powerset omega/0])))
+--(injects_into_f[Powerset omega /0].cast1)
+lemma subst_unfold₁ : substmax_bounded_formula larger_than_f ω' ↑ 1 =
 ∃' (∃' (((&'1 ⊆' ω') ⊓' ( is_func'_f₂↑' 1 # 2)) ⊓'
         ∀' ( &0 ∈' &4 ⟹ (∃' (&'0 ∈' &'3 ⊓' pair' &'0 &'1 ∈' &'2))))) := rfl
  -- ∃' ∃' ((is_func'_f.cast (dec_trivial)) ⊓
  --    ∀' (&0 ∈' &3 ⟹ (∃' (&'0 ∈' (ω') ⊓' pair' &'0 &'1 ∈' &'2)))) := rfl
+
+@[simp] lemma subst0_bounded_formula_not {L : Language} {n} (f : bounded_formula L (n+1))
+  (s : bounded_term L n) : (∼f)[s/0] = ∼(f[s/0]) :=
+by { ext, simp [bd_not] }
 
 lemma subst_unfold₂ : (injects_into_f[P' omega /0]) = ∃'(((is_func_f.cast (dec_trivial) ⊓'
   (∀' (&'0 ∈' &'2 ⟹ (∃' (&'0 ∈' (Powerset omega) ⊓' (pair' &'1 &'0 ∈' &'2))))))
@@ -467,21 +526,16 @@ lemma subst_unfold₃ : (is_func'_f₂ ↑' 1 # 2) =
 example : (is_func_f) ↑' 1 # 2 = (is_func_f.cast dec_trivial : bounded_formula L_ZFC' 2) := by refl
 
 variable {β}
-lemma CH_f_is_CH : ⟦CH_f⟧[V β] = CH :=
+lemma CH_f_is_CH : ⟦CH_f⟧[V β] = CH₂ :=
 begin
-  unfold CH_f, simp [-substmax_bounded_formula,CH, neg_supr, lattice.imp],
-  congr, ext, congr, simp, ext, 
-  simp only [sup_assoc], congr, 
-  swap, rw subst_unfold₂, simp[-top_le_iff], refl, rename x_1 y,
-  erw subst_unfold₁, unfold larger_than, simp, congr, ext S,
-  congr, ext f, congr' 1, congr, 
-  rw subst_unfold₃, unfold is_func', simp, congr,
+  simp [-substmax_bounded_formula, CH_f, CH₂, neg_supr, sup_assoc, realize_substmax_bf,
+    realize_subst0_bf], refl
 end
 
-lemma CH_f_sound {Γ : β} : Γ ⊩[V β] CH_f ↔ Γ ≤ CH :=
+lemma CH_f_sound {Γ : β} : Γ ⊩[V β] CH_f ↔ Γ ≤ CH₂ :=
 by {change _ ≤ _ ↔ _ ≤ _, rw CH_f_is_CH}
 
-lemma neg_CH_f_sound {Γ : β} : Γ ⊩[V β] ∼CH_f ↔ Γ ≤ - CH :=
+lemma neg_CH_f_sound {Γ : β} : Γ ⊩[V β] ∼CH_f ↔ Γ ≤ - CH₂ :=
 by {change _ ≤ _ ↔ _ ≤ _, rw [boolean_realize_sentence_not, CH_f_is_CH]}
 
 end ZFC'
@@ -493,7 +547,7 @@ section CH_unprovable
 
 lemma V_𝔹_cohen_models_neg_CH : ⊤ ⊩[V 𝔹_cohen] ∼CH_f :=
 begin
-  rw neg_CH_f_sound, from neg_CH
+  rw neg_CH_f_sound, exact neg_CH₂
 end
 
 instance V_𝔹_nonempty : nonempty (V 𝔹_cohen) := ⟨bSet.empty⟩
@@ -510,7 +564,7 @@ section neg_CH_unprovable
 instance V_𝔹_collapse_nonempty : nonempty (V 𝔹_collapse) := ⟨bSet.empty⟩
 
 lemma V_𝔹_collapse_models_CH : ⊤ ⊩[V 𝔹_collapse] CH_f :=
-by rw CH_f_sound; from CH_true
+by { rw CH_f_sound, exact CH₂_true }
 
 theorem neg_CH_f_unprovable : ¬ (ZFC' ⊢' ∼CH_f) :=
 unprovable_of_model_neg (V 𝔹_collapse) (bSet_models_ZFC' _)

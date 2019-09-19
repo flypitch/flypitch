@@ -453,9 +453,9 @@
 
 -- local notation `𝔠` := (bv_powerset ℵ₀)
 
--- local infix `≺`:70 := (λ x y, -(larger_than x y))
+-- local infix `≺`:75 := (λ x y, -(larger_than x y))
 
--- local infix `≼`:70 := (λ x y, injects_into x y)
+-- local infix `≼`:75 := (λ x y, injects_into x y)
 
 -- lemma uncountable_fiber_of_regular' (κ₁ κ₂ : cardinal) (H_inf : cardinal.omega ≤ κ₁) (H_lt : κ₁ < κ₂) (H : cof (ord κ₂) = κ₂) (α : Type u) (H_α : #α = κ₁) (β : Type u) (H_β : #β = κ₂) (g : β → α)
 --   : ∃ (ξ : α), cardinal.omega < #↥(g⁻¹' {ξ}) :=

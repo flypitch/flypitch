@@ -1008,9 +1008,9 @@ by simp[injects_into]
 @[simp]lemma B_ext_injects_into_right {y : bSet 𝔹} : B_ext (λ z, injects_into y z) :=
 by simp[injects_into]
 
-local infix `≺`:70 := (λ x y, -(larger_than x y))
+local infix `≺`:75 := (λ x y, -(larger_than x y))
 
-local infix `≼`:70 := (λ x y, injects_into x y)
+local infix `≼`:75 := (λ x y, injects_into x y)
 
 -- aka AC -- TODO
 -- lemma injects_into_of_surjects_onto {x y : bSet 𝔹} {Γ} (H_inj : Γ ≤ surjects_onto x y) : Γ ≤ injects_into y x := sorry
@@ -1497,7 +1497,7 @@ end
 
 end
 
-lemma bSet_lt_of_lt_of_le (x y z : bSet 𝔹) {Γ} (H₁ : Γ ≤ x ≺ y) (H₂ : Γ ≤ y ≼ z) : Γ ≤ x ≺ z :=
+lemma bSet_lt_of_lt_of_le {x y z : bSet 𝔹} {Γ} (H₁ : Γ ≤ x ≺ y) (H₂ : Γ ≤ y ≼ z) : Γ ≤ x ≺ z :=
 begin
   dsimp only [larger_than, injects_into] at ⊢ H₁ H₂,
   rw[<-imp_bot] at ⊢ H₁, bv_imp_intro H, refine H₁ _,
@@ -1511,7 +1511,7 @@ begin
     { exact lift_surj_inj_is_surj Hf_right ‹_› ‹_› (le_inf ‹_› ‹_›) }
 end
 
-lemma bSet_lt_of_le_of_lt (x y z : bSet 𝔹) {Γ} (H₁ : Γ ≤ x ≼ y) (H₂ : Γ ≤ y ≺ z) : Γ ≤ x ≺ z :=
+lemma bSet_lt_of_le_of_lt {x y z : bSet 𝔹} {Γ} (H₁ : Γ ≤ x ≼ y) (H₂ : Γ ≤ y ≺ z) : Γ ≤ x ≺ z :=
 begin
   unfold larger_than at ⊢ H₂, rw[<-imp_bot], bv_imp_intro H, unfold injects_into at H₁,
   rw[<-imp_bot] at H₂, refine H₂ _,
@@ -2477,9 +2477,9 @@ lemma epsilon_trichotomy_of_Ord {x a b : bSet 𝔹} {Γ} (Ha_mem : Γ ≤ a ∈�
   : Γ ≤ a =ᴮ b ⊔ a ∈ᴮ b ⊔ b ∈ᴮ a :=
 bv_and.left (bv_and.left H_Ord) a Ha_mem b Hb_mem
 
-local infix `≺`:70 := (λ x y, -(larger_than x y))
+local infix `≺`:75 := (λ x y, -(larger_than x y))
 
-local infix `≼`:70 := (λ x y, injects_into x y)
+local infix `≼`:75 := (λ x y, injects_into x y)
 
 lemma injects_into_of_subset {x y : bSet 𝔹} {Γ} (H : Γ ≤ x ⊆ᴮ y) : Γ ≤ x ≼ y :=
 begin
@@ -2517,6 +2517,9 @@ begin
             bv_split, simp only [le_inf_iff] at H_1_left_right_1_left H_1_left_left_1_left,
             apply_all eq_of_eq_pair, repeat{auto_cases}, bv_cc }}
 end
+
+lemma injects_into_refl {Γ} {x : bSet 𝔹} : Γ ≤ x ≼ x :=
+injects_into_of_subset subset_self
 
 lemma bSet_le_of_subset {x y : bSet 𝔹} {Γ} (H : Γ ≤ x ⊆ᴮ y) : Γ ≤ x ≼ y :=
 injects_into_of_subset H
@@ -2833,9 +2836,21 @@ local infix `≺`:75 := (λ x y, -(larger_than x y))
 
 local infix `≼`:75 := (λ x y, injects_into x y)
 
-def CH : 𝔹 := - ⨆ x, Ord x ⊓ ⨆y, Ord y ⊓ omega ≺ x ⊓ x ≺ y ⊓ y ≼ 𝒫 omega
+def CH : 𝔹 := - ⨆ x, Ord x ⊓ ⨆y, omega ≺ x ⊓ x ≺ y ⊓ y ≼ 𝒫 omega
 
-def CH₂ : 𝔹 := - ⨆x, Ord x ⊓ (omega ≺ x) ⊓ (x ≺ 𝒫(omega))
+def CH₂ : 𝔹 := - ⨆x, Ord x ⊓ omega ≺ x ⊓ x ≺ 𝒫 omega
+
+lemma CH_iff_CH₂ : ∀{Γ : 𝔹}, Γ ≤ CH ↔ Γ ≤ CH₂ :=
+begin
+  apply bv_iff.neg, intro Γ,
+  split; intro H,
+  { bv_cases_at H x Hx, bv_split_at Hx, bv_cases_at Hx_right y Hy, clear H Hx_right,
+    bv_split_at Hy, bv_split_at Hy_left, apply bv_use x,
+    refine le_inf (le_inf Hx_left Hy_left_left) (bSet_lt_of_lt_of_le Hy_left_right Hy_right) },
+  { bv_cases_at H x Hx, bv_split_at Hx, bv_split_at Hx_left, clear H,
+    apply bv_use x, refine le_inf Hx_left_left _, apply bv_use (𝒫 omega),
+    apply le_inf (le_inf Hx_left_right Hx_right) injects_into_refl }
+end
 
 end CH
 

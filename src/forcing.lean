@@ -20,9 +20,9 @@ local infix ` ⇔ `:50 := lattice.biimp
 
 local prefix `#`:70 := cardinal.mk
 
-local infix `≺`:70 := (λ x y, -(larger_than x y))
+local infix `≺`:75 := (λ x y, -(larger_than x y))
 
-local infix `≼`:70 := (λ x y, injects_into x y)
+local infix `≼`:75 := (λ x y, injects_into x y)
 
 universe u
 
@@ -545,10 +545,13 @@ begin
   apply bv_use (ℵ₁̌ ),
   refine le_inf (ℵ₁_Ord) _,
   apply bv_use (ℵ₂̌ ),
-  refine le_inf (le_inf (le_inf ℵ₂_Ord _) _) _,
-    { from ℵ₀_lt_ℵ₁ },
-    { from ℵ₁_lt_ℵ₂ },
-    { apply bv_use neg_CH_func, from ℵ₂_le_𝔠 }
+  refine le_inf (le_inf _ _) _,
+  { from ℵ₀_lt_ℵ₁ },
+  { from ℵ₁_lt_ℵ₂ },
+  { apply bv_use neg_CH_func, from ℵ₂_le_𝔠 }
 end
+
+theorem neg_CH₂ : (⊤ : 𝔹) ≤ -CH₂ :=
+(bv_iff.neg $ @CH_iff_CH₂ _ _).mp neg_CH
 
 end neg_CH

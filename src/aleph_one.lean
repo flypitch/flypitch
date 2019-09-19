@@ -258,9 +258,9 @@ local infix ` ⟹ `:65 := lattice.imp
 
 local infix ` ⇔ `:50 := lattice.biimp
 
-local infix `≺`:70 := (λ x y, -(larger_than x y))
+local infix `≺`:75 := (λ x y, -(larger_than x y))
 
-local infix `≼`:70 := (λ x y, injects_into x y)
+local infix `≼`:75 := (λ x y, injects_into x y)
 
 section well_ordering
 

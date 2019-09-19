@@ -8,9 +8,9 @@ local infix ` ⟹ `:65 := lattice.imp
 
 local infix ` ⇔ `:50 := lattice.biimp
 
-local infix `≺`:70 := (λ x y, -(bSet.larger_than x y))
+local infix `≺`:75 := (λ x y, -(bSet.larger_than x y))
 
-local infix `≼`:70 := (λ x y, bSet.injects_into x y)
+local infix `≼`:75 := (λ x y, bSet.injects_into x y)
 
 namespace bSet
 
@@ -30,7 +30,7 @@ lemma prod_subset_left {x₁ x₂ y : bSet 𝔹} (H_sub : Γ ≤ x₁ ⊆ᴮ x�
 prod_subset H_sub subset_self
 
 lemma prod_subset_right {x y₁ y₂ : bSet 𝔹} (H_sub : Γ ≤ y₁ ⊆ᴮ y₂) : Γ ≤ prod x y₁ ⊆ᴮ prod x y₂ :=
-prod_subset subset_self H_sub 
+prod_subset subset_self H_sub
 
 end lemmas
 
@@ -103,7 +103,7 @@ end
 
 lemma epsilon_well_founded_binary_inter {x y : bSet 𝔹} {Γ} (H₁ : Γ ≤ Ord x) (H₂ : Γ ≤ Ord y) : Γ ≤ epsilon_well_founded (x ∩ᴮ y) :=
 begin
-  bv_intro w, bv_imp_intro Hw_sub, bv_imp_intro H_nonempty, 
+  bv_intro w, bv_imp_intro Hw_sub, bv_imp_intro H_nonempty,
   rcases subset_binary_inter_iff.mp Hw_sub with ⟨Hw_sub₁, Hw_sub₂⟩,
   exact (bv_and.right (bv_and.left H₁) w) Hw_sub₁ ‹_›,
 end
@@ -365,7 +365,7 @@ end
 lemma strong_eps_hom_unfold {x y f : bSet 𝔹} {Γ} : Γ ≤ strong_eps_hom x y f → ∀ z₁ (Hz₁_mem : Γ ≤ z₁ ∈ᴮ x) (z₂) (Hz₂_mem : Γ ≤ z₂ ∈ᴮ x) (w₁) (Hw₁_mem : Γ ≤ w₁ ∈ᴮ y) (w₂) (Hw₂_mem : Γ ≤ w₂ ∈ᴮ y) (Hpr₁_mem : Γ ≤ pair z₁ w₁ ∈ᴮ f) (Hpr₂_mem : Γ ≤ pair z₂ w₂ ∈ᴮ f), Γ ≤ z₁ ∈ᴮ z₂ ↔ Γ ≤ w₁ ∈ᴮ w₂ := λ H,
 begin
   intros, have := H z₁ ‹_› z₂ ‹_› w₁ ‹_› w₂ ‹_› ‹_› ‹_›,
-  rw bv_biimp_iff at this, apply this, refl 
+  rw bv_biimp_iff at this, apply this, refl
 end
 
 def eps_iso (x y f : bSet 𝔹) : 𝔹 := is_function x y f ⊓ (strong_eps_hom x y f) ⊓ is_surj x y f
