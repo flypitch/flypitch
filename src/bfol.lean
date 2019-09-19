@@ -474,6 +474,28 @@ lemma boolean_realize_bounded_formula_eq : ∀{n} {v₁ : dvector S n} {v₂ : �
     intros k hk, cases k, refl, apply hv
   end
 
+lemma boolean_realize_bounded_formula_eq' {L : Language} {S : bStructure L β} {n}
+  {v₁ : dvector S n} (x : S) {l} (t : bounded_preformula L n l)
+  (xs : dvector S l) :
+    boolean_realize_bounded_formula v₁ t xs = boolean_realize_formula (λ k, if h : k < n then v₁.nth k h else x) t.fst xs :=
+by { symmetry, apply boolean_realize_bounded_formula_eq, intros, rw [dif_pos] }
+
+lemma boolean_realize_bounded_formula_congr {n l} (H_nonempty : nonempty S) (v₁ v₂ : dvector S n) (f : bounded_preformula L n l) (xs : dvector S l) : ((⨅(m : fin n), S.eq (v₁.nth m (m.is_lt)) (v₂.nth m m.is_lt)) ⊓ boolean_realize_bounded_formula v₁ f xs : β) ≤ (boolean_realize_bounded_formula v₂ f xs) :=
+begin
+  tactic.unfreeze_local_instances, cases H_nonempty with x,
+  rw [boolean_realize_bounded_formula_eq' x], rw[boolean_realize_bounded_formula_eq' x],
+  let v := (λ (k : ℕ), dite (k < n) (dvector.nth v₁ k) (λ (h : ¬k < n), x)),
+  let v' := (λ (k : ℕ), dite (k < n) (λ (h : k < n), dvector.nth v₂ k h) (λ (h : ¬k < n), x)),
+  have := boolean_realize_formula_congr v v' (f.fst) xs, convert this using 2,
+  { refine le_antisymm _ _,
+    { tidy_context, bv_intro N,
+      by_cases H_lt : N < n,
+        { simp only [v,v',dif_pos H_lt], exact a ⟨N, ‹_›⟩ },
+        { simp [v,v', dif_neg H_lt]  } },
+    { tidy_context, bv_intro m, rcases m with ⟨m,Hm⟩,
+      replace a := a m, dsimp [v,v'] at a, simpa only [dif_pos Hm] using a }}
+end
+
 -- lemma boolean_realize_bounded_formula_eq_of_fst : ∀{n} {v₁ w₁ : dvector S n}
 --   {v₂ w₂ : ℕ → S} (hv₁ : ∀ k (hk : k < n), v₁.nth k hk = v₂ k)
 --   (hw₁ : ∀ k (hk : k < n), w₁.nth k hk = w₂ k) {l₁ l₂}

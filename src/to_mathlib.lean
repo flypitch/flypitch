@@ -213,6 +213,15 @@ by { intros, cases h, refl }
   | n 0 (dvector.cons y ys) := ys
   | (n+1) (k+1) (dvector.cons y ys) := dvector.cons y (remove_mth k ys)
 
+@[simp]protected def replace : ∀{n : ℕ} (x : α) (k : ℕ) (xs : dvector α n), dvector α (n)
+| n x 0 (y::ys) := (x::ys)
+| 0 x k ys := ys
+| (n+1) x (k+1) (y::ys) := (y::replace x k ys)
+
+@[simp]lemma replace_head {n x z} {xs : dvector α n} : (x::xs).replace z 0 = z::xs := rfl
+
+@[simp]lemma replace_neck {n x y z} {xs : dvector α n} : (x::y::xs).replace z 1 = x::z::xs := rfl
+
 @[simp] def foldr (f : α → β → β) (b : β) : ∀{n}, dvector α n → β
 | _ []       := b
 | _ (a :: l) := f a (foldr l)

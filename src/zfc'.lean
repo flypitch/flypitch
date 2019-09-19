@@ -338,6 +338,12 @@ def axiom_of_collection {n} (ϕ : bounded_formula L_ZFC' (n+2)) : sentence L_ZFC
 bd_alls (n+1) $ (∀' (&'0 ∈' &'1 ⟹ ∃' (ϕ ↑' 1 # 2))) ⟹
 (∃' ∀'(&'0 ∈' &'2 ⟹ ∃' (&'0 ∈' &'2 ⊓ (ϕ ↑' 1 # 2 ↑' 1 # 2))))
 
+lemma foo {n k : ℕ} {ϕ : bounded_formula L_ZFC' n} {xs : dvector (V β) n}
+  : B_ext (λ x : V β, boolean_realize_bounded_formula (xs.replace x k) ϕ ([])) :=
+begin
+  intros x y, 
+end
+
 -- note: should write a lemma which says given the full congr lemma for a 2-ary formula, can extract left and right congr lemmas
 lemma bSet_models_collection {n} (ϕ : bounded_formula L_ZFC' (n+2)) : ⊤ ⊩[V β] axiom_of_collection ϕ :=
 begin
