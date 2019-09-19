@@ -2419,7 +2419,7 @@ begin
 end
 
 /- ∀ x, x ≠ ∅ ∧ ((∀ y, y ⊆ x ∧ ∀ w₁ w₂ ∈ y, w₁ ⊆ w₂ ∨ w₂ ⊆ w₁) → (⋃y) ∈ x)
-      → ∃ c ∈ x, ∀ z ∈ x, c ⊆ x → c = x -/
+      → ∃ c ∈ x, ∀ z ∈ x, c ⊆ z → c = z -/
 theorem bSet_zorns_lemma (X : bSet 𝔹) (H_nonempty : -(X =ᴮ ∅) = ⊤) (H : ⊤ ≤ (⨅y, (y ⊆ᴮ X ⊓ (⨅(w₁ : bSet 𝔹), ⨅(w₂ : bSet 𝔹),
   w₁ ∈ᴮ y ⊓ w₂ ∈ᴮ y ⟹ (w₁ ⊆ᴮ w₂ ⊔ w₂ ⊆ᴮ w₁))) ⟹ (bv_union y ∈ᴮ X))) :
   ⊤ ≤ (⨆c, c ∈ᴮ X ⊓ (⨅z, z ∈ᴮ X ⟹ (c ⊆ᴮ z ⟹ c =ᴮ z))) :=

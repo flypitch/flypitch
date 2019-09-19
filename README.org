@@ -1,6 +1,24 @@
 #+TITLE: Flypitch
-*** Goals
-The Flypitch project aimed to produce a formal proof of the [[https://en.wikipedia.org/wiki/Continuum_hypothesis#Independence_from_ZFC][independence of the continuum hypothesis]].
+*** The result
+In this repository we have given a formal proof of the [[https://en.wikipedia.org/wiki/Continuum_hypothesis#Independence_from_ZFC][independence of the continuum hypothesis]].
+
+The formal statement of the independence of the continuum hypothesis is given in [[src/summary.lean]]:
+#+begin_src lean
+theorem independence_of_CH : independent ZFC' CH_f
+#+end_src
+
+- The definition of ~independent~ states that a sentence is neither provable nor disprovable from a theory:
+  #+begin_src lean
+  def independent {L : Language} (T : Theory L) (f : sentence L) : Prop :=
+  ¬ T ⊢' f ∧ ¬ T ⊢' ∼f
+  #+end_src
+  The notation ~T ⊢' f~ means that there is a proof tree of ~f~ with assumptions in ~T~. The proof system is given in [[src/fol.lean]].
+- ZFC' is the theory of Zermelo-Fraenkel set theory, defined in [[src/zfc'.lean]].
+  - We formulate it in a language with 5 constant/function symbols (in addition the usual elementhood relation): for the empty set, pairs, omega, the power set and union.
+  - For each constant/function symbol ZFC' contains an axiom giving the defining property of that symbol. Addionally, it contains the axiom of extensionality, regularity, Zorn's lemma and the axiom schema of collection.
+  - The 5 constant/function symbols we added are definable in ZFC, so ZFC' is conservative over ZFC. But these extra symbols make the formulation of Zorn's lemma and the continuum hypothesis easier. We plan to also formalize the reduction from ZFC' to ZFC.
+- ~CH_f~ is the continuum hypothesis as a first-order logic sentence. The sentence we use is
+  ~∀x, x is an ordinal ⟹ x ≤ ω ∨ P(ω) ≤ x~ where ~a ≤ b~ means that there is a surjection from a subset of ~b~ to ~a~.
 
 *** Documentation
 A conventional human-readable account of the proof written in type-theoretic foundations, upon which some parts of the formalization will be based, is [[https://www.github.com/flypitch/flypitch-notes/][located here]].
@@ -28,9 +46,9 @@ leanpkg build
 *** Viewing and navigating the project
 To view the project, we recommend the use of a Lean-aware editor like [[https://github.com/leanprover/lean-mode][Emacs]] or [[https://github.com/leanprover/vscode-lean][VSCode]]. Among other things, like type information, such editors can display the /proof state/ inside a tactic block, making it easier to understand how theorems are being proved.
 
-A summary of the main results can be found in ~/src/summary.lean~, containing ~#print~ statements of important definitions and duplicated proofs of the main theorems. From there, one may use their editor's jump-to-definition feature to trace the dependencies of the definitions and proofs.
+A summary of the main results can be found in [[src/summary.lean]], containing ~#print~ statements of important definitions and duplicated proofs of the main theorems. From there, one may use their editor's jump-to-definition feature to trace the dependencies of the definitions and proofs.
 
-We also have a formula pretty-printer which prints de Bruijn indexed-formulas as their named representations. Code and examples for the pretty-printer can be found in ~/src/print_formula.lean~.
+We also have a formula pretty-printer which prints de Bruijn indexed-formulas as their named representations. Code and examples for the pretty-printer can be found in [[src/print_formula.lean]].
 
 *** Papers
 Our paper /A formalization of forcing and the unprovability of the continuum hypothesis/, describing [[https://github.com/flypitch/flypitch/releases/tag/1.2][this release]], was accepted to [[https://itp19.cecs.pdx.edu/][ITP 2019]]. It is available [[https://github.com/flypitch/flypitch-itp-2019/releases/tag/1.1][here]].

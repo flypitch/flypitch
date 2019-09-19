@@ -459,6 +459,8 @@ local infix ` ⊆'`:100 := subset''
   boolean_realize_bounded_term v t₁ ([]) ⊆ᴮ boolean_realize_bounded_term v t₂ ([]) :=
 by { simp [subset'', subset_unfold'] }
 
+/- ∀ x, x ≠ ∅ ∧ ((∀ y, y ⊆ x ∧ ∀ w₁ w₂ ∈ y, w₁ ⊆ w₂ ∨ w₂ ⊆ w₁) → (⋃y) ∈ x)
+      → ∃ c ∈ x, ∀ z ∈ x, c ⊆ z → c = z -/
 def zorns_lemma : sentence L_ZFC' :=
 ∀' (∼ (&'0 ≃ ∅')
   ⟹ (∀' (&'0 ⊆' &'1 ⊓' (∀' ∀' ((&'1 ∈' &'2 ⊓' &'0 ∈' &'2) ⟹ (&'1 ⊆' &'0 ⊔' &'0 ⊆' &'1)))
@@ -495,7 +497,7 @@ include β
 theorem ZFC'_consistent : is_consistent ZFC' := consis_of_exists_bmodel (bSet_models_ZFC' β)
 omit β
 
-/-- f is =ᴮ-extensional if for every w₁ w₂ v₁ v₂, if pair (w₁ v₁) and pair (w₂ v₂) ∈ f and
+/-- f is =ᴮ-extensional if for every w₁ w₂ v₁ v₂, if pair (w₁, v₁) and pair (w₂, v₂) ∈ f and
     w₁ =ᴮ w₂, then v₁ =ᴮ v₂ -/
 def is_func_f : bounded_formula L_ZFC' 1 :=
 ∀' ∀' ∀' ∀' ((pair' &'3 &'1 ∈' &'4 ⊓' pair' &'2 &'0 ∈' &'4
@@ -530,7 +532,7 @@ begin
   simp [bSet.is_total, is_total'_f]
 end
 
--- is_total'_f₂ S y f is the same as is_total'_f₂ y S f
+-- is_total'_f₂ S y f is the same as is_total'_f y S f
 def is_total'_f₂ : bounded_formula L_ZFC' 3 :=
 (∀' (&'0 ∈' &'2 ⟹ (∃' (&'0 ∈' &'4 ⊓' (pair' &'1 &'0 ∈' &'2)))))
 
@@ -551,15 +553,19 @@ by simp [is_func'_f, is_func']
 @[simp]lemma realize_is_func'_f₂ {x y f : V β} : boolean_realize_bounded_formula (by exact [f, y, x]) is_func'_f₂ dvector.nil = is_func' y x f :=
 by simp [is_func'_f₂, is_func']
 
--- ⨆ S, ⨆f, S ⊆ᴮ x ⊓ (is_func' S y f) ⊓ (is_surj S y f)
-def larger_than_f : bounded_formula L_ZFC' 2 :=
-∃' (∃' (((&'1 ⊆' &'3) ⊓' (is_func'_f₂).cast (dec_trivial)) ⊓'
+/-
+  `at_most_f x y` means
+  `∃ S, ∃ f, S ⊆ y ∧ f contains a function from S to x ∧ f surjects onto x`
+  In `bSet` it corresponds to the formula `larger_than y x`.
+-/
+def at_most_f : bounded_formula L_ZFC' 2 :=
+∃' (∃' (((&'1 ⊆' &'3) ⊓' (is_func'_f₂).cast (dec_trivial : 3 ≤ 4)) ⊓'
         ∀' ( &0 ∈' &3 ⟹ (∃' (&'0 ∈' &'3 ⊓' pair' &'0 &'1 ∈' &'2)))))
 
-@[simp]lemma realize_larger_than_f {x y : V β} :
-  boolean_realize_bounded_formula ([y,x]) larger_than_f dvector.nil = larger_than x y :=
+@[simp]lemma realize_at_most_f {x y : V β} :
+  boolean_realize_bounded_formula ([y,x]) at_most_f dvector.nil = larger_than x y :=
 begin
-  simp[larger_than, larger_than_f, is_func]
+  simp[larger_than, at_most_f, is_func]
 end
 
 def is_inj_f : bounded_formula L_ZFC' 1 :=
@@ -575,8 +581,6 @@ def injects_into_f : bounded_formula L_ZFC' 2 :=
 @[simp]lemma realize_injects_into {x y : V β} :
   boolean_realize_bounded_formula (by exact [y,x]) injects_into_f dvector.nil = injects_into x y :=
 by {simp[injects_into_f, injects_into]}
-
---⨆ x, ⨆y, (ℵ₀ ≺ x) ⊓ (x ≺ y) ⊓ (y ≼ 𝒫(ℵ₀))
 
 def is_transitive_f : bounded_formula L_ZFC' 1 := ∀' ((&'0 ∈' &'1) ⟹ &'0 ⊆' &'1)
 
@@ -597,38 +601,27 @@ def non_empty_f : bounded_formula L_ZFC' 1 := ∼(&'0 ≃ ∅')
 
 @[simp]lemma non_empty_f_is_non_empty {x : V β} : boolean_realize_bounded_formula (by exact [x]) non_empty_f dvector.nil = not_empty x := by {simp[non_empty_f], refl}
 
+/-- The continuum hypothesis is given by the formula
+  `∀x, x is an ordinal ⟹ x ≤ ω ∨ P(ω) ≤ x`.
+  Here `a ≤ b` means there is a surjection from a subset of `b` to `a`.
+  We have to perform two subsitutions (`substmax_bounded_formula` and `[../0]`)
+  to apply `at_most_f` to the appropriate arguments. -/
 def CH_f : sentence L_ZFC' :=
-∀' (Ord_f ⟹ (∼(∼(substmax_bounded_formula larger_than_f ω') ⊓' ∼larger_than_f[Powerset omega/0])))
---(injects_into_f[Powerset omega /0].cast1)
-lemma subst_unfold₁ : substmax_bounded_formula larger_than_f ω' ↑ 1 =
-∃' (∃' (((&'1 ⊆' ω') ⊓' ( is_func'_f₂↑' 1 # 2)) ⊓'
-        ∀' ( &0 ∈' &4 ⟹ (∃' (&'0 ∈' &'3 ⊓' pair' &'0 &'1 ∈' &'2))))) := rfl
- -- ∃' ∃' ((is_func'_f.cast (dec_trivial)) ⊓
- --    ∀' (&0 ∈' &3 ⟹ (∃' (&'0 ∈' (ω') ⊓' pair' &'0 &'1 ∈' &'2)))) := rfl
+∀' (Ord_f ⟹ (substmax_bounded_formula at_most_f ω' ⊔' at_most_f[Powerset omega/0]))
 
 @[simp] lemma subst0_bounded_formula_not {L : Language} {n} (f : bounded_formula L (n+1))
   (s : bounded_term L n) : (∼f)[s/0] = ∼(f[s/0]) :=
 by { ext, simp [bd_not] }
 
-lemma subst_unfold₂ : (injects_into_f[P' omega /0]) = ∃'(((is_func_f.cast (dec_trivial) ⊓'
-  (∀' (&'0 ∈' &'2 ⟹ (∃' (&'0 ∈' (Powerset omega) ⊓' (pair' &'1 &'0 ∈' &'2))))))
-  ⊓' is_inj_f.cast (dec_trivial))) := rfl
-
-lemma subst_unfold₃ : (is_func'_f₂ ↑' 1 # 2) =
- is_func_f.cast (dec_trivial) ⊓'
-  ∀' (&0 ∈' &2 ⟹ (∃' (&'0 ∈' &'5 ⊓' pair' &'1 &'0 ∈' &'2))) := rfl
-
-example : (is_func_f) ↑' 1 # 2 = (is_func_f.cast dec_trivial : bounded_formula L_ZFC' 2) := by refl
-
 variable {β}
 lemma CH_f_is_CH : ⟦CH_f⟧[V β] = CH₂ :=
 begin
   have h1 : ∀(x : V β), boolean_realize_bounded_formula ([x])
-    (substmax_bounded_formula larger_than_f omega) ([]) =
-    boolean_realize_bounded_formula ([x,omega]) larger_than_f ([]),
+    (substmax_bounded_formula at_most_f omega) ([]) =
+    boolean_realize_bounded_formula ([x,omega]) at_most_f ([]),
   { intro, refl },
-  have h2 : ∀(x : V β), boolean_realize_bounded_formula ([x]) (larger_than_f[P' omega /0]) ([]) =
-    boolean_realize_bounded_formula (([bv_powerset omega, x] : dvector (V β) 2)) larger_than_f ([]),
+  have h2 : ∀(x : V β), boolean_realize_bounded_formula ([x]) (at_most_f[P' omega /0]) ([]) =
+    boolean_realize_bounded_formula (([bv_powerset omega, x] : dvector (V β) 2)) at_most_f ([]),
   { intro, refl },
   -- note: once we have proven realize_substmax_bf and realize_subst0_bf, we can add them to this simp set
   simp [-substmax_bounded_formula, CH_f, CH₂, neg_supr, sup_assoc, h1, h2, lattice.imp]
