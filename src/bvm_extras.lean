@@ -148,7 +148,7 @@ by { rw[subset_unfold'], bv_intro z, bv_imp_intro Hz,
        from (mem_binary_inter_iff.mp Hz).left }
 
 lemma binary_inter_subset_right {x y : bSet 𝔹} {Γ} : Γ ≤ x ∩ᴮ y ⊆ᴮ y :=
-begin -- TODO(jesse): why isn't the motive being computed correctly here?
+begin
   suffices this : ∀ z (H : Γ ≤ y ∩ᴮ x ⊆ᴮ z), Γ ≤ x ∩ᴮ y ⊆ᴮ z,
     from this _ binary_inter_subset_left,
   exact λ z _,
@@ -203,9 +203,6 @@ by {apply bv_rw' (@binary_union_symm 𝔹 _ x {x} Γ), simp, from succ_eq_binary
 
 @[reducible]def pair (x y : bSet 𝔹) : bSet 𝔹 := {{x}, {x,y}}
 
--- lemma pair_type (x y : bSet 𝔹) : (pair x y).type = begin end := sorry
-
---TODO(jesse) write a tactic to automate this type of argument
 @[simp]lemma subst_congr_pair_left {x z y : bSet 𝔹} : x =ᴮ z ≤ pair x y =ᴮ pair z y :=
 begin
   unfold pair, have this₁ : x =ᴮ z ≤ {{x},{x,y}} =ᴮ {{z},{x,y}} := by simp*,
@@ -496,7 +493,6 @@ begin
   unfold has_insert.insert, simp
 end
 
--- TODO add B_congr lemmas for insert1
 @[simp]lemma eq_unordered_pair_of_eq {a b c d : bSet 𝔹} {Γ} (H₁ : Γ ≤ a =ᴮ c) (H₂ : Γ ≤ b =ᴮ d)
   : Γ ≤ {a,b} =ᴮ {c,d} :=
 begin
@@ -536,8 +532,6 @@ end
 @[reducible]def is_func (f : bSet 𝔹) : 𝔹 :=
   ⨅ w₁, ⨅w₂, ⨅v₁, ⨅ v₂, pair w₁ v₁ ∈ᴮ f ⊓ pair w₂ v₂ ∈ᴮ f ⟹ (w₁ =ᴮ w₂ ⟹ v₁ =ᴮ v₂)
 
--- TODO(jesse): automate this argument with simp lemmas
--- for restricting universally quantifier statements to subsets
 @[simp] lemma is_func_subset_of_is_func {f g : bSet 𝔹} {Γ} (H : Γ ≤ is_func f) (H_sub : Γ ≤ g ⊆ᴮ f) : Γ ≤ is_func g :=
 begin
   bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂, bv_imp_intro H',
@@ -547,19 +541,6 @@ begin
   bv_split, refine le_inf _ _; rw[subset_unfold'] at H_sub,
   exact H_sub (pair w₁ v₁) ‹_›, exact H_sub (pair w₂ v₂) ‹_›
 end
-
--- lemma check_is_func {g : pSet} (H_ext : pSet.is_extensional g) {Γ : 𝔹} : Γ ≤ is_func (ǧ) :=
--- begin
---   unfold pSet.is_extensional at H_ext, unfold is_func,
---   bv_intro w₁, bv_intro w₂, bv_intro v₁, bv_intro v₂,
---   bv_imp_intro H, bv_split, bv_imp_intro H_eq,
---   sorry
--- end
-
-
-/-- f is a functional relation if for every z ∈ x, if there exists a w ∈ y such that (z,w) ∈ f, then for every w' ∈ y such that (z,w') ∈ f, w' =ᴮ w -/
--- @[reducible] def is_functional (x y f : bSet 𝔹) : 𝔹 :=
--- ⨅z, (z∈ᴮ x ⟹ (⨆w, w ∈ᴮ y ⊓ pair z w ∈ᴮ f ⊓ (⨅w', w' ∈ᴮ y ⟹ (pair z w' ∈ᴮ f ⟹ w =ᴮ w'))))
 
 @[reducible]def is_functional (f : bSet 𝔹) : 𝔹 :=
 ⨅z, (⨆w, pair z w ∈ᴮ f) ⟹ (⨆w', ⨅w'', pair z w'' ∈ᴮ f ⟹ w' =ᴮ w'')
@@ -1524,14 +1505,6 @@ begin
     { apply extend_surj_inj_is_surj, from ‹_›,  exact is_func'_subset_of_is_func' H_g_left ‹_› }
 end
 
--- TODO
--- lemma larger_than_trans {x y z} {Γ : 𝔹} (H₁ : Γ ≤ larger_than x y) (H₂ : Γ ≤ larger_than y z)
---   : Γ ≤ larger_than x z :=
--- begin
---   bv_cases_at H₁ S HS, bv_cases_at H₂ S' HS', bv_cases_at HS f Hf, bv_cases_at HS' f' Hf',
---   apply bv_use (S ∩ᴮ (preimage S S' f)), sorry
--- end
-
 section is_func'_comp
 variables {x y z f g: bSet 𝔹} {Γ : 𝔹} (Hf_func : Γ ≤ is_func' x y f) (Hg_func : Γ ≤ is_func' y z g)
 
@@ -1728,7 +1701,6 @@ def functions (x y : bSet 𝔹) : bSet 𝔹 :=
 
 @[simp, cleanup] lemma functions_type {x y : bSet 𝔹} : (functions x y).type = (bv_powerset (prod x y)).type := rfl
 
--- TODO(jesse) should be able to shorten this using subset.mk_mem_iff
 lemma mem_functions_iff {g x y : bSet 𝔹} {Γ : 𝔹} : (Γ ≤ g ∈ᴮ functions x y) ↔ (Γ ≤ is_function x y g) :=
 begin
   refine ⟨_,_⟩; intro H,
@@ -1745,29 +1717,6 @@ begin
       bv_cases_at H_left_right w₂, apply bv_use w₂, bv_split, refine le_inf ‹_› _,
       apply bv_rw' (bv_symm ‹_ ≤ g =ᴮ func (𝒫 prod x y) s›), simp, from ‹_› }
 end
-
--- lemma functions_check {x y : pSet.{u}} (pSet.functions x y):  := TODO(jesse): finish stating this
-
-
--- lemma function_reflect_AE {x y : pSet} {f : bSet 𝔹} (H : ⊤ ≤ is_function (x̌) (y̌) f) : ∀ i : x̌.type, ∃ j : y̌.type, ⊤ ≤ pair (x̌.func i) (y̌.func j) ∈ᴮ f :=
--- begin
---   bv_split, bv_split, rw[<-@bounded_forall] at H_left_right,
---   intro i, replace H_left_right := H_left_right i, simp at H_left_right,
---   rw[<-@bounded_exists] at H_left_right, simp at H_left_right,
---     { have this : ⊤ ≤ (⨆ i_x, pair (x̌.func i) (y̌.func i_x) ∈ᴮ (prod (x̌) (y̌))),
---         by {rw[<-top_le_iff] at H_left_right, apply bv_Or_imp,
---             show _ → _,
---               exact λ i_x, pair (x̌.func i) (y̌.func i_x) ∈ᴮ f,
---             rw[subset_unfold'] at H_right, dsimp,
---             bv_intro x_1, bv_imp_intro Hx_1,
---             replace H_right := H_right (pair (x̌.func i) (y̌.func x_1)) ‹_›,
---             apply bv_use (i, x_1), refine le_inf (by simp) bv_refl,
---             exact H_left_right},
---           sorry
---  },
---     { sorry },
---     { sorry }
--- end
 
 -- /-- f is an injective function on x if it is a function and for every w₁ and w₂ ∈ x, if there exist v₁ and v₂ such that (w₁, v₁) ∈ f and (w₂, v₂) ∈ f,
 --   then v₁ = v₂ implies  w₁ = w₂ -/
