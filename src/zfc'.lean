@@ -94,6 +94,71 @@ lemma realize_subst0_bf {L : Language} {n} (f : bounded_formula L (n+1)) (t : bo
   boolean_realize_bounded_formula (boolean_realize_bounded_term v t ([])::v) f ([]) :=
 by { convert realize_subst_bf f t ([]) v ([]) _ using 1, simp [subst0_bounded_formula], refl }-/
 
+-- lemma boolean_realize_bounded_term_insert_lift {L : Language} {S : bStructure L β} :
+--   ∀{n l} (v : dvector S n) (x : S) (m : ℕ)
+--   (t : bounded_preterm L n l) (xs : dvector S l),
+--     boolean_realize_bounded_term (v.insert x m) (t ↑' 1 # m) xs = boolean_realize_bounded_term v t xs
+-- | _ _ v x m &k             xs := _
+-- | _ _ v x m (bd_func f)    xs := _
+-- | _ _ v x m (bd_app t₁ t₂) xs := _
+
+-- lemma boolean_realize_bounded_formula_insert_lift {L : Language} {S : bStructure L β} : ∀{n l} (v : dvector S n) (x : S) (m : ℕ)
+--   (f : bounded_preformula L n l) (xs : dvector S l),
+--     boolean_realize_bounded_formula (v.insert x m) (f ↑' 1 # m) xs = boolean_realize_bounded_formula v f xs
+-- | _ _ v x m bd_falsum    xs := by sorry
+-- | _ _ v x m (t₁ ≃ t₂)    xs := by sorry -- simp [boolean_realize_term_subst_lift]
+-- | _ _ v x m (bd_rel R)   xs := by sorry -- refl
+-- | _ _ v x m (bd_apprel f t) xs :=
+--   by sorry -- simp [boolean_realize_term_subst_lift]; rw boolean_realize_formula_subst_lift
+-- | _ _ v x m (f₁ ⟹ f₂)   xs := by sorry -- dsimp; congr' 1; apply boolean_realize_formula_subst_lift
+-- | _ _ v x m (∀' f)       xs :=
+--   begin
+--     sorry
+--     -- apply congr_arg infi; ext x',
+--     -- rw [boolean_realize_formula_congr' (subst_realize2_0 _ _ _ _),
+--     --   boolean_realize_formula_subst_lift]
+--   end
+
+lemma boolean_realize_bounded_formula_eq' {L : Language} {S : bStructure L β} {n}
+  {v₁ : dvector S n} (x : S) {l} (t : bounded_preformula L n l)
+  (xs : dvector S l) :
+    boolean_realize_bounded_formula v₁ t xs = boolean_realize_formula (λ k, if h : k < n then v₁.nth k h else x) t.fst xs :=
+by { symmetry, apply boolean_realize_bounded_formula_eq, intros, rw [dif_pos] }
+
+protected lemma insert_nth_lt {α} : ∀{n k l : ℕ} (x : α) (xs : dvector α n) (h : l < n) (h' : l < n + 1)
+  (h2 : l < k), (xs.insert x k).nth l h' = xs.nth l h :=
+sorry
+
+protected lemma insert_nth_gt {α} : ∀{n k l : ℕ} (x : α) (xs : dvector α n) (h : l < n) (h' : l + 1 < n + 1)
+  (h2 : k < l + 1), (xs.insert x k).nth (l+1) h' = xs.nth l h :=
+sorry
+
+lemma boolean_realize_bounded_formula_insert_lift {L : Language} {S : bStructure L β} [nonempty S]
+  {n l} (v : dvector S n) (x : S) (m : ℕ) (hm : m ≤ n)
+  (f : bounded_preformula L n l) (xs : dvector S l) :
+    boolean_realize_bounded_formula (v.insert x m) (f ↑' 1 # m) xs =
+    boolean_realize_bounded_formula v f xs :=
+begin
+  have := _inst_2, cases this with x, rw [boolean_realize_bounded_formula_eq' x, boolean_realize_bounded_formula_eq' x], simp,
+  convert boolean_realize_formula_subst_lift _ x _ _ _, ext k,
+  apply decidable.lt_by_cases k n; intro hk,
+  { simp [nat.lt.step hk], sorry },
+  { subst hk,
+    -- have : k - 1 < k, from (nat.sub_lt_right_iff_lt_add (nat.one_le_of_lt _)).mpr _,
+    simp [hm, nat.lt_succ_self], sorry },
+  { have h1 : ¬k < n + 1, sorry,
+    have h2 : ¬k - 1 < n, sorry,
+    have h3 : m < k, sorry,
+    simp [h1, h2, h3] }
+end
+
+@[simp] lemma boolean_realize_formula_insert_lift2 {L : Language} {S : bStructure L β} [nonempty S]
+  {n} (v : dvector S n) (x y z : S) (f : bounded_formula L (n+2)) :
+    boolean_realize_bounded_formula (x :: y :: z :: v) (f ↑' 1 # 2) ([]) =
+    boolean_realize_bounded_formula (x :: y :: v) f ([]) :=
+by { convert boolean_realize_bounded_formula_insert_lift _ z 2 (le_add_left (le_refl 2)) f ([]),
+     simp }
+
 def bSet_model_fun_map : Π {n : ℕ}, L_ZFC'.functions n → dvector (bSet β) n → bSet β :=
 begin
   intros n S, induction S,
@@ -248,16 +313,34 @@ by { simp [forced_in, axiom_of_extensionality], exact bSet_axiom_of_extensionali
 -- ∀ p ∀ u, (∀ x ∈ u, ∃ y, ϕ(x,y,p)) ⟹ (∃ v, ∀ z ∈ u, ∃ w ∈ v, ϕ(z,w,p))
 
 def axiom_of_collection {n} (ϕ : bounded_formula L_ZFC' (n+2)) : sentence L_ZFC' :=
-bd_alls n $ ∀' ((∀' (&'0 ∈' &'1 ⟹ ∃' ϕ.cast1)) ⟹
-(∃' ∀'(&'0 ∈' &'2 ⟹ ∃' (&'0 ∈' &'2 ⊓ ϕ.cast (by { rw [add_le_add_iff_left], exact dec_trivial } : n + 2 ≤ n + 4)))))
+bd_alls (n+1) $ (∀' (&'0 ∈' &'1 ⟹ ∃' (ϕ ↑' 1 # 2))) ⟹
+(∃' ∀'(&'0 ∈' &'2 ⟹ ∃' (&'0 ∈' &'2 ⊓ (ϕ ↑' 1 # 2 ↑' 1 # 2))))
 
 -- note: should write a lemma which says given the full congr lemma for a 2-ary formula, can extract left and right congr lemmas
 lemma bSet_models_collection {n} (ϕ : bounded_formula L_ZFC' (n+2)) : ⊤ ⊩[V β] axiom_of_collection ϕ :=
 begin
-  sorry
-  -- change ⊤ ≤ _, bv_intro u, simp, have := bSet_axiom_of_collection' _ _ _ u,
-  -- simp only [lattice.top_le_iff, bSet.mem, lattice.imp_top_iff_le, lattice.le_infi_iff] at this,
-  -- exact this u,
+  change ⊤ ≤ _, simp only [axiom_of_collection, boolean_realize_sentence_bd_alls],
+  bv_intro xs, cases xs with _ u xs,
+  have := bSet_axiom_of_collection' (λ a b : V β, boolean_realize_bounded_formula (b :: a :: xs) ϕ ([])) _ _ u,
+  simp only [lattice.top_le_iff, bSet.mem, lattice.imp_top_iff_le, lattice.le_infi_iff] at this,
+  simp only [boolean_realize_bounded_formula_mem,
+ fin_0,
+ fin_2,
+ boolean_realize_cast1_bounded_formula,
+ boolean_realize_bounded_formula_and,
+ V_exists,
+ boolean_realize_bounded_term,
+ imp_top_iff_le,
+ boolean_realize_bounded_formula_ex,
+ top_le_iff,
+ boolean_realize_bounded_formula,
+ dvector.nth,
+ V_forall,
+ dvector.trunc,
+ fin_1, boolean_realize_formula_insert_lift2],
+  exact this u,
+  -- convert this u using 0,
+  -- ext, congr',
   -- { intros,
   --   let v₁ : ℕ → V β := λ n, nat.rec_on n x (λ _ _, z),
   --   let v₂ : ℕ → V β := λ n, nat.rec_on n y (λ _ _, z),
