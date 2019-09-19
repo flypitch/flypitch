@@ -125,13 +125,34 @@ lemma boolean_realize_bounded_formula_eq' {L : Language} {S : bStructure L β} {
     boolean_realize_bounded_formula v₁ t xs = boolean_realize_formula (λ k, if h : k < n then v₁.nth k h else x) t.fst xs :=
 by { symmetry, apply boolean_realize_bounded_formula_eq, intros, rw [dif_pos] }
 
-protected lemma insert_nth_lt {α} : ∀{n k l : ℕ} (x : α) (xs : dvector α n) (h : l < n) (h' : l < n + 1)
-  (h2 : l < k), (xs.insert x k).nth l h' = xs.nth l h :=
-sorry
+protected lemma insert_nth_lt {α} : ∀{n k l : ℕ} (x : α) (xs : dvector α n) (h : l < n)
+  (h' : l < n + 1) (h2 : l < k), (xs.insert x k).nth l h' = xs.nth l h
+| n     0     l     x xs h h' h2 := by cases h2
+| 0     (k+1) l     x xs h h' h2 := by cases h
+| (n+1) (k+1) 0     x (x'::xs) h h' h2 := by refl
+| (n+1) (k+1) (l+1) x (x'::xs) h h' h2 :=
+  by { simp, apply insert_nth_lt, apply nat.lt_of_succ_lt_succ h2 }
+
+protected lemma insert_nth_gt' {α} : ∀{n k l : ℕ} (x : α) (xs : dvector α n) (h : l - 1 < n)
+  (h' : l < n + 1) (h2 : k < l), (xs.insert x k).nth l h' = xs.nth (l-1) h
+| n     0     0     x xs h h' h2 := by cases h2
+| n     0     (l+1) x xs h h' h2 := by { simp }
+| 0     (k+1) 0     x xs h h' h2 := by { cases h }
+| 0     (k+1) (l+1) x xs h h' h2 := by { cases h' with _ h', cases h' }
+| (n+1) (k+1) 0     x (x'::xs) h h' h2 := by cases h2
+| (n+1) (k+1) 1     x (x'::xs) h h' h2 := by { cases h2 with _ h2, cases h2 }
+| (n+1) (k+1) (l+2) x (x'::xs) h h' h2 :=
+  by { simp, convert insert_nth_gt' x xs _ _ _, apply nat.lt_of_succ_lt_succ h2 }
+
+@[simp] protected lemma insert_nth_gt_simp {α} : ∀{n k l : ℕ} (x : α) (xs : dvector α n)
+  (h' : l < n + 1)
+  (h2 : k < l), (xs.insert x k).nth l h' =
+  xs.nth (l-1) ((nat.sub_lt_right_iff_lt_add (nat.one_le_of_lt h2)).mpr h') :=
+λ n k l x xs h' h2, insert_nth_gt' x xs _ h' h2
 
 protected lemma insert_nth_gt {α} : ∀{n k l : ℕ} (x : α) (xs : dvector α n) (h : l < n) (h' : l + 1 < n + 1)
   (h2 : k < l + 1), (xs.insert x k).nth (l+1) h' = xs.nth l h :=
-sorry
+λ n k l x xs h h' h2, insert_nth_gt' x xs h h' h2
 
 lemma boolean_realize_bounded_formula_insert_lift {L : Language} {S : bStructure L β} [nonempty S]
   {n l} (v : dvector S n) (x : S) (m : ℕ) (hm : m ≤ n)
@@ -139,17 +160,18 @@ lemma boolean_realize_bounded_formula_insert_lift {L : Language} {S : bStructure
     boolean_realize_bounded_formula (v.insert x m) (f ↑' 1 # m) xs =
     boolean_realize_bounded_formula v f xs :=
 begin
-  have := _inst_2, cases this with x, rw [boolean_realize_bounded_formula_eq' x, boolean_realize_bounded_formula_eq' x], simp,
+  have := _inst_2, cases this with y, rw [boolean_realize_bounded_formula_eq' x, boolean_realize_bounded_formula_eq' x], simp,
   convert boolean_realize_formula_subst_lift _ x _ _ _, ext k,
-  apply decidable.lt_by_cases k n; intro hk,
-  { simp [nat.lt.step hk], sorry },
-  { subst hk,
-    -- have : k - 1 < k, from (nat.sub_lt_right_iff_lt_add (nat.one_le_of_lt _)).mpr _,
-    simp [hm, nat.lt_succ_self], sorry },
-  { have h1 : ¬k < n + 1, sorry,
-    have h2 : ¬k - 1 < n, sorry,
-    have h3 : m < k, sorry,
-    simp [h1, h2, h3] }
+  by_cases hk : k < n + 1,
+  { simp [hk],
+    apply decidable.lt_by_cases m k; intro hm'; simp [hm'],
+    { have hk2 : k - 1 < n, from (nat.sub_lt_right_iff_lt_add (nat.one_le_of_lt hm')).mpr hk,
+      simp [hk2] },
+    have hk2 : k < n, from lt_of_lt_of_le hm' hm,
+    simp [hk2, /-dvector.-/insert_nth_lt x v hk2 hk hm'] },
+  { have h2 : ¬k - 1 < n, from mt nat.lt_add_of_sub_lt_right hk,
+    have h3 : m < k, from lt_of_le_of_lt hm (lt_of_not_ge $ mt nat.lt_succ_of_le hk),
+    simp [hk, h2, h3] }
 end
 
 @[simp] lemma boolean_realize_formula_insert_lift2 {L : Language} {S : bStructure L β} [nonempty S]
