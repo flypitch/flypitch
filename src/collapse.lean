@@ -742,12 +742,12 @@ begin
       { exact (principal_open (collapse_poset.empty zero_lt_omega_succ)) },
       { refine ⟨by {rw [collapse_space_basis], right, exact set.mem_image_univ},_⟩, simp }},
     { unfold collapse_space_basis collapse_space, refine le_antisymm _ _,
-      { refine generate_from_mono _, exact λ _ _, or.inr ‹_›},
       { intros T HT, induction HT,
         { cases HT_H, subst HT_H, exact is_open_empty, constructor, exact ‹_› },
         { exact is_open_univ },
         { apply generate_open.inter, exact ‹_›, exact ‹_› },
-        { apply generate_open.sUnion, intros S HS, solve_by_elim }}}
+        { apply generate_open.sUnion, intros S HS, solve_by_elim }},
+      { refine generate_from_mono _, exact λ _ _, or.inr ‹_› }}
 end
 
 @[simp] lemma is_regular_singleton_regular_open {x : X} {y : Y} :

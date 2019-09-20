@@ -411,7 +411,7 @@ by { apply le_trans, apply le_top,
 theorem subset_ext {x y : bSet 𝔹} {Γ : 𝔹} (h₁ : Γ ≤ x ⊆ᴮ y) (h₂ : Γ ≤ y ⊆ᴮ x) : Γ ≤ x =ᴮ y :=
 begin
   apply bv_have h₂, rw[deduction], apply bv_have h₁, rw[<-deduction],
-  ac_change' Γ ⊓ (x ⊆ᴮ y ⊓ y ⊆ᴮ x) ≤ x =ᴮ y, apply inf_le_right_of_le,
+  ac_change Γ ⊓ (x ⊆ᴮ y ⊓ y ⊆ᴮ x) ≤ x =ᴮ y, apply inf_le_right_of_le,
   apply eq_of_subset_subset
 end
 
@@ -541,14 +541,14 @@ begin
       apply inf_le_inf, apply mem.mk', refl},
     {apply bv_Or_elim, intro x, simp only [mem_unfold],
       apply bv_cases_left, intro i_x, apply bv_use i_x,
-      ac_change' bval v i_x ⊓ (x =ᴮ func v i_x ⊓ ϕ x) ≤ bval v i_x ⊓ ϕ (func v i_x),
+      ac_change bval v i_x ⊓ (x =ᴮ func v i_x ⊓ ϕ x) ≤ bval v i_x ⊓ ϕ (func v i_x),
       apply inf_le_inf, refl, apply h_congr}
 end
 
 -- foo_unfold' means that the definition foo will be unfolded using global quantifiers
 lemma mem_unfold' {u v : bSet 𝔹} : u ∈ᴮ v = ⨆z, z ∈ᴮ v ⊓ u =ᴮ z :=
 by {rw[<-bounded_exists, mem_unfold], intros x y,
-    ac_change' y =ᴮ x ⊓ x =ᴮ u ≤ y =ᴮ u,
+    ac_change y =ᴮ x ⊓ x =ᴮ u ≤ y =ᴮ u,
     simp[bv_eq_symm], exact bv_eq_symm, exact bv_eq_trans }
 
 lemma subset_unfold' {x u : bSet 𝔹} : x ⊆ᴮ u = ⨅(w : bSet 𝔹), w ∈ᴮ x ⟹ w ∈ᴮ u :=
@@ -572,7 +572,7 @@ lemma subset_trans {x y z : bSet 𝔹} : x ⊆ᴮ y ⊓ y ⊆ᴮ z ≤ x ⊆ᴮ 
 begin
   simp[subset_unfold'], intro i_z, apply bv_specialize_left i_z,
   apply bv_specialize_right i_z, rw[<-deduction],
-  ac_change' (i_z ∈ᴮ x ⟹ i_z ∈ᴮ y)  ⊓ i_z ∈ᴮ x ⊓ (i_z ∈ᴮ y ⟹ i_z ∈ᴮ z) ≤ i_z ∈ᴮ z,
+  ac_change (i_z ∈ᴮ x ⟹ i_z ∈ᴮ y)  ⊓ i_z ∈ᴮ x ⊓ (i_z ∈ᴮ y ⟹ i_z ∈ᴮ z) ≤ i_z ∈ᴮ z,
   rw[deduction], let H := _, change ((H ⟹ _) ⊓ H : 𝔹) ≤ _,
   apply le_trans, apply bv_imp_elim, rw[<-deduction], rw[inf_comm],
   apply le_trans, apply bv_imp_elim, refl
@@ -584,7 +584,7 @@ poset_yoneda_inv Γ subset_trans $ le_inf ‹_› ‹_›
 -- lemma subset_trans_context {x y z : bSet 𝔹} {c : 𝔹} {h₁ : c ≤ x ⊆ᴮ y} {h₂ : c ≤ y ⊆ᴮ z} : c ≤ x ⊆ᴮ z :=
 -- begin
 --   apply bv_have h₂, rw[deduction], apply bv_have h₁, rw[<-deduction],
---   ac_change' c ⊓ (x ⊆ᴮ y ⊓ y ⊆ᴮ z) ≤ x ⊆ᴮ z, apply inf_le_right_of_le,
+--   ac_change c ⊓ (x ⊆ᴮ y ⊓ y ⊆ᴮ z) ≤ x ⊆ᴮ z, apply inf_le_right_of_le,
 --   apply subset_trans
 -- end
 
@@ -621,7 +621,7 @@ end
 lemma subst_congr_subset_right {x v u} : ((v ⊆ᴮ u) ⊓ (u =ᴮ x) : 𝔹) ≤ (v ⊆ᴮ x) :=
 begin
   simp only [subset_unfold], bv_intro j, apply bv_specialize_left j,
-  rw[<-deduction], ac_change' ((bval v j ⟹ func v j ∈ᴮ u) ⊓ bval v j) ⊓  u =ᴮ x ≤ func v j ∈ᴮ x,
+  rw[<-deduction], ac_change ((bval v j ⟹ func v j ∈ᴮ u) ⊓ bval v j) ⊓  u =ᴮ x ≤ func v j ∈ᴮ x,
   rw[deduction], apply le_trans, apply bv_imp_elim, rw[<-deduction, inf_comm],
   apply subst_congr_mem_right
 end
@@ -672,9 +672,9 @@ end
   B_ext (λ x, ϕ₁ x ⟹ ϕ₂ x) :=
 begin
   unfold B_ext, intros x y, rw[<-deduction],
-  ac_change' x =ᴮ y ⊓  ϕ₁ y ⊓ (ϕ₁ x ⟹ ϕ₂ x) ≤ ϕ₂ y,
+  ac_change x =ᴮ y ⊓  ϕ₁ y ⊓ (ϕ₁ x ⟹ ϕ₂ x) ≤ ϕ₂ y,
   rw[deduction], rw[bv_eq_symm], apply le_trans', apply h₁, rw[<-deduction, inf_comm],
-  ac_change' (ϕ₁ x ⟹ ϕ₂ x)  ⊓ ϕ₁ x ⊓ (y =ᴮ x ⊓ ϕ₁ y) ≤ ϕ₂ y, rw[deduction],
+  ac_change (ϕ₁ x ⟹ ϕ₂ x)  ⊓ ϕ₁ x ⊓ (y =ᴮ x ⊓ ϕ₁ y) ≤ ϕ₂ y, rw[deduction],
   apply le_trans, apply bv_imp_elim, rw[<-deduction], rw[<-inf_assoc],
   apply inf_le_left_of_le, rw[inf_comm, bv_eq_symm], apply h₂
 end
@@ -1108,7 +1108,7 @@ end smallness
 
 lemma maximum_principle (ϕ : bSet 𝔹 → 𝔹) (h_congr : B_ext ϕ) : ∃ u, (⨆(x:bSet 𝔹), ϕ x) = ϕ u :=
 begin
-  have := classical.indefinite_description _ (@well_ordering_thm (type (@B_small_witness _ _ ϕ))),
+  have := classical.indefinite_description _ (@ordinal.well_ordering_thm (type (@B_small_witness _ _ ϕ))),
   cases this with r inst_r,
   haveI : is_well_order _ r := by assumption,
   let w := @B_small_witness _ _ ϕ,
@@ -1187,7 +1187,7 @@ begin
   have : ⊤ ≤ (U =ᴮ u₁ ⊔ U =ᴮ u₂) ⊓ (u₁ ∈ᴮ X ⊓ u₂ ∈ᴮ X),
     by finish,
   apply le_trans this, apply bv_or_elim_left;
-    [rw[<-inf_assoc], ac_change' (U =ᴮ u₂ ⊓ u₂ ∈ᴮ X) ⊓ u₁ ∈ᴮ X ≤ U ∈ᴮ X];
+    [rw[<-inf_assoc], ac_change (U =ᴮ u₂ ⊓ u₂ ∈ᴮ X) ⊓ u₁ ∈ᴮ X ≤ U ∈ᴮ X];
     apply inf_le_left_of_le; rw[bv_eq_symm]; apply subst_congr_mem_left
 end
 
@@ -1898,7 +1898,7 @@ begin
   have := bv_union_spec u,
   apply bv_have, apply le_trans, apply le_top, exact this,
   apply bv_specialize_right (x.func i_v), rw[inf_comm],
-  ac_change' (func x i_v ∈ᴮ bv_union u ⟹ ⨆ (y : type u), u.bval y ⊓ func x i_v ∈ᴮ func u y) ⊓
+  ac_change (func x i_v ∈ᴮ bv_union u ⟹ ⨆ (y : type u), u.bval y ⊓ func x i_v ∈ᴮ func u y) ⊓
         (((⨆ (y : type u), u.bval y ⊓ func x i_v ∈ᴮ func u y) ⟹ func x i_v ∈ᴮ bv_union u) ⊓
       (func x i_v ∈ᴮ x ⊓ x ∈ᴮ u)) ≤
     func x i_v ∈ᴮ bv_union u, apply inf_le_right_of_le,
@@ -1906,7 +1906,7 @@ begin
       by {apply le_trans, apply inf_le_inf, refl, exact this, apply bv_imp_elim},
     conv in (x ∈ᴮ u) {simp only [mem_unfold]}, apply bv_cases_right, intro y,
     apply bv_use y,
-    ac_change' bval u y ⊓ (func x i_v ∈ᴮ x ⊓ x =ᴮ func u y) ≤ u.bval y ⊓ (func x i_v ∈ᴮ func u y),
+    ac_change bval u y ⊓ (func x i_v ∈ᴮ x ⊓ x =ᴮ func u y) ≤ u.bval y ⊓ (func x i_v ∈ᴮ func u y),
     apply inf_le_inf, refl, rw[inf_comm], apply subst_congr_mem_right
 end
 
@@ -1990,7 +1990,7 @@ prefix `𝒫`:80 := bv_powerset
 --    have := @bounded_forall _ _ (set_of_indicator f) (λ x, x ∈ᴮ u), dsimp[set_of_indicator] at this, simp[subset_unfold], rw[this],
 --    rw[deduction], apply infi_le_of_le z', rw[supr_imp_eq],
 --    apply bv_imp_intro, apply le_inf, apply bv_imp_intro,
---    ac_change'  (⨅ (i : type u), f i ⊓ z' =ᴮ func u i ⟹ z' ∈ᴮ u) ⊓ (z =ᴮ mk (type u) (func u) f ⊓ z' ∈ᴮ z) ≤ z' ∈ᴮ mk (type u) (func u) (λ (i : type u), f i ⊓ bval u i),
+--    ac_change  (⨅ (i : type u), f i ⊓ z' =ᴮ func u i ⟹ z' ∈ᴮ u) ⊓ (z =ᴮ mk (type u) (func u) f ⊓ z' ∈ᴮ z) ≤ z' ∈ᴮ mk (type u) (func u) (λ (i : type u), f i ⊓ bval u i),
 --    apply le_trans, apply inf_le_inf, refl, apply subst_congr_mem_right,
 --    rw[inf_comm], rw[deduction], apply supr_le, intro i',
 --    rw[<-deduction], apply le_supr_of_le i', dsimp,
@@ -2028,7 +2028,7 @@ begin
   intros a₁ a₂, dsimp, rw[inf_supr_eq], apply supr_le, intro i,
 
   apply le_supr_of_le i,
-  ac_change' (a₂ =ᴮ a₁ ⊓  a₁ =ᴮ func u i) ⊓ func u i ∈ᴮ x ≤ func u i ∈ᴮ x ⊓ a₂ =ᴮ func u i,
+  ac_change (a₂ =ᴮ a₁ ⊓  a₁ =ᴮ func u i) ⊓ func u i ∈ᴮ x ≤ func u i ∈ᴮ x ⊓ a₂ =ᴮ func u i,
     rw[bv_eq_symm], ac_refl,
 
   apply le_trans, apply inf_le_inf, apply bv_eq_trans, refl, rw[inf_comm],
@@ -2039,7 +2039,7 @@ begin
    apply le_supr_of_le i,
    apply le_inf, rw[inf_assoc], apply inf_le_right_of_le,
    apply subst_congr_mem_left,
-   ac_change' a₁ =ᴮ func u i ⊓ (bval u i ⊓ a₁ ∈ᴮ x) ≤ a₁ =ᴮ func u i,
+   ac_change a₁ =ᴮ func u i ⊓ (bval u i ⊓ a₁ ∈ᴮ x) ≤ a₁ =ᴮ func u i,
    apply inf_le_left_of_le, refl}},
 
    {have := @bounded_forall _ _ (set_of_indicator (λ y, func _ y ∈ᴮ x)) (λ y, y ∈ᴮ x),

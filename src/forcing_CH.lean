@@ -522,7 +522,7 @@ begin
         suffices this₁ : x̌.func i₁ =ᴮ x̌.func i₂ = ⊥,
           by {exfalso, rw[eq_bot_iff] at this₀, rw[bot_lt_iff_not_le_bot] at H,
               suffices : x̌.func i₁ =ᴮ x̌.func i₂ ≤ ⊥, by contradiction,
-              convert_to (func x (check_cast i₁))̌   =ᴮ (func x (check_cast i₂)) ̌ ≤ ⊥,
+              convert_to (func x (check_cast i₁))̌   =ᴮ (func x (check_cast i₂)) ̌ ≤ ⊥ using 2,
               apply check_func, apply check_func, from ‹_›},
         convert this₀; apply check_func}
 end

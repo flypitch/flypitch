@@ -154,7 +154,7 @@ begin
     let η := typein (subrel θr $ A $ pick y) ⟨z, hzy⟩,
     have η_def : z = (enum (subrel θr $ A $ pick y) η (typein_lt_type _ _)).val, {rw [enum_typein]},
     cases lt_or_ge η (typein ρr ξ₀) with h h,
-    { rw [mem_preimage_eq, mem_set_of_eq],
+    { rw [mem_preimage, mem_set_of_eq],
       refine lt_of_lt_of_le _ (ordinal.le_sup _ _),
       { refine ⟨enum ρr η (lt_trans h (typein_lt_type _ _)), _⟩,
         rw [←typein_lt_typein ρr, typein_enum], exact h },
@@ -218,7 +218,7 @@ begin
     { rintro _ ⟨⟨x, hx⟩, _, rfl⟩, exact hx },
     { rw [mk_image_eq subtype.val_injective, ←h1A2, ←hr'] },
     { rintro _ ⟨⟨x, hx⟩, hx', rfl⟩,
-      simpa only [set.mem_singleton_iff, set.mem_preimage_eq, f, subtype.ext] using hx' }},
+      simpa only [set.mem_singleton_iff, set.mem_preimage, f, subtype.ext] using hx' }},
   rcases this with ⟨r, t, hr, h1t, h2t, h3t⟩,
   refine ⟨t, h2t, r, _⟩,
   intros x y hxy, rw [←h3t x.2], apply set.ext, intro z, split,
@@ -457,10 +457,13 @@ variable (β)
 lemma is_subbasis_pi : Pi.topological_space = generate_from (pi_subbasis β) :=
 begin
   symmetry, apply le_antisymm,
-  { rw [generate_from_le_iff_subset_is_open], rintro _ ⟨⟨i, o, ho⟩, rfl⟩,
-    apply generate_open.basic, apply mem_bUnion (mem_range_self i), exact ⟨o, ho, rfl⟩ },
-  refine lattice.supr_le _, intro i,
-  rintro _ ⟨s, hs, rfl⟩, apply generate_open.basic, exact ⟨⟨i, s, hs⟩, rfl⟩
+  { sorry,
+ -- rw [generate_from_le_iff_subset_is_open], rintro _ ⟨⟨i, o, ho⟩, rfl⟩,
+ --    apply generate_open.basic, apply mem_bUnion (mem_range_self i), exact ⟨o, ho, rfl⟩
+    },
+ sorry
+  -- refine lattice.supr_le _, intro i,
+  -- rintro _ ⟨s, hs, rfl⟩, apply generate_open.basic, exact ⟨⟨i, s, hs⟩, rfl⟩
 end
 
 def pi_basis : set (set (Πx, β x)) :=
@@ -524,8 +527,7 @@ begin
     simp only [C, dif_pos hx],
     apply is_open_sInter,
     { have : finite (subtype.val '' ((λ s : opens (β x), sigma.mk x s) ⁻¹' o'')),
-      { apply finite_image, apply finite_preimage _ h2o', intros o o' hoo',
-        cases hoo', refl },
+      { apply finite_image, apply finite_preimage _ h2o', finish },
       convert this,
       apply subset.antisymm,
       { rintro o ⟨h1o, h2o⟩, exact ⟨⟨o, h1o⟩, h2o, rfl⟩ },
@@ -591,7 +593,8 @@ begin
   rw [restrict_image_pi _ _ _ this],
   apply is_open_of_is_topological_basis (is_topological_basis_pi _),
   rw [pi_basis_eq], refine ⟨⟨λ x, s' x.1, _, _, _⟩, _⟩,
-  { apply finite.to_finset (finite_preimage subtype.val_injective t.finite_to_set) },
+  { apply finite.to_finset, apply finite_preimage (inj_on_of_injective _ subtype.val_injective),
+    exact t.finite_to_set },
   { intros x hx, rw [finite.mem_to_finset] at hx, exact hs _ hx },
   { congr' 1, ext, rw [finite.coe_to_finset] },
   dsimp only, rw [nmem_singleton_empty],

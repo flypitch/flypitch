@@ -6,47 +6,6 @@ Authors: Jesse Han, Floris van Doorn
 -/
 import .set_theory order.complete_boolean_algebra topology.basic
 
-namespace tactic
-
-meta def reorder_goals (gs : list (bool × expr)) : new_goals → list expr
-| new_goals.non_dep_first := (gs.reverse.filter $ coe ∘ bnot ∘ prod.fst).map prod.snd ++ (gs.reverse.filter $ coe ∘ prod.fst).map prod.snd
-| new_goals.non_dep_only := (gs.reverse.filter (coe ∘ bnot ∘ prod.fst)).map prod.snd
-| new_goals.all := gs.reverse.map prod.snd
-
-meta def retry_apply_aux : Π (e : expr) (cfg : apply_cfg), list (bool × expr) → tactic (list (name × expr))
-| e cfg gs :=
-focus1 (do {
-     r ← apply_core e cfg,
-     gs' ← get_goals,
-     set_goals (gs' ++ reorder_goals gs cfg.new_goals),
-     return r }) <|>
-do t ← infer_type e >>= whnf,
-   if t.is_pi
-     then do v ← mk_meta_var t.binding_domain,
-             let b := t.binding_body.has_var,
-             e ← head_beta $ e v,
-             retry_apply_aux e cfg ((b, v) :: gs)
-     else apply_core e cfg
-
-meta def retry_apply (e : expr) (cfg : apply_cfg) : tactic (list (name × expr)) :=
-retry_apply_aux e cfg []
-
-meta def apply' (e : expr) (cfg : apply_cfg := {}) : tactic (list (name × expr)) :=
-do r ← retry_apply e cfg,
-   try_apply_opt_auto_param_for_apply cfg r,
-   return r
-
-namespace interactive
-
-open lean lean.parser interactive interactive.types
-
-meta def apply' (q : parse texpr) : tactic unit :=
-concat_tags (do h ← i_to_expr_for_apply q, tactic.apply' h)
-
-end interactive
-
-end tactic
-
 local attribute [instance] classical.prop_decidable
 
 

@@ -157,21 +157,20 @@ begin
 end
 
 /-- Given a xs : list α, it is naturally a list {x ∈ α | x ∈ xs} --/
-def list_is_list_of_subtype : Π(α : Type u), Π (fs : list α),  Σ' xs : list ↥{f : α | f ∈ fs}, ∀ f, ∀ h : f ∈ fs, (⟨f,h⟩ : ↥{f : α | f ∈ fs}) ∈ xs
-| L [] := begin simp*,  split, exact [], trivial end
-| L (list.cons hd tl) :=
-  begin
-    refine ⟨_, _⟩,
-    have ih := list_is_list_of_subtype L tl,
-    have F : {f | f ∈ tl} → {f | f ∈ list.cons hd tl},
-    intro f, refine ⟨f, _⟩, fapply or.inr, exact f.property,
-    have ih_image := list.map F ih.fst,
-    refine _::(ih_image),
-    split, swap, exact hd, exact or.inl rfl,
-    intros f hf, simp [*, -sigma.exists],
-    cases hf, exact or.inl hf,
-    fapply or.inr, fapply exists.intro, exact hf, exact (list_is_list_of_subtype L tl).snd f hf
-  end
+def list_is_list_of_subtype : Π(α : Type u), Π (fs : list α),  Σ' xs : list ↥{f : α | f ∈ fs}, ∀ f, ∀ h : f ∈ fs, (⟨f,h⟩ : ↥{f : α | f ∈ fs}) ∈ xs :=
+begin
+  intros α fs, induction fs with fs_hd fs_tl ih,
+    { exact ⟨[], by simp⟩ },
+    {  let F : {f | f ∈ fs_tl} → {f | f ∈ list.cons fs_hd fs_tl},
+         by {intro f, refine ⟨f, _⟩, fapply or.inr, exact f.property},
+    refine ⟨_,_⟩,
+      { refine _::_,
+        { exact ⟨fs_hd, by simp⟩ },
+        { exact list.map F ih.fst }  },
+      { intro a, classical, by_cases a = fs_hd,
+        { finish },
+        { tidy, right, tidy }}},
+end
 
 /-- The limit theory of a chain of consistent theories over T is consistent --/
 lemma consis_limit {L : Language} {T : Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : is_consistent (T ∪ set.sUnion (subtype.val '' Ts)) :=

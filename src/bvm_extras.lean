@@ -385,7 +385,7 @@ begin
        from bv_trans ‹_› ‹_›},
 
      apply le_trans, show 𝔹, from a ⊓ b,
-       by {ac_change' (bval v i ⊓ bval w j) ⊓ (a ⊓ b) ≤ a ⊓ b, from inf_le_right},
+       by {ac_change (bval v i ⊓ bval w j) ⊓ (a ⊓ b) ≤ a ⊓ b, from inf_le_right},
      from bv_trans ‹_› ‹_›}
 end
 
@@ -2589,7 +2589,7 @@ by {haveI this : (is_well_order ℕ (λ x y, x < y)) := by apply_instance, from 
     trans := by {intros a b c, apply this.trans},
     wf := by {have := this.wf, split, cases this with H, intro a, specialize H a.down,
               induction a, induction a, split, intros y H', cases H', cases H,
-              specialize H_h a_n (by {change a_n < a_n + 1, simp, exact dec_trivial}),
+              specialize H_h a_n (by {change a_n < a_n + 1, simp}),
               specialize a_ih H_h,
               split, intros y H', by_cases y.down = a_n,
               subst h, split, intros y' H'', cases a_ih, exact a_ih_h y' H'',
