@@ -227,7 +227,7 @@ begin
   intro hz, refine ⟨hz.1, _⟩, rw [h3t x.2, ←h3t y.2] at hz, exact hz.1
 end
 
-local attribute [instance] [priority 0] classical.prop_decidable
+open_locale classical
 lemma delta_system_lemma_1 {κ : cardinal} (hκ : cardinal.omega ≤ κ)
   {θ : Type u} (θr : θ → θ → Prop) [θwo : is_well_order θ θr] (hκθ : κ < mk θ)
   (hθ : is_regular $ mk θ) (θtype_eq : ord (mk θ) = type θr) (hθ_le : ∀(β < mk θ), β ^< κ < mk θ)
@@ -457,19 +457,15 @@ variable (β)
 lemma is_subbasis_pi : Pi.topological_space = generate_from (pi_subbasis β) :=
 begin
   symmetry, apply le_antisymm,
-  { sorry,
- -- rw [generate_from_le_iff_subset_is_open], rintro _ ⟨⟨i, o, ho⟩, rfl⟩,
- --    apply generate_open.basic, apply mem_bUnion (mem_range_self i), exact ⟨o, ho, rfl⟩
-    },
- sorry
-  -- refine lattice.supr_le _, intro i,
-  -- rintro _ ⟨s, hs, rfl⟩, apply generate_open.basic, exact ⟨⟨i, s, hs⟩, rfl⟩
+  { refine lattice.le_infi _, intro i,
+    rintro _ ⟨s, hs, rfl⟩, apply generate_open.basic, exact ⟨⟨i, s, hs⟩, rfl⟩ },
+  { rw [le_generate_from_iff_subset_is_open], rintro _ ⟨⟨i, o, ho⟩, rfl⟩,
+    apply generate_open.basic, apply mem_bUnion (mem_range_self i), exact ⟨o, ho, rfl⟩ }
 end
 
 def pi_basis : set (set (Πx, β x)) :=
 (λf, ⋂₀ f) '' {f : set (set (Πx, β x)) | finite f ∧ f ⊆ pi_subbasis β ∧ ⋂₀ f ≠ ∅ }
 
--- local attribute [instance] [priority 0] classical.prop_decidable
 lemma pi_basis_eq : pi_basis β =
   {g | ∃(s:Πx, set (β x)) (i : finset α), (∀x∈i, is_open (s x)) ∧ g = pi ↑i s} \ {∅} :=
 begin
@@ -558,7 +554,7 @@ is_topological_basis_of_subbasis (is_subbasis_pi β)
 
 variable {β}
 
-local attribute [instance] [priority 0] classical.prop_decidable
+open_locale classical
 lemma is_open_map_apply (i : α) : is_open_map (λf : Πi, β i, f i) :=
 begin
   apply is_open_map_of_is_topological_basis (is_topological_basis_pi β),
@@ -663,7 +659,6 @@ def extend (g₁ g₂ : Πx, β x) (s : set α) (x : α) : β x :=
 if h : x ∈ s then g₁ x else g₂ x
 
 open delta_system
-/- {α : Type u} {β : α → Type v} [∀x, topological_space (β x)] -/
 theorem countable_chain_condition_pi
   (h : ∀(s : set α), finite s → countable_chain_condition (Π(x : s), β x)) :
   countable_chain_condition (Πx, β x) :=

@@ -166,53 +166,41 @@ begin
       dsimp at a_1, cases a_1 }, intros a_1, rwa[fiber_over_true]},
 end
 
-lemma opens_over_le_τ (a : α) : generate_from (opens_over a) ≤ τ a :=
-by sorry
- -- rw[generate_from_le_iff_subset_is_open]; from opens_over_sub_τ a
+lemma opens_over_le_τ (a : α) : τ a ≤ generate_from (opens_over a) :=
+by { rw [le_generate_from_iff_subset_is_open], exact opens_over_sub_τ a }
 
-lemma τ_le_product_topology (a : α) : τ a ≤ product_topology :=
-by {unfold product_topology Pi.topological_space; sorry}
+lemma τ_le_product_topology (a : α) : product_topology ≤ τ a :=
+infi_le _ _
 
 lemma le_iff_opens_sub {β : Type*} {τ₁ τ₂ : topological_space β} :
   τ₂ ≤ τ₁ ↔ {S | τ₁.is_open S} ⊆ {S | τ₂.is_open S} := by refl
 
-lemma τ_le_opens_over (a : α) : τ a ≤ generate_from (opens_over a) :=
-by {apply le_iff_opens_sub.mpr, intros X H, cases H,
-     { cases H_H,
-       { subst H_H, simp, apply is_open_empty },
-       { repeat{auto_cases},
-         { sorry },
-         { sorry },
-         { sorry }}},
-     { sorry },
-     { sorry },
-     { sorry }
-
-
--- , cases H_H,
---    by_cases true ∈ H_w; by_cases false ∈ H_w,
---    {constructor, rw[<-H_h_right], unfold opens_over, repeat{split}, right,left,
---     ext, by_cases a ∈ x, split, from λ _, trivial, intro, simp[h], from ‹_›,
---     split, from λ _, trivial, intro, simp[h], from ‹_›},
---    {constructor, rw[<-H_h_right], unfold opens_over, repeat{split}, right, right, right,
---      simp, ext, by_cases a ∈ x, split, intro H, simp[principal_open], from ‹_›,
---      intro H, simp[*, -H_h_right], split; intros, subst H_h_right, simp* at a_1, cases a_1,
---      subst H_h_right, simp[principal_open, *, -a_1] at a_1, cases a_1},
---    {constructor, rw[<-H_h_right], unfold opens_over, repeat{split}, right, right, left,
---      simp, ext, split; intros; subst H_h_right; simp* at a_1; by_cases a ∈ x,
---      tidy {tactics := with_cc}},
---    {have : H_w = ∅, ext, split; intros, by_cases x; simp* at a_1; cases a_1, cases a_1,
---     subst this, subst H_h_right, simp, by apply @is_open_empty _ (generate_from _)}
-}
+lemma τ_le_opens_over (a : α) : generate_from (opens_over a) ≤ τ a :=
+begin
+  apply le_iff_opens_sub.mpr, rintros X ⟨H_w, H_h_left, rfl⟩,
+   by_cases htrue : true ∈ H_w; by_cases hfalse : false ∈ H_w,
+   { constructor, unfold opens_over, repeat{split}, right,left,
+    ext, by_cases a ∈ x, split, from λ _, trivial, intro, simp[h], from ‹_›,
+    split, from λ _, trivial, intro, simp[h], from ‹_›},
+   { constructor, unfold opens_over, repeat{split}, right, right, right,
+     simp, ext, by_cases a ∈ x, split, intro H, simp[principal_open], from ‹_›,
+     intro H, simp*, split; intros, simp [h, hfalse] at a_1, cases a_1,
+     simp[principal_open, *, -a_1] at a_1, cases a_1},
+   { constructor, unfold opens_over, repeat{split}, right, right, left,
+     simp, ext, split; intros; simp[*, -a_1] at a_1; by_cases a ∈ x,
+     tidy {tactics := with_cc}, },
+   { have : H_w = ∅, ext, split; intros, by_cases x; simp* at a_1; cases a_1, cases a_1,
+    subst this, simp, by apply @is_open_empty _ (generate_from _)}
+end
 
 @[simp]lemma is_open_generated_from_basic {β : Type*} [topological_space β] {s : set (set β)} {x ∈ s} :
   is_open (generate_from s) x := by {constructor, from ‹_›}
 
-lemma is_open_principal_open {a : α} : is_open (principal_open a) := sorry
-  -- by apply (le_trans (opens_over_le_τ a) (τ_le_product_topology _)); simp[opens_over]
+lemma is_open_principal_open {a : α} : is_open (principal_open a) :=
+by { apply (le_trans (τ_le_product_topology _) (opens_over_le_τ a)), simp[opens_over] }
 
-lemma is_open_co_principal_open {a : α} : is_open (co_principal_open a) := sorry
-  -- by apply (le_trans (opens_over_le_τ a) (τ_le_product_topology _)); simp[opens_over]
+lemma is_open_co_principal_open {a : α} : is_open (co_principal_open a) :=
+by { apply (le_trans (τ_le_product_topology _) (opens_over_le_τ a)), simp[opens_over] }
 
 lemma is_closed_principal_open {a : α} : is_closed (principal_open a) :=
 by {apply is_closed_of_compl_open, from is_open_co_principal_open}
@@ -279,14 +267,14 @@ end
 
 lemma product_topology_generate_from : (product_topology : topological_space (set α)) = generate_from (⋃(a : α), opens_over a) :=
 begin
-  sorry
--- apply le_antisymm, refine supr_le _, intro a,
--- refine le_trans (τ_le_opens_over a) _, apply generate_from_mono,
--- intros X H, constructor, simp, use a, from H,
--- unfold product_topology Pi.topological_space, change _ ≤ generate_from _,
--- apply generate_from_mono,
--- intros X HX, rcases HX with ⟨W, ⟨H₁, H₂⟩⟩, simp, cases H₁ with a Ha,
--- use τ a, split, use a, refl, apply opens_over_le_τ a, constructor, cc
+  apply le_antisymm,
+  { unfold product_topology Pi.topological_space,
+    apply generate_from_mono,
+    intros X HX, rcases HX with ⟨W, ⟨H₁, H₂⟩⟩, simp, cases H₁ with a Ha,
+    use τ a, split, use a, refl, apply opens_over_le_τ a, constructor, cc },
+  refine le_infi _, intro a,
+  refine le_trans _ (τ_le_opens_over a), apply generate_from_mono,
+  intros X H, constructor, simp, use a, exact H
 end
 
 def standard_basis : set (set (set α)) :=
@@ -392,7 +380,7 @@ begin
   {ext, split; intros, trivial, rw[set.mem_sUnion], use set.univ,
     use univ_mem_standard_basis},
   {rw[product_topology_generate_from], refine le_antisymm _ _, swap,
-  
+
     {apply generate_from_mono,
      intros X H_X, rcases H_X with ⟨w, ⟨a, H_w⟩, H_X⟩,
      unfold standard_basis, simp, subst H_w, repeat{cases H_X}, left, refl,
@@ -405,33 +393,33 @@ begin
      { intros a_1, fsplit, work_on_goal 0 { fsplit, work_on_goal 0 { assumption }, fsplit },
      fsplit }, intros a_1, cases a_1, cases a_1_left, assumption}},
 
-    {sorry
-  -- apply generate_from_le_iff_subset_is_open.mpr, intros T hT, unfold standard_basis at hT,
-  -- cases hT with hT h_empty, swap, rw[set.mem_singleton_iff] at h_empty, subst h_empty,
-  -- apply @is_open_empty _ (generate_from _),
+  {
+  apply le_generate_from_iff_subset_is_open.mpr, intros T hT, unfold standard_basis at hT,
+  cases hT with hT h_empty, swap, rw[set.mem_singleton_iff] at h_empty, subst h_empty,
+  apply @is_open_empty _ (generate_from _),
 
-  -- simp, have := is_topological_basis_of_subbasis (product_topology_generate_from), swap, from α,
-  -- rw[<-product_topology_generate_from],
-  -- apply is_open_of_is_topological_basis this, simp,
-  -- rcases hT with ⟨p_ins, p_out, H_eq, H⟩,
-  -- use ((finset.image principal_open p_ins) ∪ (finset.image co_principal_open p_out)).to_set,
-  -- split, split, from finset.finite_to_set _, split,
-  -- apply finset.induction_on p_ins, apply finset.induction_on p_out,
-  -- simp, intros x Hx, cases Hx, intros a A H_a H_A, simp, intros x Hx,
-  -- simp[finset.to_set] at Hx, cases Hx, rw[set.mem_Union], use a, rw[Hx],
-  -- rw[<-neg_principal_open], from co_principal_open_mem_opens_over,
-  -- rw[set.mem_Union], cases Hx with a Hx, use a, rw[<-Hx.right],
-  -- rw[<-neg_principal_open], from co_principal_open_mem_opens_over,
-  -- intros a A H_a H_A, simp, intros x Hx, simp[finset.to_set] at Hx, cases Hx,
-  -- rw[Hx], rw[set.mem_Union], use a, from principal_open_mem_opens_over,
-  -- cases Hx with Hx Hx', rw[set.mem_Union], cases Hx with a Hx,
-  -- use a, rw[<-Hx.right, <-neg_principal_open], from co_principal_open_mem_opens_over,
-  -- cases Hx' with a Hx, rw[set.mem_Union],
-  -- use a, rw[<-Hx.right], from principal_open_mem_opens_over,
+  simp, have := is_topological_basis_of_subbasis (product_topology_generate_from), swap, from α,
+  rw[<-product_topology_generate_from],
+  apply is_open_of_is_topological_basis this, simp,
+  rcases hT with ⟨p_ins, p_out, H_eq, H⟩,
+  use ((finset.image principal_open p_ins) ∪ (finset.image co_principal_open p_out)).to_set,
+  split, split, from finset.finite_to_set _, split,
+  apply finset.induction_on p_ins, apply finset.induction_on p_out,
+  simp, intros x Hx, cases Hx, intros a A H_a H_A, simp, intros x Hx,
+  simp[finset.to_set] at Hx, cases Hx, rw[set.mem_Union], use a, rw[Hx],
+  rw[<-neg_principal_open], from co_principal_open_mem_opens_over,
+  rw[set.mem_Union], cases Hx with a Hx, use a, rw[<-Hx.right],
+  rw[<-neg_principal_open], from co_principal_open_mem_opens_over,
+  intros a A H_a H_A, simp, intros x Hx, simp[finset.to_set] at Hx, cases Hx,
+  rw[Hx], rw[set.mem_Union], use a, from principal_open_mem_opens_over,
+  cases Hx with Hx Hx', rw[set.mem_Union], cases Hx with a Hx,
+  use a, rw[<-Hx.right, <-neg_principal_open], from co_principal_open_mem_opens_over,
+  cases Hx' with a Hx, rw[set.mem_Union],
+  use a, rw[<-Hx.right], from principal_open_mem_opens_over,
 
-  -- by {apply intersection_standard_basis_nonempty; from ‹_›},
+  by {apply intersection_standard_basis_nonempty; from ‹_›},
 
-  -- by {apply standard_basis_reindex; from ‹_›}
+  by {apply standard_basis_reindex; from ‹_›}
 }}
 end
 
