@@ -5,7 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Andrew Tindall, Jesse Han, Floris van Doorn
 -/
 
-import .fol set_theory.zfc .zfc'
+import .zfc'
 
 open fol ZFC'_rel ZFC'_func
 

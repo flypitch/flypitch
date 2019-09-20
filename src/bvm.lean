@@ -4,8 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 Authors: Jesse Han, Floris van Doorn
 -/
-import set_theory.zfc order.complete_boolean_algebra
-       .to_mathlib order.zorn .pSet_ordinal
+import order.complete_boolean_algebra order.zorn .pSet_ordinal
 
 local infix ` ⟹ `:65 := lattice.imp
 

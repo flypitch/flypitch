@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 Authors: Jesse Han, Floris van Doorn
 -/
-import .regular_open_algebra data.set.finite
+import .regular_open_algebra
 
 universes u v
 local attribute [instance] classical.prop_decidable

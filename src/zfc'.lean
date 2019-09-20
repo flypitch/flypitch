@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 Authors: Jesse Han, Floris van Doorn
 -/
-import .bfol .forcing .forcing_CH .bvm_extras2
+import .bfol .forcing .forcing_CH
 
 open lattice
 
@@ -338,7 +338,7 @@ by {simp [Ord_f,ewo_f,is_transitive_f,epsilon_well_founded_f, epsilon_trichotomy
 
 -- this is the usual axiom of infinity, plus a characterization of omega as the least limit ordinal
 def axiom_of_infinity : sentence L_ZFC' :=
-  (∅' ∈' ω' ⊓' ∀'(&'0 ∈' ω' ⟹ ∃' (&'0 ∈' ω' ⊓' &'1 ∈' &'0))) 
+  (∅' ∈' ω' ⊓' ∀'(&'0 ∈' ω' ⟹ ∃' (&'0 ∈' ω' ⊓' &'1 ∈' &'0)))
   ⊓' (∃' (Ord_f ⊓' ω' ≃ &'0))
   ⊓' ∀' (Ord_f ⟹ ((∅' ∈' &'0 ⊓' ∀'(&'0 ∈' &'1 ⟹ ∃' (&'0 ∈' &'2 ⊓' &'1 ∈' &'0))) ⟹ ω' ⊆' &0))
 

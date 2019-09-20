@@ -1,4 +1,4 @@
-import .bvm .bvm_extras .pSet_ordinal
+import .bvm_extras
 
 open lattice
 
@@ -72,8 +72,8 @@ begin
   refine mem_of_mem_subset _ H_mem, apply subset_of_mem_Ord; from ‹_›
 end
 
-@[reducible]lemma Ord_max {x y : bSet 𝔹} {Γ : 𝔹} (H₁ : Γ ≤ Ord x) (H₂ : Γ ≤ Ord y) : bSet 𝔹 :=
-succ (binary_union x y)
+-- @[reducible]def Ord_max {x y : bSet 𝔹} {Γ : 𝔹} (H₁ : Γ ≤ Ord x) (H₂ : Γ ≤ Ord y) : bSet 𝔹 :=
+-- succ (binary_union x y)
 
 lemma transitive_union {u : bSet 𝔹} {Γ : 𝔹} (Hu : Γ ≤ ⨅z, z ∈ᴮ u ⟹ is_transitive z) : Γ ≤ is_transitive (bv_union u) :=
 begin
@@ -93,7 +93,7 @@ begin
       { have := (bv_and.right H₂), unfold is_transitive at this, exact mem_of_mem_subset (this z ‹_›) ‹_› }
 end
 
-lemma epsilon_trichotomy_binary_inter {x y : bSet 𝔹} {Γ} (H₁ : Γ ≤ Ord x) (H₂ : Γ ≤ Ord y) : Γ ≤ epsilon_trichotomy (x ∩ᴮ y) :=
+lemma epsilon_trichotomy_binary_inter {x y : bSet 𝔹} {Γ} (H₁ : Γ ≤ Ord x) : Γ ≤ epsilon_trichotomy (x ∩ᴮ y) :=
 begin
   bv_intro w, bv_imp_intro Hw_mem, bv_intro z, bv_imp_intro Hz_mem,
   rw mem_binary_inter_iff at Hw_mem Hz_mem, cases Hz_mem with Hz_mem_x Hz_mem_y,
@@ -101,7 +101,8 @@ begin
   exact epsilon_trichotomy_of_Ord Hw_mem_x Hz_mem_x ‹_›
 end
 
-lemma epsilon_well_founded_binary_inter {x y : bSet 𝔹} {Γ} (H₁ : Γ ≤ Ord x) (H₂ : Γ ≤ Ord y) : Γ ≤ epsilon_well_founded (x ∩ᴮ y) :=
+lemma epsilon_well_founded_binary_inter {x y : bSet 𝔹} {Γ} (H₁ : Γ ≤ Ord x) :
+  Γ ≤ epsilon_well_founded (x ∩ᴮ y) :=
 begin
   bv_intro w, bv_imp_intro Hw_sub, bv_imp_intro H_nonempty,
   rcases subset_binary_inter_iff.mp Hw_sub with ⟨Hw_sub₁, Hw_sub₂⟩,
@@ -111,7 +112,7 @@ end
 lemma Ord_binary_inter {x y : bSet 𝔹} {Γ} (H₁ : Γ ≤ Ord x) (H₂ : Γ ≤ Ord y) : Γ ≤ Ord (binary_inter x y) :=
 begin
   refine le_inf _ _,
-    { from le_inf (epsilon_trichotomy_binary_inter H₁ H₂) (epsilon_well_founded_binary_inter ‹_› ‹_›) },
+    { from le_inf (epsilon_trichotomy_binary_inter H₁) (epsilon_well_founded_binary_inter ‹_›) },
     { bv_intro z, bv_imp_intro H_mem, rw mem_binary_inter_iff at H_mem, cases H_mem with H_mem₁ H_mem₂,
       rw subset_unfold', bv_intro w, bv_imp_intro Hw, rw mem_binary_inter_iff, refine ⟨_,_⟩,
         { have := (bv_and.right H₁), unfold is_transitive at this, exact mem_of_mem_subset (this z ‹_›) ‹_› },
@@ -285,8 +286,7 @@ begin
   exact Ord.trichotomy H₁ H₂
 end
 
-lemma epsilon_wf_of_sub_Ord {Γ : 𝔹} (u : bSet 𝔹) (H_ord : Γ ≤ ⨅ x, x ∈ᴮ u ⟹ Ord x)
-  : Γ ≤ (⨅x, x ⊆ᴮ u ⟹ (- (x =ᴮ ∅) ⟹ ⨆y, y∈ᴮ x ⊓ (⨅z', z' ∈ᴮ x ⟹ (- (z' ∈ᴮ y))))) :=
+lemma epsilon_wf_of_sub_Ord {Γ : 𝔹} (u : bSet 𝔹) : Γ ≤ (⨅x, x ⊆ᴮ u ⟹ (- (x =ᴮ ∅) ⟹ ⨆y, y∈ᴮ x ⊓ (⨅z', z' ∈ᴮ x ⟹ (- (z' ∈ᴮ y))))) :=
 begin
   bv_intro x, bv_imp_intro Hsub, bv_imp_intro H_nonempty,
   exact bSet_axiom_of_regularity _ H_nonempty,

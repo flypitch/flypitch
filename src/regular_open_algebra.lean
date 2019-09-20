@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 Authors: Jesse Han, Floris van Doorn
 -/
-import .set_theory order.complete_boolean_algebra topology.basic
+import .set_theory order.complete_boolean_algebra
 
 local attribute [instance] classical.prop_decidable
 

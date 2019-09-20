@@ -7,7 +7,7 @@ Authors: Jesse Han, Floris van Doorn
 /- A development of boolean-valued first-order logic in Lean.
 -/
 
-import .fol order.complete_boolean_algebra to_mathlib
+import .fol order.complete_boolean_algebra
 
 open nat set fol lattice
 universe variables u v w

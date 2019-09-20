@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 Authors: Jesse Han, Floris van Doorn
 -/
-import .zfc' .completeness .print_formula .bfol
+import .zfc' .completeness .print_formula
 
 open fol bSet pSet lattice collapse_algebra
 

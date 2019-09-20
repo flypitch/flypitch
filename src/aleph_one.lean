@@ -1,13 +1,4 @@
-import
-  .pSet_ordinal
-  .bvm_extras
-  .bvm
-  .to_mathlib
-  set_theory.zfc
-  set_theory.cardinal
-  set_theory.ordinal
-  order.complete_boolean_algebra
-  .bvm_extras2
+import .bvm_extras2
 
 universes u v
 
@@ -222,7 +213,7 @@ begin
     { apply pSet.function.mk_inj_of_inj, from ‹_› }
 end
 
-lemma injects_into_omega_of_mem_aleph_one {z : pSet} (H_ord : Ord z) (H_mem : z ∈ aleph_one) : injects_into z omega :=
+lemma injects_into_omega_of_mem_aleph_one {z : pSet} (H_mem : z ∈ aleph_one) : injects_into z omega :=
 begin
   rcases equiv_mk_of_mem_mk z H_mem with ⟨w, Hw_lt, Hz_eq⟩,
   suffices : injects_into (ordinal.mk w) omega,
@@ -242,7 +233,7 @@ begin
     { from or.inr ‹_› },
     { cases this with this₂ this₃,
       { from or.inl ‹_› },
-      { exfalso, from absurd (injects_into_omega_of_mem_aleph_one ‹_› ‹_›) ‹_› }}
+      { exfalso, from absurd (injects_into_omega_of_mem_aleph_one ‹_›) ‹_› }}
 end
 
 end
@@ -829,8 +820,7 @@ begin
   refine le_inf _ _,
     { apply epsilon_trichotomy_of_sub_Ord, bv_intro x, bv_imp_intro H_mem,
       from Ord_of_mem_a1 ‹_› },
-    { apply epsilon_wf_of_sub_Ord, bv_intro x, bv_imp_intro H_mem,
-      from Ord_of_mem_a1 ‹_› }
+    { apply epsilon_wf_of_sub_Ord }
 end
 
 lemma a1_Ord {Γ : 𝔹} : Γ ≤ Ord a1 := le_inf a1_ewo a1_transitive
@@ -908,8 +898,7 @@ begin
   apply bv_rw' Hη, simp, from ‹_›,
   suffices : pSet.injects_into ((ℵ₁).func $ check_cast η) pSet.omega,
     by {rw check_func, apply check_injects_into, from ‹_› },
-  refine pSet.injects_into_omega_of_mem_aleph_one _ _,
-    { refine pSet.Ord_of_mem_Ord _ _, from ℵ₁, simp, apply pSet.Ord_mk },
+  refine pSet.injects_into_omega_of_mem_aleph_one _,
     { simp }
 end
 

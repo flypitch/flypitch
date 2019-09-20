@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 Authors: Jesse Han, Floris van Doorn
 -/
-import set_theory.ordinal set_theory.zfc tactic.tidy set_theory.cofinality .to_mathlib
+import set_theory.zfc tactic.tidy .to_mathlib
 
 open ordinal
 
@@ -969,7 +969,7 @@ begin
     { dsimp [b] at H, rw mem_sound at H, rw quotient.out_eq at H,
       rw Set.mem_prod at H, rcases H with ⟨c,Hc,d,Hd,H_eq⟩,
       rw mem_sound, rw H_eq, rw ←(quotient.out_eq c) at ⊢ Hc, rw ←quotient.out_eq d at ⊢ Hd,
-      rw ←pair_sound, erw ←mem_sound at ⊢ Hc Hd,  
+      rw ←pair_sound, erw ←mem_sound at ⊢ Hc Hd,
       rw pSet.mem_unfold at Hd Hc,
       cases Hc with i Hi, cases Hd with j Hj,
       use (i,j), rw ←eq_iff_eq_pair, from ⟨‹_›,‹_›⟩ }

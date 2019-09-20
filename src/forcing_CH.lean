@@ -1,4 +1,4 @@
-import .bvm_extras .collapse .aleph_one
+import .collapse .aleph_one
 
 /-
   Forcing the continuum hypothesis.
@@ -48,7 +48,7 @@ variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 /-- Corresponds to proposition 5.2 in Moore's 'the method of forcing':
 Let x be a set and let ϕ(v) be a formula in the forcing language. If ∀ y ∈ x, p ⊩ ϕ(y̌), then p ⊩ ∀ y ∈ (x̌), ϕ(y)
 -/
-lemma check_forall (x : pSet.{u}) (ϕ : bSet 𝔹 → 𝔹) {h : B_ext ϕ} {b : 𝔹} :
+lemma check_forall (x : pSet.{u}) (ϕ : bSet 𝔹 → 𝔹) {b : 𝔹} :
   (∀ (y : x.type), b ≤ ϕ((x.func y)̌ )) → (b ≤ (⨅(y : x.type), ϕ((x.func y)̌ ))) :=
 λ H, le_infi ‹_›
 
@@ -126,11 +126,8 @@ end
 local attribute [instance] classical.prop_decidable
 
 lemma rel_of_array_extensional (x y : bSet 𝔹) (af : x.type → y.type → 𝔹)
-  (H_bval₁ : ∀ i, x.bval i = ⊤)
-  (H_bval₂ : ∀ i, y.bval i = ⊤)
-  (H_wide : ∀ j, (⨆ i, af i j) = ⊤) -- TODO(floris): remove this
   (H_anti : ∀ i, (∀ j₁ j₂, j₁ ≠ j₂ → af i j₁ ⊓ af i j₂ ≤ ⊥))
-  (H_inj  : ∀ i₁ i₂, ⊥ < (func x i₁) =ᴮ (func x i₂) → i₁ = i₂) -- can probably be removed also
+  (H_inj  : ∀ i₁ i₂, ⊥ < (func x i₁) =ᴮ (func x i₂) → i₁ = i₂)
   {Γ}
   : Γ ≤ (is_func (rel_of_array x y af)) :=
 begin
@@ -172,9 +169,7 @@ begin
 end
 
 lemma rel_of_array_is_func'  (x y : bSet 𝔹) (af : x.type → y.type → 𝔹)
-  (H_bval₁ : ∀ i, x.bval i = ⊤)
   (H_bval₂ : ∀ i, y.bval i = ⊤)
-  (H_wide : ∀ j, (⨆ i, af i j) = ⊤)
   (H_tall : ∀ i, (⨆ j, af i j) = ⊤) -- this is not in the book, but I think it should be
   (H_anti : ∀ i, (∀ j₁ j₂, j₁ ≠ j₂ → af i j₁ ⊓ af i j₂ ≤ ⊥))
   (H_inj  : ∀ i₁ i₂, ⊥ < (func x i₁) =ᴮ (func x i₂) → i₁ = i₂)
@@ -536,16 +531,14 @@ rel_of_array (ℵ₁̌  : bSet β) ((powerset omega)̌ ) π_af
 
 lemma π_is_func {Γ} : Γ ≤ is_func π :=
 begin
-  unfold π, refine rel_of_array_extensional _ _ _ (by simp) (by simp) _ _ _,
-  { from π_af_wide },
+  unfold π, refine rel_of_array_extensional _ _ _ _ _,
   { from π_af_anti },
   { from aleph_one_inj },
 end
 
 lemma π_is_func' {Γ} : Γ ≤ is_func' (ℵ₁̌  : bSet β) ((powerset omega)̌ ) π :=
 begin
-  unfold π, refine rel_of_array_is_func' _ _ _ (by simp) (by simp) _ _ _ _,
-    { from π_af_wide },
+  unfold π, refine rel_of_array_is_func' _ _ _ (by simp) _ _ _,
     { from π_af_tall },
     { from π_af_anti },
     { from aleph_one_inj }
