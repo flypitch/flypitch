@@ -788,52 +788,64 @@ end
 
 end consis_lemma
 
---TODO(floris)
-/-lemma realize_subst_bt {L : Language} {S : bStructure L β} : ∀{n n' l}
-  (t : bounded_preterm L (n+n'+1) l)
-  (s : bounded_term L n') (v : dvector S n) (v' : dvector S n') (v'' : dvector S l),
-  boolean_realize_bounded_term ((v.append v').cast (add_comm n' n))
-    (subst_bounded_term t s) v'' =
-  boolean_realize_bounded_term
-    (((v.concat $ boolean_realize_bounded_term v' s ([])).append v').cast $
-      (by simp only [add_comm, add_right_inj, add_left_comm])) t v'' :=
-begin
-  intros, induction t,
-  { apply decidable.lt_by_cases t.1 n; intro h, simp [h, subst_bounded_term],  repeat {sorry} },
-  { sorry },
-  { sorry },
-end
+variables {β : Type*} [complete_boolean_algebra β]
 
-lemma realize_subst_bf {L : Language} {S : bStructure L β} : ∀{n n' n'' l}
-  (f : bounded_preformula L n'' l)
-  (s : bounded_term L n') (v : dvector S n) (v' : dvector S n') (v'' : dvector S l)
-  (h : n+n'+1 = n''),
-  boolean_realize_bounded_formula ((v.append v').cast (add_comm n' n))
-    (subst_bounded_formula f s h) v'' =
-  boolean_realize_bounded_formula
-    (((v.concat $ boolean_realize_bounded_term v' s ([])).append v').cast $
-      eq.trans (by simp only [add_comm, add_right_inj, add_left_comm]) h) f v'' :=
-begin
-  intros, induction f generalizing n n'; induction h,
-  { refl },
-  { simp [realize_subst_bt] },
-  { refl },
-  { simp [realize_subst_bt, f_ih] },
-  { simp [f_ih_f₁, f_ih_f₂], },
-  { simp, congr, ext, sorry /-have := f_ih ([]) s v,-/ },
-end
+@[simp] lemma subst0_bounded_formula_not {L : Language} {n} (f : bounded_formula L (n+1))
+  (s : bounded_term L n) : (∼f)[s/0] = ∼(f[s/0]) :=
+by { ext, simp [bd_not] }
 
-lemma realize_substmax_bf {L : Language} {n} (f : bounded_formula L (n+1)) (t : closed_term L)
-  {S : bStructure L β} (v : dvector S n) :
-  boolean_realize_bounded_formula v (substmax_bounded_formula f t) ([]) =
-  boolean_realize_bounded_formula (v.concat $ boolean_realize_closed_term S t) f ([]) :=
-by { convert realize_subst_bf f t v ([]) ([]) _, rw [cast_append_nil], simp, }
+@[simp] lemma subst0_bounded_formula_and {L : Language} {n} (f g : bounded_formula L (n+1))
+  (s : bounded_term L n) : (f ⊓ g)[s/0] = (f[s/0] ⊓ g[s/0]) :=
+by { ext, simp[bd_and, bd_not] }
 
-lemma realize_subst0_bf {L : Language} {n} (f : bounded_formula L (n+1)) (t : bounded_term L n)
-  {S : bStructure L β} (v : dvector S n) :
-  boolean_realize_bounded_formula v (f[t/0]) ([]) =
-  boolean_realize_bounded_formula (boolean_realize_bounded_term v t ([])::v) f ([]) :=
-by { convert realize_subst_bf f t ([]) v ([]) _ using 1, simp [subst0_bounded_formula], refl }-/
+-- --TODO(floris)
+-- lemma realize_subst_bt {L : Language} {S : bStructure L β} : ∀{n n' l}
+--   (t : bounded_preterm L (n+n'+1) l)
+--   (s : bounded_term L n') (v : dvector S n) (v' : dvector S n') (v'' : dvector S l),
+--   boolean_realize_bounded_term ((v.append v').cast (add_comm n' n))
+--     (subst_bounded_term t s) v'' =
+--   boolean_realize_bounded_term
+--     (((v.concat $ boolean_realize_bounded_term v' s ([])).append v').cast $
+--       (by simp only [add_comm, add_right_inj, add_left_comm])) t v'' :=
+-- begin
+--   intros, induction t,
+--   { apply decidable.lt_by_cases t.1 n; intro h, simp [h, subst_bounded_term],  repeat {sorry} },
+--   { sorry },
+--   { sorry },
+-- end
+
+-- lemma realize_subst_bf {L : Language} {S : bStructure L β} : ∀{n n' n'' l}
+--   (f : bounded_preformula L n'' l)
+--   (s : bounded_term L n') (v : dvector S n) (v' : dvector S n') (v'' : dvector S l)
+--   (h : n+n'+1 = n''),
+--   boolean_realize_bounded_formula ((v.append v').cast (add_comm n' n))
+--     (subst_bounded_formula f s h) v'' =
+--   boolean_realize_bounded_formula
+--     (((v.concat $ boolean_realize_bounded_term v' s ([])).append v').cast $
+--       eq.trans (by simp only [add_comm, add_right_inj, add_left_comm]) h) f v'' :=
+-- begin
+--   intros, induction f generalizing n n'; induction h,
+--   { refl },
+--   { simp [realize_subst_bt] },
+--   { refl },
+--   { simp [realize_subst_bt, f_ih] },
+--   { simp [f_ih_f₁, f_ih_f₂], },
+--   { simp, congr, ext, sorry /-have := f_ih ([]) s v,-/ },
+-- end
+
+-- lemma realize_subst0_bf {L : Language} {n} (f : bounded_formula L (n+1)) (t : bounded_term L n)
+--   {S : bStructure L β} (v : dvector S n) :
+--   boolean_realize_bounded_formula v (f[t/0]) ([]) =
+--   boolean_realize_bounded_formula (boolean_realize_bounded_term v t ([])::v) f ([]) :=
+-- by { convert realize_subst_bf f t ([]) v ([]) _ using 1, simp [subst0_bounded_formula], refl }
+
+-- lemma realize_substmax_bf {L : Language} {n} (f : bounded_formula L (n+1)) (t : closed_term L)
+--   {S : bStructure L β} (v : dvector S n) :
+--   boolean_realize_bounded_formula v (substmax_bounded_formula f t) ([]) =
+--   boolean_realize_bounded_formula (v.concat $ boolean_realize_closed_term S t) f ([]) :=
+-- by { convert realize_subst_bf f t v ([]) ([]) _, rw [cast_append_nil], simp, }
+
+
 
 -- lemma boolean_realize_bounded_term_insert_lift {L : Language} {S : bStructure L β} :
 --   ∀{n l} (v : dvector S n) (x : S) (m : ℕ)

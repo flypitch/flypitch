@@ -1,6 +1,6 @@
 #+TITLE: Flypitch
-*** The result
-In this repository we have given a formal proof of the [[https://en.wikipedia.org/wiki/Continuum_hypothesis#Independence_from_ZFC][independence of the continuum hypothesis]].
+*** A formal proof of the independence of the continuum hypothesis
+In this repository we give a formal proof of the [[https://en.wikipedia.org/wiki/Continuum_hypothesis#Independence_from_ZFC][independence of the continuum hypothesis]], completing the original objective of the Flypitch project.
 
 The formal statement of the independence of the continuum hypothesis is given in [[src/summary.lean]]:
 #+begin_src lean
@@ -12,16 +12,28 @@ theorem independence_of_CH : independent ZFC' CH_f
   def independent {L : Language} (T : Theory L) (f : sentence L) : Prop :=
   ¬ T ⊢' f ∧ ¬ T ⊢' ∼f
   #+end_src
+
   The notation ~T ⊢' f~ means that there is a proof tree of ~f~ with assumptions in ~T~. The proof system is given in [[src/fol.lean]].
-- ZFC' is the theory of Zermelo-Fraenkel set theory, defined in [[src/zfc'.lean]].
-  - We formulate it in a language with 5 constant/function symbols (in addition the usual elementhood relation): for the empty set, pairs, omega, the power set and union.
-  - For each constant/function symbol ZFC' contains an axiom giving the defining property of that symbol. Addionally, it contains the axiom of extensionality, regularity, Zorn's lemma and the axiom schema of collection.
-  - The 5 constant/function symbols we added are definable in ZFC, so ZFC' is conservative over ZFC. But these extra symbols make the formulation of Zorn's lemma and the continuum hypothesis easier. We plan to also formalize the reduction from ZFC' to ZFC.
-- ~CH_f~ is the continuum hypothesis as a first-order logic sentence. The sentence we use is
-  ~∀x, x is an ordinal ⟹ x ≤ ω ∨ P(ω) ≤ x~ where ~a ≤ b~ means that there is a surjection from a subset of ~b~ to ~a~.
+
+- ZFC' is the first-order theory of Zermelo-Fraenkel set theory plus choice, defined in [[src/zfc'.lean]].
+  - We formulate it in a language with five constant/function symbols, plus ~∈~ (membership): for the empty set, pairs, omega, the power set and union.
+
+  - For each constant/function symbol, ZFC' contains an axiom giving the defining property of that symbol. The axiom of infinity is modified to additionally specify that ~ω~ is the least limit ordinal. Addionally, ZFC' contains the axiom of extensionality, regularity, Zorn's lemma and the axiom schema of collection.
+
+  - The five constant/function symbols we added are definable in ZFC, so ZFC' is conservative over ZFC; these extra symbols make the formulation of Zorn's lemma and the continuum hypothesis easier.
+
+- ~CH_f~ is the continuum hypothesis as a first-order logic sentence. The sentence we use is ~∀x, x is an ordinal ⟹ x ≤ ω ∨ P(ω) ≤ x~ where ~a ≤ b~ means that there is a surjection from a subset of ~b~ to ~a~.
+
+**** Possible future work
+ - Formalizing the reduction from ZFC' to ZFC
+ - Consistency of CH via construction of the constructible universe
+ - Proof transfer using the completeness theorem
+ - Forcing over countable transitive models
+ - Forcing using modal logic
+ - Forcing using sheaves
 
 *** Documentation
-A conventional human-readable account of the proof written in type-theoretic foundations, upon which some parts of the formalization will be based, is [[https://www.github.com/flypitch/flypitch-notes/][located here]].
+A conventional human-readable account of the proof written in type-theoretic foundations, upon which some parts of the formalization are based, is [[https://www.github.com/flypitch/flypitch-notes/][located here]].
 
 *** Compilation
 To compile the Flypitch project, you will need [[https://leanprover.github.io/][Lean 3.4.2]]. Installation instructions for Lean can be found [[https://github.com/leanprover-community/mathlib/blob/master/README.md][here]].
@@ -54,7 +66,6 @@ We also have a formula pretty-printer which prints de Bruijn indexed-formulas as
 Our paper /A formalization of forcing and the unprovability of the continuum hypothesis/, describing [[https://github.com/flypitch/flypitch/releases/tag/1.2][this release]], was accepted to [[https://itp19.cecs.pdx.edu/][ITP 2019]]. It is available [[https://github.com/flypitch/flypitch-itp-2019/releases/tag/1.1][here]].
 
 **** Citation information:
-# TODO(jesse): update BibTeX entry after paper is actually published
 
 #+begin_src latex
 @inproceedings{DBLP:conf/itp/2019,

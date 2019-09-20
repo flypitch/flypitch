@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 Authors: Jesse Han, Floris van Doorn
 -/
-import .bfol .forcing .forcing_CH
+import .bfol .forcing .forcing_CH .bvm_extras2
 
 open lattice
 
@@ -309,16 +309,48 @@ begin
   apply le_inf, bv_imp_intro, exact this.mpr H, bv_imp_intro, exact this.mp H
 end
 
--- axiom of infinity
--- ∅ ∈ ω ∧ ∀ x ∈ ω, ∃ y ∈ ω, x ∈ y
+/-- &1 ⊆ &0 ↔ ∀ z, (z ∈ &1 ⟹ z ∈ &0)-/
+def subset'' {n} (t₁ t₂ : bounded_term L_ZFC' n): bounded_formula L_ZFC' n :=
+∀' (&'0 ∈' (t₁ ↑ 1) ⟹ &'0 ∈' (t₂ ↑ 1))
 
+local infix ` ⊆'`:100 := subset''
+
+@[simp] lemma boolean_realize_bounded_formula_subset {n} {v : dvector (V β) n}
+  (t₁ t₂ : bounded_term L_ZFC' n) :
+  boolean_realize_bounded_formula v (t₁ ⊆' t₂) ([]) =
+  boolean_realize_bounded_term v t₁ ([]) ⊆ᴮ boolean_realize_bounded_term v t₂ ([]) :=
+by { simp [subset'', subset_unfold'] }
+
+def is_transitive_f : bounded_formula L_ZFC' 1 := ∀' ((&'0 ∈' &'1) ⟹ &'0 ⊆' &'1)
+
+def epsilon_trichotomy_f : bounded_formula L_ZFC' 1 :=
+∀' ((&'0 ∈' &'1) ⟹''(∀' (&'0 ∈' &'2 ⟹'' (&'1 ≃ &'0 ⊔' &'1 ∈' &'0) ⊔' &'0 ∈' &'1)))
+
+def epsilon_well_founded_f : bounded_formula L_ZFC' 1 :=
+∀' (((&'0 ⊆' &'1) ⟹'' ((∼(&'0 ≃ ∅')) ⟹'' ∃' (&'0 ∈' &'1 ⊓' (∀' (&'0 ∈' &'2 ⟹'' ∼(&'0 ∈' &'1)))))))
+
+def ewo_f : bounded_formula L_ZFC' 1 := epsilon_trichotomy_f ⊓' epsilon_well_founded_f
+
+def Ord_f : bounded_formula L_ZFC' 1 := ewo_f ⊓' is_transitive_f
+
+@[simp]lemma Ord_f_is_Ord {x : V β} : boolean_realize_bounded_formula (by exact [x]) Ord_f dvector.nil = Ord x :=
+by {simp [Ord_f,ewo_f,is_transitive_f,epsilon_well_founded_f, epsilon_trichotomy_f], refl}
+
+-- this is the usual axiom of infinity, plus a characterization of omega as the least limit ordinal
 def axiom_of_infinity : sentence L_ZFC' :=
-  ∅' ∈' ω' ⊓ ∀'(&'0 ∈' ω' ⟹ ∃' (&'0 ∈' ω' ⊓' &'1 ∈' &'0))
+  (∅' ∈' ω' ⊓' ∀'(&'0 ∈' ω' ⟹ ∃' (&'0 ∈' ω' ⊓' &'1 ∈' &'0))) 
+  ⊓' (∃' (Ord_f ⊓' ω' ≃ &'0))
+  ⊓' ∀' (Ord_f ⟹ ((∅' ∈' &'0 ⊓' ∀'(&'0 ∈' &'1 ⟹ ∃' (&'0 ∈' &'2 ⊓' &'1 ∈' &'0))) ⟹ ω' ⊆' &0))
 
 lemma bSet_models_infinity : ⊤ ⊩[V β] axiom_of_infinity :=
 begin
-  simp [forced_in, axiom_of_infinity, boolean_realize_sentence, -lattice.le_inf_iff, -top_le_iff],
-  exact bSet_axiom_of_infinity'
+  simp [forced_in, axiom_of_infinity, boolean_realize_sentence,
+    -lattice.le_inf_iff, -top_le_iff],
+  refine le_inf _ _,
+    { exact bSet_axiom_of_infinity' },
+    { refine le_inf _ _,
+      { apply bv_use bSet.omega, exact le_inf Ord_omega bv_refl },
+      { exact omega_least_is_limit } }
 end
 
 -- axiom of regularity
@@ -334,18 +366,6 @@ begin
   bv_imp_intro,
   apply bSet_axiom_of_regularity, convert H
 end
-
-/-- &1 ⊆ &0 ↔ ∀ z, (z ∈ &1 ⟹ z ∈ &0)-/
-def subset'' {n} (t₁ t₂ : bounded_term L_ZFC' n): bounded_formula L_ZFC' n :=
-∀' (&'0 ∈' (t₁ ↑ 1) ⟹ &'0 ∈' (t₂ ↑ 1))
-
-local infix ` ⊆'`:100 := subset''
-
-@[simp] lemma boolean_realize_bounded_formula_subset {n} {v : dvector (V β) n}
-  (t₁ t₂ : bounded_term L_ZFC' n) :
-  boolean_realize_bounded_formula v (t₁ ⊆' t₂) ([]) =
-  boolean_realize_bounded_term v t₁ ([]) ⊆ᴮ boolean_realize_bounded_term v t₂ ([]) :=
-by { simp [subset'', subset_unfold'] }
 
 /- ∀ x, x ≠ ∅ ∧ ((∀ y, y ⊆ x ∧ ∀ w₁ w₂ ∈ y, w₁ ⊆ w₂ ∨ w₂ ⊆ w₁) → (⋃y) ∈ x)
       → ∃ c ∈ x, ∀ z ∈ x, c ⊆ z → c = z -/
@@ -436,9 +456,8 @@ def at_most_f : bounded_formula L_ZFC' 2 :=
 
 @[simp]lemma realize_at_most_f {x y : V β} :
   boolean_realize_bounded_formula ([y,x]) at_most_f dvector.nil = larger_than x y :=
-begin
-  simp[larger_than, at_most_f, is_func]
-end
+by simp[larger_than, at_most_f, is_func]
+
 
 def is_inj_f : bounded_formula L_ZFC' 1 :=
 ∀' ∀' ∀' ∀' (((pair' &'3 &'1 ∈' &'4 ⊓' pair' &'2 &'0 ∈' &'4) ⊓ &'1 ≃ &'0) ⟹ &'3 ≃ &'2)
@@ -454,21 +473,6 @@ def injects_into_f : bounded_formula L_ZFC' 2 :=
   boolean_realize_bounded_formula (by exact [y,x]) injects_into_f dvector.nil = injects_into x y :=
 by {simp[injects_into_f, injects_into]}
 
-def is_transitive_f : bounded_formula L_ZFC' 1 := ∀' ((&'0 ∈' &'1) ⟹ &'0 ⊆' &'1)
-
-def epsilon_trichotomy_f : bounded_formula L_ZFC' 1 :=
-∀' ((&'0 ∈' &'1) ⟹''(∀' (&'0 ∈' &'2 ⟹'' (&'1 ≃ &'0 ⊔' &'1 ∈' &'0) ⊔' &'0 ∈' &'1)))
-
-def epsilon_well_founded_f : bounded_formula L_ZFC' 1 :=
-∀' (((&'0 ⊆' &'1) ⟹'' ((∼(&'0 ≃ ∅')) ⟹'' ∃' (&'0 ∈' &'1 ⊓' (∀' (&'0 ∈' &'2 ⟹'' ∼(&'0 ∈' &'1)))))))
-
-def ewo_f : bounded_formula L_ZFC' 1 := epsilon_trichotomy_f ⊓' epsilon_well_founded_f
-
-def Ord_f : bounded_formula L_ZFC' 1 := ewo_f ⊓' is_transitive_f
-
-@[simp]lemma Ord_f_is_Ord {x : V β} : boolean_realize_bounded_formula (by exact [x]) Ord_f dvector.nil = Ord x :=
-by {simp [Ord_f,ewo_f,is_transitive_f,epsilon_well_founded_f, epsilon_trichotomy_f], refl}
-
 def non_empty_f : bounded_formula L_ZFC' 1 := ∼(&'0 ≃ ∅')
 
 @[simp]lemma non_empty_f_is_non_empty {x : V β} : boolean_realize_bounded_formula (by exact [x]) non_empty_f dvector.nil = not_empty x := by {simp[non_empty_f], refl}
@@ -480,10 +484,6 @@ def non_empty_f : bounded_formula L_ZFC' 1 := ∼(&'0 ≃ ∅')
   to apply `at_most_f` to the appropriate arguments. -/
 def CH_f : sentence L_ZFC' :=
 ∀' (Ord_f ⟹ (substmax_bounded_formula at_most_f ω' ⊔' at_most_f[Powerset omega/0]))
-
-@[simp] lemma subst0_bounded_formula_not {L : Language} {n} (f : bounded_formula L (n+1))
-  (s : bounded_term L n) : (∼f)[s/0] = ∼(f[s/0]) :=
-by { ext, simp [bd_not] }
 
 variable {β}
 lemma CH_f_is_CH : ⟦CH_f⟧[V β] = CH₂ :=
