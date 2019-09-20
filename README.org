@@ -24,6 +24,9 @@ theorem independence_of_CH : independent ZFC' CH_f
 
 - ~CH_f~ is the continuum hypothesis as a first-order logic sentence. The sentence we use is ~∀x, x is an ordinal ⟹ x ≤ ω ∨ P(ω) ≤ x~ where ~a ≤ b~ means that there is a surjection from a subset of ~b~ to ~a~.
 
+**** Forcing
+Both consistency proofs for ~CH~ and ~¬CH~ were done by forcing with Boolean-valued models. To force ~¬CH~, we used Cohen forcing, and to force ~CH~, we used collapse forcing. Some details of our implementation of Boolean-valued models and Cohen forcing can be found in our [[https://github.com/flypitch/flypitch-itp-2019/releases/tag/1.1][ITP paper]].
+
 **** Possible future work
  - Formalizing the reduction from ZFC' to ZFC
  - Consistency of CH via construction of the constructible universe
