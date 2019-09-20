@@ -536,4 +536,54 @@ end
 
 end eps_iso
 
+variables {𝔹 : Type*} [nontrivial_complete_boolean_algebra 𝔹]
+
+def limit_ordinal (η : bSet 𝔹) : 𝔹 := (∅ ∈ᴮ η) ⊓ (⨅ x, x ∈ᴮ η ⟹ ⨆y, y ∈ᴮ η ⊓ x ∈ᴮ y)
+
+lemma is_epsilon_well_founded {x : bSet 𝔹} {Γ : 𝔹}  : Γ ≤ epsilon_well_founded x :=
+by { bv_intro x, bv_imp_intro Hsub, bv_imp_intro H_nonempty, exact bSet_axiom_of_regularity _ H_nonempty }
+
+lemma Ord_succ {η : bSet 𝔹} {Γ : 𝔹} (H_Ord : Γ ≤ Ord η) : Γ ≤ Ord (succ η) :=
+begin
+  refine le_inf (le_inf _ _) _,
+    { sorry },
+    { bv_intro x, bv_imp_intro Hsub, bv_imp_intro H_nonempty, exact bSet_axiom_of_regularity _ H_nonempty },
+    { sorry }
+end
+
+lemma Ord.succ_le_of_lt {η ρ : bSet 𝔹} {Γ : 𝔹} (H_Ord' : Γ ≤ Ord ρ) (H_lt : Γ ≤ η ∈ᴮ ρ) : Γ ≤ succ η ⊆ᴮ ρ :=
+begin
+  rw subset_unfold',
+  bv_intro w, bv_imp_intro Hw,
+  erw mem_insert1 at Hw, bv_or_elim_at Hw,
+    { bv_cc },
+    { refine mem_of_mem_Ord Hw.right ‹_› ‹_› }
+end
+
+lemma omega_least_limit_ordinal {Γ : 𝔹} : Γ ≤ ⨅ η, Ord η ⟹ ((limit_ordinal η) ⟹ omega ⊆ᴮ η) :=
+begin
+  bv_intro η, bv_imp_intro H_η, bv_imp_intro H_limit,
+  bv_intro x, bv_imp_intro Hx,
+  induction x,
+  induction x with x ih,
+    { dsimp, change _ ≤ 0 ∈ᴮ _, change _ ≤ (λ z, z ∈ᴮ η) _,apply bv_rw' zero_eq_empty, simp,
+      from bv_and.left ‹_› },
+    { dsimp at *, change _ ≤ bSet.of_nat _ ∈ᴮ _, rw check_succ_eq_succ_check,
+      specialize ih H_η ‹_› (le_top),
+      bv_split_at H_limit,
+      rcases exists_convert (H_limit_right (of_nat x) ‹_›) with ⟨y,Hy⟩,
+      bv_split_at Hy,
+      have H_y_Ord := Ord_of_mem_Ord Hy_left ‹_›,
+      bv_cases_on y =ᴮ (succ (of_nat x)),
+        { bv_cc }, -- bv_cc
+        { have := Ord.succ_le_of_lt _ Hy_right,
+          rw Ord.le_iff_lt_or_eq at this,
+          bv_or_elim_at this,
+          { apply mem_of_mem_Ord this.left ‹_› ‹_›, },
+          { bv_cc },
+          { apply Ord_succ, apply Ord_of_nat },
+          { exact H_y_Ord },
+          { exact H_y_Ord }}}
+end
+
 end bSet

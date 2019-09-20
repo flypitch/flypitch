@@ -2674,7 +2674,7 @@ by simp[pSet.card_ex]
 
 def closed_under_successor (Γ) (x : bSet 𝔹) := Γ ≤ ⨅y, y ∈ᴮ x ⟹ succ y ∈ᴮ x
 
-def omega_spec (ω : bSet 𝔹) := (∀ {Γ : 𝔹}, closed_under_successor Γ ω) ∧ ∀ (x : bSet 𝔹) {Γ} (H₁ : Γ ≤ ∅ ∈ᴮ x) (H₂ : closed_under_successor Γ x), Γ ≤ bSet.omega ⊆ᴮ x
+def omega_spec (ω : bSet 𝔹) := (∀ {Γ : 𝔹}, Γ ≤ not_empty ω ∧ closed_under_successor Γ ω) ∧ ∀ (x : bSet 𝔹) {Γ} (H₁ : Γ ≤ ∅ ∈ᴮ x) (H₂ : closed_under_successor Γ x), Γ ≤ ω ⊆ᴮ x
 
 lemma omega_closed_under_succ {Γ : 𝔹} : closed_under_successor Γ (bSet.omega) :=
 begin
@@ -2686,14 +2686,24 @@ begin
     { simp[pSet.of_nat, succ] },
 end
 
+def omega_nonempty {Γ : 𝔹} : Γ ≤ not_empty bSet.omega :=
+begin
+  rw nonempty_iff_exists_mem, apply bv_use (∅ : bSet 𝔹),
+  change _ ≤ (λ z, z ∈ᴮ omega) _, apply bv_rw' (bv_symm zero_eq_empty), simp,
+  apply of_nat_mem_omega
+end
+
 lemma omega_is_omega : omega_spec (bSet.omega : bSet 𝔹) :=
 begin
-  refine ⟨by apply omega_closed_under_succ, _⟩,
-    {intros x Γ H₁ H₂, unfold closed_under_successor at H₂, rw[subset_unfold],
+  refine ⟨_,_⟩,
+    { intro Γ, refine ⟨_,_⟩,
+      { exact omega_nonempty },
+      { apply omega_closed_under_succ }},
+    { intros x Γ H₁ H₂,  unfold closed_under_successor at H₂, rw[subset_unfold],
      simp, intro k, cases k, induction k, convert H₁,
      {change (∅̌) = _, simp},
      {let A := _, change Γ ≤ A ∈ᴮ x at k_ih,
-      convert H₂ A ‹_›, from check_succ_eq_succ_check}}
+      convert H₂ A ‹_›, from check_succ_eq_succ_check}},
 end
 
 lemma Ord_omega {Γ : 𝔹} : Γ ≤ Ord (omega) :=

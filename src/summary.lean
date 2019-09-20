@@ -57,8 +57,6 @@ This file summarizes:
 theorem godel_completeness_theorem {L} (T) (ψ : sentence L) : T ⊢' ψ ↔ T ⊨ ψ :=
 completeness T ψ
 
-#check boolean_soundness
-
 theorem boolean_valued_soundness_theorem {L} {β} [complete_boolean_algebra β] {T : Theory L}
   {A : sentence L} (H : T ⊢ A) : T ⊨[β] A :=
 forced_of_bsatisfied $ boolean_formula_soundness H
@@ -81,7 +79,9 @@ def independent {L : Language} (T : Theory L) (f : sentence L) : Prop :=
 ¬ T ⊢' f ∧ ¬ T ⊢' ∼f
 
 theorem independence_of_CH : independent ZFC' CH_f :=
-⟨CH_unprovable_from_ZFC, neg_CH_unprovable_from_ZFC⟩
+by finish[independent, CH_unprovable_from_ZFC, neg_CH_unprovable_from_ZFC]
 
 #print axioms independence_of_CH
-/- `propext` (propositional extensionality), `classical.choice` (a type-theoretic choice principle) and `quot.sound` (quotients) are the standard axioms in Lean. -/
+/- `propext` (propositional extensionality),
+   `classical.choice` (a type-theoretic choice principle), and
+   `quot.sound` (quotients) are the standard axioms in Lean. -/

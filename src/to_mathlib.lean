@@ -218,6 +218,35 @@ by { intros, cases h, refl }
 | 0 x k ys := ys
 | (n+1) x (k+1) (y::ys) := (y::replace x k ys)
 
+protected lemma insert_nth_lt {α} : ∀{n k l : ℕ} (x : α) (xs : dvector α n) (h : l < n)
+  (h' : l < n + 1) (h2 : l < k), (xs.insert x k).nth l h' = xs.nth l h
+| n     0     l     x xs h h' h2 := by cases h2
+| 0     (k+1) l     x xs h h' h2 := by cases h
+| (n+1) (k+1) 0     x (x'::xs) h h' h2 := by refl
+| (n+1) (k+1) (l+1) x (x'::xs) h h' h2 :=
+  by { simp, apply insert_nth_lt, apply nat.lt_of_succ_lt_succ h2 }
+
+protected lemma insert_nth_gt' {α} : ∀{n k l : ℕ} (x : α) (xs : dvector α n) (h : l - 1 < n)
+  (h' : l < n + 1) (h2 : k < l), (xs.insert x k).nth l h' = xs.nth (l-1) h
+| n     0     0     x xs h h' h2 := by cases h2
+| n     0     (l+1) x xs h h' h2 := by { simp }
+| 0     (k+1) 0     x xs h h' h2 := by { cases h }
+| 0     (k+1) (l+1) x xs h h' h2 := by { cases h' with _ h', cases h' }
+| (n+1) (k+1) 0     x (x'::xs) h h' h2 := by cases h2
+| (n+1) (k+1) 1     x (x'::xs) h h' h2 := by { cases h2 with _ h2, cases h2 }
+| (n+1) (k+1) (l+2) x (x'::xs) h h' h2 :=
+  by { simp, convert insert_nth_gt' x xs _ _ _, apply nat.lt_of_succ_lt_succ h2 }
+
+@[simp] protected lemma insert_nth_gt_simp {α} : ∀{n k l : ℕ} (x : α) (xs : dvector α n)
+  (h' : l < n + 1)
+  (h2 : k < l), (xs.insert x k).nth l h' =
+  xs.nth (l-1) ((nat.sub_lt_right_iff_lt_add (nat.one_le_of_lt h2)).mpr h') :=
+λ n k l x xs h' h2, dvector.insert_nth_gt' x xs _ h' h2
+
+protected lemma insert_nth_gt {α} : ∀{n k l : ℕ} (x : α) (xs : dvector α n) (h : l < n) (h' : l + 1 < n + 1)
+  (h2 : k < l + 1), (xs.insert x k).nth (l+1) h' = xs.nth l h :=
+λ n k l x xs h h' h2, dvector.insert_nth_gt' x xs h h' h2
+
 @[simp]lemma replace_head {n x z} {xs : dvector α n} : (x::xs).replace z 0 = z::xs := rfl
 
 @[simp]lemma replace_neck {n x y z} {xs : dvector α n} : (x::y::xs).replace z 1 = x::z::xs := rfl
@@ -1171,9 +1200,6 @@ instance infi_to_pi {ι β} [complete_boolean_algebra β] {Γ : β} {ϕ : ι →
 { F := λ x, Π i : ι, Γ ≤ ϕ i,
   coe := λ H₁ i, by {change Γ ≤ ϕ i, change Γ ≤ _ at H₁, finish}}
 
--- lemma bv_em {β : Type*} [boolean_algebra β] (Γ) (b : β) :
---   Γ ≤ b ⊔ -b := by simp
-
 lemma bv_absurd {β} [boolean_algebra β] {Γ : β} (b : β) (H₁ : Γ ≤ b) (H₂ : Γ ≤ -b) : Γ ≤ ⊥ :=
 @le_trans _ _ _ (b ⊓ -b) _ (le_inf ‹_› ‹_›) (by simp)
 
@@ -1512,9 +1538,6 @@ do
    n <- get_unused_name "H",
    note n none e >> skip
 
--- example {β ι : Type u} [lattice.complete_boolean_algebra β] {j : ι} {s : ι → β} {H : ⊤ ≤ ⨅i, s i} {b : β} : b ≤ ⊤ :=
--- by {specialize_context ⊤, bv_specialize_at H j, apply lattice.le_top, apply_instance}
-
 meta def bv_imp_elim_at (H₁ : parse ident) (H₂ : parse texpr) : tactic unit :=
 do n <- get_unused_name "H",
    e₁ <- resolve_name H₁,
@@ -1726,7 +1749,5 @@ begin
   { simp[x, inf_assoc.symm] },
   { from inf_le_right_of_le (by simp) }
 end
-
-
 
 end lattice
