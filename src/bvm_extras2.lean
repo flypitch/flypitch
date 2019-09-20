@@ -538,7 +538,7 @@ end eps_iso
 
 variables {𝔹 : Type*} [nontrivial_complete_boolean_algebra 𝔹]
 
-def limit_ordinal (η : bSet 𝔹) : 𝔹 := (∅ ∈ᴮ η) ⊓ (⨅ x, x ∈ᴮ η ⟹ ⨆y, y ∈ᴮ η ⊓ x ∈ᴮ y)
+def is_limit (η : bSet 𝔹) : 𝔹 := (∅ ∈ᴮ η) ⊓ (⨅ x, x ∈ᴮ η ⟹ ⨆y, y ∈ᴮ η ⊓ x ∈ᴮ y)
 
 lemma is_epsilon_well_founded {x : bSet 𝔹} {Γ : 𝔹}  : Γ ≤ epsilon_well_founded x :=
 by { bv_intro x, bv_imp_intro Hsub, bv_imp_intro H_nonempty, exact bSet_axiom_of_regularity _ H_nonempty }
@@ -546,9 +546,18 @@ by { bv_intro x, bv_imp_intro Hsub, bv_imp_intro H_nonempty, exact bSet_axiom_of
 lemma Ord_succ {η : bSet 𝔹} {Γ : 𝔹} (H_Ord : Γ ≤ Ord η) : Γ ≤ Ord (succ η) :=
 begin
   refine le_inf (le_inf _ _) _,
-    { sorry },
+    { bv_intro y, bv_imp_intro H_mem,
+      bv_intro z, bv_imp_intro Hz,
+      erw mem_insert1 at H_mem Hz,
+      bv_or_elim_at Hz; bv_or_elim_at H_mem,
+        { exact bv_or_left (bv_or_left (by bv_cc)) },
+        { exact bv_or_left (bv_or_right (by bv_cc)) },
+        { exact bv_or_right (by bv_cc) },
+        { exact epsilon_trichotomy_of_Ord H_mem.right Hz.right H_Ord }},
     { bv_intro x, bv_imp_intro Hsub, bv_imp_intro H_nonempty, exact bSet_axiom_of_regularity _ H_nonempty },
-    { sorry }
+    { bv_intro z, bv_imp_intro Hz, erw mem_insert1 at Hz, bv_or_elim_at Hz,
+      { apply bv_rw' Hz.left, simp, simp  },
+      { refine subset_trans' (subset_of_mem_Ord Hz.right ‹_›) _, simp }},
 end
 
 lemma Ord.succ_le_of_lt {η ρ : bSet 𝔹} {Γ : 𝔹} (H_Ord' : Γ ≤ Ord ρ) (H_lt : Γ ≤ η ∈ᴮ ρ) : Γ ≤ succ η ⊆ᴮ ρ :=
@@ -560,7 +569,7 @@ begin
     { refine mem_of_mem_Ord Hw.right ‹_› ‹_› }
 end
 
-lemma omega_least_limit_ordinal {Γ : 𝔹} : Γ ≤ ⨅ η, Ord η ⟹ ((limit_ordinal η) ⟹ omega ⊆ᴮ η) :=
+lemma omega_least_is_limit {Γ : 𝔹} : Γ ≤ ⨅ η, Ord η ⟹ ((is_limit η) ⟹ omega ⊆ᴮ η) :=
 begin
   bv_intro η, bv_imp_intro H_η, bv_imp_intro H_limit,
   bv_intro x, bv_imp_intro Hx,
