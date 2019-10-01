@@ -277,8 +277,9 @@ begin
   apply Set.mem_empty ⟦z'⟧, apply (mem.congr_right _).mp,
   rw[mem_iff],  show pSet,
   refine quotient.out (_), change Set, exact ⟦u⟧ ∩ y,
-  simp, change ⟦z'⟧ ∈ ⟦_⟧, rw[quotient.out_eq], exact this,
-  apply equiv_of_eq, simp, change ⟦_⟧ = ⟦_⟧,
+  simp only [id.def, Set.mk_eq],
+  change ⟦z'⟧ ∈ ⟦_⟧, rw[quotient.out_eq], exact this,
+  apply equiv_of_eq, simp only [Set.mk_eq],  dsimp, change ⟦_⟧ = ⟦_⟧,
   rw[quotient.out_eq], exact ‹_›
 end
 

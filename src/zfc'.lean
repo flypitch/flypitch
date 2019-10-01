@@ -449,6 +449,8 @@ by simp [is_func'_f₂, is_func']
   `at_most_f x y` means
   `∃ S, ∃ f, S ⊆ y ∧ f contains a function from S to x ∧ f surjects onto x`
   In `bSet` it corresponds to the formula `larger_than y x`.
+
+  `at_most_f x y` is equivalent to `¬ y ≺ x`.
 -/
 def at_most_f : bounded_formula L_ZFC' 2 :=
 ∃' (∃' (((&'1 ⊆' &'3) ⊓' (is_func'_f₂).cast (dec_trivial : 3 ≤ 4)) ⊓'
@@ -480,7 +482,7 @@ def non_empty_f : bounded_formula L_ZFC' 1 := ∼(&'0 ≃ ∅')
 /-- The continuum hypothesis is given by the formula
   `∀x, x is an ordinal ⟹ x ≤ ω ∨ P(ω) ≤ x`.
   Here `a ≤ b` means there is a surjection from a subset of `b` to `a`.
-  We have to perform two subsitutions (`substmax_bounded_formula` and `[../0]`)
+  We have to perform two substitutions (`substmax_bounded_formula` and `[../0]`)
   to apply `at_most_f` to the appropriate arguments. -/
 def CH_f : sentence L_ZFC' :=
 ∀' (Ord_f ⟹ (substmax_bounded_formula at_most_f ω' ⊔' at_most_f[Powerset omega/0]))
