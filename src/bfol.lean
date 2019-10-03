@@ -523,7 +523,7 @@ end
 
 lemma boolean_realize_bounded_formula_irrel {n} {v₁ : dvector S n}
   (f : bounded_formula L n) (f' : sentence L) (hf : f.fst = f'.fst) (xs : dvector S 0) :
-  boolean_realize_bounded_formula v₁ f xs = boolean_realize_sentence S f' :=
+  boolean_realize_bounded_formula v₁ f xs = ⟦f'⟧[S] :=
 by cases xs; exact boolean_realize_bounded_formula_irrel'
   (by intros m hm hm'; exfalso; exact not_lt_zero m hm') f f' hf ([])
 
@@ -628,7 +628,7 @@ lemma boolean_realize_sentence_equal (t₁ t₂ : closed_term L) :
 by refl
 
 lemma boolean_realize_sentence_eq (v : ℕ → S) (f : sentence L) :
-  boolean_realize_formula v f.fst ([]) = boolean_realize_sentence S f :=
+  boolean_realize_formula v f.fst ([]) = ⟦f⟧[S] :=
 boolean_realize_bounded_formula_eq (λk hk, by exfalso; exact not_lt_zero k hk) f _
 
 lemma bstatisfied_in_eq_boolean_realize_sentence [HS : nonempty S] (f : sentence L) :
@@ -639,12 +639,12 @@ begin
 end
 
 def forced_in (x : β) (S : bStructure L β) (f : sentence L) : Prop :=
-x ≤ boolean_realize_sentence S f
+x ≤ ⟦f⟧[S]
 
 notation x ` ⊩[`:52 S `] `:0 f:52 := forced_in x S f
 
 def all_forced_in (x : β) (S : bStructure L β) (T : Theory L) : Prop :=
-x ≤ ⨅(f ∈ T), boolean_realize_sentence S f
+x ≤ ⨅(f ∈ T), ⟦f⟧[S]
 
 notation x ` ⊩[`:52 S `] `:0 T:52 := all_forced_in x S T
 
@@ -667,7 +667,7 @@ by {change _ ≤ _ ↔ _ ≤ _, simp}
 
 variable (β)
 def forced (T : Theory L) (f : sentence L) :=
-∀{{S : bStructure L β}}, nonempty S → (⨅(f ∈ T), boolean_realize_sentence S f) ⊩[S] f
+∀{{S : bStructure L β}}, nonempty S → (⨅(f ∈ T), ⟦f⟧[S]) ⊩[S] f
 variable {β}
 notation T ` ⊨[`:51 β`] `:0 f := fol.forced β T f -- input using \|= or \vDash, but not using \bModels
 
@@ -692,7 +692,7 @@ begin
 end
 
 @[simp]lemma inf_axioms_top_of_models {S : bStructure L β} {T : Theory L} (H : ⊤ ⊩[S] T) :
-  (⨅(f ∈ T), boolean_realize_sentence S f) = ⊤ :=
+  (⨅(f ∈ T), ⟦f⟧[S]) = ⊤ :=
 by {apply top_unique, from le_trans H (by refl)}
 
 lemma forced_absurd {S : bStructure L β} {T : Theory L} {f : sentence L} {Γ : β} (H₁ : Γ ⊩[S] f) (H₂ : Γ ⊩[S] ∼f) : Γ ⊩[S] bd_falsum :=
@@ -721,7 +721,7 @@ variable {β}
 -- @[simp] lemma false_of_bModel_absurd {T : Theory L} (M : bModel β T) {ψ : sentence L} (h : M ⊨ᵇ ψ) (h' : M ⊨ᵇ ∼ψ) : false :=
 -- by {unfold bModel_ssatisfied at *, simp[*,-h'] at h', exact h'}
 
-lemma boolean_soundness {T : Theory L} {A : sentence L} (H : T ⊢ A) : T ⊨[β] A :=
+theorem boolean_soundness {T : Theory L} {A : sentence L} (H : T ⊢ A) : T ⊨[β] A :=
 forced_of_bsatisfied $ boolean_formula_soundness H
 
 lemma unprovable_of_model_neg {T : Theory L} {f : sentence L} (S : bStructure L β) (H_model : ⊤ ⊩[S] T) [H_nonempty : nonempty S]
