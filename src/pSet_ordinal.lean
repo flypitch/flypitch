@@ -620,7 +620,7 @@ lemma eq_iff_mk_eq {η₁ η₂ : ordinal} : η₁ = η₂ ↔ equiv (ordinal.mk
 lemma mk_type_mk_eq (κ : cardinal) (H_inf : cardinal.omega ≤ κ) : #(ordinal.mk (ord κ)).type = κ :=
 begin
   cases (@exists_aleph κ).mp ‹_› with k H_k,
-  subst H_k, rw[ordinal.mk_limit_type (aleph_is_limit (k))], convert card_ord (aleph k),
+  subst H_k, rw[ordinal.mk_limit_type (ord_aleph_is_limit (k))], convert card_ord (aleph k),
   rw[<-(@card_type _ (aleph k).ord.out.r (aleph k).ord.out.wo)], simp
 end
 
@@ -635,7 +635,7 @@ mk_type_mk_eq _ (le_of_lt ‹_›)
 
 @[simp]lemma mk_type_mk_eq'''' {k} : #(ordinal.mk (aleph k).ord).type = (aleph k) :=
 begin
-  rw[ordinal.mk_limit_type (aleph_is_limit (k))], convert card_ord (aleph k),
+  rw[ordinal.mk_limit_type (ord_aleph_is_limit (k))], convert card_ord (aleph k),
   rw[<-(@card_type _ (aleph k).ord.out.r (aleph k).ord.out.wo)], simp
 end
 
