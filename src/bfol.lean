@@ -480,6 +480,12 @@ lemma boolean_realize_bounded_formula_eq' {L : Language} {S : bStructure L β} {
     boolean_realize_bounded_formula v₁ t xs = boolean_realize_formula (λ k, if h : k < n then v₁.nth k h else x) t.fst xs :=
 by { symmetry, apply boolean_realize_bounded_formula_eq, intros, rw [dif_pos] }
 
+lemma boolean_realize_bounded_term_eq' {L : Language} {S : bStructure L β} {n}
+  {v₁ : dvector S n} (x : S) {l} (t : bounded_preterm L n l)
+  (xs : dvector S l) :
+    boolean_realize_bounded_term v₁ t xs = boolean_realize_term (λ k, if h : k < n then v₁.nth k h else x) t.fst xs :=
+by { symmetry, apply boolean_realize_bounded_term_eq, intros, rw [dif_pos] }
+
 lemma boolean_realize_bounded_formula_congr {n l} (H_nonempty : nonempty S) (v₁ v₂ : dvector S n) (f : bounded_preformula L n l) (xs : dvector S l) : ((⨅(m : fin n), S.eq (v₁.nth m (m.is_lt)) (v₂.nth m m.is_lt)) ⊓ boolean_realize_bounded_formula v₁ f xs : β) ≤ (boolean_realize_bounded_formula v₂ f xs) :=
 begin
   tactic.unfreeze_local_instances, cases H_nonempty with x,
@@ -845,38 +851,52 @@ by { ext, simp[bd_and, bd_not] }
 --   boolean_realize_bounded_formula (v.concat $ boolean_realize_closed_term S t) f ([]) :=
 -- by { convert realize_subst_bf f t v ([]) ([]) _, rw [cast_append_nil], simp, }
 
+lemma boolean_realize_bounded_formula_insert_lift {L : Language} {S : bStructure L β}
+  {n l} (v : dvector S n) (x : S) (m : ℕ) (hm : m ≤ n)
+  (f : bounded_preformula L n l) (xs : dvector S l) :
+    boolean_realize_bounded_formula (v.insert x m) (f ↑' 1 # m) xs =
+    boolean_realize_bounded_formula v f xs :=
+begin
+  rw [boolean_realize_bounded_formula_eq' x, boolean_realize_bounded_formula_eq' x], simp,
+  convert boolean_realize_formula_subst_lift _ x _ _ _, ext k,
+  by_cases hk : k < n + 1,
+  { simp [hk],
+    apply decidable.lt_by_cases m k; intro hm'; simp [hm'],
+    { have hk2 : k - 1 < n, from (nat.sub_lt_right_iff_lt_add (nat.one_le_of_lt hm')).mpr hk,
+      simp [hk2] },
+    have hk2 : k < n, from lt_of_lt_of_le hm' hm,
+    simp [hk2, dvector.insert_nth_lt x v hk2 hk hm'] },
+  { have h2 : ¬k - 1 < n, from mt nat.lt_add_of_sub_lt_right hk,
+    have h3 : m < k, from lt_of_le_of_lt hm (lt_of_not_ge $ mt nat.lt_succ_of_le hk),
+    simp [hk, h2, h3] }
+end
 
+@[simp] lemma boolean_realize_formula_insert_lift2 {L : Language} {S : bStructure L β}
+  {n} (v : dvector S n) (x y z : S) (f : bounded_formula L (n+2)) :
+    boolean_realize_bounded_formula (x :: y :: z :: v) (f ↑' 1 # 2) ([]) =
+    boolean_realize_bounded_formula (x :: y :: v) f ([]) :=
+by { convert boolean_realize_bounded_formula_insert_lift _ z 2 (le_add_left (le_refl 2)) f ([]),
+     simp }
 
--- lemma boolean_realize_bounded_term_insert_lift {L : Language} {S : bStructure L β} :
---   ∀{n l} (v : dvector S n) (x : S) (m : ℕ)
---   (t : bounded_preterm L n l) (xs : dvector S l),
---     boolean_realize_bounded_term (v.insert x m) (t ↑' 1 # m) xs = boolean_realize_bounded_term v t xs
--- | _ _ v x m &k             xs := _
--- | _ _ v x m (bd_func f)    xs := _
--- | _ _ v x m (bd_app t₁ t₂) xs := _
-
--- lemma boolean_realize_bounded_formula_insert_lift {L : Language} {S : bStructure L β} : ∀{n l} (v : dvector S n) (x : S) (m : ℕ)
---   (f : bounded_preformula L n l) (xs : dvector S l),
---     boolean_realize_bounded_formula (v.insert x m) (f ↑' 1 # m) xs = boolean_realize_bounded_formula v f xs
--- | _ _ v x m bd_falsum    xs := by sorry
--- | _ _ v x m (t₁ ≃ t₂)    xs := by sorry -- simp [boolean_realize_term_subst_lift]
--- | _ _ v x m (bd_rel R)   xs := by sorry -- refl
--- | _ _ v x m (bd_apprel f t) xs :=
---   by sorry -- simp [boolean_realize_term_subst_lift]; rw boolean_realize_formula_subst_lift
--- | _ _ v x m (f₁ ⟹ f₂)   xs := by sorry -- dsimp; congr' 1; apply boolean_realize_formula_subst_lift
--- | _ _ v x m (∀' f)       xs :=
---   begin
---     sorry
---     -- apply congr_arg infi; ext x',
---     -- rw [boolean_realize_formula_congr' (subst_realize2_0 _ _ _ _),
---     --   boolean_realize_formula_subst_lift]
---   end
-
+lemma boolean_realize_subst_formula0 {L : Language} {n} (S : bStructure L β) [nonempty S]
+  (f : bounded_formula L (n+1)) (t : bounded_term L n) (v : dvector S n) :
+  boolean_realize_bounded_formula v (f[t/0]) ([]) =
+  boolean_realize_bounded_formula (boolean_realize_bounded_term v t ([])::v) f ([]) :=
+begin
+  have := _inst_2, cases this with y, rw [boolean_realize_bounded_formula_eq' y, boolean_realize_bounded_formula_eq' y, boolean_realize_bounded_term_eq' y], simp,
+  convert (boolean_realize_formula_subst0 _ _ _ _).symm, ext k,
+  simp [subst_realize, not_lt_zero],
+  by_cases hk : k < n + 1,
+  { cases k with k,
+    { simp },
+    { have h2k : k < n, from lt_of_succ_lt_succ hk,
+      simp [hk, h2k] }},
+  { have h2k : 0 < k, from lt_of_lt_of_le (zero_lt_succ n) (le_of_not_gt hk),
+    have h3k : ¬k - 1 < n, from mt nat.lt_add_of_sub_lt_right hk,
+    simp [hk, h2k, h3k] }
+end
 end fol
 
--- lemma boolean_realize_subst_formula0 (S : bStructure L β) (f : bounded_formula L 1) (t : closed_term L) :
---   S ⊨ᵇ f[t/0] = boolean_realize_bounded_formula ([boolean_realize_closed_term S t]) f ([]) :=
--- iff.trans (by rw [substmax_eq_subst0_formula]) (by apply boolean_realize_subst_formula S f t ([]))
 
 -- #exit
 -- lemma boolean_realize_subst_formula (S : bStructure L β) {n} (f : bounded_formula L (n+1))

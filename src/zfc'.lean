@@ -48,33 +48,6 @@ end ZFC'
 section ZFC'
 variables {β : Type 0} [nontrivial_complete_boolean_algebra β]
 
-lemma boolean_realize_bounded_formula_insert_lift {L : Language} {S : bStructure L β} [nonempty S]
-  {n l} (v : dvector S n) (x : S) (m : ℕ) (hm : m ≤ n)
-  (f : bounded_preformula L n l) (xs : dvector S l) :
-    boolean_realize_bounded_formula (v.insert x m) (f ↑' 1 # m) xs =
-    boolean_realize_bounded_formula v f xs :=
-begin
-  have := _inst_2, cases this with y, rw [boolean_realize_bounded_formula_eq' x, boolean_realize_bounded_formula_eq' x], simp,
-  convert boolean_realize_formula_subst_lift _ x _ _ _, ext k,
-  by_cases hk : k < n + 1,
-  { simp [hk],
-    apply decidable.lt_by_cases m k; intro hm'; simp [hm'],
-    { have hk2 : k - 1 < n, from (nat.sub_lt_right_iff_lt_add (nat.one_le_of_lt hm')).mpr hk,
-      simp [hk2] },
-    have hk2 : k < n, from lt_of_lt_of_le hm' hm,
-    simp [hk2, dvector.insert_nth_lt x v hk2 hk hm'] },
-  { have h2 : ¬k - 1 < n, from mt nat.lt_add_of_sub_lt_right hk,
-    have h3 : m < k, from lt_of_le_of_lt hm (lt_of_not_ge $ mt nat.lt_succ_of_le hk),
-    simp [hk, h2, h3] }
-end
-
-@[simp] lemma boolean_realize_formula_insert_lift2 {L : Language} {S : bStructure L β} [nonempty S]
-  {n} (v : dvector S n) (x y z : S) (f : bounded_formula L (n+2)) :
-    boolean_realize_bounded_formula (x :: y :: z :: v) (f ↑' 1 # 2) ([]) =
-    boolean_realize_bounded_formula (x :: y :: v) f ([]) :=
-by { convert boolean_realize_bounded_formula_insert_lift _ z 2 (le_add_left (le_refl 2)) f ([]),
-     simp }
-
 def bSet_model_fun_map : Π {n : ℕ}, L_ZFC'.functions n → dvector (bSet β) n → bSet β :=
 begin
   intros n S, induction S,
@@ -224,13 +197,18 @@ def axiom_of_extensionality : sentence L_ZFC' :=
 lemma bSet_models_extensionality : ⊤ ⊩[V β] axiom_of_extensionality :=
 by { simp [forced_in, axiom_of_extensionality], exact bSet_axiom_of_extensionality }
 
--- axiom schema of collection
--- For every formula ϕ(x,y,p) with (n+2) free variables (p is a vector of length n),
--- ∀ p ∀ u, (∀ x ∈ u, ∃ y, ϕ(x,y,p)) ⟹ (∃ v, ∀ z ∈ u, ∃ w ∈ v, ϕ(z,w,p))
-
+-- axiom schema of "strong" collection
+-- For every formula `ϕ(x,y,p)` with (at most) `n+2` free variables (`p` is a vector of length `n`),
+-- ∀ p ∀ A, (∀ x ∈ A, ∃ y, ϕ(x,y,p)) ⟹
+--  (∃ B, (∀ x ∈ A, ∃ y ∈ B, ϕ(x,y,p)) ∧ ∀ y ∈ B, ∃ x ∈ A, ϕ(x,y,p))
 def axiom_of_collection {n} (ϕ : bounded_formula L_ZFC' (n+2)) : sentence L_ZFC' :=
 bd_alls (n+1) $ (∀' (&'0 ∈' &'1 ⟹ ∃' (ϕ ↑' 1 # 2))) ⟹
-(∃' ∀'(&'0 ∈' &'2 ⟹ ∃' (&'0 ∈' &'2 ⊓ (ϕ ↑' 1 # 2 ↑' 1 # 2))))
+(∃' (∀'(&'0 ∈' &'2 ⟹ ∃' (&'0 ∈' &'2 ⊓ (ϕ ↑' 2 # 2))) ⊓
+     ∀'(&'0 ∈' &'1 ⟹ ∃' (&'0 ∈' &'3 ⊓' ((ϕ ↑' 3 # 2)[&'1/0] : _)))))
+
+lemma lift2_helper {L n l} (f : bounded_preformula L n l) {k} (m : ℕ) :
+  f ↑' (k+2) # m = ((f ↑' (k+1) # m) ↑' 1 # m : _) :=
+by { ext, simp only [lift_bounded_formula_fst], rw [lift_formula_at2_medium], refl, linarith }
 
 lemma B_ext_left_realize_bounded_formula {n : ℕ} (ϕ : bounded_formula L_ZFC' (n + 1)) (xs : dvector (V β) n) : ∀ (x y : V β), x =ᴮ y ⊓ (boolean_realize_bounded_formula (x::xs) ϕ dvector.nil) ≤ boolean_realize_bounded_formula (y::xs) ϕ dvector.nil :=
 begin
@@ -272,11 +250,12 @@ begin
     [ boolean_realize_bounded_formula_and,
       boolean_realize_bounded_term, imp_top_iff_le,
       boolean_realize_bounded_formula_ex, top_le_iff,
-      boolean_realize_bounded_formula, boolean_realize_formula_insert_lift2 ],
-  have := bSet_axiom_of_collection'
+      boolean_realize_bounded_formula, boolean_realize_formula_insert_lift2,
+      lift2_helper, boolean_realize_subst_formula0, fin_2 ],
+  have := bSet_axiom_of_collection
             (λ a b : V β, boolean_realize_bounded_formula (b :: a :: xs) ϕ ([])) _ _ u,
   simp only [lattice.top_le_iff, bSet.mem, lattice.imp_top_iff_le, lattice.le_infi_iff] at this,
-  exact this u,
+  exact this,
   { intros, apply B_ext_left_realize_bounded_formula },
   { intros, apply B_ext_right_realize_bounded_formula },
 end

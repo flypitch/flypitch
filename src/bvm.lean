@@ -1812,7 +1812,8 @@ end
 
 noncomputable def collect : bSet 𝔹 := ⟨u.type, collect.func ϕ h_congr_right h_congr_left u, u.bval⟩
 
-lemma collect_spec₁ {Γ : 𝔹} {z : bSet 𝔹} (H_AE : Γ ≤ ⨅ i : u.type, u.bval i ⟹ ⨆ w, ϕ (u.func i) w) : Γ ≤ ⨅ z, z ∈ᴮ u ⟹ ⨆ w, w ∈ᴮ collect ϕ h_congr_right h_congr_left u ⊓ ϕ z w :=
+lemma collect_spec₁ {Γ : 𝔹} (H_AE : Γ ≤ ⨅ i : u.type, u.bval i ⟹ ⨆ w, ϕ (u.func i) w) :
+  Γ ≤ ⨅ z, z ∈ᴮ u ⟹ ⨆ w, w ∈ᴮ collect ϕ h_congr_right h_congr_left u ⊓ ϕ z w :=
 begin
   bv_intro z, bv_imp_intro Hz_mem, rw mem_unfold at Hz_mem,
   bv_cases_at Hz_mem i Hi, bv_split, apply bv_use (collect.func ϕ ‹_› ‹_› u i),
@@ -1822,7 +1823,8 @@ begin
       exact collect.func_spec ϕ ‹_› ‹_› u Γ_2 ‹_› i ‹_› }
 end
 
-lemma collect_spec₂ {Γ : 𝔹} {z : bSet 𝔹} (H_AE : Γ ≤ ⨅ i : u.type, u.bval i ⟹ ⨆ w, ϕ (u.func i) w) : Γ ≤ ⨅ w, w ∈ᴮ collect ϕ h_congr_right h_congr_left u ⟹ ⨆ z, z ∈ᴮ u ⊓ ϕ z w :=
+lemma collect_spec₂ {Γ : 𝔹} (H_AE : Γ ≤ ⨅ i : u.type, u.bval i ⟹ ⨆ w, ϕ (u.func i) w) :
+  Γ ≤ ⨅ w, w ∈ᴮ collect ϕ h_congr_right h_congr_left u ⟹ ⨆ z, z ∈ᴮ u ⊓ ϕ z w :=
 begin -- TODO(jesse):  prove mem_collect_iff
   bv_intro w, bv_imp_intro Hw_mem, rw mem_unfold at Hw_mem, bv_cases_at Hw_mem i Hi,
   apply bv_use (u.func i), bv_split, apply bv_rw' Hi_right,
@@ -1833,60 +1835,27 @@ begin -- TODO(jesse):  prove mem_collect_iff
       { apply mem.mk'', from ‹_› },
       { exact collect.func_spec ϕ ‹_› ‹_› u Γ_2 ‹_› i ‹_› }}
 end
-
 end collect
 
-/-- The axiom of collection says that for every ϕ(x,y),
-    for every set u, ∀ x ∈ u, ∃ y ϕ (x,y) implies there exists a set v
-    which contains the image of u under ϕ. With the other axioms,
-    this should be equivalent to the usual axiom of replacement. -/
+-- /-- The (strong) axiom of collection says that for every ϕ(x,y),
+--     for every set u, ∀ x ∈ u, ∃ y ϕ (x,y) implies there exists a set v
+--     such that ∀ x ∈ u, ∃ y ∈ v, ϕ (x,y) and all elements of v are obtained
+--     from an element x in this way. With the other axioms,
+--     this is equivalent to the usual axiom of replacement. -/
 theorem bSet_axiom_of_collection (ϕ : bSet 𝔹 → bSet 𝔹 → 𝔹)
   (h_congr_right : ∀ x y z, x =ᴮ y ⊓ ϕ z x ≤ ϕ z y)
-  (h_congr_left : ∀ x y z, x =ᴮ y ⊓ ϕ x z ≤ ϕ y z) (u : bSet 𝔹) :
-  (⨅(i:u.type), (u.bval i ⟹ (⨆(y : bSet 𝔹), ϕ (u.func i) y))) ⟹
-  (⨆(v : bSet 𝔹), (⨅(i : u.type), u.bval i ⟹ (⨆(j:v.type), (v.bval j) ⊓ ϕ (u.func i) (v.func j)))) = ⊤ :=
-begin
-  simp only [bSet.bval, lattice.imp_top_iff_le, bSet.func, bSet.type],
-  rcases (classical.axiom_of_choice (AE_convert u.func u.bval ϕ (by { intros z x y, exact h_congr_right x y z }))) with ⟨wit, wit_property⟩, dsimp at wit wit_property,
-  fapply le_supr_of_le, exact ⟨u.type, wit, λ _, ⊤⟩,
-    {simp, intro i, apply le_trans (wit_property i),
-     apply imp_le_of_right_le, exact le_supr (λ x, ϕ (func u i) (wit x)) i}
-end
-
-/-- Same statement, global quantifiers -/
-theorem bSet_axiom_of_collection' (ϕ : bSet 𝔹 → bSet 𝔹 → 𝔹)
-  (h_congr_right : ∀ x y z, x =ᴮ y ⊓ ϕ z x ≤ ϕ z y)
-  (h_congr_left : ∀ x y z, x =ᴮ y ⊓ ϕ x z ≤ ϕ y z)
-  (u : bSet 𝔹) :
-  ⊤ ≤ ⨅u, (⨅x, x ∈ᴮ u ⟹ ⨆y, ϕ x y) ⟹ ⨆v, ⨅w, w ∈ᴮ u ⟹ ⨆w', w' ∈ᴮ v ⊓ ϕ w w' :=
+  (h_congr_left : ∀ x y z, x =ᴮ y ⊓ ϕ x z ≤ ϕ y z) :
+  ⊤ ≤ ⨅u, (⨅x, x ∈ᴮ u ⟹ ⨆y, ϕ x y) ⟹ ⨆v, (⨅w, w ∈ᴮ u ⟹ ⨆w', w' ∈ᴮ v ⊓ ϕ w w') ⊓
+    ⨅w', w' ∈ᴮ v ⟹ ⨆w, w ∈ᴮ u ⊓ ϕ w w' :=
 begin
   bv_intro u, bv_imp_intro,
-  have := bSet_axiom_of_collection ϕ ‹_› ‹_› u,
-  rw[eq_top_iff] at this, specialize_context_at this Γ,
-  replace this := this _,
-  bv_cases_at this v, apply bv_use v,
-  bv_intro w, bv_imp_intro, rename H_1 H_w,
-  rw[mem_unfold] at H_w, bv_cases_at H_w i,
-  bv_split, replace this_1 := this_1 i ‹_›,
-  bv_cases_at this_1 j, apply bv_use (func v j), bv_split,
-  apply le_inf, from mem.mk'' ‹_›, apply bv_rw' H_w_1_right,
-  unfold B_ext, intros x y, apply h_congr_left x y,
-  from ‹_›, bv_intro i, bv_imp_intro, rename H_1 H_i,
-  from H (u.func i) (mem.mk'' ‹_›)
+  refine le_supr_of_le (collect ϕ h_congr_right h_congr_left u) _,
+  have : Γ ≤ ⨅ (i : type u), bval u i ⟹ ⨆ (w : bSet 𝔹), ϕ (func u i) w,
+  { bv_intro i, bv_imp_intro, exact H (u.func i) (mem.mk'' ‹_›) },
+  apply le_inf,
+  { apply collect_spec₁, exact this },
+  { apply collect_spec₂, exact this }
 end
-
-theorem bSet_axiom_of_collection₂ (ϕ : bSet 𝔹 → bSet 𝔹 → 𝔹)
-  (h_congr_right : ∀ x y z, x =ᴮ y ⊓ ϕ z x ≤ ϕ z y)
-  (h_congr_left : ∀ x y z, x =ᴮ y ⊓ ϕ x z ≤ ϕ y z)
-  :
-  ⊤ ≤ ⨅u, (⨅x, x ∈ᴮ u ⟹ ⨆y, ϕ x y) ⟹ ⨆v, ⨅w, w ∈ᴮ u ⟹ ⨆w', w' ∈ᴮ v ⊓ ϕ w w' :=
-begin
-  bv_intro u, bv_imp_intro Hx,
-  apply bv_use (collect ϕ ‹_› ‹_› u),
-  bv_intro w, bv_imp_intro Hw_mem,
-  sorry
-end
-
 
 /-- The boolean-valued unionset operator -/
 def bv_union (u : bSet 𝔹) : bSet 𝔹 :=
