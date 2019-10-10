@@ -1795,6 +1795,47 @@ end
 
 end check_names
 
+section collect
+variables
+(ϕ : bSet 𝔹 → bSet 𝔹 → 𝔹) (h_congr_right : ∀ x y z, x =ᴮ y ⊓ ϕ z x ≤ ϕ z y) (h_congr_left : ∀ x y z, x =ᴮ y ⊓ ϕ x z ≤ ϕ y z) (u : bSet 𝔹)
+include ϕ h_congr_right h_congr_left u
+
+noncomputable def collect.func : u.type → bSet 𝔹 :=
+classical.some $ (classical.axiom_of_choice (AE_convert u.func u.bval ϕ (by { intros z x y, exact h_congr_right x y z })))
+
+lemma collect.func_spec (Γ : 𝔹) (H : Γ ≤ ⨅ (j : type u), bval u j ⟹ ⨆ (z : bSet 𝔹), ϕ (func u j) z) : Γ ≤ ⨅ x : u.type, bval u x ⟹ ϕ (func u x) (collect.func ϕ h_congr_right h_congr_left u x) :=
+begin
+  bv_intro i, bv_imp_intro Hi, let p := (collect.func._proof_1 ϕ h_congr_right u), have := classical.some_spec p,
+  specialize this i,
+  exact poset_yoneda_inv Γ_1 this ‹_› ‹_›
+end
+
+noncomputable def collect : bSet 𝔹 := ⟨u.type, collect.func ϕ h_congr_right h_congr_left u, u.bval⟩
+
+lemma collect_spec₁ {Γ : 𝔹} {z : bSet 𝔹} (H_AE : Γ ≤ ⨅ i : u.type, u.bval i ⟹ ⨆ w, ϕ (u.func i) w) : Γ ≤ ⨅ z, z ∈ᴮ u ⟹ ⨆ w, w ∈ᴮ collect ϕ h_congr_right h_congr_left u ⊓ ϕ z w :=
+begin
+  bv_intro z, bv_imp_intro Hz_mem, rw mem_unfold at Hz_mem,
+  bv_cases_at Hz_mem i Hi, bv_split, apply bv_use (collect.func ϕ ‹_› ‹_› u i),
+  refine le_inf _ _,
+    { unfold collect, rw mem_unfold, apply bv_use i, simp* },
+    { apply bv_rw' Hi_right, {intros x y, solve_by_elim},
+      exact collect.func_spec ϕ ‹_› ‹_› u Γ_2 ‹_› i ‹_› }
+end
+
+lemma collect_spec₂ {Γ : 𝔹} {z : bSet 𝔹} (H_AE : Γ ≤ ⨅ i : u.type, u.bval i ⟹ ⨆ w, ϕ (u.func i) w) : Γ ≤ ⨅ w, w ∈ᴮ collect ϕ h_congr_right h_congr_left u ⟹ ⨆ z, z ∈ᴮ u ⊓ ϕ z w :=
+begin -- TODO(jesse):  prove mem_collect_iff
+  bv_intro w, bv_imp_intro Hw_mem, rw mem_unfold at Hw_mem, bv_cases_at Hw_mem i Hi,
+  apply bv_use (u.func i), bv_split, apply bv_rw' Hi_right,
+    { refine B_ext_inf _ _,
+      { simp },
+      { intros x y, solve_by_elim }},
+    { refine le_inf _ _,
+      { apply mem.mk'', from ‹_› },
+      { exact collect.func_spec ϕ ‹_› ‹_› u Γ_2 ‹_› i ‹_› }}
+end
+
+end collect
+
 /-- The axiom of collection says that for every ϕ(x,y),
     for every set u, ∀ x ∈ u, ∃ y ϕ (x,y) implies there exists a set v
     which contains the image of u under ϕ. With the other axioms,
@@ -1833,6 +1874,19 @@ begin
   from ‹_›, bv_intro i, bv_imp_intro, rename H_1 H_i,
   from H (u.func i) (mem.mk'' ‹_›)
 end
+
+theorem bSet_axiom_of_collection₂ (ϕ : bSet 𝔹 → bSet 𝔹 → 𝔹)
+  (h_congr_right : ∀ x y z, x =ᴮ y ⊓ ϕ z x ≤ ϕ z y)
+  (h_congr_left : ∀ x y z, x =ᴮ y ⊓ ϕ x z ≤ ϕ y z)
+  :
+  ⊤ ≤ ⨅u, (⨅x, x ∈ᴮ u ⟹ ⨆y, ϕ x y) ⟹ ⨆v, ⨅w, w ∈ᴮ u ⟹ ⨆w', w' ∈ᴮ v ⊓ ϕ w w' :=
+begin
+  bv_intro u, bv_imp_intro Hx,
+  apply bv_use (collect ϕ ‹_› ‹_› u),
+  bv_intro w, bv_imp_intro Hw_mem,
+  sorry
+end
+
 
 /-- The boolean-valued unionset operator -/
 def bv_union (u : bSet 𝔹) : bSet 𝔹 :=
