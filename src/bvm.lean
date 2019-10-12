@@ -248,6 +248,8 @@ def bv_eq : ∀ (x y : bSet 𝔹), 𝔹
 
 infix ` =ᴮ `:79 := bv_eq
 
+-- note: for every Γ : 𝔹, λ x y, Γ ≤ x =ᴮ y is an equivalence relation
+
 def bv_eq' (Γ : 𝔹) : bSet 𝔹 → bSet 𝔹 → Prop := λ x y, Γ ≤ x=ᴮ y
 
 example : (@bv_eq 𝔹 _) (empty) (empty) = ⊤ :=
@@ -625,9 +627,23 @@ begin
   apply subst_congr_mem_right
 end
 
+-- use `apply bv_rw' (H : Γ ≤ x =ᴮ y)` for rewriting the `x` to `y` in the goal
+-- if Lean is able to infer the motive, this will generate a B_ext proof obligation which will usually be `by simp`
+lemma bv_rw'₀ {x y : bSet 𝔹} {Γ : 𝔹} (H : Γ ≤ x =ᴮ y) {ϕ : bSet 𝔹 → 𝔹} {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} {H_new : Γ ≤ ϕ y} : Γ ≤ ϕ x :=
+begin
+  have : Γ ≤ y =ᴮ x ⊓ ϕ y,
+    by {apply le_inf, rw[bv_eq_symm], from ‹_›, from ‹_›},
+  from (poset_yoneda_inv _ (h_congr _ _) this)
+end
+
 -- TODO(jesse) maybe replace this with typeclasses instead?
 @[reducible]def B_ext (ϕ : bSet 𝔹 → 𝔹) : Prop :=
   ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y
+
+-- use `apply bv_rw' (H : Γ ≤ x =ᴮ y)` for rewriting the `x` to `y` in the goal
+-- if Lean is able to infer the motive, this will generate a B_ext proof obligation which will usually be `by simp`
+lemma bv_rw' {x y : bSet 𝔹} {Γ : 𝔹} (H : Γ ≤ x =ᴮ y) {ϕ : bSet 𝔹 → 𝔹} {h_congr : B_ext ϕ} {H_new : Γ ≤ ϕ y} : Γ ≤ ϕ x :=
+by apply bv_rw'₀; from ‹_›
 
 @[simp]lemma B_ext_bv_eq_left {y : bSet 𝔹} : B_ext (λ x, x =ᴮ y) :=
 by {unfold B_ext, intros, rw[bv_eq_symm], apply bv_eq_trans}
@@ -658,24 +674,17 @@ end
 @[simp]lemma B_ext_inf {ϕ₁ ϕ₂ : bSet 𝔹 → 𝔹} (h₁ : B_ext ϕ₁) (h₂ : B_ext ϕ₂) :
   B_ext (λ x, ϕ₁ x ⊓ ϕ₂ x) :=
 begin
-  intros x y, dsimp, apply le_inf,
-  transitivity x =ᴮ y ⊓ ϕ₁ x,
-    by {apply inf_le_inf, refl, apply inf_le_left},
-    apply h₁,
-  transitivity x =ᴮ y ⊓ ϕ₂ x,
-    by {apply inf_le_inf, refl, apply inf_le_right},
-    apply h₂
+  intros x y, tidy_context, refine ⟨_,_⟩,
+    { apply bv_rw' (bv_symm a_left); from ‹_› },
+    { apply bv_rw' (bv_symm a_left); from ‹_› }
 end
 
 @[simp]lemma B_ext_imp {ϕ₁ ϕ₂ : bSet 𝔹 → 𝔹} {h₁ : B_ext ϕ₁} {h₂ : B_ext ϕ₂} :
   B_ext (λ x, ϕ₁ x ⟹ ϕ₂ x) :=
 begin
-  unfold B_ext, intros x y, rw[<-deduction],
-  ac_change x =ᴮ y ⊓  ϕ₁ y ⊓ (ϕ₁ x ⟹ ϕ₂ x) ≤ ϕ₂ y,
-  rw[deduction], rw[bv_eq_symm], apply le_trans', apply h₁, rw[<-deduction, inf_comm],
-  ac_change (ϕ₁ x ⟹ ϕ₂ x)  ⊓ ϕ₁ x ⊓ (y =ᴮ x ⊓ ϕ₁ y) ≤ ϕ₂ y, rw[deduction],
-  apply le_trans, apply bv_imp_elim, rw[<-deduction], rw[<-inf_assoc],
-  apply inf_le_left_of_le, rw[inf_comm, bv_eq_symm], apply h₂
+  intros x y, rw[<-deduction],
+  tidy_context, apply bv_rw' (bv_symm a_left_left), from ‹_›,
+  refine a_left_right _, apply bv_rw' a_left_left; from ‹_›
 end
 
 @[simp]lemma B_ext_const {b : 𝔹} : B_ext (λ x, b) :=
@@ -691,15 +700,6 @@ by {intros x y, dsimp, bv_intro i, apply bv_specialize_right i, apply h}
 by {intros x y, dsimp, apply bv_cases_right, intro i, apply bv_use i, apply h}
 
 example {y : bSet 𝔹} : B_ext (λ x : bSet 𝔹, x ∈ᴮ y ⊔ y ∈ᴮ x) := by change B_ext _; simp
-
--- use `apply bv_rw' (H : Γ ≤ x =ᴮ y)` for rewriting the `x` to `y` in the goal
--- if Lean is able to infer the motive, this will generate a B_ext proof obligation which will usually be `by simp`
-lemma bv_rw' {x y : bSet 𝔹} {Γ : 𝔹} (H : Γ ≤ x =ᴮ y) {ϕ : bSet 𝔹 → 𝔹} {h_congr : B_ext ϕ} {H_new : Γ ≤ ϕ y} : Γ ≤ ϕ x :=
-begin
-  have : Γ ≤ y =ᴮ x ⊓ ϕ y,
-    by {apply le_inf, rw[bv_eq_symm], from ‹_›, from ‹_›},
-  from (poset_yoneda_inv _ (h_congr _ _) this)
-end
 
 @[reducible]def B_congr (t : bSet 𝔹 → bSet 𝔹) : Prop := ∀ {x₁ x₂}, ∀ {Γ : 𝔹}, Γ ≤ x₁ =ᴮ x₂ → Γ ≤ t x₁ =ᴮ t x₂
 
@@ -1851,7 +1851,7 @@ begin
   bv_intro u, bv_imp_intro,
   refine le_supr_of_le (collect ϕ h_congr_right h_congr_left u) _,
   have : Γ ≤ ⨅ (i : type u), bval u i ⟹ ⨆ (w : bSet 𝔹), ϕ (func u i) w,
-  { bv_intro i, bv_imp_intro, exact H (u.func i) (mem.mk'' ‹_›) },
+  { bv_intro i, bv_imp_intro, exact H (func u i) (mem.mk'' ‹_›) },
   apply le_inf,
   { apply collect_spec₁, exact this },
   { apply collect_spec₂, exact this }
