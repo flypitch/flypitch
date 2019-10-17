@@ -175,17 +175,21 @@ by refl
 @[simp] lemma fin_2 {n : ℕ} : (2 : fin (n+3)).1 = 2 := by refl
 @[simp] lemma fin_3 {n : ℕ} : (3 : fin (n+4)).1 = 3 := by refl
 
+-- axiom of empty set
+-- ∀ x, x ∉ ∅
 def axiom_of_emptyset : sentence L_ZFC' := ∀' (∼(&0 ∈' ∅'))
 
 lemma bSet_models_emptyset : ⊤ ⊩[V β] axiom_of_emptyset :=
 by {change ⊤ ≤ _, simp[axiom_of_emptyset, -top_le_iff], intro x, from empty_spec}
 
-def axiom_of_pairing : sentence L_ZFC' :=
+-- axiom of ordered pairs
+-- ∀x y z w, (x, y) = (z, w) ↔ x = z ∧ y = w
+def axiom_of_ordered_pairs : sentence L_ZFC' :=
  ∀' ∀' ∀' ∀'(((pair' &'3 &'2 ≃ pair' &'1 &'0)) ⇔ (&'3 ≃ &'1 ⊓ &'2 ≃ &'0))
 
-lemma bSet_models_pairing : ⊤ ⊩[V β] axiom_of_pairing :=
+lemma bSet_models_ordered_pairs : ⊤ ⊩[V β] axiom_of_ordered_pairs :=
 begin
-  change ⊤ ≤ _, simp[axiom_of_pairing], intros a b x y, tidy,
+  change ⊤ ≤ _, simp[axiom_of_ordered_pairs], intros a b x y, tidy,
   from eq_of_eq_pair_left, from eq_of_eq_pair_right
 end
 
@@ -361,7 +365,7 @@ begin
 end
 
 def ZFC' : Theory L_ZFC' :=
-  {axiom_of_emptyset, axiom_of_pairing, axiom_of_extensionality, axiom_of_union,
+  {axiom_of_emptyset, axiom_of_ordered_pairs, axiom_of_extensionality, axiom_of_union,
    axiom_of_powerset, axiom_of_infinity, axiom_of_regularity, zorns_lemma} ∪
   set.Union (λ(n : ℕ), axiom_of_collection '' (set.univ : set $ bounded_formula L_ZFC' (n+2)))
 
@@ -375,7 +379,7 @@ begin
   from bSet_models_powerset _,
   from bSet_models_union _,
   from bSet_models_extensionality _,
-  from bSet_models_pairing _,
+  from bSet_models_ordered_pairs _,
   from bSet_models_emptyset _,
   from bSet_models_collection _ ‹_›
 end
