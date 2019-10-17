@@ -519,3 +519,19 @@ unprovable_of_model_neg (V 𝔹_collapse) (bSet_models_ZFC' _)
   (nontrivial.bot_lt_top) (by {rw forced_in_not, from V_𝔹_collapse_models_CH})
 
 end neg_CH_unprovable
+
+section
+-- a nicer formulation of CH using formulae
+
+@[simp] def Powerset_t : term L_ZFC' → term L_ZFC' := app (func ZFC'_func.P)
+@[simp] def omega_t : term L_ZFC' := func ZFC'_func.ω
+@[simp] def leq_f : formula L_ZFC' := at_most_f.fst
+@[simp] def is_ordinal : formula L_ZFC' := Ord_f.fst
+
+def CH_formula : formula L_ZFC' :=
+∀' (is_ordinal ⟹ leq_f[omega_t//1] ⊔ leq_f[Powerset_t omega_t//0])
+
+lemma CH_f_fst : CH_f.fst = CH_formula :=
+by { simp [CH_f, CH_formula, -substmax_bounded_formula], refl }
+
+end

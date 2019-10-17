@@ -1716,8 +1716,16 @@ namespace bounded_preformula
 | _ _ (f₁ ⟹ f₂)      := f₁.fst ⟹ f₂.fst
 | _ _ (∀' f)          := ∀' f.fst
 
-@[simp] lemma fst_not : ∀{n} {f : bounded_formula L n},
-  ∼(bounded_preformula.fst f) = bounded_preformula.fst (∼f) := by {intros, refl}
+@[simp] lemma fst_not {n} {f : bounded_formula L n} :∼(f.fst) = (∼f).fst :=
+by refl
+@[simp] lemma fst_or {n} {f₁ f₂ : bounded_formula L n} : (f₁ ⊔ f₂).fst = f₁.fst ⊔ f₂.fst :=
+by refl
+lemma fst_imp {n} {f₁ f₂ : bounded_formula L n} : (f₁ ⟹ f₂).fst = f₁.fst ⟹ f₂.fst :=
+by refl
+@[simp] lemma fst_and {n} {f₁ f₂ : bounded_formula L n} : (f₁ ⊓ f₂).fst = f₁.fst ⊓ f₂.fst :=
+by refl
+@[simp] lemma fst_ex {n} {f : bounded_formula L (n+1)} : (∃' f).fst = ∃' f.fst :=
+by refl
 
 local attribute [extensionality] fin.eq_of_veq
 @[extensionality] protected def eq {n l} {f₁ f₂ : bounded_preformula L n l} (h : f₁.fst = f₂.fst) :
@@ -2033,6 +2041,9 @@ end,
   bounded_preformula L n l :=
 by apply subst_bounded_formula f s rfl
 
+@[simp] lemma substmax_bounded_formula_fst {n l} (f : bounded_preformula L (n+1) l) (s : closed_term L) : (substmax_bounded_formula f s).fst = f.fst[s.fst//n] :=
+by simp [substmax_bounded_formula]
+
 -- @[simp] lemma substmax_bounded_formula_bd_falsum {n} (s : closed_term L) :
 --   substmax_bounded_formula (⊥ : bounded_formula L (n+1)) s = ⊥ := by refl
 -- @[simp] lemma substmax_bounded_formula_bd_rel {n l} (R : L.relations l) (s : closed_term L) :
@@ -2254,9 +2265,6 @@ lemma simpI' {T : Theory L} {A B : sentence L} (H : insert A T ⊢' B) : T ⊢' 
 def simpE {T : Theory L} (A : sentence L) {B : sentence L} (H₁ : T ⊢ A ⟹ B) (H₂ : T ⊢ A) :
   T ⊢ B :=
 by apply impE A.fst H₁ H₂
-
-lemma fst_commutes_with_imp {T : Theory L} (A B : sentence L) : (A ⟹ B).fst = A.fst ⟹ B.fst :=
-by refl
 
 def sfalsumE {T : Theory L} {A : sentence L} (H : insert ∼A T ⊢ bd_falsum) : T ⊢ A :=
 by { apply falsumE, simp[sprf, Theory.fst, image_insert_eq] at H, assumption }
