@@ -33,13 +33,10 @@ variables {𝔹 : Type u} [I : nontrivial_complete_boolean_algebra 𝔹]
 
 include I
 
-lemma AE_of_check_larger_than_check {x y : pSet.{u}} {Γ : 𝔹} (H_nonzero : ⊥ < Γ)
-  (H : Γ ≤ larger_than x̌ y̌) (H_mem : ∃ z, z ∈ y) : ∃ f : bSet 𝔹, ∀ i : y.type, ∃ j : x.type, ⊥ < (is_func f) ⊓ (pair (x.func j)̌  (y.func i)̌  ∈ᴮ f) :=
+lemma AE_of_check_larger_than_check'' {x y : pSet.{u}} (f : bSet 𝔹) {Γ : 𝔹} (H_nonzero : ⊥ < Γ)
+  (H : Γ ≤ is_surj_onto x̌ y̌ f) (H_nonempty : ∃ z, z ∈ y) : ∀ i : y.type, ∃ j : x.type, ⊥ < (is_func f) ⊓ (pair (x.func j)̌  (y.func i)̌  ∈ᴮ f) :=
 begin
-  replace H := surjects_onto_of_larger_than_and_exists_mem H (check_exists_mem ‹_›),
-  unfold surjects_onto at H, have := maximum_principle (λ w, is_func' x̌ y̌ w ⊓ is_surj x̌ (y̌ : bSet 𝔹) w) _,
-  cases this with f Hf, rw Hf at H, swap, {simp},
-  use f, intro i_v, bv_split_at H,
+  intro i_v, bv_split_at H,
   replace H_right := H_right (y.func i_v)̌ , simp [check_mem'] at H_right,
   replace H_right := exists_convert H_right _, cases H_right with w Hw, bv_split_at Hw,
   rcases eq_check_of_mem_check ‹_› Hw_left with ⟨j,Γ',HΓ'₁,HΓ'₂,H_eq⟩,
@@ -49,6 +46,19 @@ begin
       from le_trans ‹_› ‹_› },
   exact B_ext_inf (by simp) B_ext_pair_mem_left
 end
+
+lemma AE_of_check_larger_than_check' {x y : pSet.{u}} {Γ : 𝔹} (H_nonzero : ⊥ < Γ)
+  (H : Γ ≤ surjects_onto x̌ y̌) (H_mem : ∃ z, z ∈ y) : ∃ f : bSet 𝔹, ∀ i : y.type, ∃ j : x.type, ⊥ < (is_func f) ⊓ (pair (x.func j)̌  (y.func i)̌  ∈ᴮ f) :=
+begin
+  unfold surjects_onto at H, have := maximum_principle (λ w, is_func' x̌ y̌ w ⊓ is_surj x̌ (y̌ : bSet 𝔹) w) _,
+  cases this with f Hf, rw Hf at H, swap, {simp},
+  exact ⟨f, AE_of_check_larger_than_check'' ‹_› ‹_› ‹_› ‹_›⟩
+end
+
+lemma AE_of_check_larger_than_check {x y : pSet.{u}} {Γ : 𝔹} (H_nonzero : ⊥ < Γ)
+  (H : Γ ≤ larger_than x̌ y̌) (H_mem : ∃ z, z ∈ y) : ∃ f : bSet 𝔹, ∀ i : y.type, ∃ j : x.type, ⊥ < (is_func f) ⊓ (pair (x.func j)̌  (y.func i)̌  ∈ᴮ f) :=
+AE_of_check_larger_than_check'
+  ‹_› (surjects_onto_of_larger_than_and_exists_mem ‹_› $ by simp*) ‹_›
 
 variables
   (η₁ η₂ : pSet.{u}) (H_infinite : ω ≤ #(η₁.type))

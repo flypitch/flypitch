@@ -1681,13 +1681,13 @@ local infix ` ⟹ `:75 := lattice.imp
 
 example {𝔹} [complete_boolean_algebra 𝔹] {a b c : 𝔹} :
  ( a ⟹ b ) ⊓ ( b ⟹ c ) ≤ a ⟹ c :=
-by {tidy_context, bv_imp_intro, from a_1_right (a_1_left H)}
+by {tidy_context, bv_imp_intro Ha, exact a_1_right (a_1_left Ha)}
 -- tactic state before final step:
 -- a b c Γ : β,
 -- Γ_1 : β := a ⊓ Γ,
 -- a_1_left : Γ_1 ≤ a ⟹ b,
 -- a_1_right : Γ_1 ≤ b ⟹ c,
--- H : Γ_1 ≤ a
+-- Ha : Γ_1 ≤ a
 -- ⊢ Γ_1 ≤ c
 
 

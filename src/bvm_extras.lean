@@ -981,7 +981,9 @@ begin
   from is_func'_of_is_function (bv_and.left ‹_›)
 end
 
-def surjects_onto (x y : bSet 𝔹) : 𝔹 := ⨆f, (is_func' x y f) ⊓ (is_surj x y f)
+@[reducible]def is_surj_onto (x y f : bSet 𝔹) : 𝔹 := (is_func' x y f) ⊓ (is_surj x y f)
+
+def surjects_onto (x y : bSet 𝔹) : 𝔹 := ⨆f, is_surj_onto x y f
 
 @[simp]lemma B_ext_larger_than_right {y : bSet 𝔹} : B_ext (λ z, larger_than y z) :=
 by simp[larger_than]

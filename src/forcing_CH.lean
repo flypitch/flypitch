@@ -429,7 +429,7 @@ begin
     rw [bot_lt_iff_not_le_bot, le_bot_iff], rwa subtype.ext,
     have := function_reflect_of_omega_closed principal_opens_dense_omega_closed bot_lt_Γ
       (by {dsimp[B], refine inf_le_right_of_le (is_func'_of_is_function
-            (by { refine poset_yoneda _, tactic.rotate 2, intros Γ HΓ, rw[bSet.mem_functions_iff] at HΓ, convert HΓ }))}) _ (by {dsimp [B],
+            (by { refine poset_yoneda _, rotate 2, intros Γ HΓ, rw[bSet.mem_functions_iff] at HΓ, convert HΓ }))}) _ (by {dsimp [B],
               refine poset_yoneda _, intros Γ HΓ, exact bSet.mem_functions_iff.mp (bv_and.right HΓ) }),
     rcases this with ⟨f, Γ', H_nonzero', H_lt', H_pr', H_func'⟩, apply set.inter_sUnion_ne_empty_of_exists_mem,
     let C := g ∈ᴮ (functions omega y)̌  ⊓ g =ᴮ g,

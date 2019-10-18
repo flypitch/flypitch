@@ -2303,6 +2303,9 @@ begin
   { change B_ext _, simp }
 end
 
+example {w : bSet 𝔹} : let ϕ := λ x, ⨅ z, z ∈ᴮ w ⊓ z ⊆ᴮ x ⊓ x ⊆ᴮ z in B_ext ϕ :=
+by simp
+
 end infinity
 
 theorem bSet_epsilon_induction (ϕ : bSet 𝔹 → 𝔹) (h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y) :
