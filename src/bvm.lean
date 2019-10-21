@@ -149,7 +149,7 @@ lemma bv_use {ι} (i : ι) {s : ι → 𝔹} {b : 𝔹}  {h : b ≤ s i} : b ≤
 lemma bv_context_apply {β : Type*} [complete_boolean_algebra β] {Γ a₁ a₂ : β}
   (h₁ : Γ ≤ a₁ ⟹ a₂) (h₂ : Γ ≤ a₁) : Γ ≤ a₂ := h₁ ‹_›
 
-lemma bv_by_contra {Γ b : 𝔹} {H : Γ ≤ (-b) ⟹ ⊥} : Γ ≤ b := by simpa using H
+lemma bv_by_contra {Γ b : 𝔹} (H : Γ ≤ -b ⟹ ⊥) : Γ ≤ b := by simpa using H
 
 lemma bv_Or_imp {Γ : 𝔹} {ι} {ϕ₁ ϕ₂ : ι → 𝔹} (H_sub : Γ ≤ ⨅ x, ϕ₁ x ⟹ ϕ₂ x) (H : Γ ≤ ⨆x, ϕ₁ x)  : Γ ≤ ⨆x, ϕ₂ x :=
 by {bv_cases_at H x, apply bv_use x, from H_sub x ‹_›}
@@ -791,6 +791,23 @@ meta def bv_cc : tactic unit := do
    cc
 
 end bv_cc
+end interactive
+end tactic
+
+namespace tactic
+namespace interactive
+section bv_tauto
+open lean.parser lean interactive.types interactive
+local postfix `?`:9001 := optional
+
+meta def bv_tauto : tactic unit :=
+do `[refine lattice.bv_by_contra _],
+   bv_imp_intro none,
+   `[simp only [lattice.imp] at *],
+   `[simp only with bv_push_neg at *],
+   try bv_contradiction
+
+end bv_tauto
 end interactive
 end tactic
 

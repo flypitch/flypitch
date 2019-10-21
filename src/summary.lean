@@ -42,9 +42,9 @@ This file summarizes:
 
 #print bSet
 
-#print L_ZFC'
+#print L_ZFC
 
-#print ZFC'
+#print ZFC
 
 #eval print_formula_list ([axiom_of_emptyset, axiom_of_pairing, axiom_of_extensionality, axiom_of_union, axiom_of_powerset, axiom_of_infinity, axiom_of_regularity, zorns_lemma])
 
@@ -64,24 +64,24 @@ theorem boolean_valued_soundness_theorem {L} {β} [complete_boolean_algebra β] 
 forced_of_bsatisfied $ boolean_formula_soundness H
 
 theorem fundamental_theorem_of_forcing {β} [nontrivial_complete_boolean_algebra β] :
-  ⊤ ⊩[V β] ZFC' :=
-bSet_models_ZFC' β
+  ⊤ ⊩[V β] ZFC :=
+bSet_models_ZFC β
 
-theorem ZFC'_is_consistent {β : Type} [nontrivial_complete_boolean_algebra β] :
-  is_consistent ZFC' :=
-consis_of_exists_bmodel (bSet_models_ZFC' β)
+theorem ZFC_is_consistent {β : Type} [nontrivial_complete_boolean_algebra β] :
+  is_consistent ZFC :=
+consis_of_exists_bmodel (bSet_models_ZFC β)
 
-theorem CH_unprovable_from_ZFC : ¬ (ZFC' ⊢' CH_f) :=
+theorem CH_unprovable : ¬ (ZFC ⊢' CH_f) :=
 CH_f_unprovable
 
-theorem neg_CH_unprovable_from_ZFC : ¬ (ZFC' ⊢' ∼CH_f) :=
+theorem neg_CH_unprovable : ¬ (ZFC ⊢' ∼CH_f) :=
 neg_CH_f_unprovable
 
 def independent {L : Language} (T : Theory L) (f : sentence L) : Prop :=
 ¬ T ⊢' f ∧ ¬ T ⊢' ∼f
 
-theorem independence_of_CH : independent ZFC' CH_f :=
-by finish[independent, CH_unprovable_from_ZFC, neg_CH_unprovable_from_ZFC]
+theorem independence_of_CH : independent ZFC CH_f :=
+by finish [independent, CH_unprovable, neg_CH_unprovable]
 
 #print axioms independence_of_CH
 /- `propext` (propositional extensionality),
