@@ -65,34 +65,6 @@ A summary of the main results can be found in [[src/summary.lean]], containing ~
 
 We also have a formula pretty-printer which prints de Bruijn indexed-formulas as their named representations. Code and examples for the pretty-printer can be found in [[src/print_formula.lean]].
 
-*** Papers
-Our paper /A formalization of forcing and the unprovability of the continuum hypothesis/, describing [[https://github.com/flypitch/flypitch/releases/tag/1.2][this release]], was accepted to [[https://itp19.cecs.pdx.edu/][ITP 2019]]. It is available [[https://github.com/flypitch/flypitch-itp-2019/releases/tag/1.1][here]].
-
-**** Citation information:
-
-#+begin_src latex
-@inproceedings{DBLP:conf/itp/HanD19,
-  author    = {Jesse Michael Han and
-               Floris van Doorn},
-  title     = {A Formalization of Forcing and the Unprovability of the Continuum
-               Hypothesis},
-  booktitle = {10th International Conference on Interactive Theorem Proving, {ITP}
-               2019, September 9-12, 2019, Portland, OR, {USA.}},
-  pages     = {19:1--19:19},
-  year      = {2019},
-  crossref  = {DBLP:conf/itp/2019},
-  url       = {https://doi.org/10.4230/LIPIcs.ITP.2019.19},
-  doi       = {10.4230/LIPIcs.ITP.2019.19},
-  timestamp = {Sat, 07 Sep 2019 02:31:13 +0200},
-  biburl    = {https://dblp.org/rec/bib/conf/itp/HanD19},
-  bibsource = {dblp computer science bibliography, https://dblp.org}
-}
-#+end_src
-
-*** Contributors
- - [[https://www.pitt.edu/~jmh288][Jesse Han]]
- - [[http://florisvandoorn.com/][Floris van Doorn]]
- - [[https://github.com/AlmostNever][Andrew Tindall]]
 
 # ** Manual dependency graph
 # Files only depend on files on lines above it
