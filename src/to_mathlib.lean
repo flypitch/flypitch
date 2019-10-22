@@ -1284,6 +1284,10 @@ lhs_rhs_of_le e >>= λ x, return x.2
 --    unify e e',
 --    return v_a
 
+meta def goal_is_bot : tactic bool :=
+do b <- get_goal >>= rhs_of_le,
+   succeeds $ to_expr ``(by refl : %%b = ⊥)
+
 meta def hyp_is_ineq (e : expr) : tactic bool :=
   (do `(%%x ≤ %%y) <- infer_type e,
      return tt)<|> return ff
@@ -1298,6 +1302,8 @@ meta def trace_inequalities : tactic unit :=
 meta def hyp_is_ineq_sup (e : expr) : tactic bool :=
   (do `(%%x ≤ %%y ⊔ %%z) <- infer_type e,
      return tt)<|> return ff
+
+meta def get_current_context : tactic expr := target >>= lhs_of_le
 
 meta def trace_sup_inequalities : tactic unit :=
   (local_context >>= λ l, l.mfilter (hyp_is_ineq_sup)) >>= trace
@@ -1443,6 +1449,14 @@ do
    n <- get_unused_name (n_H ++ "left"),
    n' <- get_unused_name (n_H ++ "right"),
    `[apply lattice.context_or_elim %%e],
+   (tactic.intro n) >> specialize_context_core' Γ_old, swap,
+   (tactic.intro n') >> specialize_context_core' Γ_old, swap
+
+meta def bv_or_elim_at_core'' (e : expr) (Γ_old : expr) (n_H : name) : tactic unit :=
+do
+   n <- get_unused_name (n_H ++ "left"),
+   n' <- get_unused_name (n_H ++ "right"),
+   `[apply lattice.context_or_elim %%e]; tactic.clear e,
    (tactic.intro n) >> specialize_context_core' Γ_old, swap,
    (tactic.intro n') >> specialize_context_core' Γ_old, swap
 

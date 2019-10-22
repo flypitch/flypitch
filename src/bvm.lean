@@ -800,16 +800,46 @@ section bv_tauto
 open lean.parser lean interactive.types interactive
 local postfix `?`:9001 := optional
 
-meta def bv_tauto : tactic unit :=
-do `[refine lattice.bv_by_contra _],
-   bv_imp_intro none,
-   `[simp only [lattice.imp] at *],
-   `[simp only with bv_push_neg at *],
+meta def auto_or_elim_aux : list expr → tactic unit
+| [] := tactic.fail "auto_or_elim failed"
+| (e::es) := (do `(%%Γ ≤ %%x ⊔ %%y) <- infer_type e,
+                let n := get_name e,
+                Γ₁ <- get_current_context >>= whnf,
+                Γ₂ <- whnf Γ,
+                guard (Γ₁ =ₐ Γ₂),
+                n' <- get_unused_name n,
+                bv_or_elim_at_core'' e Γ n',
+                try assumption)
+                <|> auto_or_elim_aux es
+
+meta def auto_or_elim_step : tactic unit := local_context >>= auto_or_elim_aux
+
+meta def goal_is_bv_false : tactic unit :=
+do (g::gs) <- get_goals,
+   `(%%Γ ≤ ⊥) <- pure g,
+   skip
+
+meta def bv_tauto_step : tactic unit :=
+do (goal_is_bv_false >> skip) <|> `[refine lattice.bv_by_contra _] >> bv_imp_intro none,
+   `[try {unfold lattice.imp at *}],
+   `[try {simp only with bv_push_neg at *}],
+   try bv_split,
    try bv_contradiction
+
+meta def bv_tauto (n : option ℕ := none) : tactic unit :=
+match n with
+| none := bv_tauto_step *> (done <|> (auto_or_elim_step; bv_tauto))
+| (some k) := iterate_at_most k bv_tauto_step
+end
 
 end bv_tauto
 end interactive
 end tactic
+
+example {𝔹} [nontrivial_complete_boolean_algebra 𝔹] {a b c : 𝔹} : ( a ⟹ b ) ⊓ ( b ⟹ c ) ≤ a ⟹ c :=
+begin
+  tidy_context, bv_tauto
+end
 
 example {α β : Type} (f : α → β) (P : α → Prop) (Q : β → Prop) {a : α} (H : P a) (H' : P a) (C : ∀ {a}, P a → Q (f a)) : true :=
 begin
