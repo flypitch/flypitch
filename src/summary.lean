@@ -46,7 +46,7 @@ This file summarizes:
 
 #print ZFC
 
-#eval print_formula_list ([axiom_of_emptyset, axiom_of_pairing, axiom_of_extensionality, axiom_of_union, axiom_of_powerset, axiom_of_infinity, axiom_of_regularity, zorns_lemma])
+#eval print_formula_list ([axiom_of_emptyset, axiom_of_ordered_pairs, axiom_of_extensionality, axiom_of_union, axiom_of_powerset, axiom_of_infinity, axiom_of_regularity, zorns_lemma])
 
 #print CH
 

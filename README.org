@@ -66,6 +66,8 @@ A summary of the main results can be found in [[src/summary.lean]], containing ~
 We also have a formula pretty-printer which prints de Bruijn indexed-formulas as their named representations. Code and examples for the pretty-printer can be found in [[src/print_formula.lean]].
 
 *** Papers
+Our paper /A formal proof of the independence of the continuum hypothesis/, describing [[https://github.com/flypitch/flypitch/releases/tag/2.1][this release]], has been submitted to [[https://popl20.sigplan.org/home/CPP-2020][CPP 2020]]. It is available [[https://github.com/flypitch/flypitch-cpp-2020/releases/tag/1.0][here]].
+
 Our paper /A formalization of forcing and the unprovability of the continuum hypothesis/, describing [[https://github.com/flypitch/flypitch/releases/tag/1.2][this release]], was accepted to [[https://itp19.cecs.pdx.edu/][ITP 2019]]. It is available [[https://github.com/flypitch/flypitch-itp-2019/releases/tag/1.1][here]].
 
 **** Citation information:
