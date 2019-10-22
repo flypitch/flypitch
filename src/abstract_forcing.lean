@@ -57,7 +57,7 @@ instance : forcing_notion punit := order_top.mk (by finish)
 
 instance forcing_notion_complete_boolean_algebra {α : Type u} [complete_boolean_algebra α] : forcing_notion α := order_top.mk (by finish)
 
---TODO(jesse) rewrite in terms of pSet.rec and Name.rec
+--TODO() rewrite in terms of pSet.rec and Name.rec
 def pSet_equiv_trivial_name : pSet.{u} ≃ (punit-name : Type (u+1)) :=
 { to_fun := λ u,
   begin

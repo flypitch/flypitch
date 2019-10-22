@@ -1049,7 +1049,7 @@ lemma powerset_sound {x : pSet.{u}} : ⟦pSet.powerset x⟧ = Set.powerset ⟦x�
 def set_of_indicator {x : pSet.{u}} (χ : x.type → Prop) : pSet.{u} :=
 ⟨{i // χ i}, λ p, x.func (p.1)⟩
 
-def functions (x y : pSet.{u}) : pSet.{u} := -- TODO(jesse): show this satisfies specification
+def functions (x y : pSet.{u}) : pSet.{u} := -- TODO(): show this satisfies specification
 @set_of_indicator (powerset $ prod x y)
   (λ i_S, is_func x y ((powerset $ prod x y).func i_S))
 

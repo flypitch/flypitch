@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2019 The Flypitch Project. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Author(s): Jesse Michael Han, Floris van Doorn
+Author(s):
 
 Parsing formulas from Lean expressions.
 -/
@@ -71,7 +71,7 @@ meta def to_term_empty : Π {n : ℕ}, expr → option (preterm L_empty n)
 | 0     (expr.var k)    := some (var k)
 | _     _               := none
 
--- TODO(jesse) insert a case analysis on whether e' : Prop to determine whether or not to use imp
+-- TODO() insert a case analysis on whether e' : Prop to determine whether or not to use imp
 meta def to_formula_empty : Π {n : ℕ}, expr → option (preformula L_empty n)
 | 0 (expr.pi _ _ e' e)     := ((to_formula_empty e) >>= (λ f, return (all f)))
 | 0 `(%%a = %%b)          := do e₁ <- to_term_empty a, e₂ <- to_term_empty b,

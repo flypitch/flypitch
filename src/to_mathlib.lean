@@ -1313,7 +1313,7 @@ do  v_a <- target >>= lhs_of_le,
     Γ_name <- get_unused_name "Γ",
     v <- mk_mvar, v' <- mk_mvar,
     Γ_new <- pose Γ_name none v,
-    -- TODO(jesse) try replacing to_expr with an expression via mk_app instead
+    -- TODO() try replacing to_expr with an expression via mk_app instead
     new_goal <- to_expr ``((%%Γ_new : %%tp) ≤ %%v'),
     tactic.change new_goal,
     ctx <- local_context,
@@ -1334,7 +1334,7 @@ do  v_a <- target >>= lhs_of_le,
     Γ_name <- get_unused_name "Γ",
     v <- mk_mvar, v' <- mk_mvar,
     Γ_new <- pose Γ_name none v,
-    -- TODO(jesse) try replacing to_expr with an expression via mk_app instead
+    -- TODO() try replacing to_expr with an expression via mk_app instead
     new_goal <- to_expr ``((%%Γ_new : %%tp) ≤ %%v'),
     tactic.change new_goal,
     ctx <- local_context,
@@ -1355,7 +1355,7 @@ do  v_a <- target >>= lhs_of_le,
     Γ_name <- get_unused_name "Γ",
     v <- mk_mvar, v' <- mk_mvar,
     Γ_new <- pose Γ_name none v,
-    -- TODO(jesse) try replacing to_expr with an expression via mk_app instead
+    -- TODO() try replacing to_expr with an expression via mk_app instead
     new_goal <- to_expr ``((%%Γ_new : %%tp) ≤ %%v'),
     tactic.change new_goal,
     ctx <- local_context,
@@ -1477,7 +1477,7 @@ begin
     { by simp* }
 end
 
--- TODO(jesse) debug these
+-- TODO() debug these
 -- meta def auto_or_elim_step : tactic unit :=
 -- do  ctx <- local_context >>= (λ l, l.mfilter hyp_is_ineq_sup),
 --     if ctx.length > 0 then

@@ -57,7 +57,7 @@ by {rw[inf_comm], apply bv_cases_left, simpa only [inf_comm]}
 lemma bv_specialize {ι : Type*} {s : ι → 𝔹} (i : ι) {b : 𝔹} {h : s i ≤ b} :
 (⨅(i:ι), s i) ≤ b := infi_le_of_le i h
 
---TODO(jesse) write the version of this for an arbitrary list of instantiations
+--TODO() write the version of this for an arbitrary list of instantiations
 lemma bv_specialize_twice {ι : Type*} {s : ι → 𝔹} (i j : ι) {b : 𝔹} {h : s i ⊓ s j ≤ b} :
 (⨅(i:ι), s i) ≤ b :=
 begin
@@ -589,7 +589,7 @@ poset_yoneda_inv Γ subset_trans $ le_inf ‹_› ‹_›
 --   apply subset_trans
 -- end
 
--- TODO(jesse): mark this as simp
+-- TODO(): mark this as simp
 lemma mem_of_mem_subset {x y z : bSet 𝔹} {Γ} (H₂ : Γ ≤ y ⊆ᴮ z) (H₁ : Γ ≤ x ∈ᴮ y) : Γ ≤ x ∈ᴮ z :=
 by {rw[subset_unfold'] at H₂, from H₂ x ‹_›}
 
@@ -636,7 +636,7 @@ begin
   from (poset_yoneda_inv _ (h_congr _ _) this)
 end
 
--- TODO(jesse) maybe replace this with typeclasses instead?
+-- TODO() maybe replace this with typeclasses instead?
 @[reducible]def B_ext (ϕ : bSet 𝔹 → 𝔹) : Prop :=
   ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y
 
@@ -734,7 +734,7 @@ lemma bv_cc.mk_iff {Γ} {x y : bSet 𝔹} : Γ ≤ x =ᴮ y ↔ (@quotient.mk _ 
 
 lemma bv_cc.mk {Γ} {x y : bSet 𝔹} (H : Γ ≤ x =ᴮ y) : (@quotient.mk _ (b_setoid Γ) x) = (@quotient.mk _ (b_setoid Γ) y) := bv_cc.mk_iff.mp ‹_›
 
--- TODO(jesse): automate the generation of these lemmas with typeclasses
+-- TODO(): automate the generation of these lemmas with typeclasses
 def b_setoid_mem (Γ : 𝔹) : quotient (b_setoid Γ) → quotient (b_setoid Γ) → Prop :=
 @quotient.lift₂ (bSet 𝔹) (bSet 𝔹) Prop (b_setoid Γ) (b_setoid Γ) (λ x y, Γ ≤ x ∈ᴮ y)
   begin
@@ -948,7 +948,7 @@ begin
   apply bv_or_elim; [apply bv_use (ulift.up ff), apply bv_use (ulift.up tt)]; refl
 end
 
-def floris_mixture {ι : Type u} (a : ι → 𝔹) (u : ι → bSet 𝔹) : bSet 𝔹 :=
+def anon_mixture {ι : Type u} (a : ι → 𝔹) (u : ι → bSet 𝔹) : bSet 𝔹 :=
   ⟨Σ(i : ι), (u i).type, λx, (u x.fst).func x.snd, λx, a x.fst ⊓ (u x.fst).bval x.snd⟩
 
 /-- Mixing lemma, c.f. Bell's book or Lemma 1 of Hamkins-Seabold -/
@@ -980,7 +980,7 @@ begin
   split; [specialize this (ulift.up ff), specialize this (ulift.up tt)]; exact this
 end
 
--- TODO(jesse) try proving mixing_lemma with floris_mixture and see if anything goes wrong
+-- TODO() try proving mixing_lemma with _mixture and see if anything goes wrong
 
 /-- In particular, the mixing lemma applies when the weights (a_i) form an antichain and the indexing is injective -/
 lemma h_star_of_antichain_injective {ι : Type u} {a : ι → 𝔹} {τ : ι → bSet 𝔹} {h_anti : antichain (a '' set.univ)} {h_inj : function.injective a} :
@@ -1549,7 +1549,7 @@ by {apply top_unique, rw[<-H_top], apply mem.mk'}
 by simp
 
 /--
-TODO(jesse): this name should really belong to check_mem instead
+TODO(): this name should really belong to check_mem instead
 -/
 @[simp]lemma mem_check_of_mem {x : pSet} {i : x.type} {Γ : 𝔹} : Γ ≤ ((x.func i) ̌) ∈ᴮ (x̌) :=
 begin
@@ -1676,7 +1676,7 @@ begin
       rw[this] at H, conv{to_rhs, rw[<-H]}, simp }
 end
 
--- TODO(jesse): refactor this so that the conclusion is simply Γ ≤ ¬ (x̌ ∈ᴮ y̌)
+-- TODO(): refactor this so that the conclusion is simply Γ ≤ ¬ (x̌ ∈ᴮ y̌)
 lemma check_not_mem {x y : pSet} : x ∉ y → ∀ {Γ : 𝔹}, Γ ≤ x̌ ∈ᴮ y̌ → Γ ≤ ⊥ :=
 by {intro H, replace H := not_check_mem_iff.mp H, intros Γ HΓ, rwa ←H}
 
@@ -1731,7 +1731,7 @@ end
 @[simp]lemma check_exists_mem {y : pSet} (H_exists_mem : ∃ z, z ∈ y ) {Γ : 𝔹} : Γ ≤ exists_mem y̌ :=
 by { rcases H_exists_mem with ⟨z,Hz⟩, apply bv_use ž, simp* }
 
--- note(jesse): this lemma is not true; one also requires that x is a check-name
+-- note(): this lemma is not true; one also requires that x is a check-name
 -- lemma definite_mem_definite_iff_of_subset_check {x y : bSet 𝔹} (H_definite₁ : is_definite x) (H_definite₂ : is_definite y) (H_sub : ∃ z : pSet, ⊤ ≤ y ⊆ᴮ ž)  : ⊤ ≤ x ∈ᴮ y ↔ ∃ j : y.type, ⊤ ≤ x =ᴮ y.func j :=
 -- begin
 --   refine ⟨_,_⟩; intro H,
@@ -1842,7 +1842,7 @@ end
 
 lemma collect_spec₂ {Γ : 𝔹} (H_AE : Γ ≤ ⨅ i : u.type, u.bval i ⟹ ⨆ w, ϕ (u.func i) w) :
   Γ ≤ ⨅ w, w ∈ᴮ collect ϕ h_congr_right h_congr_left u ⟹ ⨆ z, z ∈ᴮ u ⊓ ϕ z w :=
-begin -- TODO(jesse):  prove mem_collect_iff
+begin -- TODO():  prove mem_collect_iff
   bv_intro w, bv_imp_intro Hw_mem, rw mem_unfold at Hw_mem, bv_cases_at Hw_mem i Hi,
   apply bv_use (u.func i), bv_split, apply bv_rw' Hi_right,
     { refine B_ext_inf _ _,
@@ -2016,7 +2016,7 @@ prefix `𝒫`:80 := bv_powerset
 -- def bv_powerset' (u : bSet 𝔹) : bSet 𝔹 :=
 -- ⟨u.type → 𝔹, λ f, set_of_indicator' f, λ f, ⊤⟩
 
---TODO (jesse) try proving bv_powerset and bv_powerset' are equivalent
+--TODO () try proving bv_powerset and bv_powerset' are equivalent
 
 -- example {u : bSet 𝔹} : bv_powerset u =ᴮ bv_powerset' u = ⊤ :=
 -- begin
@@ -2295,7 +2295,7 @@ begin
   change _ ≤ bSet.insert1 0 0 =ᴮ bSet.insert1 0 ∅,
   convert bv_refl, unfold has_zero.zero, unfold of_nat, unfold pSet.of_nat, rw check_empty_eq_empty
 end
---TODO(jesse): add simp lemmas ensuing (0 : bSet 𝔹) is the simp normal form of (∅̌), (of_nat 0), etc
+--TODO(): add simp lemmas ensuing (0 : bSet 𝔹) is the simp normal form of (∅̌), (of_nat 0), etc
 
 lemma forall_empty {Γ : 𝔹} {ϕ : bSet 𝔹 → 𝔹} : Γ ≤ ⨅ x, x ∈ᴮ ∅ ⟹ ϕ x :=
 begin

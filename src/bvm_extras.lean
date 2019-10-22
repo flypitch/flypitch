@@ -1720,7 +1720,7 @@ begin
       bv_cases_at H_right' s, apply bv_use s, bv_split, refine le_inf _ ‹_›,
       refine le_inf (le_inf _ _) ‹_›,
         {apply bv_rw' (bv_symm ‹_ ≤ g =ᴮ func (𝒫 prod x y) s›), simp, from ‹_›},
-      -- TODO(jesse) why does apply fail to generate a motive for bv_rw'?
+      -- TODO() why does apply fail to generate a motive for bv_rw'?
       bv_intro w₁, bv_imp_intro Hw₁, replace H_left_right := H_left_right w₁ ‹_›,
       bv_cases_at H_left_right w₂, apply bv_use w₂, bv_split, refine le_inf ‹_› _,
       apply bv_rw' (bv_symm ‹_ ≤ g =ᴮ func (𝒫 prod x y) s›), simp, from ‹_› }
@@ -1763,8 +1763,8 @@ begin
   bv_split_at H, rw[mem_unfold] at H_left H_right,
   bv_cases_at H_left pr₁ Hpr₁, bv_cases_at H_right pr₂ Hpr₂,
   cases pr₁ with i j, cases pr₂ with i' j', simp at *, repeat{auto_cases},
-  rw[pair_eq_pair_iff] at Hpr₁_right Hpr₂_right, auto_cases, -- floris, don't look at the tactic state
-  have := @H_ext i i' Γ_4 (by bv_cc), bv_cc -- TODO(jesse): 𝔹-valued eblast?
+  rw[pair_eq_pair_iff] at Hpr₁_right Hpr₂_right, auto_cases, -- , don't look at the tactic state
+  have := @H_ext i i' Γ_4 (by bv_cc), bv_cc -- TODO(): 𝔹-valued eblast?
 end
 
 lemma function.mk'_is_total {Γ} : Γ ≤ is_total x y (function.mk' F χ H_ext H_mem) :=
@@ -2009,12 +2009,12 @@ end
 --    bv_split_at a_right_left_1, bv_split_at a_right_right_1,
 --    simp only with cleanup at a_right_left_1_1_1 a_right_right_1_1_1,
 --    bv_mp a_right_right_1_1_1 (eq_of_eq_pair_left),
---    bv_mp a_right_right_1_1_1 (eq_of_eq_pair_right), -- TODO(jesse) generate sane variable names
+--    bv_mp a_right_right_1_1_1 (eq_of_eq_pair_right), -- TODO() generate sane variable names
 --    bv_mp a_right_left_1_1_1 (eq_of_eq_pair_left),
 --    bv_mp a_right_left_1_1_1 (eq_of_eq_pair_right),
 --    have : Γ_2 ≤ func u i =ᴮ func u j, apply bv_trans, rw[bv_eq_symm],
 --    assumption, rw[bv_eq_symm], apply bv_trans, rw[bv_eq_symm],
---    assumption, assumption, -- TODO(jesse) write a cc-like tactic to automate this
+--    assumption, assumption, -- TODO() write a cc-like tactic to automate this
 --    suffices : Γ_2 ≤ F i =ᴮ F j,
 --     by {apply bv_trans, assumption, rw[bv_eq_symm], apply bv_trans,
 --        assumption, from this},
@@ -2690,7 +2690,7 @@ begin
   bv_cases_at H_mem k, cases k with k, simp at H_mem_1, refine bv_use _,
   exact (ulift.up $ k + 1), simp, apply bv_rw' H_mem_1,
     { exact @B_ext_term 𝔹 _ (λ z, z =ᴮ ((k+1)̃ ̌)) succ (by simp) (by simp) },
-      -- TODO(jesse): automate calculation of the motive
+      -- TODO(): automate calculation of the motive
     { simp[pSet.of_nat, succ] },
 end
 

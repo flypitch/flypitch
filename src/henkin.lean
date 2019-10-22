@@ -128,7 +128,7 @@ def diagram.mk.map {F : ℕ → Language} {h_succ : ∀{i : ℕ}, F i →ᴸ F (
 | x (y+1) h := by {by_cases x = y + 1, rw[h], exact ⟨λn, id, λn, id⟩, refine h_succ ∘  _,
                   apply diagram.mk.map, apply nat.le_of_le_and_ne_succ, repeat{assumption}}
 
---TODO(jesse) finish converting this to language versions and refactor henkin_language_chain
+--TODO() finish converting this to language versions and refactor henkin_language_chain
 -- @[simp]lemma diagram.mk.map_self_id {F : ℕ → Type*} {h_succ : ∀(i : ℕ), F i → F (i+1)} (x : ℕ) :
 --                   @diagram.mk.map F @h_succ x x (by constructor) = id :=
 -- by {induction x, tidy, simp[diagram.mk.map,*], refl}
@@ -504,7 +504,7 @@ end
 -- to complete the structural recursion
 
 /- The universal map from colimit preterm L_n → preterm L_infty is a bijection -/
--- TODO(jesse) refactor with new colimit lemmas
+-- TODO() refactor with new colimit lemmas
 lemma term_comparison_bijective {L : Language} (l) : function.bijective (@term_comparison L l) :=
 begin
   refine ⟨_,_⟩,
@@ -880,7 +880,7 @@ end
   -- have : ∃ k : ℕ, @ι L T k ⊢' bd_falsum,
   -- {sorry}, -- again, this depends on picking a representative of a germ-eq class
   --          -- on the induced colimit of formulas
-  --          -- remark(Floris): we need a lemma that if a directed union of theories proves f, then an element of it proves f.
+  --          -- remark(): we need a lemma that if a directed union of theories proves f, then an element of it proves f.
   -- cases this with k P', unfold ι at P',
   -- apply is_consistent_henkin_theory_chain hT k,
   -- apply nonempty.map (Lhom.reflect_prf (henkin_language_canonical_map_inj k)),

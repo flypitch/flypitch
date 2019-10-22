@@ -804,7 +804,7 @@ by { ext, simp [bd_not] }
   (s : bounded_term L n) : (f ⊓ g)[s/0] = (f[s/0] ⊓ g[s/0]) :=
 by { ext, simp[bd_and, bd_not] }
 
--- --TODO(floris)
+-- --TODO()
 -- lemma realize_subst_bt {L : Language} {S : bStructure L β} : ∀{n n' l}
 --   (t : bounded_preterm L (n+n'+1) l)
 --   (s : bounded_term L n') (v : dvector S n) (v' : dvector S n') (v'' : dvector S l),
