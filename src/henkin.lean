@@ -229,7 +229,7 @@ begin
   refine eq.mp _ (is_consistent_extend hT henkin_language_inclusion_inj
     (λf, (∃' f).cast1 ⟹ f) _ wit _ _),
   { congr1, congr1, apply set.image_congr', intro f, ext,
-    simp [wit_property, wit'], rw [←on_bounded_formula_fst, subst_sentence_irrel], refl },
+    simp [wit_property, wit', -fst_ex], rw [←on_bounded_formula_fst, subst_sentence_irrel], refl },
   { intro f, apply falsumE, apply impE (∃' f.fst),
     { apply impI, apply impE _ axm2, apply exE axm1,
       apply exI &0, rw [lift_subst_formula_cancel], apply impI axm2 },
