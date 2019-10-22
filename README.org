@@ -4,7 +4,7 @@ In this repository we give a formal proof of the [[https://en.wikipedia.org/wiki
 
 The formal statement of the independence of the continuum hypothesis is given in [[src/summary.lean]]:
 #+begin_src lean
-theorem independence_of_CH : independent ZFC' CH_f
+theorem independence_of_CH : independent ZFC CH_f
 #+end_src
 
 - The definition of ~independent~ states that a sentence is neither provable nor disprovable from a theory:
@@ -15,12 +15,12 @@ theorem independence_of_CH : independent ZFC' CH_f
 
   The notation ~T ⊢' f~ means that there is a proof tree of ~f~ with assumptions in ~T~. The proof system is given in [[src/fol.lean]].
 
-- ZFC' is the first-order theory of Zermelo-Fraenkel set theory plus choice, defined in [[src/zfc'.lean]].
+- ZFC is the first-order theory of Zermelo-Fraenkel set theory plus choice, defined in [[src/ZFC.lean]].
   - We formulate it in a language with five constant/function symbols, plus ~∈~ (membership): for the empty set, pairs, omega, the power set and union.
 
-  - For each constant/function symbol, ZFC' contains an axiom giving the defining property of that symbol. The axiom of infinity is modified to additionally specify that ~ω~ is the least limit ordinal. Addionally, ZFC' contains the axiom of extensionality, regularity, Zorn's lemma and the axiom schema of collection.
+  - For each constant/function symbol, ZFC contains an axiom giving the defining property of that symbol. The axiom of infinity is modified to additionally specify that ~ω~ is the least limit ordinal. Addionally, ZFC contains the axiom of extensionality, regularity, Zorn's lemma and the axiom schema of collection.
 
-  - The five constant/function symbols we added are definable in ZFC, so ZFC' is conservative over ZFC; these extra symbols make the formulation of Zorn's lemma and the continuum hypothesis easier.
+  - The five constant/function symbols we added are definable in ZFC, so ZFC is conservative over ZFC; these extra symbols make the formulation of Zorn's lemma and the continuum hypothesis easier.
 
 - ~CH_f~ is the continuum hypothesis as a first-order logic sentence. The sentence we use is ~∀x, x is an ordinal ⟹ x ≤ ω ∨ P(ω) ≤ x~ where ~a ≤ b~ means that there is a surjection from a subset of ~b~ to ~a~.
 
@@ -28,7 +28,7 @@ theorem independence_of_CH : independent ZFC' CH_f
 Both consistency proofs for ~CH~ and ~¬CH~ were done by forcing with Boolean-valued models. To force ~¬CH~, we used Cohen forcing, and to force ~CH~, we used collapse forcing. Some details of our implementation of Boolean-valued models and Cohen forcing can be found in our [[https://github.com/flypitch/flypitch-itp-2019/releases/tag/1.1][ITP paper]].
 
 **** Possible future work
- - Formalizing the reduction from ZFC' to ZFC
+ - Formalizing the reduction from ZFC to ZFC without function symbols
  - Consistency of CH via construction of the constructible universe
  - Proof transfer using the completeness theorem
  - Forcing over countable transitive models

@@ -525,12 +525,12 @@ end neg_CH_unprovable
 section
 -- a nicer formulation of CH using formulae
 
-@[simp] def Powerset_t : term L_ZFC' → term L_ZFC' := app (func ZFC'_func.P)
-@[simp] def omega_t : term L_ZFC' := func ZFC'_func.ω
-@[simp] def leq_f : formula L_ZFC' := at_most_f.fst
-@[simp] def is_ordinal : formula L_ZFC' := Ord_f.fst
+@[simp] def Powerset_t : term L_ZFC → term L_ZFC := app (func ZFC_func.P)
+@[simp] def omega_t : term L_ZFC := func ZFC_func.ω
+@[simp] def leq_f : formula L_ZFC := at_most_f.fst
+@[simp] def is_ordinal : formula L_ZFC := Ord_f.fst
 
-def CH_formula : formula L_ZFC' :=
+def CH_formula : formula L_ZFC :=
 ∀' (is_ordinal ⟹ leq_f[omega_t//1] ⊔ leq_f[Powerset_t omega_t//0])
 
 lemma CH_f_fst : CH_f.fst = CH_formula :=
