@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 Authors: Jesse Han, Floris van Doorn
 -/
-import order.complete_boolean_algebra order.zorn .pSet_ordinal
+import order.complete_boolean_algebra order.zorn .pSet_ordinal .bv_tauto
 
 local infix ` ⟹ `:65 := lattice.imp
 
@@ -149,8 +149,6 @@ lemma bv_use {ι} (i : ι) {s : ι → 𝔹} {b : 𝔹}  {h : b ≤ s i} : b ≤
 lemma bv_context_apply {β : Type*} [complete_boolean_algebra β] {Γ a₁ a₂ : β}
   (h₁ : Γ ≤ a₁ ⟹ a₂) (h₂ : Γ ≤ a₁) : Γ ≤ a₂ := h₁ ‹_›
 
-lemma bv_by_contra {Γ b : 𝔹} (H : Γ ≤ -b ⟹ ⊥) : Γ ≤ b := by simpa using H
-
 lemma bv_Or_imp {Γ : 𝔹} {ι} {ϕ₁ ϕ₂ : ι → 𝔹} (H_sub : Γ ≤ ⨅ x, ϕ₁ x ⟹ ϕ₂ x) (H : Γ ≤ ⨆x, ϕ₁ x)  : Γ ≤ ⨆x, ϕ₂ x :=
 by {bv_cases_at H x, apply bv_use x, from H_sub x ‹_›}
 
@@ -200,10 +198,6 @@ variables {𝔹 : Type u} [nontrivial_complete_boolean_algebra 𝔹]
 noncomputable instance decidable_eq_𝔹 : decidable_eq 𝔹 := λ _ _, classical.prop_decidable _
 
 run_cmd mk_simp_attr `cleanup
-
-run_cmd mk_simp_attr `bv_push_neg
-
-attribute [bv_push_neg] neg_infi neg_supr neg_Inf neg_Sup neg_inf neg_sup neg_top neg_bot lattice.neg_neg lattice.neg_imp
 
 /-- The underlying type of a bSet -/
 @[simp, cleanup]def type : bSet 𝔹 → Type u
@@ -791,48 +785,6 @@ meta def bv_cc : tactic unit := do
    cc
 
 end bv_cc
-end interactive
-end tactic
-
-namespace tactic
-namespace interactive
-section bv_tauto
-open lean.parser lean interactive.types interactive
-local postfix `?`:9001 := optional
-
-meta def auto_or_elim_aux : list expr → tactic unit
-| [] := tactic.fail "auto_or_elim failed"
-| (e::es) := (do `(%%Γ ≤ %%x ⊔ %%y) <- infer_type e,
-                let n := get_name e,
-                Γ₁ <- get_current_context >>= whnf,
-                Γ₂ <- whnf Γ,
-                guard (Γ₁ =ₐ Γ₂),
-                n' <- get_unused_name n,
-                bv_or_elim_at_core'' e Γ n',
-                try assumption)
-                <|> auto_or_elim_aux es
-
-meta def auto_or_elim_step : tactic unit := local_context >>= auto_or_elim_aux
-
-meta def goal_is_bv_false : tactic unit :=
-do (g::gs) <- get_goals,
-   `(%%Γ ≤ ⊥) <- pure g,
-   skip
-
-meta def bv_tauto_step : tactic unit :=
-do (goal_is_bv_false >> skip) <|> `[refine lattice.bv_by_contra _] >> bv_imp_intro none,
-   `[try {unfold lattice.imp at *}],
-   `[try {simp only with bv_push_neg at *}],
-   try bv_split,
-   try bv_contradiction
-
-meta def bv_tauto (n : option ℕ := none) : tactic unit :=
-match n with
-| none := bv_tauto_step *> (done <|> (auto_or_elim_step; bv_tauto))
-| (some k) := iterate_at_most k bv_tauto_step
-end
-
-end bv_tauto
 end interactive
 end tactic
 

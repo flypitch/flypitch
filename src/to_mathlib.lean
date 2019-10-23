@@ -1244,8 +1244,14 @@ def CCC (𝔹 : Type u) [boolean_algebra 𝔹] : Prop :=
 
 @[simp]lemma Prop_to_bot_top_false {𝔹 : Type u} [has_bot 𝔹] [has_top 𝔹] {p : Prop} {H : ¬ p} : Prop_to_bot_top p = (⊥ : 𝔹) := by simp[*, Prop_to_bot_top]
 
+lemma bv_by_contra {𝔹} [boolean_algebra 𝔹] {Γ b : 𝔹} (H : Γ ≤ -b ⟹ ⊥) : Γ ≤ b := by simpa using H
+
 -- noncomputable def to_boolean_valued_set {𝔹} [has_bot 𝔹] [has_top 𝔹] {α} : set α → (α → 𝔹) :=
 -- λ s, Prop_to_bot_top ∘ s
+
+run_cmd mk_simp_attr `bv_push_neg
+
+attribute [bv_push_neg] neg_infi neg_supr neg_Inf neg_Sup neg_inf neg_sup neg_top neg_bot lattice.neg_neg lattice.neg_imp
 
 end lattice
 
@@ -1399,7 +1405,7 @@ example {β : Type u} [lattice.bounded_lattice β] {a b : β} {H : ⊤ ≤ b} : 
 by {specialize_context (⊤ : β), assumption}
 
 meta def bv_exfalso : tactic unit :=
-  `[refine le_trans _ (bot_le)]
+  `[refine le_trans _ (_root_.lattice.bot_le)]
 
 meta def bv_cases_at (H : parse ident) (i : parse ident_) (H_i : parse ident?)  : tactic unit :=
 do
@@ -1595,7 +1601,7 @@ meta def tidy_context_tactics : list (tactic string) :=
   propositional_goal >> assumption            >> pure "assumption",
   intros1                                     >>= λ ns, pure ("intros " ++ (" ".intercalate (ns.map (λ e, e.to_string)))),
   auto_cases,
-  `[simp only [le_inf_iff] at *]                                >> pure "simp only [le_inf_iff] at *",
+  `[simp only [_root_.lattice.le_inf_iff] at *]                                >> pure "simp only [le_inf_iff] at *",
   propositional_goal >> (`[solve_by_elim])    >> pure "solve_by_elim"
 ]
 
@@ -1660,7 +1666,7 @@ meta def cfg_of_context_cfg : context_cfg → cfg :=
   tactics := X.tactics}
 
 meta def tidy_context (cfg : context_cfg := {}) : tactic unit :=
-`[refine poset_yoneda _] >> tactic.tidy (cfg_of_context_cfg cfg)
+`[refine _root_.lattice.poset_yoneda _] >> tactic.tidy (cfg_of_context_cfg cfg)
 
 def with_h_asms {𝔹} [lattice.lattice 𝔹] (Γ : 𝔹) : Π (xs : list (𝔹)) (g : 𝔹), Prop
  | [] x := Γ ≤ x
