@@ -91,4 +91,3 @@ example {𝔹} [lattice.nontrivial_complete_boolean_algebra 𝔹] {a b c : 𝔹}
 begin
   tidy_context, bv_tauto
 end
-

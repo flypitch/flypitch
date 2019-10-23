@@ -9,6 +9,7 @@ Authors: Jesse Han, Floris van Doorn
 import algebra.ordered_group data.set.disjointed data.set.countable set_theory.cofinality
        topology.opens --topology.maps
        tactic
+       tactic.lint
 
 universe variables u v w w'
 
@@ -36,7 +37,7 @@ local notation h :: t  := dvector.cons h t
 local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`) := l
 variables {α : Type u} {β : Type v} {γ : Type w} {n : ℕ}
 
-@[simp] protected def zero_eq : ∀(xs : dvector α 0), xs = []
+@[simp] protected lemma zero_eq : ∀(xs : dvector α 0), xs = []
 | [] := rfl
 
 @[simp] protected def concat : ∀{n : ℕ} (xs : dvector α n) (x : α), dvector α (n+1)
@@ -71,7 +72,7 @@ protected def pmem : ∀{n : ℕ} (x : α) (xs : dvector α n), Type
 | _ x []       := empty
 | _ x (x'::xs) := psum (x = x') (pmem x xs)
 
-protected def mem_of_pmem : ∀{n : ℕ} {x : α} {xs : dvector α n} (hx : xs.pmem x), x ∈ xs
+protected lemma mem_of_pmem : ∀{n : ℕ} {x : α} {xs : dvector α n} (hx : xs.pmem x), x ∈ xs
 | _ x []       hx := by cases hx
 | _ x (x'::xs) hx := by cases hx;[exact or.inl hx, exact or.inr (mem_of_pmem hx)]
 
@@ -283,14 +284,14 @@ inductive rel [setoid α] : ∀{n}, dvector α n → dvector α n → Prop
     rel (x::xs) (x'::xs')
 open dvector.rel
 
-protected def rel_refl [setoid α] : ∀{n} (xs : dvector α n), xs.rel xs
+protected lemma rel_refl [setoid α] : ∀{n} (xs : dvector α n), xs.rel xs
 | _ []      := rnil
 | _ (x::xs) := rcons (setoid.refl _) (rel_refl xs)
 
-protected def rel_symm [setoid α] {n} {{xs xs' : dvector α n}} (h : xs.rel xs') : xs'.rel xs :=
+protected lemma rel_symm [setoid α] {n} {{xs xs' : dvector α n}} (h : xs.rel xs') : xs'.rel xs :=
 by { induction h; constructor, exact setoid.symm h_hx, exact h_ih }
 
-protected def rel_trans [setoid α] {n} {{xs₁ xs₂ xs₃ : dvector α n}}
+protected lemma rel_trans [setoid α] {n} {{xs₁ xs₂ xs₃ : dvector α n}}
   (h₁ : xs₁.rel xs₂) (h₂ : xs₂.rel xs₃) : xs₁.rel xs₃ :=
 begin
   induction h₁ generalizing h₂, exact h₂,
@@ -327,7 +328,7 @@ def quotient_lift {α : Type u} {β : Sort v} {R : setoid α} : ∀{n} (f : dvec
     intros x x' hx, dsimp, congr, apply funext, intro xs, apply h, exact rcons hx xs.rel_refl
   end
 
-def quotient_beta {α : Type u} {β : Sort v} {R : setoid α} {n} (f : dvector α n → β)
+lemma quotient_beta {α : Type u} {β : Sort v} {R : setoid α} {n} (f : dvector α n → β)
   (h : ∀{{xs xs'}}, xs ≈ xs' → f xs = f xs') (xs : dvector α n) :
   (xs.map quotient.mk).quotient_lift f h = f xs :=
 begin
@@ -370,6 +371,15 @@ variables {α : Type u} {β : Type v} {ι : Type w} {π : ι → Type w'} [∀x,
 
 variables [t : topological_space α] [topological_space β]
 
+lemma subbasis_subset_basis {s : set (set α)} :
+  s \ {∅} ⊆ ((λf, ⋂₀ f) '' {f:set (set α) | finite f ∧ f ⊆ s ∧ ⋂₀ f ≠ ∅}) :=
+begin
+  intros o ho, refine ⟨{o}, ⟨finite_singleton o, _, _⟩, _⟩,
+  { rw [singleton_subset_iff], exact ho.1 },
+  { rw [sInter_singleton], refine mt mem_singleton_iff.mpr ho.2 },
+  dsimp only, rw [sInter_singleton]
+end
+
 include t
 
 lemma mem_opens {x : α} {o : opens α} : x ∈ o ↔ x ∈ o.1 := by refl
@@ -381,15 +391,6 @@ begin
   intros o ho,
   rcases Union_basis_of_is_open hs ho with ⟨γ, g, rfl, hg⟩,
   rw [image_Union], apply is_open_Union, intro i, apply hf, apply hg
-end
-
-lemma subbasis_subset_basis {s : set (set α)} (hs : t = generate_from s) :
-  s \ {∅} ⊆ ((λf, ⋂₀ f) '' {f:set (set α) | finite f ∧ f ⊆ s ∧ ⋂₀ f ≠ ∅}) :=
-begin
-  intros o ho, refine ⟨{o}, ⟨finite_singleton o, _, _⟩, _⟩,
-  { rw [singleton_subset_iff], exact ho.1 },
-  { rw [sInter_singleton], refine mt mem_singleton_iff.mpr ho.2 },
-  dsimp only, rw [sInter_singleton]
 end
 
 lemma interior_bInter_subset {β} {s : set β} (f : β → set α) :
@@ -650,7 +651,7 @@ open nat
 namespace nonempty
 variables {α : Sort u} {β : Sort v} {γ : Sort w}
 
-protected def iff (mp : α → β) (mpr : β → α) : nonempty α ↔ nonempty β :=
+protected lemma iff (mp : α → β) (mpr : β → α) : nonempty α ↔ nonempty β :=
 ⟨nonempty.map mp, nonempty.map mpr⟩
 
 end nonempty
@@ -852,7 +853,7 @@ absurd H_le (bot_lt_iff_not_le_bot.mp ‹_›)
 lemma lt_top_iff_not_top_le {α} [bounded_lattice α] {a : α} : a < ⊤ ↔ (¬ ⊤ ≤ a) :=
 by rw[top_le_iff]; exact lt_top_iff_ne_top
 
-lemma bot_lt_resolve_left {𝔹} [bounded_lattice 𝔹] {a b : 𝔹} (H_lt : ⊥ < a) (H_lt' : ⊥ < a ⊓ b) : ⊥ < b :=
+lemma bot_lt_resolve_left {𝔹} [bounded_lattice 𝔹] {a b : 𝔹} (H_lt' : ⊥ < a ⊓ b) : ⊥ < b :=
 begin
   haveI := classical.prop_decidable, by_contra H, rw[bot_lt_iff_not_le_bot] at H H_lt',
   apply H_lt', simp at H, simp*
@@ -860,7 +861,7 @@ end
 
 lemma bot_lt_resolve_right {𝔹} [bounded_lattice 𝔹] {a b : 𝔹} (H_lt : ⊥ < b)
   (H_lt' : ⊥ < a ⊓ b) : ⊥ < a :=
-by rw[inf_comm] at H_lt'; exact bot_lt_resolve_left ‹_› ‹_›
+by rw[inf_comm] at H_lt'; exact bot_lt_resolve_left ‹_›
 
 lemma le_bot_iff_not_bot_lt {𝔹} [bounded_lattice 𝔹] {a : 𝔹} : ¬ ⊥ < a ↔ a ≤ ⊥ :=
 by { rw bot_lt_iff_not_le_bot, tauto! }
@@ -1689,13 +1690,6 @@ end interactive
 end tactic
 
 namespace lattice
-
-example {β : Type*} [bounded_lattice β] : ⊤ ⊓ (⊤ : β) ⊓ ⊤ ≤ ⊤ :=
-begin
-  tidy_context -- {trace_result := tt},
---/- `tidy_context` says -/ apply poset_yoneda, intros Γ a, simp only [le_inf_iff] at *, cases a, assumption
--- not bad!
-end
 
 local infix ` ⟹ `:75 := lattice.imp
 

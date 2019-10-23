@@ -649,7 +649,7 @@ begin
   apply sInter_subset_of_mem, dsimp only, intros f g hfg hf,
   intros t ht,
   apply support_elim _ _ (hf t ht),
-  { apply subbasis_subset_basis (is_subbasis_pi β), split,
+  { apply subbasis_subset_basis, split,
     exact h2s ht, refine mt _ h3s, rw [mem_singleton_iff], rintro rfl,
     refine subset.antisymm _ (empty_subset _), exact sInter_subset_of_mem ht },
   intros x hx, apply hfg, exact mem_bUnion ht hx
