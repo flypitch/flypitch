@@ -140,10 +140,10 @@ noncomputable def max_of_list_in_chain {α : Type u} {R : α → α → Prop} {t
 (h_fs : ∀ S ∈ Ss, S ∈ Ts) : Σ' (S : α), S ∈ Ts ∧ (∀ S' ∈ Ss, S' = S ∨ R S' S) :=
 begin
   induction Ss,
-  
+
   {tactic.unfreeze_local_instances, have := (classical.choice nonempty_Ts),
    from ⟨this.1, ⟨this.2, by finish⟩⟩},
-  
+
   specialize Ss_ih (by simp at h_fs; from h_fs.right),
   rcases Ss_ih with ⟨S,H_mem,H_s⟩,
   by_cases (R S Ss_hd),
@@ -274,7 +274,7 @@ noncomputable def maximal_extension (L : Language.{u}) (T : Theory L) (hT : is_c
 begin
   let X := strong_indefinite_description (λ T_max : Theory_over T hT, ∀ T' : Theory_over T hT, T_max ⊆ T' → T' ⊆ T_max ) begin apply_instance end,
   have := @can_use_zorn L T, rename this h_can_use,
-  have := zorn h_can_use.left h_can_use.right, rename this h_zorn,
+  have := exists_maximal_of_chains_bounded h_can_use.left h_can_use.right, rename this h_zorn,
   let T_max := X.val, let H := X.property,
   exact ⟨T_max, H h_zorn⟩,
 end
