@@ -2497,7 +2497,7 @@ theorem bSet_zorns_lemma (X : bSet 𝔹) (H_nonempty : -(X =ᴮ ∅) = ⊤) (H :
   ⊤ ≤ (⨆c, c ∈ᴮ X ⊓ (⨅z, z ∈ᴮ X ⟹ (c ⊆ᴮ z ⟹ c =ᴮ z))) :=
 begin
   have := core.mk X, rcases this with ⟨α, ⟨S, h_core⟩⟩,
-  have H_zorn := zorn (subset'_inductive X H h_core) (by apply subset'_trans),
+  have H_zorn := exists_maximal_of_chains_bounded (subset'_inductive X H h_core) (by apply subset'_trans),
   rcases H_zorn with ⟨c, H_c⟩, rcases h_core with ⟨h_core_l, h_core_r⟩,
   have H_c_in_X := h_core_l c, apply bv_use (S c), rw[H_c_in_X],
   rw[top_inf_eq], bv_intro x, apply bv_imp_intro, rw[top_inf_eq],
