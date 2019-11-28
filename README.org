@@ -72,7 +72,7 @@ Our paper /A formalization of forcing and the unprovability of the continuum hyp
 
 **** Citation information:
 
-#+begin_export latex
+#+begin_src latex
 @inproceedings{DBLP:conf/cpp/HanD20,
   author    = {Jesse Michael Han and
                Floris van Doorn},
@@ -85,7 +85,7 @@ Our paper /A formalization of forcing and the unprovability of the continuum hyp
   biburl    = {https://dblp.org/rec/bib/conf/cpp/HanD20},
   bibsource = {dblp computer science bibliography, https://dblp.org}
 }
-#+end_export
+#+end_src
 
 #+begin_src latex
 @inproceedings{DBLP:conf/itp/HanD19,
