@@ -302,14 +302,14 @@ local infix ` ⊆'`:100 := subset''
   boolean_realize_bounded_term v t₁ ([]) ⊆ᴮ boolean_realize_bounded_term v t₂ ([]) :=
 by { simp [subset'', subset_unfold'] }
 
-/- `z` is transitive if `∀x. x ∈ z ⟹ x ⊆ z` -/
+/- `z` is transitive if `∀ x, x ∈ z ⟹ x ⊆ z` -/
 def is_transitive_f : bounded_formula L_ZFC 1 := ∀' ((&'0 ∈' &'1) ⟹ &'0 ⊆' &'1)
 
-/- `z` is `∈`-trichotomous if `∀x y ∈ z. x = y ∨ x ∈ y ∨ y ∈ x` -/
+/- `z` is `∈`-trichotomous if `∀ x y ∈ z, x = y ∨ x ∈ y ∨ y ∈ x` -/
 def epsilon_trichotomy_f : bounded_formula L_ZFC 1 :=
 ∀' ((&'0 ∈' &'1) ⟹''(∀' (&'0 ∈' &'2 ⟹'' (&'1 ≃ &'0 ⊔' &'1 ∈' &'0) ⊔' &'0 ∈' &'1)))
 
-/- `z` is `∈`-well-founded if `∀x. x ⊆ z ⟹ x ≠ ∅ ⟹ ∃y ∈ x. ∀w ∈ x. w ∉ y`.
+/- `z` is `∈`-well-founded if `∀ x, x ⊆ z ⟹ x ≠ ∅ ⟹ ∃y ∈ x. ∀w ∈ x. w ∉ y`.
   Note: this is true for every set by regularity, so we don't have to assume this. But we do it for
   completeness, to explicitly state that the order relation is well-founded. -/
 def epsilon_well_founded_f : bounded_formula L_ZFC 1 :=
@@ -435,7 +435,7 @@ by simp [is_func'_f₂, is_func']
 
 /-
   `at_most_f x y` means
-  `∃ S, ∃ f, S ⊆ y ∧ f contains a function from S to x ∧ f surjects onto x`
+  `∃ S, ∃ f, S ⊆ y ∧ f contains a function from S to x ∧ f surjects S onto x`
   In `bSet` it corresponds to the formula `larger_than y x`.
 
   `at_most_f x y` is equivalent to `¬ y ≺ x`.
