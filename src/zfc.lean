@@ -302,16 +302,23 @@ local infix ` ⊆'`:100 := subset''
   boolean_realize_bounded_term v t₁ ([]) ⊆ᴮ boolean_realize_bounded_term v t₂ ([]) :=
 by { simp [subset'', subset_unfold'] }
 
+/- `z` is transitive if `∀x. x ∈ z ⟹ x ⊆ z` -/
 def is_transitive_f : bounded_formula L_ZFC 1 := ∀' ((&'0 ∈' &'1) ⟹ &'0 ⊆' &'1)
 
+/- `z` is `∈`-trichotomous if `∀x y ∈ z. x = y ∨ x ∈ y ∨ y ∈ x` -/
 def epsilon_trichotomy_f : bounded_formula L_ZFC 1 :=
 ∀' ((&'0 ∈' &'1) ⟹''(∀' (&'0 ∈' &'2 ⟹'' (&'1 ≃ &'0 ⊔' &'1 ∈' &'0) ⊔' &'0 ∈' &'1)))
 
+/- `z` is `∈`-well-founded if `∀x. x ⊆ z ⟹ x ≠ ∅ ⟹ ∃y ∈ x. ∀w ∈ x. w ∉ y`.
+  Note: this is true for every set by regularity, so we don't have to assume this. But we do it for
+  completeness, to explicitly state that the order relation is well-founded. -/
 def epsilon_well_founded_f : bounded_formula L_ZFC 1 :=
 ∀' (((&'0 ⊆' &'1) ⟹'' ((∼(&'0 ≃ ∅')) ⟹'' ∃' (&'0 ∈' &'1 ⊓' (∀' (&'0 ∈' &'2 ⟹'' ∼(&'0 ∈' &'1)))))))
 
+/- `z` is `∈`-well-order if it is `∈`-well-founded and `∈`-trichotomous. -/
 def ewo_f : bounded_formula L_ZFC 1 := epsilon_trichotomy_f ⊓' epsilon_well_founded_f
 
+/- `z` is an ordinal if forms is an `∈`-well-order and `∈` is transitive on `z`. -/
 def Ord_f : bounded_formula L_ZFC 1 := ewo_f ⊓' is_transitive_f
 
 @[simp]lemma Ord_f_is_Ord {x : V β} : boolean_realize_bounded_formula (by exact [x]) Ord_f dvector.nil = Ord x :=
@@ -335,7 +342,7 @@ begin
 end
 
 -- axiom of regularity
--- ∀ x, x ≠ ∅ ⟹ ∃ y ∈ x, ∀ z ∈ x, ¬ (z ∈ y)
+-- ∀ x, x ≠ ∅ ⟹ ∃ y ∈ x, ∀ z ∈ x, z ∉ y
 
 def axiom_of_regularity : sentence L_ZFC :=
   ∀' (∼(&0 ≃ ∅') ⟹ (∃' (&'0 ∈' &'1 ⊓ ∀' (&'0 ∈' &'2 ⟹ ∼(&'0 ∈' &'1)))))
