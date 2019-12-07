@@ -175,13 +175,15 @@ by refl
 @[simp] lemma fin_2 {n : ℕ} : (2 : fin (n+3)).1 = 2 := by refl
 @[simp] lemma fin_3 {n : ℕ} : (3 : fin (n+4)).1 = 3 := by refl
 
+-- axiom of emptyset
+-- ∀ x, x ∉ ∅
 def axiom_of_emptyset : sentence L_ZFC := ∀' (∼(&0 ∈' ∅'))
 
 lemma bSet_models_emptyset : ⊤ ⊩[V β] axiom_of_emptyset :=
 by {change ⊤ ≤ _, simp[axiom_of_emptyset, -top_le_iff], intro x, from empty_spec}
 
 -- axiom of ordered pairs
--- ∀x y z w, (x, y) = (z, w) ↔ x = z ∧ y = w
+-- ∀ x y z w, (x, y) = (z, w) ↔ x = z ∧ y = w
 def axiom_of_ordered_pairs : sentence L_ZFC :=
  ∀' ∀' ∀' ∀'(((pair' &'3 &'2 ≃ pair' &'1 &'0)) ⇔ (&'3 ≃ &'1 ⊓ &'2 ≃ &'0))
 
@@ -201,7 +203,7 @@ by { simp [forced_in, axiom_of_extensionality], exact bSet_axiom_of_extensionali
 
 -- axiom schema of "strong" collection
 -- For every formula `ϕ(x,y,p)` with (at most) `n+2` free variables (`p` is a vector of length `n`),
--- ∀ p ∀ A, (∀ x ∈ A, ∃ y, ϕ(x,y,p)) ⟹
+-- ∀ p ∀ A, (∀ x ∈ A, ∃ y, ϕ(x,y,p)) →
 --  (∃ B, (∀ x ∈ A, ∃ y ∈ B, ϕ(x,y,p)) ∧ ∀ y ∈ B, ∃ x ∈ A, ϕ(x,y,p))
 def axiom_of_collection {n} (ϕ : bounded_formula L_ZFC (n+2)) : sentence L_ZFC :=
 bd_alls (n+1) $ (∀' (&'0 ∈' &'1 ⟹ ∃' (ϕ ↑' 1 # 2))) ⟹
@@ -277,7 +279,7 @@ begin
 end
 
 -- axiom of powerset
--- ∀ u x, x ∈ P(u) ↔ ∀ y ∈ x, y ∈ u
+-- ∀ z y, y ∈ P(z) ↔ ∀ x ∈ y, x ∈ z
 
 def axiom_of_powerset : sentence L_ZFC :=
   ∀' ∀' (&'0 ∈' P' &'1 ⇔ (∀' (&'0 ∈' &'1 ⟹ &'0 ∈' &'2)))
@@ -290,7 +292,7 @@ begin
   apply le_inf, bv_imp_intro, exact this.mpr H, bv_imp_intro, exact this.mp H
 end
 
-/-- &1 ⊆ &0 ↔ ∀ z, (z ∈ &1 ⟹ z ∈ &0)-/
+/-- &1 ⊆ &0 ↔ ∀ z, (z ∈ &1 → z ∈ &0)-/
 def subset'' {n} (t₁ t₂ : bounded_term L_ZFC n): bounded_formula L_ZFC n :=
 ∀' (&'0 ∈' (t₁ ↑ 1) ⟹ &'0 ∈' (t₂ ↑ 1))
 
@@ -302,14 +304,14 @@ local infix ` ⊆'`:100 := subset''
   boolean_realize_bounded_term v t₁ ([]) ⊆ᴮ boolean_realize_bounded_term v t₂ ([]) :=
 by { simp [subset'', subset_unfold'] }
 
-/- `z` is transitive if `∀ x, x ∈ z ⟹ x ⊆ z` -/
+/- `z` is transitive if `∀ x, x ∈ z → x ⊆ z` -/
 def is_transitive_f : bounded_formula L_ZFC 1 := ∀' ((&'0 ∈' &'1) ⟹ &'0 ⊆' &'1)
 
 /- `z` is `∈`-trichotomous if `∀ x y ∈ z, x = y ∨ x ∈ y ∨ y ∈ x` -/
 def epsilon_trichotomy_f : bounded_formula L_ZFC 1 :=
 ∀' ((&'0 ∈' &'1) ⟹''(∀' (&'0 ∈' &'2 ⟹'' (&'1 ≃ &'0 ⊔' &'1 ∈' &'0) ⊔' &'0 ∈' &'1)))
 
-/- `z` is `∈`-well-founded if `∀ x, x ⊆ z ⟹ x ≠ ∅ ⟹ ∃y ∈ x. ∀w ∈ x. w ∉ y`.
+/- `z` is `∈`-well-founded if `∀ x, x ⊆ z → x ≠ ∅ → ∃ y ∈ x, ∀ w ∈ x, w ∉ y`.
   Note: this is true for every set by regularity, so we don't have to assume this. But we do it for
   completeness, to explicitly state that the order relation is well-founded. -/
 def epsilon_well_founded_f : bounded_formula L_ZFC 1 :=
@@ -324,6 +326,9 @@ def Ord_f : bounded_formula L_ZFC 1 := ewo_f ⊓' is_transitive_f
 @[simp]lemma Ord_f_is_Ord {x : V β} : boolean_realize_bounded_formula (by exact [x]) Ord_f dvector.nil = Ord x :=
 by {simp [Ord_f,ewo_f,is_transitive_f,epsilon_well_founded_f, epsilon_trichotomy_f], refl}
 
+-- axiom of infinity
+-- ∅ ∈ ω ∧ (∀ x ∈ ω, ∃ y ∈ ω, x ∈ y) ∧ (∃ α, Ord(α) ∧ ω = α) ∧
+--   ∀ α, Ord(α) → (∅ ∈ α ∧ ∀ x ∈ α, ∃ y ∈ α, x ∈ y) → ω ⊆ α
 -- this is the usual axiom of infinity, plus a characterization of omega as the least limit ordinal
 def axiom_of_infinity : sentence L_ZFC :=
   (∅' ∈' ω' ⊓' ∀'(&'0 ∈' ω' ⟹ ∃' (&'0 ∈' ω' ⊓' &'1 ∈' &'0)))
@@ -342,7 +347,7 @@ begin
 end
 
 -- axiom of regularity
--- ∀ x, x ≠ ∅ ⟹ ∃ y ∈ x, ∀ z ∈ x, z ∉ y
+-- ∀ x, x ≠ ∅ → ∃ y ∈ x, ∀ z ∈ x, z ∉ y
 
 def axiom_of_regularity : sentence L_ZFC :=
   ∀' (∼(&0 ≃ ∅') ⟹ (∃' (&'0 ∈' &'1 ⊓ ∀' (&'0 ∈' &'2 ⟹ ∼(&'0 ∈' &'1)))))
@@ -355,8 +360,9 @@ begin
   apply bSet_axiom_of_regularity, convert H
 end
 
-/- ∀ x, x ≠ ∅ ∧ ((∀ y, y ⊆ x ∧ ∀ w₁ w₂ ∈ y, w₁ ⊆ w₂ ∨ w₂ ⊆ w₁) → (⋃y) ∈ x)
-      → ∃ c ∈ x, ∀ z ∈ x, c ⊆ z → c = z -/
+-- Zorn's lemma (as an axiom)
+-- ∀ z, z ≠ ∅ → (∀ y, (y ⊆ z ∧ ∀ x₁ x₂ ∈ y, x₁ ⊆ x₂ ∨ x₂ ⊆ x₁) → (⋃y) ∈ z) →
+--  ∃ m ∈ x, ∀ x ∈ z, m ⊆ x → m = x
 def zorns_lemma : sentence L_ZFC :=
 ∀' (∼ (&'0 ≃ ∅')
   ⟹ (∀' (&'0 ⊆' &'1 ⊓' (∀' ∀' ((&'1 ∈' &'2 ⊓' &'0 ∈' &'2) ⟹ (&'1 ⊆' &'0 ⊔' &'0 ⊆' &'1)))
@@ -468,7 +474,7 @@ def non_empty_f : bounded_formula L_ZFC 1 := ∼(&'0 ≃ ∅')
 @[simp]lemma non_empty_f_is_non_empty {x : V β} : boolean_realize_bounded_formula (by exact [x]) non_empty_f dvector.nil = not_empty x := by {simp[non_empty_f], refl}
 
 /-- The continuum hypothesis is given by the formula
-  `∀x, x is an ordinal ⟹ x ≤ ω ∨ P(ω) ≤ x`.
+  `∀x, x is an ordinal → x ≤ ω ∨ P(ω) ≤ x`.
   Here `a ≤ b` means there is a surjection from a subset of `b` to `a`.
   We have to perform two substitutions (`substmax_bounded_formula` and `[../0]`)
   to apply `at_most_f` to the appropriate arguments. -/
