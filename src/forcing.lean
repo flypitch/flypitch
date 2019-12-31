@@ -314,7 +314,7 @@ begin
     {convert this, from eq₀, from eq₀, from eq₀, cc, cc},
   suffices : (ν, n) ∈ - p.ins.to_set,
     {convert this, from eq₀.symm, from eq₀.symm, from eq₀.symm, cc, from eq₀.symm,
-     from eq₀.symm, from eq₀.symm, from eq₀.symm, cc},
+     from eq₀.symm, cc},
   from not_mem_of_inter_empty_right p.H H
 end
 

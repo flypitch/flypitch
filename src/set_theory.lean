@@ -102,7 +102,7 @@ begin
   { apply unbounded_of_unbounded_Union θr (λ ξ, range $ λ i, nr i ξ),
     { rw [Union_range_eq_Union], exact h3A, intro i, exact (h2A i).to_equiv.bijective.2 },
     { rw [←cof_type, ←θtype_eq, hθ.2], refine lt_trans hρ hκθ }},
-  let ξ₀ : ρ := ρwo.wf.min good (ne_empty_iff_exists_mem.mpr this),
+  let ξ₀ : ρ := ρwo.wf.min good this,
   let α₀ : ordinal := sup.{u u} (λ o : {x // ρr x ξ₀}, sup.{u u} $ λ x : ι,
     ordinal.succ $ typein θr $ nr x o.1),
   have hα₀ : α₀ < type θr,

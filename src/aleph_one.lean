@@ -33,7 +33,7 @@ by { have :=  epsilon_trichotomy_of_Ord H_ord, intros, unfold epsilon_trichotomy
 lemma is_transitive_of_mem_Ord {x : pSet.{u}} (H_ord : Ord x) : is_transitive x := H_ord.right
 
 lemma mem_of_mem_subset {x y z : pSet.{u}} (H_sub : y ⊆ z) (H_mem : x ∈ y) : x ∈ z :=
-by {rw subset_iff_all_mem at H_sub, solve_by_elim}
+by { rw subset_iff_all_mem at H_sub, solve_by_elim }
 
 lemma mem_of_mem_Ord {x y z : pSet.{u}} (H_ord : Ord z) (H_mem₁ : x ∈ y) (H_mem₂ : y ∈ z) : x ∈ z :=
 begin

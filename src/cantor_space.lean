@@ -217,13 +217,17 @@ lemma is_clopen_co_principal_open {a : α} : is_clopen (co_principal_open a) :=
 
 @[reducible]def principal_open_finset (F : finset α) : set (set α) := {S | F.to_set ⊆ S}
 
+lemma mem_principal_open_finset_iff {F : finset α} {x : set α} : x ∈ (principal_open_finset F) ↔ (↑F : set α) ⊆ x := by refl
+
 @[simp]lemma principal_open_finset_insert {F : finset α} {a : α} : principal_open_finset (insert a F) = principal_open_finset {a} ∩ principal_open_finset F :=
 begin
-  ext, split; intros; unfold principal_open_finset at *,
-  tidy, apply a_1, unfold finset.to_set, simp,
-  apply a_1, unfold finset.to_set at *, simp, right, from a_3,
-  unfold finset.to_set at *, simp at *, cases a_3,
-  apply a_1_left, from a_3, apply a_1_right, from a_3
+  ext x, /- `tidy` says -/ dsimp at *, fsplit, work_on_goal 0 { intros a_1, fsplit, work_on_goal 0 { intros a_2 a_3, cases a_3, work_on_goal 0 { induction a_3 }, work_on_goal 1 { cases a_3 } }, work_on_goal 1 { intros a_2 a_3 } }, work_on_goal 2 { intros a_1 a_2 a_3, cases a_1 },
+    { unfold finset.to_set at a_1, exact a_1 (by simp : a_2 ∈ _) },
+    { unfold finset.to_set at a_1, exact a_1 (by finish : a_2 ∈ _) },
+    { unfold finset.to_set at *, simp[set.mem_insert_iff] at a_3,
+      cases a_3 with a_3₁ a_3₂,
+        { finish },
+        { exact a_1_right ‹_› } }
 end
 
 lemma principal_open_finset_eq_inter (F : finset α) : principal_open_finset F = (finset.inf F (principal_open)) :=
@@ -238,11 +242,13 @@ end
 
 @[simp]lemma co_principal_open_finset_insert {F : finset α} {a : α} : co_principal_open_finset (insert a F) = co_principal_open_finset {a} ∩ co_principal_open_finset F :=
 begin
-  ext, split; intros; unfold co_principal_open_finset at *,
-  split, intros a_2 H, simp at a_1, apply a_1, unfold finset.to_set at ⊢ H,
-  {tidy}, intros a_2 H, simp at a_1, apply a_1, unfold finset.to_set at ⊢ H,
-  {tidy, right, from ‹_›}, intros a_2 H, simp[finset.to_set] at *,
-  cases H; [apply a_1.left, apply a_1.right]; simpa
+  ext x, /- `tidy` says -/ dsimp at *, fsplit, work_on_goal 0 { intros a_1, fsplit, work_on_goal 0 { intros a_2 a_3, cases a_3, work_on_goal 0 { induction a_3 }, work_on_goal 1 { cases a_3 } }, work_on_goal 1 { intros a_2 a_3 } }, work_on_goal 2 { intros a_1 a_2 a_3, cases a_1 },
+    { unfold finset.to_set at a_1, exact a_1 (by simp : a_2 ∈ _) },
+    { unfold finset.to_set at a_1, exact a_1 (by finish : a_2 ∈ _) },
+    { unfold finset.to_set at *, simp[set.mem_insert_iff] at a_3,
+      cases a_3 with a_3₁ a_3₂,
+        { finish },
+        { exact a_1_right ‹_› } }
 end
 
 lemma co_principal_open_finset_eq_inter (F : finset α) : co_principal_open_finset F = (finset.inf F (co_principal_open)) :=

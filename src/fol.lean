@@ -1292,8 +1292,8 @@ namespace bounded_preterm
 | _ (bd_func f)  := func f
 | _ (bd_app t s) := app (fst t) (fst s)
 
-local attribute [extensionality] fin.eq_of_veq
-@[extensionality] protected def eq {n} : ∀{l} {t₁ t₂ : bounded_preterm L n l} (h : t₁.fst = t₂.fst),
+local attribute [ext] fin.eq_of_veq
+@[ext] protected def eq {n} : ∀{l} {t₁ t₂ : bounded_preterm L n l} (h : t₁.fst = t₂.fst),
   t₁ = t₂
 | _ &k &k'                        h := by injection h with h'; congr1; ext; exact h'
 | _ &k (bd_func f')               h := by injection h
@@ -1727,8 +1727,8 @@ by refl
 @[simp] lemma fst_ex {n} {f : bounded_formula L (n+1)} : (∃' f).fst = ∃' f.fst :=
 by refl
 
-local attribute [extensionality] fin.eq_of_veq
-@[extensionality] protected def eq {n l} {f₁ f₂ : bounded_preformula L n l} (h : f₁.fst = f₂.fst) :
+local attribute [ext] fin.eq_of_veq
+@[ext] protected def eq {n l} {f₁ f₂ : bounded_preformula L n l} (h : f₁.fst = f₂.fst) :
   f₁ = f₂ :=
 begin
   induction f₁; cases f₂; injection h with h₁ h₂,

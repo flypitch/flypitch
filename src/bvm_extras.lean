@@ -180,10 +180,7 @@ end
 @[reducible]def succ (x : bSet 𝔹) := bSet.insert1 x x
 
 @[simp]lemma subset_succ {x : bSet 𝔹} {Γ} : Γ ≤ x ⊆ᴮ (succ x) :=
-begin
-  rw subset_unfold', bv_intro z, bv_imp_intro Hz, erw mem_insert1,
-  from bv_or_right ‹_›
-end
+by { rw subset_unfold', bv_intro z, bv_imp_intro Hz, erw mem_insert1, bv_tauto }
 
 lemma succ_eq_binary_union {x : bSet 𝔹} {Γ} : Γ ≤ succ x =ᴮ binary_union {x} x :=
 begin

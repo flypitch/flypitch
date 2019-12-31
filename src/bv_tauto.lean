@@ -77,6 +77,7 @@ do (goal_is_bv_false >> skip) <|> `[refine _root_.lattice.bv_by_contra _] >> bv_
    try bv_split,
    try bv_contradiction
 
+-- TODO(jesse): also automatically case on existentials
 meta def bv_tauto (n : option ℕ := none) : tactic unit :=
 match n with
 | none := bv_tauto_step *> (done <|> (auto_or_elim_step; bv_tauto))
