@@ -1139,7 +1139,7 @@ begin
   specialize h' i, apply h', apply inf_le_left
 end
 
-lemma context_or_elim {β : Type*} [complete_boolean_algebra β] {Γ a₁ a₂ b : β}
+lemma context_or_elim {β : Type*} [boolean_algebra β] {Γ a₁ a₂ b : β}
   (H : Γ ≤ a₁ ⊔ a₂) {H₁ : a₁ ⊓ Γ ≤ a₁ → a₁ ⊓ Γ ≤ b} {H₂ : a₂ ⊓ Γ ≤ a₂ → a₂ ⊓ Γ ≤ b} : Γ ≤ b :=
 begin
   apply le_trans' H, rw[inf_comm], rw[deduction], apply sup_le; rw[<-deduction];
@@ -1188,16 +1188,16 @@ lemma context_split_inf_right {β : Type*} [complete_lattice β] {a₁ a₂ Γ: 
   Γ ≤ a₂ :=
 by {rw[le_inf_iff] at H, finish}
 
-lemma context_imp_elim {β : Type*} [complete_boolean_algebra β] {a b Γ: β} (H₁ : Γ ≤ a ⟹ b) (H₂ : Γ ≤ a) : Γ ≤ b :=
+lemma context_imp_elim {β : Type*} [boolean_algebra β] {a b Γ: β} (H₁ : Γ ≤ a ⟹ b) (H₂ : Γ ≤ a) : Γ ≤ b :=
 begin
   apply le_trans' H₁, apply le_trans, apply inf_le_inf H₂, refl,
   rw[inf_comm], simp[imp, inf_sup_right]
 end
 
-lemma context_imp_intro {β : Type*} [complete_boolean_algebra β] {a b Γ : β} (H : a ⊓ Γ ≤ a → a ⊓ Γ ≤ b) : Γ ≤ a ⟹ b :=
+lemma context_imp_intro {β : Type*} [boolean_algebra β] {a b Γ : β} (H : a ⊓ Γ ≤ a → a ⊓ Γ ≤ b) : Γ ≤ a ⟹ b :=
 by {rw[<-deduction, inf_comm], from H (inf_le_left)}
 
-instance imp_to_pi {β } [complete_boolean_algebra β] {Γ a b : β} : has_coe_to_fun (Γ ≤ a ⟹ b) :=
+instance imp_to_pi {β } [boolean_algebra β] {Γ a b : β} : has_coe_to_fun (Γ ≤ a ⟹ b) :=
 { F := λ x, Γ ≤ a → Γ ≤ b,
   coe := λ H₁ H₂, by {apply context_imp_elim; from ‹_›}}
 
@@ -1447,7 +1447,7 @@ meta def bv_or_elim_at_core (e : expr) (Γ_old : expr) (n_H : name) : tactic uni
 do
    n <- get_unused_name (n_H ++ "left"),
    n' <- get_unused_name (n_H ++ "right"),
-   `[apply lattice.context_or_elim %%e],
+   `[refine lattice.context_or_elim %%e],
    (tactic.intro n) >> specialize_context_core Γ_old, swap,
    (tactic.intro n') >> specialize_context_core Γ_old, swap
 
@@ -1597,12 +1597,23 @@ match nm with
   specialize_context_core' Γ_old
 end
 
+meta def tidy_context_intro1 : tactic expr :=
+do b ← succeeds (do `(%%a ≤ %%b) ← target, skip),
+   guard (¬ b),
+   intro1
+  
+
+meta def tidy_context_intros1 : tactic (list expr) :=
+iterate1 tidy_context_intro1 >>= λ p, return (p.1 :: p.2)
+-- (do `(%%a ≤ %%b) ← target, return []) <|> intros1
+
 meta def tidy_context_tactics : list (tactic string) :=
 [ reflexivity                                 >> pure "refl",
   propositional_goal >> assumption            >> pure "assumption",
-  intros1                                     >>= λ ns, pure ("intros " ++ (" ".intercalate (ns.map (λ e, e.to_string)))),
+  tidy_context_intros1                         >>= λ ns, pure ("intros " ++ (" ".intercalate (ns.map (λ e, e.to_string)))),
   auto_cases,
   `[simp only [_root_.lattice.le_inf_iff] at *]                                >> pure "simp only [le_inf_iff] at *",
+  fsplit  >> pure "fsplit",
   propositional_goal >> (`[solve_by_elim])    >> pure "solve_by_elim"
 ]
 

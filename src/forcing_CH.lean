@@ -292,7 +292,7 @@ end
 
 lemma function_reflect_aux₂ : (⨅n, function_reflect.B H_nonzero H AE n) ≤ (⨅n, (pair (pSet.omega.func (ulift.up n))̌  (y.func $ function_reflect.f H_nonzero H AE n)̌  ∈ᴮ (function_reflect.f' H_nonzero H AE)̌  ⇔ (pair (pSet.omega.func (ulift.up n))̌  (y.func $ function_reflect.f H_nonzero H AE n)̌  ∈ᴮ g))) :=
 begin
-  refine infi_le_infi (λ n, _), tidy_context, refine ⟨_,_⟩; bv_imp_intro H_mem,
+  refine infi_le_infi (λ n, _), tidy_context; bv_imp_intro H_mem,
     { refine le_trans a _, apply function_reflect.B_pair },
     { apply @bv_rw' _ _ _ _ _ (bv_symm check_pair) (λ z, z ∈ᴮ  (function_reflect.f' H_nonzero H AE)̌ ), simp,
       refine check_mem _, convert pSet.function.mk_mem, refl }

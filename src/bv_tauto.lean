@@ -4,7 +4,7 @@ local infix ` ⟹ `:65 := lattice.imp
 
 namespace lattice
 
-lemma context_or_elim' {β} [complete_boolean_algebra β] {Γ a b c : β} (H : Γ ≤ a ⊔ b) (H_left : ∀ {Γ'} (H_le : Γ' ≤ Γ) (H_le' : Γ' ≤ a), Γ' ≤ c) (H_right : ∀ {Γ'} (H_le : Γ' ≤ Γ) (H_le' : Γ' ≤ b), Γ' ≤ c) : Γ ≤ c :=
+lemma context_or_elim' {β} [boolean_algebra β] {Γ a b c : β} (H : Γ ≤ a ⊔ b) (H_left : ∀ {Γ'} (H_le : Γ' ≤ Γ) (H_le' : Γ' ≤ a), Γ' ≤ c) (H_right : ∀ {Γ'} (H_le : Γ' ≤ Γ) (H_le' : Γ' ≤ b), Γ' ≤ c) : Γ ≤ c :=
 begin
   bv_or_elim_at H,
     { specialize @H_left Γ_1 (by simp[Γ_1]) ‹_›, from ‹_› },

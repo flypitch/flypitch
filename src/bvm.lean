@@ -668,7 +668,7 @@ end
 @[simp]lemma B_ext_inf {ϕ₁ ϕ₂ : bSet 𝔹 → 𝔹} (h₁ : B_ext ϕ₁) (h₂ : B_ext ϕ₂) :
   B_ext (λ x, ϕ₁ x ⊓ ϕ₂ x) :=
 begin
-  intros x y, tidy_context, refine ⟨_,_⟩,
+  intros x y, tidy_context,
     { apply bv_rw' (bv_symm a_left); from ‹_› },
     { apply bv_rw' (bv_symm a_left); from ‹_› }
 end
@@ -1290,7 +1290,7 @@ begin
     λ i_z, by {tidy_context, from bv_trans (‹_› : Γ ≤ x =ᴮ func u i_z) ‹_›},
     dsimp at H, simp[H] at this, rw[<-supr_le_iff] at this, rw[eq_top_iff] at h₂,
     refine le_trans _ this, convert h₂, rw[mem_unfold], congr' 1, ext,
-    refine le_antisymm _ _; tidy_context, from ⟨⟨⟨‹_›,‹_›⟩,‹_›⟩, bv_symm ‹_›⟩
+    refine le_antisymm _ _; tidy_context
 end
 
 noncomputable def core.S' (u : bSet 𝔹) : (core.mk_ϕ u '' set.univ) → bSet 𝔹 :=
