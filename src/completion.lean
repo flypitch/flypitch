@@ -195,7 +195,7 @@ begin
     exact H h},
 
     simp[*, -H'] at H',
-    have witness := instantiate_existential H', simp* at witness,
+    have witness := indefinite_description _ H', simp* at witness,
     split, swap, split, swap, exact witness.val, cases witness.property with case1 case2, cases case1 with case1' case1'', exact case1',
 split, have witness_property := witness.property, cases witness_property with case1 case2, cases case1 with case1' case1'', exact case1'',
 have witness_property := witness.property, cases witness_property with case1 case2, exact case2,},
