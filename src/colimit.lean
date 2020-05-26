@@ -128,7 +128,7 @@ def universal_map {D} {F : directed_diagram D} {V : cocone F} : colimit F → (V
 begin
   fapply quotient.lift, {exact λp, V.map p.fst p.snd},
   {intros p q H, rcases p with ⟨i,x⟩, rcases q with ⟨j,y⟩, simp only *,
-   simp[(≈), germ_relation] at H, rcases H with ⟨k,z,⟨f1, H1⟩,f2,H2⟩,
+   simp[(≈), germ_relation] at H, rcases H with ⟨k,f1,f2,H⟩,
    change V.map i x = V.map j y, have : V.map i x = V.map k (F.mor f1 x),
    simp only [V.h_compat f1, eq_self_iff_true, function.comp_app],
    have : V.map j y = V.map k (F.mor f2 y),
@@ -158,7 +158,7 @@ end
 noncomputable def germ_rep {D} {F : directed_diagram D} (a : colimit F) : Σ' x : (coproduct_of_directed_diagram F), ⟦x⟧ = a := classical.psigma_of_exists (quotient.exists_rep a)
 
 @[simp]lemma canonical_map_quotient {D} {F : directed_diagram D} (a : coproduct_of_directed_diagram F) : canonical_map a.fst a.snd = ⟦a⟧ :=
-by {auto_cases, refl}
+by { cases F, cases a, refl}
 
 /- Assuming canonical maps into the colimit are injective, ⟨i,x⟩ and ⟨j,y⟩ in the same fiber
 over a ⟦z⟧ : colimit F are related by any transition map i → j. -/
@@ -209,7 +209,7 @@ def diagram.mk.map {F : ℕ → Type*} {h_succ : ∀{i : ℕ}, F i → F (i+1)} 
 
 @[simp]lemma diagram.mk.map_self_id {F : ℕ → Type*} {h_succ : ∀(i : ℕ), F i → F (i+1)} (x : ℕ) :
                   @diagram.mk.map F @h_succ x x (by constructor) = id :=
-by {induction x, tidy, simp[diagram.mk.map,*], refl}
+by { induction x, tidy, simp[diagram.mk.map,*] }
 
 
 /- If the successive maps of h_succ are injective, then all their compositions are injective -/
@@ -220,7 +220,7 @@ begin
     by_cases x = y_n + 1,
       {dsimp[*, diagram.mk.map], finish},
     have : x ≤ y_n, by {apply nat.le_of_le_and_ne_succ, repeat{assumption}},
-    simp[*, diagram.mk.map], apply function.injective_comp, apply h_inj, apply y_ih
+    simp[*, diagram.mk.map], apply function.injective.comp, apply h_inj, apply y_ih
 end
 
 -- /- Given a ℕ-indexed family of types and a way of assigning maps between successive objects
@@ -235,7 +235,7 @@ refine ⟨F, by {apply diagram.mk.map, assumption}, _⟩,
      by {exfalso, fapply nat.succ_ne_zero, exact y_n, apply (nat.le_zero_iff).mp, assumption},
      by_cases h : y = z_n+1, subst h;
        by_cases x = z_n+1;
-       {repeat{dsimp[diagram.mk.map], simp*, refl}},
+       { dsimp[diagram.mk.map], simp* },
      by_cases h' : x = z_n+1,
        {exfalso, have : y < z_n+1 := lt_of_le_of_ne H2 h, dsimp at *, linarith},
        {have h_x : x ≤ z_n; have h_y : y ≤ z_n,

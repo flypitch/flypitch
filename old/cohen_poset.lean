@@ -122,7 +122,7 @@ lemma univ_is_union_of_fibers {α β : Type*} (f : α → β) : @set.univ α = s
 lemma countable_of_injection_to_countable {α β : Type*} {s : set α} {s' : set β} (f : s → s') {hf : function.injective f} (h' : set.countable s') : set.countable s :=
 begin
   have := set.countable_iff_exists_injective.mp h', apply set.countable_iff_exists_injective.mpr,
-  cases this, refine ⟨this_w ∘ f,_⟩, exact function.injective_comp (this_h) hf
+  cases this, refine ⟨this_w ∘ f,_⟩, exact function.injective.comp (this_h) hf
 end
 
 lemma countable_of_bijection_with_countable {α β : Type*} {s : set α} {s' : set β} {f : s → s'}

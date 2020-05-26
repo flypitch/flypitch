@@ -46,7 +46,7 @@ lemma proof_compactness {L : Language.{u}} {ψ : formula L} {T : set $ formula L
 begin
   haveI : decidable_eq (formula L) := λx y, classical.prop_decidable _,
   intro P, induction P with P, induction P,
-  { exact ⟨{P_A}, ⟨axm1⟩, set.singleton_subset_iff.mpr P_h⟩ },
+  { exact ⟨{P_A}, ⟨axm1⟩, by simp [P_h]⟩ },
   { rcases P_ih with ⟨Γ, H, K⟩, refine ⟨Γ \ {P_A}, impI' $ weakening' (by simp) H, by simp [K]⟩ },
   { rcases P_ih_h₁ with ⟨Γ₁, H₁, K₁⟩, rcases P_ih_h₂ with ⟨Γ₂, H₂, K₂⟩,
     refine ⟨Γ₁ ∪ Γ₂, impE' _ (weakening' (by simp) H₁) (weakening' (by simp) H₂), by simp [K₁, K₂]⟩ },

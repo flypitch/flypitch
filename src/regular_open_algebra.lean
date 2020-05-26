@@ -675,7 +675,7 @@ lemma CCC_regular_opens (h : countable_chain_condition α) : CCC (regular_opens 
 begin
   intros β O hO h2O,
   have O_inj : injective (subtype.val ∘ O),
-  { apply injective_comp subtype.val_injective, intros x y hxy,
+  { apply injective.comp subtype.val_injective, intros x y hxy,
     by_contra, apply not_le_of_gt (hO y),
     have := h2O _ _ a, rwa [hxy, inf_self] at this },
   have := h (range (subtype.val ∘ O)) _ _,

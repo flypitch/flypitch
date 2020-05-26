@@ -59,11 +59,8 @@ Now, we have to show that given an arbitrary chain in this poset, we can obtain 
 /- Given a set of theories and a proof that they form a chain under set-inclusion, return their union and a proof that this contains every theory in the chain
 -/
 
-lemma nonempty_of_not_empty {α : Type u} (s : set α) (h : ¬ s = ∅) : nonempty s :=
-by rwa [coe_nonempty_iff_ne_empty]
-
 /-- Theory_over T is the subtype of Theory L consisting of consistent theories T' such that T' ⊇ T--/
-def Theory_over {L : Language.{u}} (T : Theory L) (hT : is_consistent T): Type u :=
+def Theory_over {L : Language.{u}} (T : Theory L) (hT : is_consistent T) : Type u :=
 {T' : Theory L // T ⊆ T' ∧ is_consistent T'}
 
 /-- Every theory T is trivially a theory over itself --/
@@ -176,10 +173,8 @@ end
 lemma consis_limit {L : Language} {T : Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : is_consistent (T ∪ set.sUnion (subtype.val '' Ts)) :=
 begin
   intro h_inconsis,
-  by_cases nonempty Ts, swap,
-  { simp at h, simp[*, -h_inconsis] at h_inconsis, unfold is_consistent at hT, apply hT,
-    rw [←union_empty T], convert h_inconsis, symmetry, apply bUnion_empty },
-
+  cases eq_empty_or_nonempty Ts,
+  { simp[*, -h_inconsis] at h_inconsis, exact hT h_inconsis },
   have Γpair := theory_proof_compactness' (T ∪ ⋃₀(subtype.val '' Ts)) ⊥ h_inconsis,
   have h_bad : ∃ T' : (Theory L), (T' ∈ (subtype.val '' Ts)) ∧ {ψ | ψ ∈ Γpair.fst} ⊆ T',
 
@@ -189,9 +184,9 @@ begin
     {  intros f hf, have H := Hfs.right,
   unfold set.image set.sUnion set.subset set.mem list.mem at H,
   have H' := H hf,  by_cases f ∈ T,
-  split, swap, {exact (classical.choice hTs).val},
-  {fapply and.intro, exact (choice hTs).property,
-    have H := (choice hTs).val.property.left,
+  split, swap, {exact hTs.some},
+  {fapply and.intro, exact hTs.some_mem,
+    have H := hTs.some.property.left,
     exact H h},
 
     simp[*, -H'] at H',
@@ -232,7 +227,7 @@ have witness_property := witness.property, cases witness_property with case1 cas
         },
       },
     {intros a b c, unfold Theory_over_subset, fapply subset.trans},
-    {assumption}},
+    { exact hTs.to_subtype }},
 
   fapply exists.intro, exact T_max.fst.val,
   fapply and.intro, fapply set.mem_image_of_mem, exact T_max.snd.left,
@@ -283,11 +278,11 @@ end
 lemma cannot_extend_maximal_extension {L : Language} {T : Theory L} {hT : is_consistent T} (T_max' : Σ' (T_max : Theory_over T hT), ∀ T' : Theory_over T hT, T_max ⊆ T' → T' ⊆ T_max) (ψ : sentence L) (H : is_consistent (T_max'.fst.val ∪ {ψ}))(H1 : ψ ∉ T_max'.fst.val) : false :=
 begin
   let T_bad : Theory_over T hT :=
-    by {refine ⟨T_max'.fst.val ∪ {ψ}, ⟨_, H⟩⟩, simp[has_subset.subset], intros ψ hψT,
-        dedup, have extension_assumption := T_max'.fst.property.left, simp[has_insert.insert],
+    by {refine ⟨T_max'.fst.val ∪ {ψ}, ⟨_, H⟩⟩, simp, intros ψ hψT,
+        dedup, have extension_assumption := T_max'.fst.property.left, simp,
         from or.inr (extension_assumption ‹_›)},
   have h_bad := T_max'.snd T_bad,
-  from absurd (h_bad (by finish) (by simp[has_insert.insert])) H1
+  from absurd (h_bad (by finish) (by { simp[set.insert] })) H1
 end
 
 /-- Given a maximal consistent extension of consistent theory T, show it is complete --/

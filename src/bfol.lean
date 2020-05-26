@@ -9,13 +9,13 @@ Authors: Jesse Han, Floris van Doorn
 
 import .fol order.complete_boolean_algebra
 
-open nat set fol lattice
+open nat set fol
 universe variables u v w
 
 local notation h :: t  := dvector.cons h t
 local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`:0) := l
-local infix ⇒ := lattice.imp
-local infix ` ⟷ `:40 := lattice.biimp
+local infix ⇒ := _root_.imp
+local infix ` ⟷ `:40 := _root_.biimp
 
 namespace fol
 
@@ -124,7 +124,7 @@ lemma boolean_realize_term_congr (v v' : ℕ → S) {l} (t : preterm L l) (xs : 
     S.eq (boolean_realize_term v t xs) (boolean_realize_term v' t xs) :=
 begin
   refine le_trans _ (boolean_realize_term_congr_gen v v' t _ _),
-  simp only [lattice.le_inf_iff, dvector.map2, le_refl, and_true, eq_drefl, le_top],
+  simp only [le_inf_iff, dvector.map2, le_refl, and_true, eq_drefl, le_top],
 end
 
 lemma boolean_realize_term_subst_congr (v : ℕ → S) {n} (s s' : term L) :
@@ -218,7 +218,7 @@ lemma boolean_realize_formula_congr_gen : ∀(v v' : ℕ → S) {l} (f : preform
   end
 | v v' _ (f₁ ⟹ f₂)   xs xs' :=
   begin
-    dsimp, simp only [lattice.imp, inf_sup_left], apply sup_le_sup,
+    dsimp, simp only [_root_.imp, inf_sup_left], apply sup_le_sup,
     { apply le_neg_of_inf_eq_bot,
       convert sub_eq_bot_of_le (boolean_realize_formula_congr_gen v' v f₁ xs' xs) using 1,
       rw [inf_comm, @inf_comm _ _ (-_), @inf_assoc _ _ (has_inf.inf _ _),
@@ -239,7 +239,7 @@ lemma boolean_realize_formula_congr (v v' : ℕ → S) {l} (f : preformula L l) 
   boolean_realize_formula v' f xs :=
 begin
   refine le_trans _ (boolean_realize_formula_congr_gen v v' f xs xs),
-  simp [lattice.le_inf_iff, dvector.map2, le_refl, and_true, eq_drefl, le_top],
+  simp [le_inf_iff, dvector.map2, le_refl, and_true, eq_drefl, le_top],
 end
 
 lemma boolean_realize_formula_subst_congr (v : ℕ → S) (s s' : term L) :
@@ -377,7 +377,8 @@ by cases xs; exact boolean_realize_bounded_term_irrel'
 boolean_realize_bounded_term v (t.cast_eq h) xs = boolean_realize_bounded_term (v.cast h.symm) t xs := by {subst h, induction t, refl, refl, simp*}
 
 @[simp] lemma boolean_realize_bounded_term_dvector_cast_irrel {n m l} {h : n = m} {v : dvector S n} {t : bounded_preterm L n l} {xs : dvector S l} :
-boolean_realize_bounded_term (v.cast h) (t.cast (le_of_eq h)) xs = boolean_realize_bounded_term v t xs := by {subst h, simp, refl}
+boolean_realize_bounded_term (v.cast h) (t.cast (le_of_eq h)) xs = boolean_realize_bounded_term v t xs :=
+by {subst h, simp }
 
 @[simp] lemma boolean_realize_bounded_term_bd_app
   {n l} (t : bounded_preterm L n (l+1)) (s : bounded_term L n) (xs : dvector S n)
@@ -568,19 +569,19 @@ by { simp [bd_not] }
   {f g : bounded_formula.{u} L n} :
   boolean_realize_bounded_formula v (f ⊔ g) ([]) =
   boolean_realize_bounded_formula v f ([]) ⊔ boolean_realize_bounded_formula v g ([]) :=
-by { simp [bd_or, lattice.imp] }
+by { simp [bd_or, _root_.imp] }
 
 @[simp] lemma boolean_realize_bounded_formula_and {n} {v : dvector S n}
   {f g : bounded_formula.{u} L n} :
   boolean_realize_bounded_formula v (f ⊓ g) ([]) =
   boolean_realize_bounded_formula v f ([]) ⊓ boolean_realize_bounded_formula v g ([]) :=
-by { simp [bd_and, lattice.imp] }
+by { simp [bd_and, _root_.imp] }
 
 @[simp] lemma boolean_realize_bounded_formula_ex {n} {v : dvector S n}
   {f : bounded_formula.{u} L (n+1)} :
   boolean_realize_bounded_formula v (∃' f) ([]) =
   ⨆(x : S), boolean_realize_bounded_formula (x::v) f ([]) :=
-by { simp [bd_ex, neg_infi] }
+by { simp [bd_ex, compl_infi] }
 
 lemma boolean_realize_bounded_sentence_ex {f : bounded_formula.{u} L 1} :
   boolean_realize_bounded_formula ([] : dvector S 0) (∃' f) ([]) =

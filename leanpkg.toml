@@ -1,8 +1,8 @@
 [package]
 name = "flypitch"
 version = "2.2"
-lean_version = "3.4.2"
+lean_version = "leanprover-community/lean:3.14.0"
 path = "src"
 
 [dependencies]
-mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "883d974b608845bad30ae19e27e33c285200bf84"}
+mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "aad2dfc40e8e6a7e258287a7c1580318e865817e"}

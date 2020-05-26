@@ -37,7 +37,7 @@ local notation h :: t  := dvector.cons h t
 local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`) := l
 variables {α : Type u} {β : Type v} {γ : Type w} {n : ℕ}
 
-@[simp] protected lemma zero_eq : ∀(xs : dvector α 0), xs = []
+protected lemma zero_eq : ∀(xs : dvector α 0), xs = []
 | [] := rfl
 
 @[simp] protected def concat : ∀{n : ℕ} (xs : dvector α n) (x : α), dvector α (n+1)
@@ -139,7 +139,7 @@ protected lemma concat_nth : ∀{n : ℕ} (xs : dvector α n) (x : α) (m : ℕ)
 | _ []      x' h := by refl
 | _ (x::xs) x' h := by { dsimp, exact concat_nth_last xs x' _ }
 
-@[simp] protected lemma concat_nth_last' : ∀{n : ℕ} (xs : dvector α n) (x : α) (h : n < n+1),
+protected lemma concat_nth_last' : ∀{n : ℕ} (xs : dvector α n) (x : α) (h : n < n+1),
   (xs.concat x).last = x
 := by apply dvector.concat_nth_last
 
@@ -184,14 +184,14 @@ end
 
 protected lemma nth_irrel1 : ∀{n k : ℕ} {h : k < n + 1} {h' : k < n + 1 + 1} (v : dvector α (n+1)) (x : α),
   (x :: (v.trunc n (nat.le_succ n))).nth k h = (x::v).nth k h' :=
-by {intros, apply @dvector.trunc_nth _ _ _ _ (by {simp, exact dec_trivial}) h (x::v)}
+by {intros, apply @dvector.trunc_nth _ _ _ _ (by simp) h (x::v)}
 
 protected def cast {n m} (p : n = m) : dvector α n → dvector α m :=
 by { subst p, exact id }
 
-@[simp] protected lemma cast_irrel {n m} {p p' : n = m} {v : dvector α n} : v.cast p = v.cast p' := by refl
+protected lemma cast_irrel {n m} {p p' : n = m} {v : dvector α n} : v.cast p = v.cast p' := by refl
 
-@[simp] protected lemma cast_rfl {n m} {p : n = m} {q : m = n} {v : dvector α n} : (v.cast p).cast q = v := by {subst p, refl}
+@[simp] protected lemma cast_rfl {n} {p : n = n} {v : dvector α n} : v.cast p = v := by {refl}
 
 protected lemma cast_hrfl {n m} {p : n = m} {v : dvector α n} : v.cast p == v :=
 by { subst p, refl }
@@ -340,8 +340,8 @@ end dvector
 namespace set
 lemma disjoint_iff_eq_empty {α} {s t : set α} : disjoint s t ↔ s ∩ t = ∅ := disjoint_iff
 
-@[simp] lemma not_nonempty_iff {α} {s : set α} : ¬nonempty s ↔ s = ∅ :=
-by rw [coe_nonempty_iff_ne_empty, classical.not_not]
+-- @[simp] lemma not_nonempty_iff {α} {s : set α} : ¬nonempty s ↔ s = ∅ :=
+-- by rw [nonempty_iff_ne_empty, classical.not_not]
 
 lemma neq_neg_of_nonempty {α : Type*} {P : set α} (H_nonempty : nonempty α) : P ≠ - P :=
 begin
@@ -360,8 +360,8 @@ end
   s ⊆ ⋂₀ C ↔ ∀ t ∈ C, s ⊆ t :=
 by simp [sInter_eq_bInter]
 
-lemma ne_empty_of_subset {α} {s t : set α} (h : s ⊆ t) (hs : s ≠ ∅) : t ≠ ∅ :=
-by { rw [set.ne_empty_iff_exists_mem] at hs ⊢, cases hs with x hx, exact ⟨x, h hx⟩ }
+-- lemma ne_empty_of_subset {α} {s t : set α} (h : s ⊆ t) (hs : s ≠ ∅) : t ≠ ∅ :=
+-- by { rw [set.ne_empty_iff_exists_mem] at hs ⊢, cases hs with x hx, exact ⟨x, h hx⟩ }
 
 end set
 
@@ -403,10 +403,10 @@ begin
 end
 
 lemma nonempty_basis_subset {b : set (set α)}
-  (hb : is_topological_basis b) {u : set α} (hu : u ≠ ∅) (ou : _root_.is_open u) :
-  ∃v ∈ b, v ≠ ∅ ∧ v ⊆ u :=
+  (hb : is_topological_basis b) {u : set α} (hu : u.nonempty) (ou : _root_.is_open u) :
+  ∃v ∈ b, (v : set α).nonempty ∧ v ⊆ u :=
 begin
-  simp only [set.ne_empty_iff_exists_mem] at hu ⊢, cases hu with x hx,
+  cases hu with x hx,
   rcases mem_basis_subset_of_mem_open hb hx ou with ⟨o, h1o, h2x, h2o⟩,
   exact ⟨o, h1o, ⟨x, h2x⟩, h2o⟩
 end
@@ -437,7 +437,7 @@ by { rw [← mk_union_add_mk_inter], apply le_add_right }
 
 lemma exists_mem_compl_of_mk_lt_mk {α} (P : set α) (H_lt : cardinal.mk P  < cardinal.mk α) : ∃ x : α, x ∈ (- P) :=
 begin
-  haveI : decidable (∃ (x : α), x ∈ - P) := classical.prop_decidable _,
+  classical,
   by_contra, push_neg at a,
   replace a := (by finish : ∀ x, x ∈ P),
   suffices : mk α ≤ mk P ,
@@ -458,18 +458,10 @@ end
 lemma nonzero_of_regular {κ : cardinal} (H_reg : cardinal.is_regular κ) : 0 < κ.ord :=
 by {rw cardinal.lt_ord, from lt_of_lt_of_le omega_pos H_reg.left}
 
-lemma injection_of_mk_le {α β : Type u} (H_le : #α ≤ #β) : ∃ f : α → β, function.injective f :=
-begin
-  rw cardinal.out_embedding at H_le,
-  have := classical.choice H_le,
-  cases this with f Hf,
-  suffices : ∃ g₁ : α → quotient.out (#α), function.injective g₁ ∧ ∃ g₂ : quotient.out (#β) → β, function.injective g₂,
-    by {rcases this with ⟨g₁,Hg₁,g₂,Hg₂⟩, use g₂ ∘ f ∘ g₁, simp[function.injective_comp, *] },
-  have this₁ : #(quotient.out (#α)) = #α := mk_out _, have this₂ : #(quotient.out _) = #β := mk_out _,
-  erw quotient.eq' at this₁ this₂, replace this₁ := classical.choice this₁, replace this₂ := classical.choice this₂,
-  cases this₁, cases this₂,
-  refine ⟨this₁_inv_fun, _, this₂_to_fun, _⟩; apply function.injective_of_left_inverse; from ‹_›
-end
+-- lemma injection_of_mk_le {α β : Type u} (H_le : #α ≤ #β) : ∃ f : α → β, function.injective f :=
+-- begin
+--   cases H_le, exact ⟨H_le.1, H_le.2⟩
+-- end
 
 end cardinal_lemmas
 
@@ -484,7 +476,7 @@ namespace nat
 protected lemma pred_lt_iff_lt_succ {m n : ℕ} (H : 1 ≤ m) : pred m < n ↔ m < succ n :=
 nat.sub_lt_right_iff_lt_add H
 
-@[simp]lemma le_of_le_and_ne_succ {x y : ℕ} (H : x ≤ y + 1) (H' : x ≠ y + 1) : x ≤ y :=
+lemma le_of_le_and_ne_succ {x y : ℕ} (H : x ≤ y + 1) (H' : x ≠ y + 1) : x ≤ y :=
 by simp only [*, nat.lt_of_le_and_ne, nat.le_of_lt_succ, ne.def, not_false_iff]
 
 end nat
@@ -524,16 +516,16 @@ classical.some_spec2 _ hx
 lemma or_not_iff_true (p : Prop) : (p ∨ ¬ p) ↔ true :=
 ⟨λ_, trivial, λ_, or_not⟩
 
-lemma nonempty_of_not_empty {α : Type u} (s : set α) (h : ¬ s = ∅) : nonempty s :=
-set.coe_nonempty_iff_ne_empty.mpr h
+-- lemma nonempty_of_not_empty {α : Type u} (s : set α) (h : ¬ s = ∅) : nonempty s :=
+-- set.coe_nonempty_iff_ne_empty.mpr h
 
-lemma nonempty_of_not_empty_finset {α : Type u} (s : finset α) (h : ¬ s = ∅) : nonempty s.to_set :=
-(finset.nonempty_iff_ne_empty s).mpr h
+-- lemma nonempty_of_not_empty_finset {α : Type u} (s : finset α) (h : ¬ s = ∅) : s.nonempty :=
+-- (finset.nonempty_iff_ne_empty s).mpr h
 
 end classical
 
 namespace list
-@[simp] protected def to_set {α : Type u} (l : list α) : set α := { x | x ∈ l }
+protected def to_set {α : Type u} (l : list α) : set α := { x | x ∈ l }
 
 lemma to_set_map {α : Type u} {β : Type v} (f : α → β) (l : list α) :
   (l.map f).to_set = f '' l.to_set :=
@@ -570,17 +562,12 @@ namespace set
 
 variables {α : Type u} {β : Type v} {γ : Type w}
 
-/-set.ne_empty_iff_exists_mem.mpr-/
-lemma ne_empty_of_exists_mem {s : set α} : ∀(h : ∃x, x ∈ s), s ≠ ∅
-| ⟨x, hx⟩ := ne_empty_of_mem hx
-
-lemma inter_sUnion_ne_empty_of_exists_mem {b : set α} {𝓕 : set $ set α} (H : ∃ f ∈ 𝓕, b ∩ f ≠ ∅) : b ∩ ⋃₀ 𝓕 ≠ ∅ :=
+lemma inter_sUnion_ne_empty_of_exists_mem {b : set α} {𝓕 : set $ set α} (H : ∃ f ∈ 𝓕, (b ∩ f).nonempty) : (b ∩ ⋃₀ 𝓕).nonempty :=
 begin
-  apply ne_empty_of_exists_mem, safe, change _ ≠ _ at h_1, rw ne_empty_iff_exists_mem at h_1,
-  rcases h_1 with ⟨x, H₁, H₂⟩, specialize a x, finish
+  rcases H with ⟨f, hf, x, h1x, h2x⟩, exact ⟨x, h1x, ⟨f, hf, h2x⟩⟩
 end
 
-@[simp]lemma mem_image_univ {f : α → β} {x} : f x ∈ f '' set.univ := ⟨x, ⟨trivial, rfl⟩⟩
+lemma mem_image_univ {f : α → β} {x} : f x ∈ f '' set.univ := ⟨x, ⟨trivial, rfl⟩⟩
 
 -- todo: only use image_preimage_eq_of_subset
 lemma image_preimage_eq_of_subset_image {f : α → β} {s : set β}
@@ -619,20 +606,22 @@ begin
   { rw [change, dif_neg hxy], apply hf y hy }
 end
 
-lemma image_pi_pos {π : α → Type*} (i : set α) (s : Πa, set (π a)) [decidable_eq α]
+lemma image_pi_pos {π : α → Type*} (i : set α) (s : Πa, set (π a))
   (hp : nonempty (pi i s)) (x : α) (hx : x ∈ i) : (λ(f : Πa, π a), f x) '' pi i s = s x :=
 begin
   apply subset.antisymm,
   { rintro _ ⟨f, hf, rfl⟩, exact hf x hx },
   intros z hz, have := hp, rcases this with ⟨f, hf⟩,
+  classical,
   refine ⟨_, dif_mem_pi i s f hf z (λ _, hz), _⟩,
   simp only [change, dif_pos rfl]
 end
 
-lemma image_pi_neg {π : α → Type*} (i : set α) (s : Πa, set (π a)) [decidable_eq α]
+lemma image_pi_neg {π : α → Type*} (i : set α) (s : Πa, set (π a))
   (hp : nonempty (pi i s)) (x : α) (hx : x ∉ i) : (λ(f : Πa, π a), f x) '' pi i s = univ :=
 begin
   rw [eq_univ_iff_forall], intro z, have := hp, rcases this with ⟨f, hf⟩,
+  classical,
   refine ⟨_, dif_mem_pi i s f hf z _, _⟩,
   intro hx', exfalso, exact hx hx',
   simp only [change, dif_pos rfl]
@@ -749,43 +738,39 @@ end arity'
 
 @[simp]lemma lt_irrefl' {α} [preorder α] {Γ : α} (H_lt : Γ < Γ) : false := lt_irrefl _ ‹_›
 
-namespace lattice
-
-
-
-instance complete_degenerate_boolean_algebra : complete_boolean_algebra unit :=
+instance complete_boolean_algebra_unit : complete_boolean_algebra unit :=
 { sup := λ _ _, (),
   le := λ _ _, true,
   lt := λ _ _, false,
-  le_refl := by tidy,
-  le_trans := by tidy,
-  lt_iff_le_not_le := by tidy,
-  le_antisymm := by tidy,
-  le_sup_left :=  by tidy,
+  le_refl := dec_trivial,
+  le_trans := dec_trivial,
+  lt_iff_le_not_le := dec_trivial,
+  le_antisymm := dec_trivial,
+  le_sup_left :=  dec_trivial,
   le_sup_right :=  by tidy,
-  sup_le :=  by tidy,
+  sup_le := dec_trivial,
   inf := λ _ _, (),
-  inf_le_left :=  by tidy,
-  inf_le_right :=  by tidy,
-  le_inf :=  by tidy,
-  le_sup_inf :=  by tidy,
+  inf_le_left :=  dec_trivial,
+  inf_le_right :=  dec_trivial,
+  le_inf :=  dec_trivial,
+  le_sup_inf :=  dec_trivial,
   top := (),
-  le_top :=  by tidy,
+  le_top :=  dec_trivial,
   bot := (),
-  bot_le :=  by tidy,
+  bot_le :=  dec_trivial,
   neg := λ _, (),
   sub := λ _ _, (),
-  inf_neg_eq_bot :=  by tidy,
-  sup_neg_eq_top :=  by tidy,
-  sub_eq :=  by tidy,
+  inf_compl_eq_bot := dec_trivial,
+  sup_compl_eq_top := dec_trivial,
+  sub_eq :=  dec_trivial,
   Sup := λ _, (),
   Inf := λ _, (),
-  le_Sup := by tidy,
-  Sup_le := by tidy,
-  Inf_le := by tidy,
-  le_Inf := by tidy,
-  infi_sup_le_sup_Inf := by tidy,
-  inf_Sup_le_supr_inf := by tidy}
+  le_Sup := λ _ _ _, trivial,
+  Sup_le := λ _ _ _, trivial,
+  Inf_le := λ _ _ _, trivial,
+  le_Inf := λ _ _ _, trivial,
+  infi_sup_le_sup_Inf := λ _ _, trivial,
+  inf_Sup_le_supr_inf := λ _ _, trivial}
 
 class nontrivial_complete_boolean_algebra (α : Type*) extends complete_boolean_algebra α :=
   {bot_lt_top : (⊥ : α) < (⊤ : α)}
@@ -853,8 +838,7 @@ begin
   apply H_lt', simp at H, simp*
 end
 
-lemma bot_lt_resolve_right {𝔹} [bounded_lattice 𝔹] {a b : 𝔹} (H_lt : ⊥ < b)
-  (H_lt' : ⊥ < a ⊓ b) : ⊥ < a :=
+lemma bot_lt_resolve_right {𝔹} [bounded_lattice 𝔹] {a b : 𝔹} (H_lt' : ⊥ < a ⊓ b) : ⊥ < a :=
 by rw[inf_comm] at H_lt'; exact bot_lt_resolve_left ‹_›
 
 lemma le_bot_iff_not_bot_lt {𝔹} [bounded_lattice 𝔹] {a : 𝔹} : ¬ ⊥ < a ↔ a ≤ ⊥ :=
@@ -868,10 +852,10 @@ begin
   haveI := classical.prop_decidable, by_contra H', push_neg at H',
   simp [bot_lt_iff_not_le_bot, -le_bot_iff] at H', replace H' := supr_le_iff.mpr H',
   have H_absorb : Γ ⊓ (⨆(i : ι), s i) = Γ,
-    by {exact le_antisymm (inf_le_left) (le_inf (by refl) ‹_›)},
+  { exact le_antisymm inf_le_left (le_inf (by refl) ‹_›) },
   suffices this : (Γ ⊓ ⨆ (i : ι), s i) ≤ ⊥,
-    by {rw[H_absorb, le_bot_iff] at this, simpa[this] using H_nonzero},
-  rwa[inf_supr_eq]
+  { rw[H_absorb, le_bot_iff] at this, simpa[this] using H_nonzero },
+  rwa [inf_supr_eq]
 end
 
 /--
@@ -880,12 +864,12 @@ end
 def imp {α : Type*} [boolean_algebra α] : α → α → α :=
   λ a₁ a₂, (- a₁) ⊔ a₂
 
-local infix ` ⟹ `:65 := lattice.imp
+local infix ` ⟹ `:65 := imp
 
 @[reducible, simp]def biimp {α : Type*} [boolean_algebra α] : α → α → α :=
   λ a₁ a₂, (a₁ ⟹ a₂) ⊓ (a₂ ⟹ a₁)
 
-local infix ` ⇔ `:50 := lattice.biimp
+local infix ` ⇔ `:50 := biimp
 
 lemma biimp_mp {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⇔ a₂) ≤ (a₁ ⟹ a₂) :=
   by apply inf_le_left
@@ -894,7 +878,7 @@ lemma biimp_mpr {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⇔ a
   by apply inf_le_right
 
 lemma biimp_comm {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⇔ a₂) = (a₂ ⇔ a₁) :=
-by {unfold biimp, rw lattice.inf_comm}
+by { unfold biimp, rw inf_comm }
 
 lemma biimp_symm {α : Type*} [boolean_algebra α] {a₁ a₂ : α} {Γ : α} : Γ ≤ (a₁ ⇔ a₂) ↔ Γ ≤ (a₂ ⇔ a₁) :=
 by rw biimp_comm
@@ -903,15 +887,15 @@ by rw biimp_comm
 sup_le (by apply le_sup_left) $ le_sup_right_of_le h
 
 @[simp]lemma imp_le_of_left_le {α : Type*} [boolean_algebra α] {a a₁ a₂ : α} {h : a₂ ≤ a₁} : a₁ ⟹ a ≤ (a₂ ⟹ a) :=
-sup_le (le_sup_left_of_le $ neg_le_neg h) (by apply le_sup_right)
+sup_le (le_sup_left_of_le $ compl_le_compl h) (by apply le_sup_right)
 
 @[simp]lemma imp_le_of_left_right_le {α : Type*} [boolean_algebra α] {a₁ a₂ b₁ b₂ : α}
 {h₁ : b₁ ≤ a₁} {h₂ : a₂ ≤ b₂} :
   a₁ ⟹ a₂ ≤ b₁ ⟹ b₂ :=
-sup_le (le_sup_left_of_le (neg_le_neg h₁)) (le_sup_right_of_le h₂)
+sup_le (le_sup_left_of_le (compl_le_compl h₁)) (le_sup_right_of_le h₂)
 
-lemma neg_le_neg' {α : Type*} [boolean_algebra α] {a b : α} : b ≤ -a → a ≤ -b :=
-by {intro H, rw[show b = - - b, by simp] at H, rwa[<-neg_le_neg_iff_le]}
+lemma compl_le_compl' {α : Type*} [boolean_algebra α] {a b : α} : b ≤ -a → a ≤ -b :=
+by {intro H, rw[show b = - - b, by simp] at H, rwa[<-compl_le_compl_iff_le]}
 
 lemma inf_imp_eq {α : Type*} [boolean_algebra α] {a b c : α} :
   a ⊓ (b ⟹ c) = (a ⟹ b) ⟹ (a ⊓ c) :=
@@ -921,7 +905,7 @@ by unfold imp; simp[inf_sup_left]
 
 @[simp]lemma top_imp {α : Type*} [boolean_algebra α] {a : α} : ⊤ ⟹ a = a := by simp[imp]
 
-@[simp]lemma imp_self {α : Type*} [boolean_algebra α] {a : α} : a ⟹ a = ⊤ := by simp[imp]
+@[simp]lemma imp_self' {α : Type*} [boolean_algebra α] {a : α} : a ⟹ a = ⊤ := by simp[imp]
 
 lemma imp_neg_sub {α : Type*} [boolean_algebra α] {a₁ a₂ : α} :  -(a₁ ⟹ a₂) = a₁ - a₂ :=
   by rw[sub_eq, imp]; simp*
@@ -934,17 +918,17 @@ by { unfold imp, rw [inf_sup_right], simp }
 
 lemma le_of_sub_eq_bot {α : Type*} [boolean_algebra α] {a b : α} (h : - b ⊓ a = ⊥) : a ≤ b :=
 begin
-  apply le_of_inf_eq, rw [←@neg_neg _ b _, ←sub_eq], apply sub_eq_left, rwa [inf_comm]
+  apply le_of_inf_eq, rw [←@compl_compl' _ b _, ←sub_eq], apply sub_eq_left, rwa [inf_comm]
 end
 
 lemma le_neg_of_inf_eq_bot {α : Type*} [boolean_algebra α] {a b : α} (h : b ⊓ a = ⊥) : a ≤ - b :=
-by { apply le_of_sub_eq_bot, rwa [neg_neg] }
+by { apply le_of_sub_eq_bot, rwa [compl_compl'] }
 
 lemma sub_eq_bot_of_le {α : Type*} [boolean_algebra α] {a b : α} (h : a ≤ b) : - b ⊓ a = ⊥ :=
-by rw [←inf_eq_of_le h, inf_comm, inf_assoc, inf_neg_eq_bot, inf_bot_eq]
+by rw [←inf_eq_of_le h, inf_comm, inf_assoc, inf_compl_eq_bot, inf_bot_eq]
 
 lemma inf_eq_bot_of_le_neg {α : Type*} [boolean_algebra α] {a b : α} (h : a ≤ - b) : b ⊓ a = ⊥ :=
-by { rw [←@neg_neg _ b], exact sub_eq_bot_of_le h }
+by { rw [←@compl_compl' _ b], exact sub_eq_bot_of_le h }
 
 /-- the deduction theorem in β -/
 @[simp]lemma imp_top_iff_le {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⟹ a₂ = ⊤) ↔ a₁ ≤ a₂ :=
@@ -1091,12 +1075,7 @@ by {rw[inf_sup_right, inf_sup_left, inf_sup_left], ac_refl}
 
 lemma eq_neg_of_partition {β} [boolean_algebra β] {a₁ a₂ : β} (h_anti : a₁ ⊓ a₂ = ⊥) (h_partition : a₁ ⊔ a₂ = ⊤) :
   a₂ = - a₁ :=
-begin
-  rw[show -a₁ = ⊤ ⊓ -a₁, by simp], rw[<-sub_eq],
-  rw[<-h_partition,sub_eq], rw[inf_sup_right],
-  simp*, rw[<-sub_eq], rw[inf_comm] at h_anti,
-  from (sub_eq_left h_anti).symm
-end
+(compl_unique h_anti h_partition).symm
 
 lemma le_trans' {β} [lattice β] {a₁ a₂ a₃ : β} (h₁ : a₁ ≤ a₂) {h₂ : a₁ ⊓ a₂ ≤ a₃} : a₁ ≤ a₃ :=
 begin
@@ -1141,7 +1120,7 @@ begin
 end
 
 lemma bv_em_aux {β : Type*} [complete_boolean_algebra β] (Γ : β) (b : β) : Γ ≤ b ⊔ -b :=
-le_trans le_top $ by simp
+by { convert le_top, apply sup_compl_eq_top }
 
 lemma bv_em {β : Type*} [complete_boolean_algebra β] {Γ : β} (b : β) : Γ ≤ b ⊔ -b :=
 bv_em_aux _ _
@@ -1157,7 +1136,7 @@ lemma context_and_intro {β : Type*} [lattice β] {Γ} {a₁ a₂ : β}
 
 lemma specialize_context {β : Type*} [partial_order β] {Γ b : β} (Γ' : β) {H_le : Γ' ≤ Γ} (H : Γ ≤ b)
   : Γ' ≤ b :=
-le_trans H_le H
+_root_.le_trans H_le H
 
 lemma context_specialize_aux {β : Type*} [complete_boolean_algebra β] {ι : Type*} {s : ι → β}
   (j : ι) {Γ : β} {H : Γ ≤ (⨅ i, s i)} : Γ ≤ (⨅i, s i) ⟹ s j :=
@@ -1202,7 +1181,7 @@ instance infi_to_pi {ι β} [complete_boolean_algebra β] {Γ : β} {ϕ : ι →
 lemma bv_absurd {β} [boolean_algebra β] {Γ : β} (b : β) (H₁ : Γ ≤ b) (H₂ : Γ ≤ -b) : Γ ≤ ⊥ :=
 @le_trans _ _ _ (b ⊓ -b) _ (le_inf ‹_› ‹_›) (by simp)
 
-lemma neg_imp {β : Type*} [boolean_algebra β] {a b : β} : -(a ⟹ b) = a ⊓ (-b) :=
+lemma compl_imp {β : Type*} [boolean_algebra β] {a b : β} : -(a ⟹ b) = a ⊓ (-b) :=
 by simp[imp]
 
 lemma nonzero_wit {β : Type*} [complete_lattice β] {ι : Type*} {s : ι → β} :
@@ -1246,9 +1225,7 @@ lemma bv_by_contra {𝔹} [boolean_algebra 𝔹] {Γ b : 𝔹} (H : Γ ≤ -b �
 
 run_cmd mk_simp_attr `bv_push_neg
 
-attribute [bv_push_neg] neg_infi neg_supr neg_Inf neg_Sup neg_inf neg_sup neg_top neg_bot lattice.neg_neg lattice.neg_imp
-
-end lattice
+attribute [bv_push_neg] compl_infi compl_supr compl_Inf compl_Sup compl_inf compl_sup compl_top compl_bot compl_compl' compl_imp
 
 namespace tactic
 namespace interactive
@@ -1261,8 +1238,8 @@ open lean.parser lean interactive.types
 
 local postfix `?`:9001 := optional
 meta def bv_intro : parse ident_? → tactic unit
-| none := propagate_tags (`[refine lattice.le_infi _] >> intro1 >> tactic.skip)
-| (some n) := propagate_tags (`[refine lattice.le_infi _] >> tactic.intro n >> tactic.skip)
+| none := propagate_tags (`[refine le_infi _] >> intro1 >> tactic.skip)
+| (some n) := propagate_tags (`[refine le_infi _] >> tactic.intro n >> tactic.skip)
 
 meta def get_name : ∀(e : expr), name
 | (expr.const c [])          := c
@@ -1311,8 +1288,8 @@ meta def trace_sup_inequalities : tactic unit :=
 
 meta def specialize_context_at (H : parse ident) (Γ : parse texpr) : tactic unit :=
 do e <- resolve_name H,
-   tactic.replace H ``(lattice.specialize_context %%Γ %%e),
-   swap >> try `[refine lattice.le_top] >> skip
+   tactic.replace H ``(specialize_context %%Γ %%e),
+   swap >> try `[refine le_top] >> skip
 
 meta def specialize_context_core (Γ_old : expr) : tactic unit :=
 do  v_a <- target >>= lhs_of_le,
@@ -1396,18 +1373,18 @@ do
   Γ_old <- i_to_expr Γ,
   specialize_context_core' Γ_old
 
-example {β : Type u} [lattice.bounded_lattice β] {a b : β} {H : ⊤ ≤ b} : a ≤ b :=
+example {β : Type u} [bounded_lattice β] {a b : β} {H : ⊤ ≤ b} : a ≤ b :=
 by {specialize_context (⊤ : β), assumption}
 
 meta def bv_exfalso : tactic unit :=
-  `[refine le_trans _ (_root_.lattice.bot_le)]
+  `[refine le_trans _ (_root_.bot_le)]
 
 meta def bv_cases_at (H : parse ident) (i : parse ident_) (H_i : parse ident?)  : tactic unit :=
 do
   e₀ <- resolve_name H,
   e₀' <- to_expr e₀,
   Γ_old <- target >>= lhs_of_le,
-  `[refine lattice.context_Or_elim %%e₀'],
+  `[refine context_Or_elim %%e₀'],
   match H_i with
   | none :=  tactic.intro i >> ((get_unused_name H) >>= tactic.intro)
   | (some n) := tactic.intro i >> (tactic.intro n)
@@ -1420,7 +1397,7 @@ do
   e₀ <- resolve_name H,
   e₀' <- to_expr e₀,
   Γ_old <- target >>= lhs_of_le,
-  `[refine lattice.context_Or_elim %%e₀'],
+  `[refine context_Or_elim %%e₀'],
   match H_i with
   | none :=  tactic.intro i >> ((get_unused_name H) >>= tactic.intro)
   | (some n) := tactic.intro i >> (tactic.intro n)
@@ -1432,7 +1409,7 @@ do
   e₀ <- resolve_name H,
   e₀' <- to_expr e₀,
   Γ_old <- target >>= lhs_of_le,
-  `[refine lattice.context_Or_elim %%e₀'],
+  `[refine context_Or_elim %%e₀'],
   tactic.intro i >> ((get_unused_name H) >>= tactic.intro) >>
   skip
 
@@ -1441,7 +1418,7 @@ meta def bv_or_elim_at_core (e : expr) (Γ_old : expr) (n_H : name) : tactic uni
 do
    n <- get_unused_name (n_H ++ "left"),
    n' <- get_unused_name (n_H ++ "right"),
-   `[apply lattice.context_or_elim %%e],
+   `[apply context_or_elim %%e],
    (tactic.intro n) >> specialize_context_core Γ_old, swap,
    (tactic.intro n') >> specialize_context_core Γ_old, swap
 
@@ -1449,7 +1426,7 @@ meta def bv_or_elim_at_core' (e : expr) (Γ_old : expr) (n_H : name) : tactic un
 do
    n <- get_unused_name (n_H ++ "left"),
    n' <- get_unused_name (n_H ++ "right"),
-   `[apply lattice.context_or_elim %%e],
+   `[apply context_or_elim %%e],
    (tactic.intro n) >> specialize_context_core' Γ_old, swap,
    (tactic.intro n') >> specialize_context_core' Γ_old, swap
 
@@ -1457,7 +1434,7 @@ meta def bv_or_elim_at_core'' (e : expr) (Γ_old : expr) (n_H : name) : tactic u
 do
    n <- get_unused_name (n_H ++ "left"),
    n' <- get_unused_name (n_H ++ "right"),
-   `[apply lattice.context_or_elim %%e]; tactic.clear e,
+   `[apply context_or_elim %%e]; tactic.clear e,
    (tactic.intro n) >> specialize_context_core' Γ_old, swap,
    (tactic.intro n') >> specialize_context_core' Γ_old, swap
 
@@ -1469,7 +1446,7 @@ do Γ_old <- target >>= lhs_of_le,
 -- `px` is a term of type `𝔹`; this cases on "`px ∨ ¬ px`"
 meta def bv_cases_on (px : parse texpr) (opt_id : parse (tk "with" *> ident)?) : tactic unit :=
 do Γ_old ← target >>= lhs_of_le,
-   e ← to_expr ``(lattice.bv_em_aux %%Γ_old %%px),
+   e ← to_expr ``(bv_em_aux %%Γ_old %%px),
    let nm := option.get_or_else opt_id "H",
    get_unused_name nm >>= bv_or_elim_at_core e Γ_old
 
@@ -1481,11 +1458,11 @@ do Γ_old <- target >>= lhs_of_le,
 -- `px` is a term of type `𝔹`; this cases on "`px ∨ ¬ px`"
 meta def bv_cases_on' (px : parse texpr) (opt_id : parse (tk "with" *> ident)?) : tactic unit :=
 do Γ_old ← target >>= lhs_of_le,
-   e ← to_expr ``(lattice.bv_em_aux %%Γ_old %%px),
+   e ← to_expr ``(bv_em_aux %%Γ_old %%px),
    let nm := option.get_or_else opt_id "H",
    get_unused_name nm >>= bv_or_elim_at_core' e Γ_old
 
-example {β : Type*} [lattice.nontrivial_complete_boolean_algebra β] {Γ : β} : Γ ≤ ⊤ :=
+example {β : Type*} [nontrivial_complete_boolean_algebra β] {Γ : β} : Γ ≤ ⊤ :=
 begin
   bv_cases_on ⊤,
     { from ‹_› },
@@ -1501,7 +1478,7 @@ end
 
 -- meta def auto_or_elim : tactic unit := tactic.repeat auto_or_elim_step
 
--- example {β ι : Type u} [lattice.complete_boolean_algebra β] {s : ι → β} {H' : ⊤ ≤ ⨆i, s i} {b : β} : b ≤ ⊤ :=
+-- example {β ι : Type u} [complete_boolean_algebra β] {s : ι → β} {H' : ⊤ ≤ ⨆i, s i} {b : β} : b ≤ ⊤ :=
 -- by {specialize_context ⊤, bv_cases_at H' i, specialize_context Γ, sorry }
 
 meta def bv_exists_intro (i : parse texpr): tactic unit :=
@@ -1524,43 +1501,43 @@ def eta_beta_cfg : dsimp_config :=
 meta def bv_specialize_at (H : parse ident) (j : parse texpr) : tactic unit :=
 do n <- get_unused_name H,
    e_H <- resolve_name H,
-   e <- to_expr ``(lattice.context_specialize %%e_H %%j),
+   e <- to_expr ``(context_specialize %%e_H %%j),
    note n none e >>= λ h, dsimp_hyp h none [] eta_beta_cfg
 
 meta def bv_to_pi (H : parse ident) : tactic unit :=
 do   e_H <- resolve_name H,
      e_rhs <- to_expr e_H >>= infer_type >>= rhs_of_le,
-     (tactic.replace H  ``(lattice.context_specialize %%e_H) <|>
-     tactic.replace H ``(lattice.context_imp_elim %%e_H)) <|>
+     (tactic.replace H  ``(context_specialize %%e_H) <|>
+     tactic.replace H ``(context_imp_elim %%e_H)) <|>
      tactic.fail "target is not a ⨅ or an ⟹"
 
 meta def bv_to_pi' : tactic unit :=
 do ctx <- (local_context >>= (λ l, l.mfilter hyp_is_ineq)),
-   ctx.mmap' (λ e, try ((tactic.replace (get_name e)  ``(lattice.context_specialize %%e) <|>
-     tactic.replace (get_name e) ``(lattice.context_imp_elim %%e))))
+   ctx.mmap' (λ e, try ((tactic.replace (get_name e)  ``(context_specialize %%e) <|>
+     tactic.replace (get_name e) ``(context_imp_elim %%e))))
 
 meta def bv_split_at (H : parse ident) : tactic unit :=
 do e_H <- resolve_name H,
-   tactic.replace H ``(lattice.le_inf_iff.mp %%e_H),
+   tactic.replace H ``(le_inf_iff.mp %%e_H),
    resolve_name H >>= to_expr >>= cases_core
 
 meta def bv_split : tactic unit :=
 do ctx <- (local_context >>= (λ l, l.mfilter hyp_is_ineq)),
-   ctx.mmap' (λ e, try (tactic.replace (get_name e) ``(lattice.le_inf_iff.mp %%e))),
+   ctx.mmap' (λ e, try (tactic.replace (get_name e) ``(le_inf_iff.mp %%e))),
    auto_cases >> skip
 
 meta def bv_and_intro (H₁ H₂ : parse ident) : tactic unit :=
 do
   H₁ <- resolve_name H₁,
   H₂ <- resolve_name H₂,
-  e <- to_expr ``(lattice.context_and_intro %%H₁ %%H₂),
+  e <- to_expr ``(context_and_intro %%H₁ %%H₂),
    n <- get_unused_name "H",
    note n none e >> skip
 
 meta def bv_imp_elim_at (H₁ : parse ident) (H₂ : parse texpr) : tactic unit :=
 do n <- get_unused_name "H",
    e₁ <- resolve_name H₁,
-   e <- to_expr ``(lattice.context_imp_elim %%e₁ %%H₂),
+   e <- to_expr ``(context_imp_elim %%e₁ %%H₂),
    note n none e >>= λ h, dsimp_hyp h none [] eta_beta_cfg
 
 meta def bv_mp (H : parse ident) (H₂ : parse texpr) : tactic unit :=
@@ -1574,20 +1551,20 @@ do
 meta def bv_imp_intro (nm : parse $ optional ident_) : tactic unit :=
 match nm with
 | none := do Γ_old <- target >>= lhs_of_le,
-  `[refine lattice.context_imp_intro _] >> (get_unused_name "H" >>= tactic.intro) >> skip,
+  `[refine context_imp_intro _] >> (get_unused_name "H" >>= tactic.intro) >> skip,
   specialize_context_core Γ_old
 | (some n) := do Γ_old <- target >>= lhs_of_le,
-  `[refine lattice.context_imp_intro _] >> (tactic.intro n) >> skip,
+  `[refine context_imp_intro _] >> (tactic.intro n) >> skip,
   specialize_context_core Γ_old
 end
 
 meta def bv_imp_intro' (nm : parse $ optional ident_) : tactic unit :=
 match nm with
 | none := do Γ_old <- target >>= lhs_of_le,
-  `[refine lattice.context_imp_intro _] >> (get_unused_name "H" >>= tactic.intro) >> skip,
+  `[refine context_imp_intro _] >> (get_unused_name "H" >>= tactic.intro) >> skip,
   specialize_context_core' Γ_old
 | (some n) := do Γ_old <- target >>= lhs_of_le,
-  `[refine lattice.context_imp_intro _] >> (tactic.intro n) >> skip,
+  `[refine context_imp_intro _] >> (tactic.intro n) >> skip,
   specialize_context_core' Γ_old
 end
 
@@ -1596,7 +1573,7 @@ meta def tidy_context_tactics : list (tactic string) :=
   propositional_goal >> assumption            >> pure "assumption",
   intros1                                     >>= λ ns, pure ("intros " ++ (" ".intercalate (ns.map (λ e, e.to_string)))),
   auto_cases,
-  `[simp only [_root_.lattice.le_inf_iff] at *]                                >> pure "simp only [le_inf_iff] at *",
+  `[simp only [_root_.le_inf_iff] at *]                                >> pure "simp only [le_inf_iff] at *",
   propositional_goal >> (`[solve_by_elim])    >> pure "solve_by_elim"
 ]
 
@@ -1604,7 +1581,7 @@ meta def tidy_split_goals_tactics : list (tactic string) :=
 [ reflexivity >> pure "refl",
  propositional_goal >> assumption >> pure "assumption",
   propositional_goal >> (`[solve_by_elim])    >> pure "solve_by_elim",
-  `[refine lattice.le_inf _ _] >> pure "refine lattice.le_inf _ _",
+  `[refine le_inf _ _] >> pure "refine le_inf _ _",
   `[exact bv_refl]        >> pure "exact bv_refl _",
   `[rw[bSet.bv_eq_symm]] >> assumption >> pure "rw[bSet.bv_eq_symm], assumption",
    bv_intro none >> pure "bv_intro"
@@ -1648,7 +1625,7 @@ do xs' <- (xs.mfilter (λ x, succeeds (do `(- %%y) <- ((infer_type x) >>= (rhs_o
 meta def bv_contradiction  : tactic unit :=
 do ctx <- (local_context >>= λ l, l.mfilter (hyp_is_ineq)),
    (h₁,h₂) <- find_dual ctx,
-   bv_exfalso >> mk_app (`lattice.bv_absurd) [h₁,h₂] >>= tactic.exact
+   bv_exfalso >> mk_app (`bv_absurd) [h₁,h₂] >>= tactic.exact
 
 meta structure context_cfg :=
 (trace_result : bool := ff)
@@ -1661,9 +1638,9 @@ meta def cfg_of_context_cfg : context_cfg → cfg :=
   tactics := X.tactics}
 
 meta def tidy_context (cfg : context_cfg := {}) : tactic unit :=
-`[refine _root_.lattice.poset_yoneda _] >> tactic.tidy (cfg_of_context_cfg cfg)
+`[refine _root_.poset_yoneda _] >> tactic.tidy (cfg_of_context_cfg cfg)
 
-def with_h_asms {𝔹} [lattice.lattice 𝔹] (Γ : 𝔹) : Π (xs : list (𝔹)) (g : 𝔹), Prop
+def with_h_asms {𝔹} [lattice 𝔹] (Γ : 𝔹) : Π (xs : list (𝔹)) (g : 𝔹), Prop
  | [] x := Γ ≤ x
  | (x :: xs) y := Γ ≤ x → with_h_asms xs y
 
@@ -1683,9 +1660,7 @@ end natded_tactics
 end interactive
 end tactic
 
-namespace lattice
-
-local infix ` ⟹ `:75 := lattice.imp
+local infix ` ⟹ `:75 := imp
 
 example {𝔹} [complete_boolean_algebra 𝔹] {a b c : 𝔹} :
  ( a ⟹ b ) ⊓ ( b ⟹ c ) ≤ a ⟹ c :=
@@ -1711,5 +1686,3 @@ begin
   { simp[x, inf_assoc.symm] },
   { from inf_le_right_of_le (by simp) }
 end
-
-end lattice

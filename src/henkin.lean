@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 Authors: Jesse Han, Floris van Doorn
 -/
-import .completion .language_extension .colimit
+import .completion .language_extension .colimit tactic.auto_cases
 
 -- local attribute [instance, priority 0] classical.prop_decidable
 
@@ -104,7 +104,7 @@ begin
 
 {exact λp, begin fapply @Lhom.on_function, exact F.obj p.fst, exact @map D F V p.fst, exact p.snd end},
   {intros p q H, rcases p with ⟨i,x⟩, rcases q with ⟨j,y⟩, simp only *,
-   simp[(≈), germ_relation] at H, rcases H with ⟨k,z,⟨f1, H1⟩,f2,H2⟩,
+   simp[(≈), germ_relation] at H, rcases H with ⟨k,f1,f2,H⟩,
    change (V.map i).on_function x = (V.map j).on_function y, have : (V.map i).on_function x = (V.map k).on_function ((F.mor f1).on_function x),
    simp only [V.h_compat f1, eq_self_iff_true, function.comp_app],
    have : (V.map j).on_function y = (V.map k).on_function ((F.mor f2).on_function y),
@@ -113,7 +113,7 @@ begin
 
 {exact λp, begin fapply @Lhom.on_relation, exact F.obj p.fst, exact @map D F V p.fst, exact p.snd end},
   {intros p q H, rcases p with ⟨i,x⟩, rcases q with ⟨j,y⟩, simp only *,
-   simp[(≈), germ_relation] at H, rcases H with ⟨k,z,⟨f1, H1⟩,f2,H2⟩,
+   simp[(≈), germ_relation] at H, rcases H with ⟨k,f1,f2,H⟩,
    change (V.map i).on_relation x = (V.map j).on_relation y, have : (V.map i).on_relation x = (V.map k).on_relation ((F.mor f1).on_relation x),
    simp only [V.h_compat f1, eq_self_iff_true, function.comp_app],
    have : (V.map j).on_relation y = (V.map k).on_relation ((F.mor f2).on_relation y),
@@ -142,7 +142,7 @@ def diagram.mk.map {F : ℕ → Language} {h_succ : ∀{i : ℕ}, F i →ᴸ F (
 --     by_cases x = y_n + 1,
 --       {dsimp[*, diagram.mk.map], finish},
 --     have : x ≤ y_n, by {apply nat.le_of_le_and_ne_succ, repeat{assumption}},
---     simp[*, diagram.mk.map], apply function.injective_comp, apply h_inj, apply y_ih
+--     simp[*, diagram.mk.map], apply function.injective.comp, apply h_inj, apply y_ih
 -- end
 
 -- -- /- Given a ℕ-indexed family of types and a way of assigning maps between successive objects
@@ -270,7 +270,7 @@ begin
      {have : i ≤ j_n, by {apply nat.le_of_le_and_ne_succ, repeat{assumption}},
      have ih := j_ih this, show ℕ, exact i,
      rw[henkin_language_chain_maps], simp only [*, dif_neg, not_false_iff],
-     intro n, fapply function.injective_comp, fapply henkin_language_inclusion_inj.on_relation,
+     intro n, fapply function.injective.comp, fapply henkin_language_inclusion_inj.on_relation,
      change function.injective (Lhom.on_relation (henkin_language_chain_maps L i j_n this)),
      simp only *,}}
   },
@@ -283,7 +283,7 @@ begin
      {have : i ≤ j_n, by {apply nat.le_of_le_and_ne_succ, repeat{assumption}},
      have ih := j_ih this, show ℕ, exact i,
      rw[henkin_language_chain_maps], simp only [*, dif_neg, not_false_iff],
-     intro n, fapply function.injective_comp, fapply henkin_language_inclusion_inj.on_function,
+     intro n, fapply function.injective.comp, fapply henkin_language_inclusion_inj.on_function,
      change function.injective (Lhom.on_function (henkin_language_chain_maps L i j_n this)),
      simp only *,}}},
 end
@@ -308,17 +308,12 @@ begin
       have this2 : y = 0, by exact nat.eq_zero_of_le_zero f2,
        subst this1, subst this2, refl},
       { unfold henkin_language_chain_maps, by_cases y = z_n + 1, simp*, subst h, by_cases x = z_n+1, simp*, subst h,
-       unfold henkin_language_chain_maps, simp, refl,
-       {simp*,
-       have : eq.mpr _ (Lhom.id (henkin_language_chain_objects (z_n + 1))) ∘ henkin_language_chain_maps L x (z_n + 1) f1 = (Lhom.id (henkin_language_chain_objects (z_n + 1))) ∘ henkin_language_chain_maps L x (z_n + 1) f1, by refl, rw[this],
-       have : Lhom.id (henkin_language_chain_objects (z_n + 1)) ∘ henkin_language_chain_maps L x (z_n + 1) f1 =  henkin_language_chain_maps L x (z_n + 1) f1,
-       by simp only [eq_self_iff_true, fol.Lhom.id_is_left_identity],
-       rw[this], unfold henkin_language_chain_maps, simp*,
-         },
+       unfold henkin_language_chain_maps, simp,
+       {simp [*, henkin_language_chain_maps] },
        {by_cases x = z_n+1,
          {simp*, have : y < z_n+1, by {fapply nat.lt_of_le_and_ne,
          repeat{assumption}}, exfalso, linarith},
-         {simp*}
+         {simp*, rw [z_ih] }
        }
     }
 }
@@ -332,7 +327,7 @@ end
 
 @[simp]lemma henkin_language_inclusion_chain_map {i} {L : Language} : henkin_language_inclusion = henkin_language_chain_maps L i (i + 1) (by simp[nat.le_succ]) :=
 begin
-  unfold henkin_language_chain_maps, have : i ≠ i + 1, by {induction i, tidy},
+  unfold henkin_language_chain_maps, have : i ≠ i + 1 := (nat.succ_ne_self i).symm,
   simp[this], rw[@Lhom.id_is_right_identity ((@henkin_language_chain L).obj i)]
 end
 
@@ -426,7 +421,7 @@ begin
   {intros i j H, dsimp[henkin_term_chain],
   rw[<-Lhom.comp_on_term],
   have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L i j H), swap, rw[this],
-  {have := (@cocone_of_L_infty L).h_compat, tidy}}
+  apply cocone_of_L_infty.h_compat }
 end
 
 def cocone_of_formula_L_infty {L : Language } (l : ℕ) : cocone (@henkin_formula_chain L l) :=
@@ -436,7 +431,7 @@ begin
   {intros i j H, dsimp[henkin_formula_chain],
   rw[<-Lhom.comp_on_formula],
   have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L i j H), swap, rw[this],
-  {have := (@cocone_of_L_infty L).h_compat, tidy}}
+  apply cocone_of_L_infty.h_compat }
 end
 
 def cocone_of_bounded_term_L_infty {L : Language } (n l : ℕ) : cocone (@henkin_bounded_term_chain L n l) :=
@@ -446,7 +441,7 @@ begin
   {intros i j H, dsimp[henkin_bounded_term_chain],
   rw[<-Lhom.comp_on_bounded_term],
   have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L i j H), swap, rw[this],
-  {have := (@cocone_of_L_infty L).h_compat, tidy}}
+  apply cocone_of_L_infty.h_compat }
 end
 
 def cocone_of_bounded_formula_L_infty {L : Language } (n l : ℕ) : cocone (@henkin_bounded_formula_chain L n l) :=
@@ -456,7 +451,7 @@ begin
   {intros i j H, dsimp[henkin_bounded_formula_chain],
   rw[<-Lhom.comp_on_bounded_formula],
   have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L i j H), swap, rw[this],
-  {have := (@cocone_of_L_infty L).h_compat, tidy}}
+  apply cocone_of_L_infty.h_compat }
 end
 
 /- bounded_formula (L_infty L) 1 is naturally a cocone over the diagram of bounded_formulas -/
@@ -467,7 +462,7 @@ begin
   {intros i j H, dsimp[henkin_bounded_formula_chain', henkin_bounded_formula_chain],
   rw[<-Lhom.comp_on_bounded_formula],
   have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L i j H), swap, rw[this],
-  {have := (@cocone_of_L_infty L).h_compat, tidy}}
+  apply cocone_of_L_infty.h_compat }
 end
 
 def term_comparison {L : Language} (l) : colimit (@henkin_term_chain L l) → preterm (L_infty L) l :=
@@ -527,10 +522,14 @@ begin
       simp only [ℕ', directed_type.rel, zero_le, le_add_iff_nonneg_left],
       exact x_s,
     have Hxt' : ⟦(⟨i+j,x_t'⟩ : coproduct_of_directed_diagram $ henkin_term_chain (f_l + 1))⟧ = t,
-      {rw[<-Hxt], simp[(≈), germ_relation], refine ⟨(i+j),x_t',⟨by simp,_⟩,_⟩,
-       dsimp[henkin_term_chain, henkin_language_chain_maps], let k := i + j,
-       simp only [id_of_self_map], apply Lhom.id_term,
-       fapply exists.intro, simp only [zero_le, le_add_iff_nonneg_right]},
+      {rw[<-Hxt], simp[(≈), germ_relation], refine ⟨i+j, by simp, by simp, _⟩,
+      sorry
+      -- simp [henkin_term_chain, x_t'],
+      --  dsimp[henkin_term_chain, henkin_language_chain_maps], let k := i + j,
+      --  simp only [id_of_self_map], apply Lhom.id_term,
+      --  fapply exists.intro,
+        -- simp only [zero_le, le_add_iff_nonneg_right]}
+        ,
     have Hxs' : ⟦(⟨i+j,x_s'⟩ : coproduct_of_directed_diagram $ henkin_term_chain 0)⟧ = s,
     {{rw[<-Hxs], simp[(≈), germ_relation], refine ⟨(i+j),x_s',⟨by simp,_⟩,_⟩,
        dsimp[henkin_term_chain, henkin_language_chain_maps], let k := i + j,
@@ -569,7 +568,7 @@ begin
     simpa only},
   {rcases f_ih_f₁ with ⟨t₁, H₁⟩, rcases f_ih_f₂ with ⟨t₂, H₂⟩,
    rcases germ_rep t₁ with ⟨⟨i,x⟩,Hx⟩, rcases germ_rep t₂ with ⟨⟨j,y⟩,Hy⟩,
-   fapply exists.intro, fapply canonical_map, exact (i+j), fapply imp,
+   fapply exists.intro, fapply canonical_map, exact (i+j), fapply fol.preformula.imp,
    exact push_to_sum_r x j, exact push_to_sum_l y i,
     rw[<-H₁, <-H₂,<-Hx, <-Hy, <-canonical_map_quotient, same_fiber_as_push_to_r x j ,<-canonical_map_quotient, same_fiber_as_push_to_l y i],
     simpa only},
@@ -628,7 +627,7 @@ refine ⟨_,_⟩,
     rcases germ_rep t₁ with ⟨⟨i,x⟩,Hx⟩, rcases germ_rep t₂ with ⟨⟨j,y⟩,Hy⟩,
     fapply exists.intro, fapply canonical_map, exact i+j, fapply bd_equal,
     exact push_to_sum_r x j, exact push_to_sum_l y i,
-    simp[H₁, H₂],
+    -- simp[H₁, H₂],
     rw[<-H₁, <-H₂,<-Hx, <-Hy, <-canonical_map_quotient, same_fiber_as_push_to_r x j ,<-canonical_map_quotient, same_fiber_as_push_to_l y i],
     simpa only},
   {have x := germ_rep f_R, rcases x with ⟨⟨i,x⟩,H⟩, fapply exists.intro, have R' := bd_rel x,

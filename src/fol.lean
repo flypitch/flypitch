@@ -55,12 +55,12 @@ begin
     { have : k < n₁ + n₂, from lt_of_le_of_lt (k.le_add_right n₂) (add_lt_add_right h n₂),
       have : k < n₁ + n₂ + 1, from lt.step this,
       simp only [*, fol.subst_realize_lt, eq_self_iff_true] },
-    { have : k < n₂ + (k + 1), from nat.lt_add_left _ _ n₂ (lt.base k),
-      subst h, simp [*, -add_comm] },
+    { have : k < k + n₂ + 1, linarith,
+      subst h, simp* },
     apply decidable.lt_by_cases k (n₁ + n₂ + 1); intro h',
     { have : k - 1 < n₁ + n₂, from (nat.sub_lt_right_iff_lt_add (one_le_of_lt h)).2 h',
-      simp [*, -add_comm, -add_assoc] },
-    { subst h', simp [h, -add_comm, -add_assoc] },
+      simp* },
+    { subst h', simp [h] },
     { have : n₁ + n₂ < k - 1, from nat.lt_sub_right_of_add_lt h',
       have : n₁ < k - 1, from lt_of_le_of_lt (n₁.le_add_right n₂) this,
       simp only [*, fol.subst_realize_gt, eq_self_iff_true] }
@@ -273,7 +273,7 @@ lemma injective_lift_term_at : ∀ {l} {n m : ℕ},
 | _ n m &k &k' h :=
   by by_cases h₁ : m ≤ k; by_cases h₂ : m ≤ k'; simp [h₁, h₂] at h;
      congr;[assumption, skip, skip, assumption]; exfalso; try {apply h₁};
-     try {apply h₂}; subst h; apply le_trans (by assumption) (le_add_left _ _)
+     try {apply h₂}; subst h; apply le_trans (by assumption) (le_add_right _ _)
 | _ n m &k (func f')            h := by cases h
 | _ n m &k (app t₁' t₂')        h := by cases h
 | _ n m (func f) &k'            h := by cases h
@@ -285,7 +285,7 @@ lemma injective_lift_term_at : ∀ {l} {n m : ℕ},
   begin injection h, congr; apply injective_lift_term_at; assumption end
 
 @[simp] lemma lift_term_at_zero : ∀ {l} (t : preterm L l) (m : ℕ), t ↑' 0 # m = t
-| _ &k          m := by simp [lift_term_at]
+| _ &k          m := by { simp only [lift_term_at, add_zero, if_t_t] }
 | _ (func f)    m := by refl
 | _ (app t₁ t₂) m := by dsimp; congr; apply lift_term_at_zero
 
@@ -299,10 +299,10 @@ lemma lift_term_at2_small : ∀ {l} (t : preterm L l) (n n') {m m'}, m' ≤ m �
     by_cases h : m ≤ k,
     { have h₁ : m' ≤ k := le_trans H h,
       have h₂ : m' ≤ k + n, from le_trans h₁ (k.le_add_right n),
-      simp [*, -add_assoc, -add_comm], simp },
+      simp [*, add_assoc], simp [add_comm] },
     { have h₁ : ¬m + n' ≤ k + n', from λ h', h (le_of_add_le_add_right h'),
       have h₂ : ¬m + n' ≤ k, from λ h', h₁ (le_trans h' (k.le_add_right n')),
-      by_cases h' : m' ≤ k; simp [*, -add_comm, -add_assoc] }
+      by_cases h' : m' ≤ k; simp* }
   end
 | _ (func f)    n n' m m' H := by refl
 | _ (app t₁ t₂) n n' m m' H :=
@@ -313,8 +313,8 @@ lemma lift_term_at2_medium : ∀ {l} (t : preterm L l) {n} (n') {m m'}, m ≤ m'
 | _ &k          n n' m m' H₁ H₂ :=
   begin
     by_cases h : m ≤ k,
-    { have h₁ : m' ≤ k + n, from le_trans H₂ (add_le_add_right h n), simp [*, -add_comm], },
-    { have h₁ : ¬m' ≤ k, from λ h', h (le_trans H₁ h'), simp [*, -add_comm, -add_assoc] }
+    { have h₁ : m' ≤ k + n, from le_trans H₂ (add_le_add_right h n), simp [*, add_assoc], },
+    { have h₁ : ¬m' ≤ k, from λ h', h (le_trans H₁ h'), simp [*] }
   end
 | _ (func f)    n n' m m' H₁ H₂ := by refl
 | _ (app t₁ t₂) n n' m m' H₁ H₂ :=
@@ -393,7 +393,7 @@ lemma lift_at_subst_term_large : ∀{l} (t : preterm L l) (s : term L) {n₁} (n
       have : m ≤ k - 1, from nat.le_sub_right_of_add_le (succ_le_of_lt h₂),
       have : m ≤ k, from le_of_lt h₂,
       have : 1 ≤ k, from one_le_of_lt h₂,
-      simp [*, nat.add_sub_swap this n₂, -add_assoc, -add_comm] }
+      simp [*, nat.add_sub_swap this n₂] }
   end
 | _ (func f)    s n₁ n₂ m h := rfl
 | _ (app t₁ t₂) s n₁ n₂ m h := by simp*
@@ -437,21 +437,21 @@ lemma lift_at_subst_term_small : ∀{l} (t : preterm L l) (s : term L) (n₁ n�
       have h₂ : n₂ < k := lt_of_le_of_lt (le_add_left n₂ m) (lt_of_succ_le h),
       have h₃ : n₂ < k + n₁ := by apply nat.lt_add_right; exact h₂,
       have h₄ : m + n₂ ≤ k - 1 := nat.le_sub_right_of_add_le h,
-      simp [*, -add_comm, -add_assoc, nat.add_sub_swap (one_le_of_lt h₂)] },
+      simp [*, nat.add_sub_swap (one_le_of_lt h₂)] },
     { change ¬(m + n₂ + 1 ≤ k) at h,
       apply decidable.lt_by_cases k n₂; intro h₂,
       { have h₃ : ¬(m + n₂ ≤ k) := λh', not_le_of_gt h₂ (le_trans (le_add_left n₂ m) h'),
-        simp [h, h₂, h₃, -add_comm, -add_assoc] },
+        simp [h, h₂, h₃] },
       { subst h₂,
         have h₃ : ¬(k + m + 1 ≤ k) := by rw [add_comm k m]; exact h,
-        simp [h, h₃, -add_comm, -add_assoc],
+        simp [h, h₃],
         exact lift_term_at2_small _ _ _ m.zero_le },
       { have h₃ : ¬(m + n₂ ≤ k - 1) :=
           λh', h $ (nat.le_sub_right_iff_add_le $ one_le_of_lt h₂).mp h',
-        simp [h, h₂, h₃, -add_comm, -add_assoc] }}
+        simp [h, h₂, h₃] }}
   end
 | _ (func f)    s n₁ n₂ m := rfl
-| _ (app t₁ t₂) s n₁ n₂ m := by simp [*, -add_assoc, -add_comm]
+| _ (app t₁ t₂) s n₁ n₂ m := by simp*
 
 lemma subst_term2 : ∀{l} (t : preterm L l) (s₁ s₂ : term L) (n₁ n₂),
   t [s₁ // n₁] [s₂ // n₁ + n₂] = t [s₂ // n₁ + n₂ + 1] [s₁[s₂ // n₂] // n₁]
@@ -462,11 +462,11 @@ lemma subst_term2 : ∀{l} (t : preterm L l) (s₁ s₂ : term L) (n₁ n₂),
       have : k < n₁ + n₂ + 1, from lt.step this,
       simp only [*, eq_self_iff_true, fol.subst_term_var_lt] },
     { have : k < k + (n₂ + 1), from lt_succ_of_le (le_add_right _ n₂),
-      subst h, simp [*, lift_subst_term_large', -add_comm] },
+      subst h, simp [*, lift_subst_term_large', add_assoc] },
     apply decidable.lt_by_cases k (n₁ + n₂ + 1); intro h',
     { have : k - 1 < n₁ + n₂, from (nat.sub_lt_right_iff_lt_add (one_le_of_lt h)).2 h',
-      simp [*, -add_comm, -add_assoc] },
-    { subst h', simp [h, lift_subst_term_medium, -add_comm, -add_assoc] },
+      simp* },
+    { subst h', simp [h, lift_subst_term_medium] },
     { have : n₁ + n₂ < k - 1, from nat.lt_sub_right_of_add_lt h',
       have : n₁ < k - 1, from lt_of_le_of_lt (n₁.le_add_right n₂) this,
       simp only [*, eq_self_iff_true, fol.subst_term_var_gt] }
@@ -649,20 +649,20 @@ lemma lift_formula_at2_small : ∀ {l} (f : preformula L l) (n n') {m m'}, m' �
 | _ (t₁ ≃ t₂)    n n' m m' H := by simp [lift_term_at2_small, H]
 | _ (rel R)      n n' m m' H := by refl
 | _ (apprel f t) n n' m m' H :=
-  by simp [lift_term_at2_small, H, -add_comm]; apply lift_formula_at2_small; assumption
+  by simp [lift_term_at2_small, H]; apply lift_formula_at2_small; assumption
 | _ (f₁ ⟹ f₂)   n n' m m' H := by dsimp; congr1; apply lift_formula_at2_small; assumption
 | _ (∀' f)       n n' m m' H :=
-  by simp [lift_term_at2_small, H, lift_formula_at2_small f n n' (add_le_add_right H 1)]
+  by { simp [lift_term_at2_small, H, lift_formula_at2_small f n n' (add_le_add_right H 1)], ring }
 
 lemma lift_formula_at2_medium : ∀ {l} (f : preformula L l) (n n') {m m'}, m ≤ m' → m' ≤ m+n →
   (f ↑' n # m) ↑' n' # m' = f ↑' (n+n') # m
 | _ falsum       n n' m m' H₁ H₂ := by refl
 | _ (t₁ ≃ t₂)    n n' m m' H₁ H₂ := by simp [*, lift_term_at2_medium]
 | _ (rel R)      n n' m m' H₁ H₂ := by refl
-| _ (apprel f t) n n' m m' H₁ H₂ := by simp [*, lift_term_at2_medium, -add_comm]
+| _ (apprel f t) n n' m m' H₁ H₂ := by simp [*, lift_term_at2_medium]
 | _ (f₁ ⟹ f₂)   n n' m m' H₁ H₂ := by simp*
 | _ (∀' f)       n n' m m' H₁ H₂ :=
-  have m' + 1 ≤ (m + 1) + n, from le_trans (add_le_add_right H₂ 1) (by simp), by simp*
+  have m' + 1 ≤ (m + 1) + n, from le_trans (add_le_add_right H₂ 1) (by linarith), by simp*
 
 lemma lift_formula_at2_eq {l} (f : preformula L l) (n n' m : ℕ) :
   (f ↑' n # m) ↑' n' # (m+n) = f ↑' (n+n') # m :=
@@ -708,7 +708,8 @@ lemma lift_at_subst_formula_large : ∀{l} (f : preformula L l) (s : term L) {n�
 | _ (apprel f t) s n₁ n₂ m h := by simp [*, lift_at_subst_term_large]
 | _ (f₁ ⟹ f₂)   s n₁ n₂ m h := by simp*
 | _ (∀' f)       s n₁ n₂ m h :=
-  by have := lift_at_subst_formula_large f s n₂ (add_le_add_right h 1); simp at this; simp*
+  by { have := lift_at_subst_formula_large f s n₂ (add_le_add_right h 1), simp [add_comm, add_assoc] at this,
+    simp [*, add_comm, add_assoc] }
 
 lemma lift_subst_formula_large {l} (f : preformula L l) (s : term L) {n₁ n₂} :
   (f ↑ n₂)[s // n₁+n₂] = (f [s // n₁]) ↑ n₂ :=
@@ -727,7 +728,7 @@ lemma lift_at_subst_formula_medium : ∀{l} (f : preformula L l) (s : term L) {n
 | _ (f₁ ⟹ f₂)   s n₁ n₂ m h₁ h₂ := by simp*
 | _ (∀' f)       s n₁ n₂ m h₁ h₂ :=
   begin
-    have h : n₂ + 1 ≤ (m + 1) + n₁, from le_trans (add_le_add_right h₂ 1) (by simp),
+    have h : n₂ + 1 ≤ (m + 1) + n₁, from le_trans (add_le_add_right h₂ 1) (by linarith),
     have := lift_at_subst_formula_medium f s (add_le_add_right h₁ 1) h,
     simp only [fol.subst_formula, fol.lift_formula_at] at this, simp*
   end
@@ -768,7 +769,7 @@ lemma subst_formula2 : ∀{l} (f : preformula L l) (s₁ s₂ : term L) (n₁ n�
 | _ (apprel f t) s₁ s₂ n₁ n₂ := by simp [*, subst_term2]
 | _ (f₁ ⟹ f₂)   s₁ s₂ n₁ n₂ := by simp*
 | _ (∀' f)       s₁ s₂ n₁ n₂ :=
-  by simp*; rw [add_comm n₂ 1, ←add_assoc, subst_formula2 f s₁ s₂ (n₁ + 1) n₂]; simp
+  by simp*; rw [add_right_comm n₁ n₂ 1, subst_formula2 f s₁ s₂ (n₁ + 1) n₂]; simp
 
 lemma subst_formula2_zero {l} (f : preformula L l) (s₁ s₂ : term L) (n) :
   f [s₁ // 0] [s₂ // n] = f [s₂ // n + 1] [s₁[s₂ // n] // 0] :=
@@ -1486,7 +1487,7 @@ by {subst h, induction t, refl, refl, simp*}
 @[simp] lemma realize_bounded_term_dvector_cast_irrel {S : Structure L} {n m l} {h : n = m}
   {v : dvector S n} {t : bounded_preterm L n l} {xs : dvector S l} :
   realize_bounded_term (v.cast h) (t.cast (le_of_eq h)) xs = realize_bounded_term v t xs :=
-by {subst h, simp, refl}
+by { subst h, simp }
 
 @[simp] def lift_bounded_term_at {n} : ∀{l} (t : bounded_preterm L n l) (n' m : ℕ),
   bounded_preterm L (n + n') l
@@ -1506,7 +1507,7 @@ t ↑ 1
 
 @[simp] lemma lift_bounded_term_fst {n} : ∀{l} (t : bounded_preterm L n l) (n' m : ℕ),
   (t ↑' n' # m).fst = t.fst ↑' n' # m
-| _ &k             n' m := by by_cases h : m ≤ k.1; simp [h, -add_comm]; refl
+| _ &k             n' m := by by_cases h : m ≤ k.1; simp [h]; refl
 | _ (bd_func f)    n' m := by refl
 | _ (bd_app t₁ t₂) n' m := by simp [lift_bounded_term_fst]
 
@@ -2135,7 +2136,7 @@ by {intros, refl}
 @[simp] def realize_bounded_formula_ex {L} {S : Structure L} : ∀ {n} {v : dvector S n}
   {f : bounded_formula L (n+1)}, realize_bounded_formula v (∃' f) dvector.nil ↔
     ∃ x, realize_bounded_formula (x::v) f dvector.nil :=
-by {intros, unfold bd_ex, simp [realize_bounded_formula_not], finish}
+by { intros, unfold bd_ex, simp [realize_bounded_formula_not] }
 
 @[simp] lemma realize_sentence_ex {S : Structure L} {f : bounded_formula L 1} :
   S ⊨ ∃' f ↔ ∃ x : S, realize_bounded_formula ([x]) f([]) :=
@@ -2360,7 +2361,7 @@ begin
 end
 
 @[simp] lemma all_realize_sentence_singleton {S : Structure L} {f : sentence L} : S ⊨ {f} ↔ S ⊨ f :=
-⟨by{intro H, apply H, exact or.inl rfl}, by {intros H g Hg, repeat{cases Hg}, assumption}⟩
+⟨by{intro H, apply H, exact rfl}, by {intros H g Hg, repeat{cases Hg}, assumption}⟩
 
 @[simp]lemma realize_sentence_of_mem {S} {T : Theory L} {f : sentence L} (H : S ⊨ T) (H_mem : f ∈ T) : S ⊨ f := H H_mem
 
@@ -2725,12 +2726,12 @@ section bd_alls
 by {intros n ψ, induction n, swap, simp[n_ih (∀' ψ)], tidy}
 
 @[simp] lemma alls'_all_commute {n} {k} {f : bounded_formula L (n+k+1)} :
-  (bd_alls' k n (∀' f)) = ∀' bd_alls' k (n+1) (f.cast_eq (by simp)) :=
+  (bd_alls' k n (∀' f)) = ∀' bd_alls' k (n+1) (f.cast_eq (by ring)) :=
 -- by {refine ∀' bd_alls' k (n+1) _, simp, exact f}
 by {induction k; dsimp only [bounded_preformula.cast_eq], swap, simp[@k_ih (∀'f)], tidy}
 
 @[simp] lemma bd_alls'_substmax {L} {n} {f : bounded_formula L (n+1)} {t : closed_term L} :
-  (bd_alls' n 1 (f.cast_eq (by simp)))[t /0] =
+  (bd_alls' n 1 (f.cast_eq (by ring)))[t /0] =
   (bd_alls' n 0 (substmax_bounded_formula (f.cast_eq (by simp)) t)) :=
 by {induction n, {tidy}, have := @n_ih (∀' f), simp[bounded_preformula.cast_eq] at *, exact this}
 

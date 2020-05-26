@@ -491,7 +491,7 @@ begin
   { by_cases h' : R ∈ range (@on_relation _ _ ϕ l); simp [reflect_formula_apps_rel_pos,
       reflect_formula_apps_rel_neg, h', h, ts.map_congr (reflect_term_lift_at hϕ h), -add_comm] },
   { simp [ih₁ h, ih₂ h, -add_comm] },
-  { simp [-add_comm, -add_assoc], rw [←ih], simp, exact add_le_add_right h 1 },
+  { simp [-add_comm, -add_assoc], rw [←ih], ring, exact add_le_add_right h 1 },
 end
 
 lemma reflect_formula_lift [has_decidable_range ϕ] (hϕ : is_injective ϕ) (n m : ℕ)
@@ -511,8 +511,8 @@ begin
   { simp [reflect_term_subst hϕ, -add_comm] },
   { by_cases h' : R ∈ range (@on_relation _ _ ϕ l); simp [reflect_formula_apps_rel_pos,
       reflect_formula_apps_rel_neg, h', ts.map_congr (reflect_term_subst hϕ n m s), -add_comm] },
-  { simp [ih₁, ih₂, -add_comm] },
-  { simp [-add_comm, ih] },
+  { simp [ih₁, ih₂] },
+  { simp [add_assoc, ih] },
 end
 
 @[simp] lemma reflect_formula_subst0 [has_decidable_range ϕ] (hϕ : is_injective ϕ) (m : ℕ)
