@@ -6,8 +6,10 @@ Author(s): Jesse Michael Han
 Showing that pSet is formally a model of ZFC.
 -/
 
-import .zfc'
+import .zfc
 import .pSet_ordinal
 import tactic
 
-#check 3
+
+
+
