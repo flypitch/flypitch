@@ -39,24 +39,21 @@ Both consistency proofs for ~CH~ and ~¬CH~ were done by forcing with Boolean-va
 A conventional human-readable account of the proof written in type-theoretic foundations, upon which some parts of the formalization are based, is [[https://www.github.com/flypitch/flypitch-notes/][located here]].
 
 *** Compilation
-To compile the Flypitch project, you will need [[https://leanprover.github.io/][Lean 3.4.2]]. Installation instructions for Lean can be found [[https://github.com/leanprover-community/mathlib/blob/master/README.md][here]].
-
-The ~master~ branch is frozen at the same commit as [[https://github.com/flypitch/flypitch/releases][the latest release]]. The project is being actively developed on the ~dev~ branch.
+To compile the Flypitch project, you will need [[https://leanprover.github.io/][Lean 3.4.2]]. Installation instructions for Lean can be found [[https://leanprover-community.github.io/get_started.html][here]]. This will also install a command-line tool called [[https://github.com/leanprover-community/mathlib-tools][leanproject]].
 
 The ~leanpkg.toml~ file points to a certain commit of ~mathlib~, which will be cloned into the project directory. After cloning or extracting the repository to ~flypitch~, navigate to ~flypitch~ and run
-#+BEGIN_SRC
-leanpkg configure
-leanpkg build
+#+BEGIN_SRC bash
+leanproject get-mathlib-cache
+leanproject build
+lean --trust=0 ./src/summary.lean # check `independence_of_CH` as rigorously as possible
 #+END_SRC
 
-This will additionally compile the requisite parts of ~mathlib~, and will take multiple minutes.
-
-Optionally, you can install the ~update-mathlib~ script (see [[https://github.com/leanprover-community/mathlib/blob/master/docs/install/linux.md][here]] for instructions) which will download pre-built ~.olean~ files, considerably speeding up the compilation. In this case, you can instead run
-#+BEGIN_SRC
+Without ~leanproject~, run instead
+#+begin_src bash
 leanpkg configure
-update-mathlib
-leanpkg build
-#+END_SRC
+leanpkg build # will take much longer
+lean --trust=0 ./src/summary.lean # check `independence_of_CH` as rigorously as possible
+#+end_src
 
 *** Viewing and navigating the project
 To view the project, we recommend the use of a Lean-aware editor like [[https://github.com/leanprover/lean-mode][Emacs]] or [[https://github.com/leanprover/vscode-lean][VSCode]]. Among other things, like type information, such editors can display the /proof state/ inside a tactic block, making it easier to understand how theorems are being proved.
@@ -106,19 +103,7 @@ Our paper /A formalization of forcing and the unprovability of the continuum hyp
 }
 #+end_src
 
-*** Contributors
+
+*** Team
  - [[https://www.pitt.edu/~jmh288][Jesse Han]]
  - [[http://florisvandoorn.com/][Floris van Doorn]]
- - [[https://github.com/AlmostNever][Andrew Tindall]]
-
-# ** Manual dependency graph
-# Files only depend on files on lines above it
-# #+BEGIN_SRC
-# to_mathlib pSet_ordinal
-# bvm fol cohen_poset colimit set_theory
-# abel bfol bv_prf bvm_extras compactness normal realization regular_open_algebra zfc zfc_expanded
-# zfc' cantor_space completion language_extension peano zfc_consistent
-# henkin forcing
-# completeness
-# conservative_extension independence reflection
-# #+END_SRC
