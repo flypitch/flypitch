@@ -52,8 +52,7 @@ meta def print_formula : ∀ {n : ℕ}, bounded_formula L_ZFC n → string := λ
 @[instance]meta def formula_to_string {n} : has_to_string (bounded_formula L_ZFC n) := ⟨print_formula⟩
 
 meta def print_formula_list {n} (axms : list (bounded_formula L_ZFC n)) : tactic unit :=
-do tactic.trace (to_string axms)
--- TODO(jesse) format this so that newlines are inserted after commas
+mmap' (λ ax, tactic.trace $ to_string ax ++ "\n") axms
 
 section test
 
