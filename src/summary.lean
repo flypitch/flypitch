@@ -46,7 +46,14 @@ This file summarizes:
 
 #print ZFC
 
-#eval print_formula_list ([axiom_of_emptyset, axiom_of_ordered_pairs, axiom_of_extensionality, axiom_of_union, axiom_of_powerset, axiom_of_infinity, axiom_of_regularity, zorns_lemma])
+#eval print_formula_list ([ axiom_of_emptyset,
+                            axiom_of_ordered_pairs,
+                            axiom_of_extensionality,
+                            axiom_of_union,
+                            axiom_of_powerset,
+                            axiom_of_infinity,
+                            axiom_of_regularity,
+                            zorns_lemma ])
 
 #print CH
 
@@ -81,7 +88,7 @@ def independent {L : Language} (T : Theory L) (f : sentence L) : Prop :=
 ¬ T ⊢' f ∧ ¬ T ⊢' ∼f
 
 theorem independence_of_CH : independent ZFC CH_f :=
-by finish [independent, CH_unprovable, neg_CH_unprovable]
+and.intro CH_unprovable neg_CH_unprovable
 
 #print axioms independence_of_CH
 /- `propext` (propositional extensionality),
