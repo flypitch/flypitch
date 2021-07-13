@@ -620,7 +620,7 @@ begin
 end
 
 lemma image_pi_pos {π : α → Type*} (i : set α) (s : Πa, set (π a)) [decidable_eq α]
-  (hp : nonempty (pi i s)) (x : α) (hx : x ∈ i) : (λ(f : Πa, π a), f x) '' pi i s = s x :=
+  (hp : set.nonempty (pi i s)) (x : α) (hx : x ∈ i) : (λ(f : Πa, π a), f x) '' pi i s = s x :=
 begin
   apply subset.antisymm,
   { rintro _ ⟨f, hf, rfl⟩, exact hf x hx },
@@ -630,7 +630,7 @@ begin
 end
 
 lemma image_pi_neg {π : α → Type*} (i : set α) (s : Πa, set (π a)) [decidable_eq α]
-  (hp : nonempty (pi i s)) (x : α) (hx : x ∉ i) : (λ(f : Πa, π a), f x) '' pi i s = univ :=
+  (hp : set.nonempty (pi i s)) (x : α) (hx : x ∉ i) : (λ(f : Πa, π a), f x) '' pi i s = univ :=
 begin
   rw [eq_univ_iff_forall], intro z, have := hp, rcases this with ⟨f, hf⟩,
   refine ⟨_, dif_mem_pi i s f hf z _, _⟩,

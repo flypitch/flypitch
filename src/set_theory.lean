@@ -32,7 +32,7 @@ def finite_root (hι : 2 ≤ mk ι) {root : set α} (h2A : ∀(x : ι), finite (
   (h : ∀{{x y}}, x ≠ y → A x ∩ A y = root) : finite root :=
 begin
   rcases two_le_iff.mp hι with ⟨t, u, htu⟩,
-  rw [←h htu], exact finite_subset (h2A t) (inter_subset_left _ _)
+  rw [←h htu], exact (h2A t).subset (inter_subset_left _ _)
 end
 
 open function
@@ -93,7 +93,7 @@ lemma delta_system_lemma_2 {κ : cardinal} (hκ : cardinal.omega ≤ κ)
   {θ : Type u} (θr : θ → θ → Prop) [θwo : is_well_order θ θr] (hκθ : κ < mk θ)
   (hθ : is_regular $ mk θ) (θtype_eq : ord (mk θ) = type θr) (hθ_le : ∀(β < mk θ), β ^< κ < mk θ)
   {ρ : Type u} (ρr : ρ → ρ → Prop) [ρwo : is_well_order ρ ρr] (hρ : mk ρ < κ)
-  {ι : Type u} {A : ι → set θ} (h2A : ∀i, ρr ≃o subrel θr (A i))
+  {ι : Type u} {A : ι → set θ} (h2A : ∀i, ρr ≃r subrel θr (A i))
   (h3A : unbounded θr (⋃i, A i)) : ∃(t : set ι), mk t = mk θ ∧ is_delta_system (restrict A t) :=
 begin
   let nr : ι → ρ → θ := λ i ξ, (h2A i ξ).val,
@@ -145,7 +145,7 @@ begin
   have h1sub_α₀ : mk ↥sub_α₀ = α₀.card,
   { rw [←cardinal.lift_inj.{_ u+1}, mk_preimage_of_injective_of_subset_range_lift],
     rw [mk_initial_seg, cardinal.lift_lift],
-    exact injective_typein θr,
+    exact typein_injective θr,
     intros o ho,
     rcases typein_surj θr (lt_trans ho hα₀) with ⟨_, rfl⟩,
     apply mem_range_self },
@@ -160,16 +160,16 @@ begin
         rw [←typein_lt_typein ρr, typein_enum], exact h },
       refine lt_of_lt_of_le _ (ordinal.le_sup _ (pick y)),
       convert lt_succ_self (typein θr z), rw [η_def],
-      dsimp [nr], congr' 1, apply order_iso_enum' (h2A _) },
+      dsimp [nr], congr' 1, apply rel_iso_enum' (h2A _) },
     exfalso,
     have η_lt : η < type ρr,
     { convert typein_lt_type (subrel θr $ A $ pick y) ⟨z, hzy⟩ using 1, apply quotient.sound,
       exact ⟨h2A (pick y)⟩ },
     have : ¬ρr (enum ρr η η_lt) ξ₀, { rw [←typein_le_typein, typein_enum], exact h },
     apply this,
-    rw [(h2A (pick y)).ord], dsimp only [subrel, order.preimage],
+    rw [←(h2A (pick y)).map_rel_iff], dsimp only [subrel, order.preimage],
     convert pick_lt_pick hxy ((h2A (pick x)).symm ⟨z, hzx⟩) using 1,
-    transitivity z, { rw [η_def], congr' 1, apply order_iso_enum (h2A _) },
+    transitivity z, { rw [η_def], congr' 1, apply rel_iso_enum (h2A _) },
     transitivity subtype.val ⟨z, hzx⟩, refl,
     congr' 1, symmetry, apply equiv.right_inv },
   have h1A2 : mk (range pick) = mk θ,
@@ -177,7 +177,7 @@ begin
     { intros x y hxy, apply pick_lt_pick hxy ξ₀ },
     have injective_pick : injective pick,
     { intros x y hx, apply injective_of_increasing _ _ _ increasing_pick, dsimp only,
-      congr' 1, exact hx },
+      congr' 1 },
     rw [mk_range_eq], apply injective_pick },
   have h2A2 : ∀(x y : range pick), x ≠ y → A x ∩ A y ⊆ sub_α₀,
   { rintro ⟨_, ⟨x, rfl⟩⟩ ⟨_, ⟨y, rfl⟩⟩ hxy,
@@ -196,12 +196,12 @@ begin
     transitivity mk {x : A (pick μ) // typein θr x.1 < α₀},
     { apply le_of_eq, apply mk_sep },
     let f := (h2A (pick μ)).to_equiv,
-    rw [mk_subtype_of_equiv _ f.symm],
+    rw [←mk_subtype_of_equiv _ f],
     transitivity mk { x : ρ // ρr x ξ₀},
     { apply mk_subtype_mono, intros x hx,
-      rw [(h2A (pick μ)).ord], dsimp only [subrel, order.preimage],
+      rw [←(h2A (pick μ)).map_rel_iff], dsimp only [subrel, order.preimage],
       refine trans _ (α₀_lt_pick μ),
-      rw [←enum_typein' θr (f x).val, @enum_lt _ θr], exact hx },
+      rw [←enum_typein' θr (h2A (pick μ) x), @enum_lt _ θr], exact hx },
     transitivity (typein ρr ξ₀).card, { rw [typein, card_type], refl },
     rw [←card_type ρr], apply card_le_card, apply le_of_lt, apply typein_lt_type },
   let f : range pick → codomain := λx, ⟨A x.1 ∩ sub_α₀, hcodomain x⟩,
@@ -218,7 +218,7 @@ begin
     { rintro _ ⟨⟨x, hx⟩, _, rfl⟩, exact hx },
     { rw [mk_image_eq subtype.val_injective, ←h1A2, ←hr'] },
     { rintro _ ⟨⟨x, hx⟩, hx', rfl⟩,
-      simpa only [set.mem_singleton_iff, set.mem_preimage, f, subtype.ext] using hx' }},
+      simpa only [set.mem_singleton_iff, set.mem_preimage, f, subtype.ext_iff] using hx' }},
   rcases this with ⟨r, t, hr, h1t, h2t, h3t⟩,
   refine ⟨t, h2t, r, _⟩,
   intros x y hxy, rw [←h3t x.2], apply set.ext, intro z, split,
@@ -232,7 +232,7 @@ lemma delta_system_lemma_1 {κ : cardinal} (hκ : cardinal.omega ≤ κ)
   {θ : Type u} (θr : θ → θ → Prop) [θwo : is_well_order θ θr] (hκθ : κ < mk θ)
   (hθ : is_regular $ mk θ) (θtype_eq : ord (mk θ) = type θr) (hθ_le : ∀(β < mk θ), β ^< κ < mk θ)
   {ρ : Type u} (ρr : ρ → ρ → Prop) [ρwo : is_well_order ρ ρr] (hρ : mk ρ < κ)
-  {ι : Type u} {A : ι → set θ} (h2A : ∀i, ρr ≃o subrel θr (A i)) (hι : mk θ = mk ι) :
+  {ι : Type u} {A : ι → set θ} (h2A : ∀i, ρr ≃r subrel θr (A i)) (hι : mk θ = mk ι) :
     ∃(t : set ι), mk t = mk θ ∧ is_delta_system (restrict A t) :=
 begin
   by_cases h3A : unbounded θr (⋃i, A i),
@@ -288,7 +288,7 @@ begin
   let ρ := { x : κα | κr x ρ' },
   let ρr := subrel κr ρ,
   have hρ : mk ρ < κ, { exact card_typein_out_lt κ ρ', },
-  have h4A₁ : Π(i : t₂), ρr ≃o subrel θr (A₀ i),
+  have h4A₁ : Π(i : t₂), ρr ≃r subrel θr (A₀ i),
   { rintro ⟨i, hi⟩, symmetry,
     have : type (subrel θr (A₀ i)) = typein κr ρ', { rw [← h3t₂ hi, typein_enum], refl },
     exact classical.choice (quotient.exact this) },
@@ -300,9 +300,11 @@ begin
   have : is_delta_system (λ(i : t), A₀ i.1) := h2t,
   rw [is_delta_system_image, is_delta_system_preimage_iff] at this,
   rw [is_delta_system_precompose_iff (equiv.set.image subtype.val t subtype.val_injective)],
-  convert this using 1, apply funext, rintro ⟨⟨i, hi⟩, h2i⟩,
-  simp only [function.comp_app, subtype.coe_mk, equiv.set.image_apply, restrict],
-  apply subtype.val_injective, intro i, refine h2β (mem_image_of_mem _ $ ht₂ i.1.2), exact f.2
+  convert this using 1, ext ⟨⟨i, hi⟩, hi'⟩, rintro h2i h2i',
+  { simp only [comp_app, subtype.coe_mk, equiv.set.image_apply, restrict, exists_prop, mem_Union, set_coe.exists, mem_range,
+                exists_eq_right, subtype.coe_mk, subtype.val_eq_coe],
+    exact ⟨i, ht₂ hi, h2i'⟩ },
+  exact f.injective
 end
 
 theorem delta_system_lemma_uncountable {α : Type u} {ι : Type v}
@@ -321,9 +323,9 @@ begin
   { rw [restrict, is_delta_system_image] at h2t, swap, exact equiv.ulift.symm.bijective.1,
     rw [is_delta_system_precompose_iff (equiv.set.image _ _ _)],
     swap, exact equiv.ulift.bijective.1,
-    convert h2t, apply funext, rintro ⟨x, hx⟩, refl },
+    convert h2t },
   { rw [←cardinal.lift_lt, cardinal.lift_omega, ←cardinal.succ_le] at h, exact h },
-  rintro ⟨i⟩, rw [lt_omega_iff_finite], apply finite_image, exact h2A i
+  rintro ⟨i⟩, rw [lt_omega_iff_finite], apply set.finite.image, exact h2A i
 end
 
 end delta_system
@@ -350,7 +352,7 @@ def eq_on' {α} {β : α → Type*} (f g : ∀x, β x) (s : set α) : Prop :=
 ∀{{x}}, x ∈ s → f x = g x
 
 lemma eq_on'_iff {α} {β : α → Type*} (f g : ∀x, β x) (s : set α) :
-  eq_on' f g s ↔ restrict f s = restrict g s :=
+  eq_on' f g s ↔ subtype.restrict f s = subtype.restrict g s :=
 begin
   split, intros h, apply funext, rintro ⟨x, hx⟩, exact h hx,
   intros h x hx, apply congr_fun h ⟨x, hx⟩
@@ -380,9 +382,9 @@ begin
   have open_s' : ∀{{o : set α}}, o ∈ s' → is_open o,
   { intros o ho, exact open_s (diff_subset _ _ ho), },
   have h2s' : pairwise_disjoint s',
-  { refine pairwise_disjoint_subset _ hs, apply diff_subset },
-  have : countable (insert ∅ s'), { apply countable_insert (h s' hs' open_s' h2s') },
-  apply countable_subset _ this,
+  { refine pairwise_disjoint.subset _ hs, apply diff_subset },
+  have : countable (insert ∅ s'), { exact (h s' hs' open_s' h2s').insert _ },
+  apply countable.mono _ this,
   rw [insert_diff_singleton], apply subset_insert
 end
 
@@ -395,21 +397,21 @@ begin
   intros s s_nonempty s_open hs,
   have f : ∀(x : s), { y : set α // y ∈ B ∧ y ≠ ∅ ∧ y ⊆ x.1 },
   { rintro ⟨x, hx⟩, apply classical.subtype_of_exists,
-    have : ∃y, y ∈ x, { exact ne_empty_iff_exists_mem.mp (s_nonempty hx) },
+    have : ∃y, y ∈ x, { exact ne_empty_iff_nonempty.mp (s_nonempty hx) },
     cases this with y hy,
-    rcases mem_basis_subset_of_mem_open hB hy (s_open hx) with ⟨h₁, h₂, h₃, h₄⟩,
-    refine ⟨h₁, h₂, _, h₄⟩, rw [ne_empty_iff_exists_mem], exact ⟨_, h₃⟩ },
+    rcases is_topological_basis.exists_subset_of_mem_open hB hy (s_open hx) with ⟨h₁, h₂, h₃, h₄⟩,
+    refine ⟨h₁, h₂, _, h₄⟩, rw [ne_empty_iff_nonempty], exact ⟨_, h₃⟩ },
   let s' : set (set α) := range (λ(x : s), (f x).1),
   have hs' : ∀{{o : set α}}, o ∈ s' → o ∈ B,
   { rintro _ ⟨o, rfl⟩, exact (f o).2.1 },
   have h2s' : pairwise_disjoint s',
-  { apply pairwise_disjoint_range _ _ hs, intro x, exact (f x).2.2.2 },
+  { apply pairwise_disjoint.range _ _ hs, intro x, exact (f x).2.2.2 },
   have := h s' hs' h2s',
   rw [cardinal.countable_iff] at this ⊢, convert this using 1, rw [mk_range_eq],
   rintro x x' hxx',
-  have : ∃y, y ∈ (f x).1, { exact ne_empty_iff_exists_mem.mp (f x).2.2.1 },
+  have : ∃y, y ∈ (f x).1, { exact ne_empty_iff_nonempty.mp (f x).2.2.1 },
   cases this with y hy,
-  apply subtype.eq, apply pairwise_disjoint_elim hs x.2 x'.2 y ((f x).2.2.2 hy),
+  apply subtype.eq, apply pairwise_disjoint.elim hs x.2 x'.2 y ((f x).2.2.2 hy),
   dsimp only at hxx', rw hxx' at hy, exact (f x').2.2.2 hy
 end
 
@@ -420,21 +422,24 @@ begin
   apply countable_chain_condition_of_nonempty, intros C h1C h2C h3C,
   refine countable_of_embedding _ h1D,
   have f : ∀(c : C), Σ'(d : D), d.1 ∈ c.1,
-  { rintro ⟨s, hs⟩, have := h2D s (h2C hs) (h1C hs),
-    rw [ne_empty_iff_exists_mem] at this,
+  { rintro ⟨s, hs⟩, have := h2D s (h2C hs) (ne_empty_iff_nonempty.mp (h1C hs)),
     rcases classical.subtype_of_exists this with ⟨x, ⟨hx, h2x⟩⟩,
     exact ⟨⟨x, h2x⟩, hx⟩ },
   refine ⟨λ c, (f c).1, _⟩,
   rintros ⟨s, hs⟩ ⟨s', hs'⟩ hss',
-  rw [subtype.ext], dsimp,
-  apply pairwise_disjoint_elim h3C hs hs' (f ⟨s, hs⟩).1 (f ⟨s, hs⟩).2,
+  rw [subtype.ext_iff], dsimp,
+  apply pairwise_disjoint.elim h3C hs hs' (f ⟨s, hs⟩).1 (f ⟨s, hs⟩).2,
   dsimp only at hss', rw [hss'], exact (f ⟨s', hs'⟩).2
 end
 
 lemma countable_chain_condition_of_countable (h : mk α ≤ omega) : countable_chain_condition α :=
 begin
-  haveI : separable_space α := ⟨⟨set.univ, by rwa [countable_iff, mk_univ], closure_univ⟩⟩,
-  apply countable_chain_condition_of_separable_space,
+  haveI : separable_space α := ⟨⟨set.univ, _⟩⟩,
+  { apply countable_chain_condition_of_separable_space },
+  { simp only [and_true, dense_univ],
+    refine (countable_iff univ).mpr _,
+    refine le_trans _ h,
+    exact mk_le_of_injective subtype.val_injective }
 end
 
 end CCC
@@ -457,7 +462,7 @@ variable (β)
 lemma is_subbasis_pi : Pi.topological_space = generate_from (pi_subbasis β) :=
 begin
   symmetry, apply le_antisymm,
-  { refine lattice.le_infi _, intro i,
+  { convert le_infi _, intro i,
     rintro _ ⟨s, hs, rfl⟩, apply generate_open.basic, exact ⟨⟨i, s, hs⟩, rfl⟩ },
   { rw [le_generate_from_iff_subset_is_open], rintro _ ⟨⟨i, o, ho⟩, rfl⟩,
     apply generate_open.basic, apply mem_bUnion (mem_range_self i), exact ⟨o, ho, rfl⟩ }
@@ -465,6 +470,29 @@ end
 
 def pi_basis : set (set (Πx, β x)) :=
 (λf, ⋂₀ f) '' {f : set (set (Πx, β x)) | finite f ∧ f ⊆ pi_subbasis β ∧ ⋂₀ f ≠ ∅ }
+
+lemma subset_image_iff {α β} {s : set α} {t : set β} (f : α → β) :
+  t ⊆ f '' s ↔ ∃u⊆s, t = f '' u ∧ inj_on f u :=
+begin
+  split,
+  { assume h, choose g hg using h,
+    refine ⟨ {a | ∃ b (h : b ∈ t), g h = a }, _, set.ext $ assume b, ⟨_, _⟩, _⟩,
+    { rintros a ⟨b, hb, rfl⟩,
+      exact (hg hb).1 },
+    { rintros hb,
+      exact ⟨g hb, ⟨b, hb, rfl⟩, (hg hb).2⟩ },
+    { rintros ⟨c, ⟨b, hb, rfl⟩, rfl⟩,
+      rwa (hg hb).2 },
+    { rintros _ ⟨a, ha, rfl⟩ _ ⟨b, hb, rfl⟩ eq,
+      rw [(hg ha).2, (hg hb).2] at eq,
+      subst eq } },
+  { rintros ⟨u, hu, rfl, _⟩,
+    exact image_subset _ hu }
+end
+
+lemma subset_range_iff {α β} {s : set β} (f : α → β) :
+  s ⊆ set.range f ↔ ∃u, s = f '' u ∧ inj_on f u :=
+by rw [← image_univ, subset_image_iff]; simp
 
 lemma pi_basis_eq : pi_basis β =
   {g | ∃(s:Πx, set (β x)) (i : finset α), (∀x∈i, is_open (s x)) ∧ g = pi ↑i s} \ {∅} :=
@@ -484,7 +512,7 @@ begin
   let γ := Σi, opens (β i),
   let O := (λ (x : γ), standard_open (x.snd)),
   have hβ : nonempty (Πx, β x),
-  { rw [←coe_nonempty_iff_ne_empty] at h3o, rcases h3o with ⟨f, hf⟩, exact ⟨f⟩ },
+  { rw [ne_empty_iff_nonempty] at h3o, rcases h3o with ⟨f, hf⟩, exact ⟨f⟩ },
   have ho' : ∀(x ∈ o'), (x : γ).2.1 ≠ ∅,
   { rintros ⟨x, o⟩ ho, refine mt _ h3o, intro h,
     rw [eq_empty_iff_forall_not_mem], intros f hf, rw [eq_empty_iff_forall_not_mem] at h,
@@ -494,9 +522,9 @@ begin
   have h2o' : finite o'',
   { refine finite_of_finite_image_of_inj_on O _ _ _,
     { haveI : decidable_eq α := λ _ _, classical.prop_decidable _,
-      rintro ⟨x, o⟩ ⟨x', o'⟩ hx hx' hoo', cases hβ with f,
-      have h₁ : nonempty o.1, { rw [coe_nonempty_iff_ne_empty], exact ho' _ hx.1 },
-      have h₂ : nonempty (-o.1 : set (β x)), { rw [nonempty_compl], exact hx.2 },
+      rintro ⟨x, o⟩ hx ⟨x', o'⟩ hx' hoo', casesI hβ with f,
+      have h₁ : set.nonempty o.1, { rw ←ne_empty_iff_nonempty, exact ho' _ hx.1 },
+      have h₂ : set.nonempty (o.1 : set (β x))ᶜ, { rw [nonempty_compl], exact hx.2 },
       rcases h₁ with ⟨z₁, hz₁⟩, rcases h₂ with ⟨z₂, hz₂⟩,
       let f₁ : Πx', β x' := change f z₁,
       let f₂ : Πx', β x' := change f z₂,
@@ -511,9 +539,9 @@ begin
       subst this, apply congr_arg (sigma.mk x), apply subtype.eq, apply set.ext, intro z,
       rw [set.ext_iff] at hoo',
       simpa [O, standard_open, change] using hoo' (change f z) },
-    apply finite_subset h1o, apply image_subset, apply sep_subset } ,
+    apply finite.subset h1o, apply image_subset, apply sep_subset } ,
   have hi : finite i,
-  { refine finite_image _  h2o' },
+  { refine finite.image _  h2o' },
   haveI : ∀x, decidable (x ∈ i) := λ x, classical.prop_decidable _,
   let C : Πx, set (β x) :=
   λ x, if h : x ∈ i then ⋂₀ { O | ∃h : _root_.is_open O, (⟨x, ⟨O, h⟩⟩ : γ) ∈ o'' } else univ,
@@ -523,7 +551,7 @@ begin
     simp only [C, dif_pos hx],
     apply is_open_sInter,
     { have : finite (subtype.val '' ((λ s : opens (β x), sigma.mk x s) ⁻¹' o'')),
-      { apply finite_image, apply finite_preimage _ h2o', finish },
+      { apply finite.image, apply finite.preimage _ h2o', finish },
       convert this,
       apply subset.antisymm,
       { rintro o ⟨h1o, h2o⟩, exact ⟨⟨o, h1o⟩, h2o, rfl⟩ },
@@ -539,35 +567,38 @@ begin
   by_cases ho' : o.1 = univ, { rw [mem_opens, ho'], apply mem_univ },
   have hx : x ∈ i, { refine ⟨⟨x, o⟩, ⟨ho, ho'⟩, rfl⟩ },
   have : C x ⊆ o.1,
-  { cases o with o h2o, simp only [C, dif_pos hx], rintro z hz, exact hz o ⟨h2o, ⟨ho, ho'⟩⟩ },
+  { casesI o with o h2o, simp only [C, dif_pos hx], rintro z hz, exact hz o ⟨h2o, ⟨ho, ho'⟩⟩ },
   exact this (hf x hx),
 end
 
 variable {β}
 
-lemma nonempty_of_mem_pi_basis {o : set (Πx, β x)} (h : o ∈ pi_basis β) : nonempty o :=
-by { rcases h with ⟨o, ho, rfl⟩, rw [coe_nonempty_iff_ne_empty], exact ho.2.2 }
+lemma nonempty_of_mem_pi_basis {o : set (Πx, β x)} (h : o ∈ pi_basis β) : set.nonempty o :=
+by { rcases h with ⟨o, ho, rfl⟩, rw [←ne_empty_iff_nonempty], exact ho.2.2 }
 
 variable (β)
-lemma is_topological_basis_pi : is_topological_basis (pi_basis β) :=
-is_topological_basis_of_subbasis (is_subbasis_pi β)
+lemma is_topological_basis_pi' : is_topological_basis (pi_basis β) :=
+begin
+  simp_rw [pi_basis, ne_empty_iff_nonempty],
+  exact is_topological_basis_of_subbasis (is_subbasis_pi β),
+end
 
 variable {β}
 
 open_locale classical
 lemma is_open_map_apply (i : α) : is_open_map (λf : Πi, β i, f i) :=
 begin
-  apply is_open_map_of_is_topological_basis (is_topological_basis_pi β),
+  apply is_open_map_of_is_topological_basis (is_topological_basis_pi' β),
   intros o ho,
   rw [pi_basis_eq] at ho, rcases ho with ⟨⟨s, t, hs, rfl⟩, hs'⟩,
-  have : nonempty (pi ↑t s), { rw [←nmem_singleton_empty], exact hs' },
+  have : set.nonempty (pi ↑t s), { rw [←nmem_singleton_empty], exact hs' },
   by_cases i ∈ t, { rw [image_pi_pos ↑t s this i h], exact hs i h },
   rw [image_pi_neg ↑t s this i h], exact is_open_univ
 end
 
 lemma restrict_image_pi (t : set α) (s : set α) (s' : Πi, set (β i))
-  (h : nonempty (pi t s')) :
-  (λ(f : Πi, β i), restrict f s) '' pi t s' = pi (subtype.val ⁻¹' t) (λi, s' i.1) :=
+  (h : set.nonempty (pi t s')) :
+  (λ(f : Πi, β i), subtype.restrict f s) '' pi t s' = pi (subtype.val ⁻¹' t) (λi, s' i.1) :=
 begin
   apply subset.antisymm,
   { rintro _ ⟨f, hf, rfl⟩ i hi, exact hf _ hi },
@@ -577,24 +608,24 @@ begin
     by_cases h2i : i ∈ s,
     { rw [dif_pos h2i], exact hf ⟨i, h2i⟩ hi, },
     { rw [dif_neg h2i], exact hf' i hi } },
-  apply funext, rintro ⟨i, hi⟩, dsimp only, rw [restrict], apply dif_pos hi
+  apply funext, rintro ⟨i, hi⟩, dsimp only, rw [subtype.restrict], apply dif_pos hi
 end
 
-lemma is_open_map_restrict (s : set α) : is_open_map (λ(f : Πi, β i), restrict f s) :=
+lemma is_open_map_restrict (s : set α) : is_open_map (λ(f : Πi, β i), subtype.restrict f s) :=
 begin
-  apply is_open_map_of_is_topological_basis (is_topological_basis_pi β),
+  apply is_open_map_of_is_topological_basis (is_topological_basis_pi' β),
   intros o ho,
   rw [pi_basis_eq] at ho, rcases ho with ⟨⟨s', t, hs, rfl⟩, hs'⟩,
-  have : nonempty (pi ↑t s'), { rw [←nmem_singleton_empty], exact hs' },
+  have : set.nonempty (pi ↑t s'), { rw [←nmem_singleton_empty], exact hs' },
   rw [restrict_image_pi _ _ _ this],
-  apply is_open_of_is_topological_basis (is_topological_basis_pi _),
+  apply is_topological_basis.is_open (is_topological_basis_pi' _),
   rw [pi_basis_eq], refine ⟨⟨λ x, s' x.1, _, _, _⟩, _⟩,
-  { apply finite.to_finset, apply finite_preimage (inj_on_of_injective _ subtype.val_injective),
+  { apply finite.to_finset, apply finite.preimage (inj_on_of_injective subtype.val_injective _),
     exact t.finite_to_set },
   { intros x hx, rw [finite.mem_to_finset] at hx, exact hs _ hx },
   { congr' 1, ext, rw [finite.coe_to_finset] },
   dsimp only, rw [nmem_singleton_empty],
-  rcases this with ⟨f, hf⟩, exact ⟨⟨λ i, f i.1, λ i hi, hf i.1 hi⟩⟩
+  rcases this with ⟨f, hf⟩, exact ⟨λ i, f i.1, λ i hi, hf i.1 hi⟩
 end
 
 /- The set of indices where a set o is constant, i.e. that coordinate doesn't matter for
@@ -602,7 +633,7 @@ end
 def support (o : set (Πx, β x)) : set α :=
 ⋂₀ { s : set α | ∀{{f g : Πi, β i}}, eq_on' f g s → f ∈ o → g ∈ o }
 
-lemma support_pi (i : set α) (s : ∀x, set (β x)) (h : nonempty $ pi i s) :
+lemma support_pi (i : set α) (s : ∀x, set (β x)) (h : set.nonempty $ pi i s) :
   support (pi i s) = {x ∈ i | s x ≠ set.univ } :=
 begin
   apply subset.antisymm,
@@ -611,7 +642,7 @@ begin
     rw [←hfg ⟨hx, h⟩], exact hf x hx },
   { apply subset_sInter, rintro j hj x ⟨hx, hs⟩,
     have := h, rcases this with ⟨f, hf⟩,
-    have h₂ : nonempty (-(s x) : set _), { rw [nonempty_compl], exact hs },
+    have h₂ : set.nonempty ((s x) : set _)ᶜ, { rw [nonempty_compl], exact hs },
     rcases h₂ with ⟨z₂, hz₂⟩,
     let f₂ : Πx', β x' := change f z₂,
     have hf₂ : f₂ ∉ pi i s, { refine mt _ hz₂, intro hf₂, convert hf₂ x hx,
@@ -626,7 +657,7 @@ lemma support_elim {o : set (Πx, β x)} {f g : Πx, β x} (ho : o ∈ pi_basis 
   (h : eq_on' f g (support o)) (hf : f ∈ o) : g ∈ o :=
 begin
   rw [pi_basis_eq] at ho, rcases ho with ⟨⟨s, i, hs, rfl⟩, hs'⟩,
-  have : nonempty (pi ↑i s), { rw [←nmem_singleton_empty], exact hs' },
+  have : set.nonempty (pi ↑i s), { rw [←nmem_singleton_empty], exact hs' },
   intros x hx, rw [support_pi _ _ this] at h,
   by_cases h' : s x = univ, rw [h'], trivial,
   rw [← h ⟨hx, h'⟩], exact hf x hx
@@ -636,7 +667,7 @@ lemma finite_support_of_pi_subbasis {o : set (Πx, β x)} (h : o ∈ pi_subbasis
   finite (support o) :=
 begin
   rcases h with ⟨⟨i, o⟩, rfl⟩,
-  apply finite_subset (finite_singleton i),
+  apply finite.subset (finite_singleton i),
   apply sInter_subset_of_mem, dsimp [standard_open],
   intros f g hfg hf, rwa [hfg (mem_singleton i)] at hf
 end
@@ -645,8 +676,9 @@ lemma finite_support_of_pi_basis {o : set (Πx, β x)} (h : o ∈ pi_basis β) :
   finite (support o) :=
 begin
   rcases h with ⟨s, ⟨hs, h2s, h3s⟩, rfl⟩,
-  apply finite_subset (finite_bUnion' support hs $ λ i hi, finite_support_of_pi_subbasis $ h2s hi),
-  apply sInter_subset_of_mem, dsimp only, intros f g hfg hf,
+  refine finite.subset (finite.bUnion hs (λ i hi, @finite_support_of_pi_subbasis _ β _ _ (h2s hi)))
+    (sInter_subset_of_mem _),
+  dsimp only, intros f g hfg hf,
   intros t ht,
   apply support_elim _ _ (hf t ht),
   { apply subbasis_subset_basis, split,
@@ -663,7 +695,7 @@ theorem countable_chain_condition_pi
   (h : ∀(s : set α), finite s → countable_chain_condition (Π(x : s), β x)) :
   countable_chain_condition (Πx, β x) :=
 begin
-  apply countable_chain_condition_of_topological_basis _ (is_topological_basis_pi β),
+  apply countable_chain_condition_of_topological_basis _ (is_topological_basis_pi' β),
   intros C hC h2C, rw [countable_iff], apply le_of_not_gt, intro h3C,
   let A : C → set α := λ s, support s.1,
   have h2A : ∀ (s : C), finite (A s),
@@ -680,7 +712,7 @@ begin
   let D : set (set (Π(x : R), β x)) := image π '' C'',
   have hD : ∀ ⦃o : set (Π (x : R), β x)⦄, o ∈ D → is_open o,
   { rintro _ ⟨o, ho, rfl⟩, apply is_open_map_restrict,
-    apply is_open_of_is_topological_basis (is_topological_basis_pi β) (hC $ hC'' ho) },
+    apply is_topological_basis.is_open (is_topological_basis_pi' β) (hC $ hC'' ho) },
   have h2'D : ∀(s t : set (Πx, β x)), s ∈ C'' → t ∈ C'' → s ≠ t → disjoint (π '' s) (π '' t),
   { rintro s t hs ht hst,
     rw [disjoint_iff_eq_empty, eq_empty_iff_forall_not_mem],
@@ -703,10 +735,10 @@ begin
   have h3D : cardinal.omega < mk D,
   { rw [mk_image_eq_of_inj_on, mk_image_eq], exact h1C',
     apply subtype.val_injective,
-    intros s t hs ht hst, by_contradiction hst',
-    apply ne_of_disjoint _ (h2'D s t hs ht hst') hst,
-    apply coe_nonempty_iff_ne_empty.mp,
-    apply nonempty_image, apply nonempty_of_mem_pi_basis (hC $ hC'' hs) },
+    intros s hs t ht hst, by_contradiction hst',
+    apply disjoint.ne _ (h2'D s t hs ht hst') hst,
+    apply ne_empty_iff_nonempty.mpr,
+    apply nonempty_image_iff.mpr, apply nonempty_of_mem_pi_basis (hC $ hC'' hs) },
   apply not_le_of_gt h3D, rw [←countable_iff], exact h R h2R D hD h2D
 end
 
