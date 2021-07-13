@@ -21,7 +21,7 @@ universe u
 namespace ordinal
 
 lemma lt_zero_false {x : ordinal} : x < 0 → false :=
-by {apply not_lt_of_ge, from zero_le _}
+not_lt_of_le x.zero_le
 
 end ordinal
 
@@ -51,13 +51,11 @@ begin
     by {have := Set.eq_empty, intro H, have := (this {⟦x⟧, ⟦y⟧}).mp H,
       specialize this ⟦x⟧, apply this, simp},
   specialize this ‹_›, rcases this with ⟨z, ⟨Hz₁, Hz₂⟩⟩,
-  cases Set.mem_insert.mp Hz₁,
-  rw[h] at Hz₂, have := (Set.eq_empty _).mp Hz₂, apply this,
-  show Set, from ⟦x⟧, simp, exact H₁,
-
-  have := Set.mem_singleton.mp h,
-  rw[this] at Hz₂, have := (Set.eq_empty _).mp Hz₂, apply this,
-  show Set, from ⟦y⟧, simp, exact H₂
+  rw Set.eq_empty at Hz₂,
+  rw [Set.mem_insert, Set.mem_singleton] at Hz₁,
+  rcases Hz₁ with rfl|rfl,
+  { simpa using Hz₂ ⟦y⟧ },
+  { simpa using Hz₂ ⟦x⟧ }
 end
 
 @[simp]lemma mem_self {x : pSet.{u}} (H : x ∈ x) : false := mem_mem_false H H
@@ -229,7 +227,7 @@ lemma empty_empty : (∅ : Set) = ⟦(∅ : pSet)⟧ := by refl
 
 lemma exists_mem_of_nonempty {x : pSet.{u}} (H : ¬ equiv x (∅ : pSet.{u})) : ∃ y, y ∈ x :=
 begin
-  have := (Set.eq_empty ⟦x⟧).mpr, by_contra,
+  have := (Set.eq_empty ⟦x⟧).mpr, by_contra a,
   simp at a, have this' : ∀ (x' : Set), x' ∉ ⟦x⟧,
     by {intro x', specialize a x'.out, intro H, apply a,
     change ⟦quotient.out x'⟧ ∈ ⟦x⟧, rwa[quotient.out_eq x']},
@@ -242,16 +240,19 @@ by {intro H', apply H, from equiv_of_eq H'}
 lemma is_epsilon_well_founded (x : pSet.{u}) : ∀ (u : pSet.{u}), u ⊆ x → ¬equiv u (∅ : pSet.{u}) → (∃ (y : pSet), y ∈ u ∧ ∀ (z' : pSet), z' ∈ u → z' ∉ y) :=
 begin
   intros u Hu Hu_ne_empty, classical,
-     by_contra, push_neg at a,
+     by_contra a, push_neg at a,
      replace Hu_ne_empty := Set.regularity ⟦u⟧ (not_empty_of_not_equiv_empty ‹_›),
      rcases Hu_ne_empty with ⟨y,⟨Hy₁, Hy₂⟩⟩,
-     specialize a (quotient.out y), cases a, suffices : y ∉ ⟦u⟧, by contradiction,
-     {rw[mem_iff] at a, convert a, rw[quotient.out_eq]},
-     cases a with z Hz, cases Hz with Hz₁ Hz₂,
+     specialize a (quotient.out y) _,
+     { rw ←quotient.out_eq y at Hy₁,
+        exact Hy₁ },
+     suffices : y ∉ ⟦u⟧, by contradiction,
+     { simp_rw [mem_iff] at a,
+      cases a with z Hz, cases Hz with Hz₁ Hz₂,
      have : ⟦z⟧ ∈ (⟦u⟧ ∩ y : Set),
        by {apply Set.mem_inter.mpr, rw[<-mem_iff], use ‹_›,
-           rw[mem_iff] at Hz₂, convert Hz₂, rw[quotient.out_eq]},
-     apply Set.mem_empty ⟦z⟧, rwa[Hy₂] at this
+           convert Hz₂, rw[quotient.out_eq]},
+     exfalso, apply Set.mem_empty ⟦z⟧, rwa[Hy₂] at this }
 end
 
 @[simp]lemma Ord_empty : Ord (∅ : pSet.{u}) :=
@@ -409,20 +410,17 @@ begin
   have := Set.regularity {⟦x⟧,⟦y⟧,⟦z⟧},
   have H_nonempty : {⟦x⟧, ⟦y⟧, ⟦z⟧} ≠ ∅,
     by {have := Set.eq_empty, intro H, have := (this {⟦x⟧,⟦y⟧,⟦z⟧}).mp H, specialize this ⟦x⟧,
-    apply this, simp, apply (Set.mem_insert).mpr, right, simp},
+    apply this, simp },
 
   specialize this ‹_›, rcases this with ⟨w, ⟨Hw₁, Hw₂⟩⟩,
-  cases Set.mem_insert.mp Hw₁, rw[h] at Hw₂, have := (Set.eq_empty _).mp Hw₂, apply this,
-  show Set, from ⟦y⟧, simp, refine ⟨_,‹_›⟩, apply (Set.mem_insert).mpr, right, simp,
-
-  replace h := Set.mem_insert.mp h, cases h,
-  rw[h] at Hw₂, have := (Set.eq_empty _).mp Hw₂, apply this,
-  show Set, from ⟦x⟧, simp, refine ⟨_,‹_›⟩, apply (Set.mem_insert).mpr, right, simp,
-
-    replace h := Set.mem_insert.mp h, cases h,
-  rw[h] at Hw₂, have := (Set.eq_empty _).mp Hw₂, apply this,
-  show Set, from ⟦z⟧, simp, refine ⟨_,‹_›⟩, apply (Set.mem_insert).mpr, left, simp,
-  apply mem_empty w.out, rw[<-quotient.out_eq w] at h, exact h
+  simp_rw [Set.mem_insert, Set.mem_singleton] at Hw₁,
+  rw Set.eq_empty at Hw₂,
+  simp only [forall_eq_or_imp, not_and, Set.mem_inter, forall_eq, Set.mk_eq, Set.mem_pair,
+    Set.mem_insert, Set.mem_singleton] at Hw₂,
+  rcases Hw₁ with rfl|rfl|rfl,
+  { exact Hw₂.right.right H₃ },
+  { exact Hw₂.left H₁ },
+  { exact Hw₂.right.left H₂ }
 end
 
 def mem_witness {y w : pSet.{u}} (H : w ∈ y) : Σ'(y_a : y.type), (equiv w (y.func y_a)) :=
@@ -535,7 +533,7 @@ begin
   inv_fun := by tidy,
   left_inv := dec_trivial,
   right_inv := dec_trivial,
-  ord := dec_trivial}
+  map_rel_iff' := dec_trivial}
 end
 
 lemma ordinal.mk_coherent {ξ β : ordinal} {H_lt : β < ξ} :
@@ -729,7 +727,7 @@ begin
 end
 
 lemma le_of_subset {k₁ k₂ : ℕ} (H : of_nat k₁ ⊆ of_nat k₂) : k₁ ≤ k₂ :=
-by {by_contra, simp at a, replace a := false_of_subset_of_nat_ge a, contradiction}
+by { by_contra a, refine false_of_subset_of_nat_ge _ H, exact lt_of_not_ge a }
 
 lemma of_nat_of_mem_of_nat {y : pSet.{u}} {k} (H_mem : y ∈ (of_nat k : pSet.{u})) :
   ∃ j, equiv (y : pSet.{u}) (of_nat j : pSet.{u}) :=
@@ -762,7 +760,7 @@ end
 
 lemma lt_of_of_nat_mem {k₁ k₂ : ℕ} (H_mem : of_nat k₁ ∈ of_nat k₂) : k₁ < k₂ :=
 begin
-  by_contra, replace a := not_lt.mp a, have : of_nat k₂ ⊆ of_nat k₁, by apply subset_of_le ‹_›,
+  by_contra a, replace a := not_lt.mp a, have : of_nat k₂ ⊆ of_nat k₁, by apply subset_of_le ‹_›,
   rw[subset_iff_all_mem] at this, suffices : of_nat k₁ ∈ of_nat k₁, from mem_self ‹_›,
   back_chaining
 end
@@ -1295,7 +1293,7 @@ lemma function_to_2_eq_aux₂ {x w : pSet} (Hfunc : is_func x (of_nat 2) w) {a} 
   pair a (of_nat 0) ∈ w → pair a (of_nat 1) ∈ w → false :=
 begin
   intros H₁ H₂, rw is_func_iff at Hfunc, cases Hfunc with H_sub H,
-  specialize H a _, rcases H with ⟨w', ⟨Hw', H_unq⟩⟩,
+  specialize H a _, swap, rcases H with ⟨w', ⟨Hw', H_unq⟩⟩,
   have this₁ := H_unq (of_nat 0) ‹_›, have this₂ := H_unq (of_nat 1) ‹_›,
   suffices : equiv (of_nat 0) (of_nat 1),
     by {exact false_of_zero_eq_one ‹_›},
@@ -1360,7 +1358,7 @@ begin
     { intros w₁ w₂ v₁ v₂ H, rcases H with ⟨H₁,H₂, H_eq⟩,
       rw mem_f2ip_iff at H₁ H₂,
       have : equiv {z ∈ x | pair z (of_nat 0) ∈ w₁} {z ∈ x | pair z (of_nat 0) ∈ w₂},
-        by {repeat {auto_cases}, rw equiv_iff_eq at *, cc},
+        by { rw equiv_iff_eq at *, cc},
       rcases H₁ with ⟨H₁₁, H₁₂, H₁₃⟩, rcases H₂ with ⟨H₂₁, H₂₂, H₂₃⟩,
       exact functions_to_2_eq ‹_› H₁₁ ‹_› }
 end
@@ -1388,4 +1386,3 @@ lemma exists_mem_of_regular {κ : cardinal} (H_reg : cardinal.is_regular κ) : �
 exists_mem_of_nonzero $ nonzero_of_regular H_reg
 
 end pSet
-
