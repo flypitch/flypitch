@@ -632,115 +632,115 @@ begin
 end
 
 end set
--- open nat
+open nat
 
 
--- namespace nonempty
--- variables {α : Sort u} {β : Sort v} {γ : Sort w}
+namespace nonempty
+variables {α : Sort u} {β : Sort v} {γ : Sort w}
 
--- protected lemma iff (mp : α → β) (mpr : β → α) : nonempty α ↔ nonempty β :=
--- ⟨nonempty.map mp, nonempty.map mpr⟩
+protected lemma iff (mp : α → β) (mpr : β → α) : nonempty α ↔ nonempty β :=
+⟨nonempty.map mp, nonempty.map mpr⟩
 
--- end nonempty
+end nonempty
 
--- /-- The type α → (α → ... (α → β)...) with n α's. We require that α and β live in the same universe, otherwise we have to use ulift. -/
--- def arity' (α β : Type u) : ℕ → Type u
--- | 0     := β
--- | (n+1) := α → arity' n
+/-- The type α → (α → ... (α → β)...) with n α's. We require that α and β live in the same universe, otherwise we have to use ulift. -/
+def arity' (α β : Type u) : ℕ → Type u
+| 0     := β
+| (n+1) := α → arity' n
 
--- namespace arity'
--- section arity'
--- local notation h :: t  := dvector.cons h t
--- local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`) := l
--- def arity'_constant {α β : Type u} : ∀{n : ℕ}, β → arity' α β n
--- | 0     b := b
--- | (n+1) b := λ_, arity'_constant b
+namespace arity'
+section arity'
+local notation h :: t  := dvector.cons h t
+local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`) := l
+def arity'_constant {α β : Type u} : ∀{n : ℕ}, β → arity' α β n
+| 0     b := b
+| (n+1) b := λ_, arity'_constant b
 
--- @[simp] def of_dvector_map {α β : Type u} : ∀{l} (f : dvector α l → β), arity' α β l
--- | 0     f := f ([])
--- | (l+1) f := λx, of_dvector_map $ λxs, f $ x::xs
+@[simp] def of_dvector_map {α β : Type u} : ∀{l} (f : dvector α l → β), arity' α β l
+| 0     f := f ([])
+| (l+1) f := λx, of_dvector_map $ λxs, f $ x::xs
 
--- @[simp] def arity'_app {α β : Type u} : ∀{l}, arity' α β l → dvector α l → β
--- | _ b []      := b
--- | _ f (x::xs) := arity'_app (f x) xs
+@[simp] def arity'_app {α β : Type u} : ∀{l}, arity' α β l → dvector α l → β
+| _ b []      := b
+| _ f (x::xs) := arity'_app (f x) xs
 
--- @[simp] lemma arity'_app_zero {α β : Type u} (f : arity' α β 0) (xs : dvector α 0) :
---   arity'_app f xs = f :=
--- by cases xs; refl
+@[simp] lemma arity'_app_zero {α β : Type u} (f : arity' α β 0) (xs : dvector α 0) :
+  arity'_app f xs = f :=
+by cases xs; refl
 
--- def arity'_postcompose {α β γ : Type u} (g : β → γ) : ∀{n} (f : arity' α β n), arity' α γ n
--- | 0     b := g b
--- | (n+1) f := λx, arity'_postcompose (f x)
+def arity'_postcompose {α β γ : Type u} (g : β → γ) : ∀{n} (f : arity' α β n), arity' α γ n
+| 0     b := g b
+| (n+1) f := λx, arity'_postcompose (f x)
 
--- def arity'_postcompose2 {α β γ δ : Type u} (h : β → γ → δ) :
---   ∀{n} (f : arity' α β n) (g : arity' α γ n), arity' α δ n
--- | 0     b c := h b c
--- | (n+1) f g := λx, arity'_postcompose2 (f x) (g x)
+def arity'_postcompose2 {α β γ δ : Type u} (h : β → γ → δ) :
+  ∀{n} (f : arity' α β n) (g : arity' α γ n), arity' α δ n
+| 0     b c := h b c
+| (n+1) f g := λx, arity'_postcompose2 (f x) (g x)
 
--- def arity'_precompose {α β γ : Type u} : ∀{n} (g : arity' β γ n) (f : α → β), arity' α γ n
--- | 0     c f := c
--- | (n+1) g f := λx, arity'_precompose (g (f x)) f
+def arity'_precompose {α β γ : Type u} : ∀{n} (g : arity' β γ n) (f : α → β), arity' α γ n
+| 0     c f := c
+| (n+1) g f := λx, arity'_precompose (g (f x)) f
 
--- inductive arity'_respect_setoid {α β : Type u} [R : setoid α] : ∀{n}, arity' α β n → Type u
--- | r_zero (b : β) : @arity'_respect_setoid 0 b
--- | r_succ (n : ℕ) (f : arity' α β (n+1)) (h₁ : ∀{{a a'}}, a ≈ a' → f a = f a')
---   (h₂ : ∀a, arity'_respect_setoid (f a)) : arity'_respect_setoid f
--- open arity'_respect_setoid
+inductive arity'_respect_setoid {α β : Type u} [R : setoid α] : ∀{n}, arity' α β n → Type u
+| r_zero (b : β) : @arity'_respect_setoid 0 b
+| r_succ (n : ℕ) (f : arity' α β (n+1)) (h₁ : ∀{{a a'}}, a ≈ a' → f a = f a')
+  (h₂ : ∀a, arity'_respect_setoid (f a)) : arity'_respect_setoid f
+open arity'_respect_setoid
 
--- instance subsingleton_arity'_respect_setoid {α β : Type u} [R : setoid α] {n} (f : arity' α β n) :
---   subsingleton (arity'_respect_setoid f) :=
+instance subsingleton_arity'_respect_setoid {α β : Type u} [R : setoid α] {n} (f : arity' α β n) :
+  subsingleton (arity'_respect_setoid f) :=
+begin
+  constructor, intros h h', induction h generalizing h'; cases h'; try {refl}; congr,
+  apply funext, intro x, apply h_ih
+end
+
+def arity'_quotient_lift {α β : Type u} {R : setoid α} :
+  ∀{n}, (Σ(f : arity' α β n), arity'_respect_setoid f) → arity' (quotient R) β n
+| _ ⟨_, r_zero b⟩         := b
+| _ ⟨_, r_succ n f h₁ h₂⟩ :=
+  begin
+    apply quotient.lift (λx, arity'_quotient_lift ⟨f x, h₂ x⟩),
+    intros x x' r, dsimp,
+    apply congr_arg, exact sigma.eq (h₁ r) (subsingleton.elim _ _)
+  end
+
+-- def arity'_quotient_beta {α β : Type u} {R : setoid α} {n} (f : arity' α β n)
+--   (hf : arity'_respect_setoid f) (xs : dvector α n) :
+--   arity'_app (arity'_quotient_lift ⟨f, hf⟩) (xs.map quotient.mk) = arity'_app f xs :=
 -- begin
---   constructor, intros h h', induction h generalizing h'; cases h'; try {refl}; congr,
---   apply funext, intro x, apply h_ih
+--   induction hf,
+--   { simp [arity'_quotient_lift] },
+--   dsimp [arity'_app], sorry
 -- end
 
--- -- def arity'_quotient_lift {α β : Type u} {R : setoid α} :
--- --   ∀{n}, (Σ(f : arity' α β n), arity'_respect_setoid f) → arity' (quotient R) β n
--- -- | _ ⟨_, r_zero b⟩         := b
--- -- | _ ⟨_, r_succ n f h₁ h₂⟩ :=
--- --   begin
--- --     apply quotient.lift (λx, arity'_quotient_lift ⟨f x, h₂ x⟩),
--- --     intros x x' r, dsimp,
--- --     apply congr_arg, exact sigma.eq (h₁ r) (subsingleton.elim _ _)
--- --   end
+def for_all {α : Type u} (P : α → Prop) : Prop := ∀x, P x
 
--- -- def arity'_quotient_beta {α β : Type u} {R : setoid α} {n} (f : arity' α β n)
--- --   (hf : arity'_respect_setoid f) (xs : dvector α n) :
--- --   arity'_app (arity'_quotient_lift ⟨f, hf⟩) (xs.map quotient.mk) = arity'_app f xs :=
--- -- begin
--- --   induction hf,
--- --   { simp [arity'_quotient_lift] },
--- --   dsimp [arity'_app], sorry
--- -- end
+@[simp] def arity'_map2 {α β : Type u} (q : (α → β) → β) (f : β → β → β) :
+  ∀{n}, arity' α β n → arity' α β n → β
+| 0     x y := f x y
+| (n+1) x y := q (λz, arity'_map2 (x z) (y z))
 
--- def for_all {α : Type u} (P : α → Prop) : Prop := ∀x, P x
+@[simp] lemma arity'_map2_refl {α : Type} {f : Prop → Prop → Prop} (r : ∀A, f A A) :
+  ∀{n} (x : arity' α Prop n), arity'_map2 for_all f x x
+| 0     x := r x
+| (n+1) x := λy, arity'_map2_refl (x y)
 
--- @[simp] def arity'_map2 {α β : Type u} (q : (α → β) → β) (f : β → β → β) :
---   ∀{n}, arity' α β n → arity' α β n → β
--- | 0     x y := f x y
--- | (n+1) x y := q (λz, arity'_map2 (x z) (y z))
+def arity'_imp {α : Type} {n : ℕ} (f₁ f₂ : arity' α Prop n) : Prop :=
+arity'_map2 for_all (λP Q, P → Q) f₁ f₂
 
--- @[simp] lemma arity'_map2_refl {α : Type} {f : Prop → Prop → Prop} (r : ∀A, f A A) :
---   ∀{n} (x : arity' α Prop n), arity'_map2 for_all f x x
--- | 0     x := r x
--- | (n+1) x := λy, arity'_map2_refl (x y)
+def arity'_iff {α : Type} {n : ℕ} (f₁ f₂ : arity' α Prop n) : Prop :=
+arity'_map2 for_all iff f₁ f₂
 
--- def arity'_imp {α : Type} {n : ℕ} (f₁ f₂ : arity' α Prop n) : Prop :=
--- arity'_map2 for_all (λP Q, P → Q) f₁ f₂
+lemma arity'_iff_refl {α : Type} {n : ℕ} (f : arity' α Prop n) : arity'_iff f f :=
+arity'_map2_refl iff.refl f
 
--- def arity'_iff {α : Type} {n : ℕ} (f₁ f₂ : arity' α Prop n) : Prop :=
--- arity'_map2 for_all iff f₁ f₂
+lemma arity'_iff_rfl {α : Type} {n : ℕ} {f : arity' α Prop n} : arity'_iff f f :=
+arity'_iff_refl f
 
--- lemma arity'_iff_refl {α : Type} {n : ℕ} (f : arity' α Prop n) : arity'_iff f f :=
--- arity'_map2_refl iff.refl f
+end arity'
+end arity'
 
--- lemma arity'_iff_rfl {α : Type} {n : ℕ} {f : arity' α Prop n} : arity'_iff f f :=
--- arity'_iff_refl f
-
--- end arity'
--- end arity'
-
--- @[simp]lemma lt_irrefl' {α} [preorder α] {Γ : α} (H_lt : Γ < Γ) : false := lt_irrefl _ ‹_›
+@[simp]lemma lt_irrefl' {α} [preorder α] {Γ : α} (H_lt : Γ < Γ) : false := lt_irrefl _ ‹_›
 
 namespace lattice
 
@@ -1224,8 +1224,8 @@ open lean.parser lean interactive.types
 
 local postfix `?`:9001 := optional
 meta def bv_intro : parse ident_? → tactic unit
-| none := propagate_tags (`[refine lattice.le_infi _] >> intro1 >> tactic.skip)
-| (some n) := propagate_tags (`[refine lattice.le_infi _] >> tactic.intro n >> tactic.skip)
+| none := propagate_tags (`[refine le_infi _] >> intro1 >> tactic.skip)
+| (some n) := propagate_tags (`[refine le_infi _] >> tactic.intro n >> tactic.skip)
 
 meta def get_name : ∀(e : expr), name
 | (expr.const c [])          := c
@@ -1504,7 +1504,7 @@ do ctx <- (local_context >>= (λ l, l.mfilter hyp_is_ineq)),
 
 meta def bv_split_at (H : parse ident) : tactic unit :=
 do e_H <- resolve_name H,
-   tactic.replace H ``(lattice.le_inf_iff.mp %%e_H),
+   tactic.replace H ``(le_inf_iff.mp %%e_H),
    resolve_name H >>= to_expr >>= cases_core
 
 meta def bv_split : tactic unit :=

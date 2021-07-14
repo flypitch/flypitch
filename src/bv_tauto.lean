@@ -81,14 +81,16 @@ do (goal_is_bv_false >> skip) <|> `[refine _root_.lattice.bv_by_contra _] >> bv_
 meta def bv_tauto (n : option ℕ := none) : tactic unit :=
 match n with
 | none := bv_tauto_step *> (done <|> (auto_or_elim_step; bv_tauto))
-| (some k) := iterate_at_most k bv_tauto_step
+| (some k) := iterate_at_most k bv_tauto_step >> pure ()
 end
 
 end bv_tauto
 end interactive
 end tactic
 
-example {𝔹} [lattice.nontrivial_complete_boolean_algebra 𝔹] {a b c : 𝔹} : ( a ⟹ b ) ⊓ ( b ⟹ c ) ≤ a ⟹ c :=
-begin
-  tidy_context, bv_tauto
-end
+-- example {𝔹} [lattice.nontrivial_complete_boolean_algebra 𝔹] {a b c : 𝔹} : ( a ⟹ b ) ⊓ ( b ⟹ c ) ≤ a ⟹ c :=
+-- begin
+--   tidy_context, bv_tauto (some 1),
+--   simp*,
+
+-- end

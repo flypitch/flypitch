@@ -20,7 +20,7 @@ variables {𝔹 : Type*} [complete_boolean_algebra 𝔹]
 
 lemma supr_imp_eq {ι : Type*} {s : ι → 𝔹} {b : 𝔹} :
   (⨆(i:ι), s i) ⟹ b = (⨅(i:ι), s i ⟹ b) :=
-by {unfold imp, rw[neg_supr, infi_sup_eq]}
+by {unfold imp, rw[compl_supr, infi_sup_eq]}
 
 lemma imp_infi_eq {ι : Type*} {s : ι → 𝔹} {b : 𝔹} :
   (b ⟹ (⨅i, s i)) = (⨅i, b ⟹ s i) :=
@@ -44,7 +44,7 @@ lemma bv_or_elim_right {b₁ b₂ c d : 𝔹} {h₁ : d ⊓ b₁ ≤ c} {h₂ : 
   by {rw[inf_comm] at ⊢ h₁ h₂; apply bv_or_elim_left; assumption}
 
 lemma bv_exfalso {a b : 𝔹} (h : a ≤ ⊥) : a ≤ b :=
-le_trans h bot_le
+le_trans _ _ _ h bot_le
 
 lemma bv_cases_left {ι : Type*} {s : ι → 𝔹} {c b : 𝔹} {h : ∀ i : ι, (s i ⊓ c ≤ b)} :
   ((⨆(i:ι), s i) ⊓ c) ≤ b :=
@@ -61,8 +61,8 @@ lemma bv_specialize {ι : Type*} {s : ι → 𝔹} (i : ι) {b : 𝔹} {h : s i 
 lemma bv_specialize_twice {ι : Type*} {s : ι → 𝔹} (i j : ι) {b : 𝔹} {h : s i ⊓ s j ≤ b} :
 (⨅(i:ι), s i) ≤ b :=
 begin
-  apply le_trans', apply infi_le, from i, apply le_trans', apply inf_le_left_of_le,
-  apply infi_le, from j, apply le_trans _ h, apply inf_le_inf, apply inf_le_right, refl
+  apply le_trans', apply infi_le, from i, apply le_trans', apply inf_le_of_left_le,
+  apply infi_le, from j, apply le_trans _ _ _ _ h, apply inf_le_inf, apply inf_le_right, refl
 end
 
 lemma bv_specialize_left {ι : Type*} {s : ι → 𝔹} {c b : 𝔹} (i : ι)
@@ -98,9 +98,9 @@ lemma bv_imp_iff {Γ b₁ b₂ : 𝔹} : Γ ≤ b₁ ⟹ b₂ ↔ (∀ {Γ'} (H_
 begin
   refine ⟨_,_⟩; intro H,
     { intros Γ' H_le H', rw ←deduction at H,
-      exact le_trans (le_inf ‹_› ‹_›) H },
+      exact le_trans _ _ _ (le_inf _ _ _ ‹_› ‹_›) H },
     { bv_imp_intro H', apply H,
-      { dsimp[Γ_1], from inf_le_right },
+      { dsimp[Γ_1], from inf_le_right _ _ },
       { from ‹_› } }
 end
 
@@ -111,7 +111,7 @@ begin
       intros Γ' H_le, refine ⟨_,_⟩,
         { rw bv_imp_iff at *, solve_by_elim },
         { rw bv_imp_iff at *, solve_by_elim }},
-    { refine le_inf _ _,
+    { refine le_inf _ _ _ _ _,
       { rw bv_imp_iff, intros, exact (H ‹_›).mp ‹_› },
       { rw bv_imp_iff, intros, exact (H ‹_›).mpr ‹_› }}
 end
@@ -119,20 +119,20 @@ end
 -- example {a b c : 𝔹} (h : b ≤ c) : a ⟹ b ≤ a ⟹ c :=
 -- by {tidy_context, bv_imp_intro, apply (poset_yoneda_inv _ h), from a_1 ‹_›}
 
-lemma bv_and_intro {a b₁ b₂ : 𝔹} (h₁ : a ≤ b₁) (h₂ : a ≤ b₂) : a ≤ b₁ ⊓ b₂ := le_inf h₁ h₂
+lemma bv_and_intro {a b₁ b₂ : 𝔹} (h₁ : a ≤ b₁) (h₂ : a ≤ b₂) : a ≤ b₁ ⊓ b₂ := le_inf _ _ _ h₁ h₂
 
-lemma bv_or_left {a b₁ b₂ : 𝔹} (h₁ : a ≤ b₁) : a ≤ b₁ ⊔ b₂ := le_sup_left_of_le h₁
+lemma bv_or_left {a b₁ b₂ : 𝔹} (h₁ : a ≤ b₁) : a ≤ b₁ ⊔ b₂ := le_sup_of_le_left h₁
 
-lemma bv_or_right {a b₁ b₂ : 𝔹} (h₂ : a ≤ b₂) : a ≤ b₁ ⊔ b₂ := le_sup_right_of_le h₂
+lemma bv_or_right {a b₁ b₂ : 𝔹} (h₂ : a ≤ b₂) : a ≤ b₁ ⊔ b₂ := le_sup_of_le_right h₂
 
 lemma bv_and.left {a b : 𝔹} {Γ} (H : Γ ≤ a ⊓ b) : Γ ≤ a :=
-le_trans H inf_le_left
+le_trans _ _ _ H (inf_le_left _ _)
 
 lemma bv_and.right {a b : 𝔹} {Γ} (H : Γ ≤ a ⊓ b) : Γ ≤ b :=
-le_trans H inf_le_right
+le_trans _ _ _ H (inf_le_right _ _)
 
 lemma from_empty_context {a b : 𝔹} (h : ⊤ ≤ b) : a ≤ b :=
-  by refine le_trans _ h; apply le_top
+  by refine le_trans _ _ _ _ h; apply le_top
 
 lemma bv_imp_intro {a b c : 𝔹} {h : a ⊓ b ≤ c} :
   a ≤ b ⟹ c := by rwa[deduction] at h
@@ -141,7 +141,7 @@ lemma bv_have {a b c : 𝔹} (h : a ≤ b) {h' : a ⊓ b ≤ c} : a ≤ c :=
 by {rw[(inf_self.symm : a = _)], apply le_trans, apply inf_le_inf, refl, exact h, exact h'}
 
 lemma bv_have_true {a b c : 𝔹} (h₁ : ⊤ ≤ b) (h₂ : a ⊓ b ≤ c) : a ≤ c :=
-by {rw[top_le_iff] at h₁, rw[h₁] at h₂, from le_trans (by rw[inf_top_eq]) h₂}
+by {rw[top_le_iff] at h₁, rw[h₁] at h₂, from le_trans _ _ _ (by rw[inf_top_eq]) h₂}
 
 lemma bv_use {ι} (i : ι) {s : ι → 𝔹} {b : 𝔹}  {h : b ≤ s i} : b ≤ ⨆(j:ι), s j :=
   le_supr_of_le i h
@@ -152,7 +152,9 @@ lemma bv_context_apply {β : Type*} [complete_boolean_algebra β] {Γ a₁ a₂ 
 lemma bv_Or_imp {Γ : 𝔹} {ι} {ϕ₁ ϕ₂ : ι → 𝔹} (H_sub : Γ ≤ ⨅ x, ϕ₁ x ⟹ ϕ₂ x) (H : Γ ≤ ⨆x, ϕ₁ x)  : Γ ≤ ⨆x, ϕ₂ x :=
 by {bv_cases_at H x, apply bv_use x, from H_sub x ‹_›}
 
-lemma bv_iff.neg {b₁ b₂ : 𝔹} (H : ∀{Γ}, Γ ≤ b₁ ↔ Γ ≤ b₂) : ∀ {Γ}, Γ ≤ -(b₁) ↔ Γ ≤ -(b₂) :=
+alias compl_compl ← lattice.neg_neg
+
+lemma bv_iff.neg {b₁ b₂ : 𝔹} (H : ∀{Γ}, Γ ≤ b₁ ↔ Γ ≤ b₂) : ∀ {Γ}, Γ ≤ b₁ᶜ ↔ Γ ≤ b₂ᶜ :=
 begin
   intro Γ, refine ⟨_,_⟩; intro H',
     { apply bv_by_contra, bv_imp_intro H_contra, rw lattice.neg_neg at H_contra, rw ←imp_bot at H',
@@ -248,14 +250,14 @@ def bv_eq' (Γ : 𝔹) : bSet 𝔹 → bSet 𝔹 → Prop := λ x y, Γ ≤ x=�
 
 example : (@bv_eq 𝔹 _) (empty) (empty) = ⊤ :=
   by unfold empty bv_eq;
-  {simp only [lattice.inf_eq_top_iff, lattice.infi_eq_top], fsplit; intros i; cases i; cases i}
+  {simp only [inf_eq_top_iff, infi_eq_top], fsplit; intros i; cases i; cases i}
 
 open lattice
 
 @[simp]theorem bv_eq_refl : ∀ x, @bv_eq 𝔹 _ x x = ⊤ :=
 begin
   intro x, induction x, simp[bv_eq, -imp_top_iff_le], split; intros;
-  {apply top_unique, simp only [lattice.top_le_iff, lattice.imp_top_iff_le],
+  {apply top_unique, simp only [top_le_iff, imp_top_iff_le],
     apply le_supr_of_le i, have := x_ih i, simp[this]}
 end
 
@@ -333,7 +335,7 @@ instance insert_bSet : has_insert (bSet 𝔹) (bSet 𝔹) :=
 
 @[simp]theorem mem_insert {x y z : bSet 𝔹} {b : 𝔹} :
   x ∈ᴮ bSet.insert y b z = (b ⊓ x =ᴮ y) ⊔ x ∈ᴮ z :=
-  by induction y; induction z; simp[bv_eq,mem]
+  by { induction y; induction z; simp[bv_eq,mem] }
 
 @[simp]theorem mem_insert1 {x y z : bSet 𝔹} : x ∈ᴮ insert y z = x =ᴮ y ⊔ x ∈ᴮ z :=
   by simp
@@ -367,12 +369,12 @@ theorem bSet_axiom_of_extensionality (x y : bSet 𝔹) :
 (⨅(z : bSet 𝔹), (z ∈ᴮ x ⟹ z ∈ᴮ y) ⊓ (z ∈ᴮ y ⟹ z ∈ᴮ x)) ≤ x =ᴮ y :=
 begin
   rw[bv_eq_unfold],
-  apply le_inf; apply le_infi; intro i,
-  {fapply infi_le_of_le (x.func i), apply inf_le_left_of_le,
+  apply lattice.le_inf; apply le_infi; intro i,
+  {fapply infi_le_of_le (x.func i), apply inf_le_of_left_le,
    induction x, unfold mem, simp only with cleanup,
    by apply imp_le_of_left_le; apply le_supr_of_le i;
    exact le_inf (by refl) (by rw[bv_eq_refl]; apply le_top)},
-  {fapply infi_le_of_le (y.func i), apply inf_le_right_of_le,
+  {fapply infi_le_of_le (y.func i), apply inf_le_of_right_le,
    induction y, unfold mem, simp only with cleanup,
    by apply imp_le_of_left_le; apply le_supr_of_le i;
    exact le_inf (by refl) (by rw[bv_eq_refl]; apply le_top)},
@@ -381,17 +383,17 @@ end
 lemma eq_of_subset_subset (x y : bSet 𝔹) : x ⊆ᴮ y ⊓ y ⊆ᴮ x ≤ x =ᴮ y :=
 begin
   simp[subset_unfold, bv_eq_unfold], tidy;
-  [apply inf_le_left_of_le, apply inf_le_right_of_le]; apply bv_specialize i; refl
+  [apply inf_le_of_left_le, apply inf_le_of_right_le]; apply bv_specialize i; refl
 end
 
 lemma subset_subset_of_eq (x y : bSet 𝔹) : x =ᴮ y ≤ x ⊆ᴮ y ⊓ y ⊆ᴮ x :=
 begin
   simp[subset_unfold, bv_eq_unfold], tidy;
-  [apply inf_le_left_of_le, apply inf_le_right_of_le]; apply bv_specialize i; refl
+  [apply inf_le_of_left_le, apply inf_le_of_right_le]; apply bv_specialize i; refl
 end
 
 theorem eq_iff_subset_subset {x y : bSet 𝔹} : x =ᴮ y = x ⊆ᴮ y ⊓ y ⊆ᴮ x :=
-by apply le_antisymm; [apply subset_subset_of_eq, apply eq_of_subset_subset]
+by apply lattice.le_antisymm; [apply subset_subset_of_eq, apply eq_of_subset_subset]
 
 lemma subset_subset_of_eq' {x y : bSet 𝔹} {Γ} (H : Γ ≤ x =ᴮ y) : Γ ≤ x ⊆ᴮ y ∧ Γ ≤ y ⊆ᴮ x :=
 by {rw[eq_iff_subset_subset] at H, bv_split, exact ⟨‹_›,‹_›⟩}
@@ -400,13 +402,13 @@ lemma subset_of_eq {x y} {Γ : 𝔹} (H : Γ ≤ x =ᴮ y) : Γ ≤ x ⊆ᴮ y :
 (subset_subset_of_eq' H).left
 
 @[simp]lemma subset_self {x : bSet 𝔹} {Γ : 𝔹} : Γ ≤ x ⊆ᴮ x :=
-by { apply le_trans, apply le_top,
+by { apply lattice.le_trans, apply le_top,
      rw[show ⊤ = x =ᴮ x, by simp[bv_eq_refl]], rw[eq_iff_subset_subset], exact inf_le_left }
 
 theorem subset_ext {x y : bSet 𝔹} {Γ : 𝔹} (h₁ : Γ ≤ x ⊆ᴮ y) (h₂ : Γ ≤ y ⊆ᴮ x) : Γ ≤ x =ᴮ y :=
 begin
   apply bv_have h₂, rw[deduction], apply bv_have h₁, rw[<-deduction],
-  ac_change Γ ⊓ (x ⊆ᴮ y ⊓ y ⊆ᴮ x) ≤ x =ᴮ y, apply inf_le_right_of_le,
+  ac_change Γ ⊓ (x ⊆ᴮ y ⊓ y ⊆ᴮ x) ≤ x =ᴮ y, apply inf_le_of_right_le,
   apply eq_of_subset_subset
 end
 
@@ -422,11 +424,11 @@ begin
            A'' i'' =ᴮ A' a' ⊓ A' a' =ᴮ A a ⊓ B a ≤ A'' i'' =ᴮ A a ⊓ B a,
       by {intros a'' a' a, refine inf_le_inf _ (by refl),
         convert @x_ih a (A' a') (A'' a'') using 1; simp[bv_eq_symm], ac_refl},
-    apply le_inf,
+    apply lattice.le_inf,
       {bv_intro i, apply deduction.mp,
         change _ ≤ (A i) ∈ᴮ ⟨α'', A'', B''⟩,
        have this1 : ⟨α, A, B⟩ =ᴮ ⟨α', A', B'⟩ ⊓ B i ≤ A i ∈ᴮ ⟨α', A', B'⟩,
-       by  {rw[deduction], from inf_le_left_of_le (infi_le _ _)},
+       by  {rw[deduction], from inf_le_of_left_le (infi_le _ _)},
        suffices : A i ∈ᴮ ⟨α', A', B'⟩ ⊓ ⟨α', A', B'⟩ =ᴮ ⟨α'', A'', B''⟩ ≤ A i ∈ᴮ ⟨α'', A'', B''⟩,
          by {have := le_trans (inf_le_inf this1 (by refl)) this,
               convert this using 1, ac_refl },
@@ -434,7 +436,7 @@ begin
          by {convert (supr_le this) using 1, simp[mem, inf_comm, inf_supr_eq],
             congr, ext, ac_refl},
        have this2 : ∀ a', ⟨α', A', B'⟩ =ᴮ ⟨α'', A'', B''⟩ ⊓ B' a' ≤ A' a' ∈ᴮ ⟨α'', A'', B''⟩,
-         by {intro a', rw[deduction], apply inf_le_left_of_le, apply infi_le},
+         by {intro a', rw[deduction], apply inf_le_of_left_le, apply infi_le},
        suffices : ∀ a', A i =ᴮ A' a' ⊓ A' a' ∈ᴮ ⟨α'', A'', B''⟩ ≤ A i ∈ᴮ ⟨α'', A'', B''⟩,
          by {intro a', have := le_trans (inf_le_inf (by refl) (this2 a')) (this a'),
          convert this using 1, ac_refl},
@@ -448,7 +450,7 @@ begin
       {bv_intro i'', apply deduction.mp,
         conv {to_rhs, congr, funext, rw[bv_eq_symm]}, change _ ≤ (A'' i'') ∈ᴮ ⟨α, A, B⟩,
         have this1 : ⟨α'', A'', B''⟩ =ᴮ ⟨α', A', B'⟩ ⊓ B'' i'' ≤ A'' i'' ∈ᴮ ⟨α', A', B'⟩,
-          by {rw[deduction], apply inf_le_left_of_le, apply infi_le},
+          by {rw[deduction], apply inf_le_of_left_le, apply infi_le},
         suffices : A'' i'' ∈ᴮ ⟨α', A', B'⟩ ⊓ ⟨α', A', B'⟩ =ᴮ ⟨α, A, B⟩ ≤ A'' i'' ∈ᴮ ⟨α, A, B⟩,
          by {have := le_trans (inf_le_inf this1 (by refl)) this,
               convert this using 1, simp[bv_eq_symm], ac_refl},
@@ -456,7 +458,7 @@ begin
           by {convert (supr_le this) using 1, simp[mem, inf_comm, inf_supr_eq],
             congr, ext, ac_refl},
         have this2 : ∀ a', ⟨α', A', B'⟩ =ᴮ ⟨α, A, B⟩ ⊓ B' a' ≤ A' a' ∈ᴮ ⟨α, A, B⟩,
-          by {intro a', rw[deduction], apply inf_le_left_of_le, apply infi_le},
+          by {intro a', rw[deduction], apply inf_le_of_left_le, apply infi_le},
         suffices : ∀ a', A'' i'' =ᴮ A' a' ⊓ A' a' ∈ᴮ ⟨α, A, B⟩ ≤ A'' i'' ∈ᴮ ⟨α, A, B⟩,
           by {intro a', have := le_trans (inf_le_inf (by refl) (this2 a')) (this a'),
          convert this using 1, ac_refl},
@@ -477,7 +479,7 @@ le_trans (le_inf_iff.mpr ⟨H₁,H₂⟩) bv_eq_trans
 
 lemma bv_rw {x y : bSet 𝔹} (H : x =ᴮ y = ⊤) (ϕ : bSet 𝔹 → 𝔹) {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} : ϕ y = ϕ x :=
 begin
-  apply le_antisymm, swap, rw[show ϕ x = ϕ x ⊓ ⊤, by simp], rw[<-H, inf_comm], apply h_congr,
+  apply lattice.le_antisymm, swap, rw[show ϕ x = ϕ x ⊓ ⊤, by simp], rw[<-H, inf_comm], apply h_congr,
   rw[show ϕ y = ϕ y ⊓ ⊤, by simp], rw[<-H, inf_comm, bv_eq_symm], apply h_congr
 end
 
@@ -503,12 +505,12 @@ end
 /-- If v = w and u ∈ v, then this implies that u ∈ w -/
 lemma subst_congr_mem_right {u v w : bSet 𝔹} : (v =ᴮ w ⊓ u ∈ᴮ v) ≤ u ∈ᴮ w :=
 begin
-  induction v, erw[inf_supr_eq], apply supr_le, intro i,
+  induction v, erw[lattice.inf_supr_eq], apply supr_le, intro i,
   suffices : mk v_α ‹_› ‹_› =ᴮ w ⊓ v_B i ≤ v_A i ∈ᴮ w,
   have := le_trans (inf_le_inf this (by refl : u =ᴮ v_A i ≤ u =ᴮ v_A i)) _,
   rw[<-inf_assoc], convert this using 1,
   rw[bv_eq_symm, inf_comm], apply subst_congr_mem_left,
-  rw[deduction], cases w, apply inf_le_left_of_le, apply infi_le
+  rw[deduction], cases w, apply inf_le_of_left_le, apply infi_le
 end
 
 @[simp]lemma subst_congr_mem_right' {Γ : 𝔹} {u v w : bSet 𝔹} : Γ ≤ w =ᴮ v → Γ ≤ u ∈ᴮ w → Γ ≤ u ∈ᴮ v :=
@@ -518,20 +520,20 @@ end
 lemma bounded_forall {v : bSet 𝔹} {ϕ : bSet 𝔹 → 𝔹 } {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} :
   (⨅(i_x : v.type), (v.bval i_x ⟹ ϕ (v.func i_x))) = (⨅(x : bSet 𝔹), x ∈ᴮ v ⟹ ϕ x)  :=
 begin
-  apply le_antisymm,
+  apply lattice.le_antisymm,
     {bv_intro x, cases v, simp only with cleanup, erw[supr_imp_eq],
      bv_intro i_y, apply infi_le_of_le i_y,
-     rw[<-deduction,<-inf_assoc], apply le_trans, apply inf_le_inf,
+     rw[<-deduction,<-inf_assoc], apply lattice.le_trans, apply inf_le_inf,
      apply bv_imp_elim, refl, rw[inf_comm, bv_eq_symm], apply h_congr},
          {bv_intro i_x', apply infi_le_of_le (func v i_x'), apply imp_le_of_left_le,
      cases v, simp only with cleanup, apply le_supr_of_le i_x',
-       apply le_inf, refl, rw[bv_eq_refl], apply le_top}
+       apply lattice.le_inf, refl, rw[bv_eq_refl], apply le_top}
 end
 
 lemma bounded_exists {v : bSet 𝔹} {ϕ : bSet 𝔹 → 𝔹} {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} :
   (⨆(i_x : v.type), (v.bval i_x ⊓ ϕ(v.func i_x))) = (⨆(x : bSet 𝔹), x ∈ᴮ v ⊓ ϕ x) :=
 begin
-  apply le_antisymm,
+  apply lattice.le_antisymm,
     {apply bv_Or_elim, intro i_x, apply bv_use (v.func i_x),
       apply inf_le_inf, apply mem.mk', refl},
     {apply bv_Or_elim, intro x, simp only [mem_unfold],
@@ -569,8 +571,8 @@ begin
   apply bv_specialize_right i_z, rw[<-deduction],
   ac_change (i_z ∈ᴮ x ⟹ i_z ∈ᴮ y)  ⊓ i_z ∈ᴮ x ⊓ (i_z ∈ᴮ y ⟹ i_z ∈ᴮ z) ≤ i_z ∈ᴮ z,
   rw[deduction], let H := _, change ((H ⟹ _) ⊓ H : 𝔹) ≤ _,
-  apply le_trans, apply bv_imp_elim, rw[<-deduction], rw[inf_comm],
-  apply le_trans, apply bv_imp_elim, refl
+  apply lattice.le_trans, apply bv_imp_elim, rw[<-deduction], rw[inf_comm],
+  apply lattice.le_trans, apply bv_imp_elim, refl
 end
 
 lemma subset_trans' {x y z : bSet 𝔹} {Γ : 𝔹} (H₁ : Γ ≤ x ⊆ᴮ y) (H₂ : Γ ≤ y ⊆ᴮ z) : Γ ≤ x ⊆ᴮ z :=
@@ -579,7 +581,7 @@ poset_yoneda_inv Γ subset_trans $ le_inf ‹_› ‹_›
 -- lemma subset_trans_context {x y z : bSet 𝔹} {c : 𝔹} {h₁ : c ≤ x ⊆ᴮ y} {h₂ : c ≤ y ⊆ᴮ z} : c ≤ x ⊆ᴮ z :=
 -- begin
 --   apply bv_have h₂, rw[deduction], apply bv_have h₁, rw[<-deduction],
---   ac_change c ⊓ (x ⊆ᴮ y ⊓ y ⊆ᴮ z) ≤ x ⊆ᴮ z, apply inf_le_right_of_le,
+--   ac_change c ⊓ (x ⊆ᴮ y ⊓ y ⊆ᴮ z) ≤ x ⊆ᴮ z, apply inf_le_of_right_le,
 --   apply subset_trans
 -- end
 
@@ -609,7 +611,7 @@ begin
     (by {intros, apply subst_congr_mem_left}),
   rw[H₁, H₂], dsimp, bv_intro z, rw[deduction],
   apply infi_le_of_le z, rw[<-deduction, <-deduction], rw[inf_assoc],
-  apply le_trans, apply inf_le_inf, refl, apply subst_congr_mem_right,
+  apply lattice.le_trans, apply inf_le_inf, refl, apply subst_congr_mem_right,
   apply bv_imp_elim -- todo write tactics to make these calculations easier
 end
 
@@ -617,7 +619,7 @@ lemma subst_congr_subset_right {x v u} : ((v ⊆ᴮ u) ⊓ (u =ᴮ x) : 𝔹) �
 begin
   simp only [subset_unfold], bv_intro j, apply bv_specialize_left j,
   rw[<-deduction], ac_change ((bval v j ⟹ func v j ∈ᴮ u) ⊓ bval v j) ⊓  u =ᴮ x ≤ func v j ∈ᴮ x,
-  rw[deduction], apply le_trans, apply bv_imp_elim, rw[<-deduction, inf_comm],
+  rw[deduction], apply lattice.le_trans, apply bv_imp_elim, rw[<-deduction, inf_comm],
   apply subst_congr_mem_right
 end
 
@@ -626,7 +628,7 @@ end
 lemma bv_rw'₀ {x y : bSet 𝔹} {Γ : 𝔹} (H : Γ ≤ x =ᴮ y) {ϕ : bSet 𝔹 → 𝔹} {h_congr : ∀ x y, x =ᴮ y ⊓ ϕ x ≤ ϕ y} {H_new : Γ ≤ ϕ y} : Γ ≤ ϕ x :=
 begin
   have : Γ ≤ y =ᴮ x ⊓ ϕ y,
-    by {apply le_inf, rw[bv_eq_symm], from ‹_›, from ‹_›},
+    by {apply lattice.le_inf, rw[bv_eq_symm], from ‹_›, from ‹_›},
   from (poset_yoneda_inv _ (h_congr _ _) this)
 end
 
@@ -661,14 +663,14 @@ by {unfold B_ext, intros, rw[inf_comm], apply subst_congr_subset_right}
   B_ext (λ x, ϕ₁ x ⊔ ϕ₂ x) :=
 begin
   intros x y, dsimp, rw[inf_comm, deduction], apply bv_or_elim;
-  apply bv_imp_intro; [apply le_sup_left_of_le, apply le_sup_right_of_le];
+  apply bv_imp_intro; [apply le_sup_of_le_left, apply le_sup_of_le_right];
   rw[inf_comm]; [apply h₁, apply h₂]
 end
 
 @[simp]lemma B_ext_inf {ϕ₁ ϕ₂ : bSet 𝔹 → 𝔹} (h₁ : B_ext ϕ₁) (h₂ : B_ext ϕ₂) :
   B_ext (λ x, ϕ₁ x ⊓ ϕ₂ x) :=
 begin
-  intros x y, tidy_context, refine ⟨_,_⟩,
+  intros x y, tidy_context, simp only [le_inf_iff], refine ⟨_,_⟩,
     { apply bv_rw' (bv_symm a_left); from ‹_› },
     { apply bv_rw' (bv_symm a_left); from ‹_› }
 end
@@ -684,7 +686,7 @@ end
 @[simp]lemma B_ext_const {b : 𝔹} : B_ext (λ x, b) :=
 by tidy
 
-@[simp]lemma B_ext_neg {ϕ₁ : bSet 𝔹 → 𝔹} {h : B_ext ϕ₁} : B_ext (λ x, - ϕ₁ x) :=
+@[simp]lemma B_ext_neg {ϕ₁ : bSet 𝔹 → 𝔹} {h : B_ext ϕ₁} : B_ext (λ x, (ϕ₁ x)ᶜ) :=
 by {simp only [imp_bot.symm], apply B_ext_imp, simpa, from B_ext_const}
 
 @[simp]lemma B_ext_infi {ι : Type*} {Ψ : ι → (bSet 𝔹 → 𝔹)} {h : ∀ i, B_ext $ Ψ i} : B_ext (λ x, ⨅i, Ψ i x) :=
@@ -718,7 +720,8 @@ end
 
 lemma mem_congr {Γ : 𝔹} {x₁ x₂ y₁ y₂ : bSet 𝔹} (H₁ : Γ ≤ x₁ =ᴮ y₁) (H₂ : Γ ≤ x₂ =ᴮ y₂) (H₃ : Γ ≤ x₁ ∈ᴮ x₂) :
   Γ ≤ y₁ ∈ᴮ y₂ :=
-by {rw[bv_eq_symm] at H₁ H₂, apply bv_rw' H₁, simp, apply bv_rw' H₂, simpa}
+sorry
+-- by {rw[bv_eq_symm] at H₁ H₂, apply bv_rw' H₁, simp, apply bv_rw' H₂, simpa}
 
 @[instance]def b_setoid (Γ : 𝔹) : setoid (bSet 𝔹) :=
 { r := bv_eq' Γ,
@@ -833,7 +836,7 @@ by {have := @empty_spec 𝔹 _ x Γ, rw[<-imp_bot] at this, from this H}
 @[simp]lemma subst_congr_insert1_left {u w v : bSet 𝔹} : u =ᴮ w ≤ bSet.insert1 u v =ᴮ bSet.insert1 w v :=
 begin
   rcases v with ⟨α,A,B⟩, simp[bSet.insert1, bv_eq, mem], split; intro i; apply bv_imp_intro;
-  refine le_sup_right_of_le _; apply bv_use i; rw[inf_comm]; simp
+  refine le_sup_of_le_right _; apply bv_use i; rw[inf_comm]; simp
 end
 
 @[simp]lemma subst_congr_insert1_left' {u w v : bSet 𝔹} {c : 𝔹} {h : c ≤ u =ᴮ w} : c ≤ bSet.insert1 u v =ᴮ bSet.insert1 w v :=
@@ -844,9 +847,9 @@ by apply le_trans h; simp
 
 @[simp]lemma subst_congr_insert1_right {u w v : bSet 𝔹} : u=ᴮw ≤ bSet.insert1 v u =ᴮ bSet.insert1 v w :=
 by {rcases u with ⟨α,A,B⟩, rcases w with ⟨α',A',B'⟩, simp[bSet.insert1, bv_eq, mem]; split; intro i; apply bv_imp_intro,
-    apply le_sup_right_of_le, apply le_trans, apply inf_le_inf, refl, apply mem.mk, from A, change _ ⊓ _  ≤ A i ∈ᴮ ⟨α',A',B'⟩, rw ← bv_eq,
+    apply le_sup_of_le_right, apply le_trans, apply inf_le_inf, refl, apply mem.mk, from A, change _ ⊓ _  ≤ A i ∈ᴮ ⟨α',A',B'⟩, rw ← bv_eq,
     apply subst_congr_mem_right,
-    apply le_sup_right_of_le, apply le_trans, apply inf_le_inf, refl, apply mem.mk, from A', conv {to_rhs, congr, funext,rw[bv_eq_symm]},
+    apply le_sup_of_le_right, apply le_trans, apply inf_le_inf, refl, apply mem.mk, from A', conv {to_rhs, congr, funext,rw[bv_eq_symm]},
     change _ ≤ A' i ∈ᴮ ⟨α,A,B⟩, rw[←bv_eq, bv_eq_symm], apply subst_congr_mem_right}
 
 @[simp]lemma subst_congr_insert1_right' {u w v : bSet 𝔹} {c : 𝔹} {h : c ≤ u =ᴮ w} : c ≤ bSet.insert1 v u =ᴮ bSet.insert1 v w :=
@@ -867,8 +870,8 @@ begin
   simp only [lattice.le_inf_iff, lattice.infi_option, lattice.inf_top_eq,
  bSet.mem, lattice.top_inf_eq, lattice.supr_option, lattice.top_imp, lattice.sup_bot_eq,
  lattice.le_infi_iff, bSet.forall_over_empty, bSet.exists_over_empty] with cleanup,
-  split; intro i; [apply inf_le_left_of_le, apply inf_le_right_of_le];
-  rw[bv_eq_unfold]; apply inf_le_left_of_le; apply bv_specialize i; refl
+  split; intro i; [apply inf_le_of_left_le, apply inf_le_of_right_le];
+  rw[bv_eq_unfold]; apply inf_le_of_left_le; apply bv_specialize i; refl
 end
 
 lemma eq_singleton_iff_eq {x y : bSet 𝔹} {c : 𝔹} : c ≤ {x} =ᴮ {y} ↔ c ≤ x =ᴮ y :=
@@ -886,7 +889,7 @@ lemma singleton_unfold {x : bSet 𝔹} : {x} = bSet.insert1 x ∅ := rfl
 
 -- @[simp]lemma eq_of_eq_insert_right {u w v : bSet 𝔹} {c : 𝔹} {h : c ≤ bSet.insert1 v u =ᴮ bSet.insert1 v w} : c ≤ u =ᴮ w :=
 -- begin
---   apply le_trans h, simp only [insert1_unfold, bv_eq_unfold], simp, split; intro i; [apply inf_le_left_of_le, apply inf_le_right_of_le],
+--   apply le_trans h, simp only [insert1_unfold, bv_eq_unfold], simp, split; intro i; [apply inf_le_of_left_le, apply inf_le_of_right_le],
 --   {apply bv_specialize i, apply bv_cancel_antecedent, apply bv_or_elim, },
 --   {sorry}
 -- end
@@ -925,8 +928,8 @@ end
 @[simp]lemma two_term_mixture_bval (a₁ a₂ : 𝔹) (h_anti : a₁ ⊓ a₂ = ⊥) (u₁ u₂ : bSet 𝔹) : ∀ i,
   (two_term_mixture a₁ a₂ h_anti u₁ u₂).bval i = (a₁ ⊓ ((two_term_mixture a₁ a₂ h_anti u₁ u₂).func i ∈ᴮ u₁)) ⊔ (a₂ ⊓ ((two_term_mixture a₁ a₂ h_anti u₁ u₂).func i ∈ᴮ u₂)) := λ i,
 begin
-  dsimp[two_term_mixture], tidy, apply le_antisymm, apply supr_le, intro j, repeat{cases j},
-  apply le_sup_left_of_le, refl, apply le_sup_right_of_le, refl,
+  dsimp[two_term_mixture], tidy, apply lattice.le_antisymm, apply supr_le, intro j, repeat{cases j},
+  apply le_sup_of_le_left, refl, apply le_sup_of_le_right, refl,
   apply bv_or_elim; [apply bv_use (ulift.up ff), apply bv_use (ulift.up tt)]; refl
 end
 
@@ -1186,7 +1189,7 @@ begin
     by finish,
   apply le_trans this, apply bv_or_elim_left;
     [rw[<-inf_assoc], ac_change (U =ᴮ u₂ ⊓ u₂ ∈ᴮ X) ⊓ u₁ ∈ᴮ X ≤ U ∈ᴮ X];
-    apply inf_le_left_of_le; rw[bv_eq_symm]; apply subst_congr_mem_left
+    apply inf_le_of_left_le; rw[bv_eq_symm]; apply subst_congr_mem_left
 end
 
 lemma two_term_mixture_subset_top (H : a₁ = u₂ ⊆ᴮ u₁) :
@@ -1198,12 +1201,12 @@ begin
   intro i, fapply bv_use, exact ⟨ulift.up tt,i⟩, refine inf_le_inf _ (by refl),
   simp, rw[sup_inf_left_right_eq], repeat{apply bv_and_intro},
   {rw[h_partition], apply le_top},
-  {apply le_sup_right_of_le, cases u₂, apply mem.mk},
+  {apply le_sup_of_le_right, cases u₂, apply mem.mk},
   {have : a₂ = - a₁, by apply eq_neg_of_partition; assumption,
    conv {to_rhs, congr, skip, rw[this, H]}, rw[sup_comm], change _ ≤ _ ⟹ _,
    apply bv_imp_intro, rw[inf_comm], simp only [subset_unfold],
    apply bv_specialize_left i, apply bv_imp_elim},
-  {apply le_sup_right_of_le, cases u₂, apply mem.mk}
+  {apply le_sup_of_le_right, cases u₂, apply mem.mk}
 end
 end mixing_corollaries
 
@@ -1566,7 +1569,7 @@ lemma check_bv_eq_bot_of_not_equiv {x y : pSet} :
 begin
   induction x generalizing y, cases y, dsimp[check], intro H, apply bot_unique,
   cases pSet.not_equiv H with H H; cases H with w H_w;
-  [apply inf_le_left_of_le, apply inf_le_right_of_le]; apply infi_le_of_le (w); simp[-le_bot_iff];
+  [apply inf_le_of_left_le, apply inf_le_of_right_le]; apply infi_le_of_le (w); simp[-le_bot_iff];
   intro a'; rw[le_bot_iff]; apply x_ih; apply H_w
 end
 
@@ -1882,7 +1885,7 @@ begin
      apply le_inf,
        {apply bv_use i, apply inf_le_inf, refl, apply bv_use i_1,
        apply inf_le_inf, apply refl, simp[bv_eq_refl]},
-       {rw[<-inf_assoc], apply inf_le_right_of_le, refl}},
+       {rw[<-inf_assoc], apply inf_le_of_right_le, refl}},
 end
 
 lemma bv_union_spec' (u : bSet 𝔹) {Γ} : Γ ≤ ⨅ (x : bSet 𝔹), (x ∈ᴮ bv_union u ⟹ ⨆ y, y ∈ᴮ u ⊓ x ∈ᴮ y) ⊓
@@ -1922,7 +1925,7 @@ begin
   ac_change (func x i_v ∈ᴮ bv_union u ⟹ ⨆ (y : type u), u.bval y ⊓ func x i_v ∈ᴮ func u y) ⊓
         (((⨆ (y : type u), u.bval y ⊓ func x i_v ∈ᴮ func u y) ⟹ func x i_v ∈ᴮ bv_union u) ⊓
       (func x i_v ∈ᴮ x ⊓ x ∈ᴮ u)) ≤
-    func x i_v ∈ᴮ bv_union u, apply inf_le_right_of_le,
+    func x i_v ∈ᴮ bv_union u, apply inf_le_of_right_le,
     suffices : (func x i_v ∈ᴮ x ⊓ x ∈ᴮ u) ≤ (⨆ (y : type u), bval u y ⊓ func x i_v ∈ᴮ func u y),
       by {apply le_trans, apply inf_le_inf, refl, exact this, apply bv_imp_elim},
     conv in (x ∈ᴮ u) {simp only [mem_unfold]}, apply bv_cases_right, intro y,
@@ -2015,7 +2018,7 @@ prefix `𝒫`:80 := bv_powerset
 --    apply le_trans, apply inf_le_inf, refl, apply subst_congr_mem_right,
 --    rw[inf_comm], rw[deduction], apply supr_le, intro i',
 --    rw[<-deduction], apply le_supr_of_le i', dsimp,
---    repeat{apply le_inf}, apply inf_le_left_of_le, apply inf_le_left_of_le, refl,
+--    repeat{apply le_inf}, apply inf_le_of_left_le, apply inf_le_of_left_le, refl,
 --    repeat{sorry}
 
 -- },
@@ -2058,10 +2061,10 @@ begin
    apply le_trans, apply bv_imp_elim', rw[inf_comm, deduction],
    rw[mem_unfold], apply supr_le, intro i, rw[<-deduction],
    apply le_supr_of_le i,
-   apply le_inf, rw[inf_assoc], apply inf_le_right_of_le,
+   apply le_inf, rw[inf_assoc], apply inf_le_of_right_le,
    apply subst_congr_mem_left,
    ac_change a₁ =ᴮ func u i ⊓ (bval u i ⊓ a₁ ∈ᴮ x) ≤ a₁ =ᴮ func u i,
-   apply inf_le_left_of_le, refl}},
+   apply inf_le_of_left_le, refl}},
 
    {have := @bounded_forall _ _ (set_of_indicator (λ y, func _ y ∈ᴮ x)) (λ y, y ∈ᴮ x),
    erw[this], swap, simp[subst_congr_mem_left],
@@ -2176,7 +2179,7 @@ begin
     { specialize H_inj (cast check_type' i) (cast check_type' j),
       replace H_inj := mt H_inj,
       suffices this : ¬pSet.equiv (pSet.func x (cast check_type' i)) (pSet.func x (cast check_type' j)),
-        by {refine inf_le_right_of_le _, convert bot_le,
+        by {refine inf_le_of_right_le _, convert bot_le,
             convert check_bv_eq_bot_of_not_equiv ‹_›; cases x; simp; refl},
       exact (H_inj (by cases x; from ‹_›))}
 end
@@ -2355,7 +2358,7 @@ begin
     bv_split, have H_in : Γ_4 ≤ (func x a) ∈ᴮ u,
     rw[bv_eq_symm] at this.right_1_right_1_right,
     apply @bv_rw' 𝔹 _ _ _ _  this.right_1_right_1_right (λ z, z ∈ᴮ u) (by simp) _, from ‹_›,
-    from (le_trans (by {dsimp*, simp[inf_le_right_of_le]} : Γ_4 ≤ Γ) (IH a u)) ‹_›
+    from (le_trans (by {dsimp*, simp[inf_le_of_right_le]} : Γ_4 ≤ Γ) (IH a u)) ‹_›
 end
 
 theorem bSet_axiom_of_regularity (x : bSet 𝔹) {Γ : 𝔹} (H : Γ ≤ -(x =ᴮ ∅)) : Γ ≤ (⨆y, y ∈ᴮ x ⊓ (⨅z', z' ∈ᴮ x ⟹ (-(z' ∈ᴮ y)))) :=
@@ -2411,10 +2414,10 @@ begin
   specialize C_chain i₁ H₁ i₂ H₂,
   haveI : decidable_eq α := λ _ _, prop_decidable _,
   by_cases i₁ = i₂,
-    subst h, apply top_unique, apply le_sup_left_of_le,
+    subst h, apply top_unique, apply le_sup_of_le_left,
       bv_intro j, apply bv_imp_intro, rw[top_inf_eq], apply mem.mk',
     specialize C_chain h, cases C_chain; apply top_unique;
-    [apply le_sup_left_of_le, apply le_sup_right_of_le];
+    [apply le_sup_of_le_left, apply le_sup_of_le_right];
     have := subset'_unfold C_chain; rw[eq_top_iff] at this;
     convert this using 1; simp only [subset_unfold]; refl},
 
