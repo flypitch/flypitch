@@ -862,7 +862,7 @@ begin
   by_cases hk : k < n + 1,
   { simp [hk],
     apply decidable.lt_by_cases m k; intro hm'; simp [hm'],
-    { have hk2 : k - 1 < n, from (nat.sub_lt_right_iff_lt_add (nat.one_le_of_lt hm')).mpr hk,
+    { have hk2 : k - 1 < n, from (sub_lt_iff_right (nat.one_le_of_lt hm')).mpr hk,
       simp [hk2] },
     have hk2 : k < n, from lt_of_lt_of_le hm' hm,
     simp [hk2, dvector.insert_nth_lt x v hk2 hk hm'] },

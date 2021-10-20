@@ -6,7 +6,8 @@ Authors: Jesse Han, Floris van Doorn
 -/
 /- theorems which we should (maybe) backport to mathlib -/
 
-import algebra.ordered_group data.set.disjointed data.set.countable set_theory.cofinality
+import algebra.order.group
+       order.disjointed data.set.countable set_theory.cofinality
        topology.opens --topology.maps
        tactic
        tactic.lint
@@ -236,7 +237,7 @@ protected lemma insert_nth_gt' {α} : ∀{n k l : ℕ} (x : α) (xs : dvector α
 @[simp] protected lemma insert_nth_gt_simp {α} : ∀{n k l : ℕ} (x : α) (xs : dvector α n)
   (h' : l < n + 1)
   (h2 : k < l), (xs.insert x k).nth l h' =
-  xs.nth (l-1) ((nat.sub_lt_right_iff_lt_add (nat.one_le_of_lt h2)).mpr h') :=
+  xs.nth (l-1) ((sub_lt_iff_right (nat.one_le_of_lt h2)).mpr h') :=
 λ n k l x xs h' h2, dvector.insert_nth_gt' x xs _ h' h2
 
 protected lemma insert_nth_gt {α} : ∀{n k l : ℕ} (x : α) (xs : dvector α n) (h : l < n) (h' : l + 1 < n + 1)
@@ -474,7 +475,7 @@ end cardinal
 
 namespace nat
 protected lemma pred_lt_iff_lt_succ {m n : ℕ} (H : 1 ≤ m) : pred m < n ↔ m < succ n :=
-nat.sub_lt_right_iff_lt_add H
+sub_lt_iff_right H
 
 @[simp]lemma le_of_le_and_ne_succ {x y : ℕ} (H : x ≤ y + 1) (H' : x ≠ y + 1) : x ≤ y :=
 by simp only [*, nat.lt_of_le_and_ne, nat.le_of_lt_succ, ne.def, not_false_iff]
