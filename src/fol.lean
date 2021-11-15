@@ -4,15 +4,118 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 Authors: Jesse Han, Floris van Doorn
 -/
-/- A development of first-order logic in Lean.
-
-* The object theory uses classical logic
-* We use de Bruijn variables.
-* We use a deep embedding of the logic, i.e. the type of terms and formulas is inductively defined.
-* There is no well-formedness predicate; all elements of type "term" are well-formed.
--/
-
 import .to_mathlib
+/-!
+# A development of first-order logic in Lean.
+
+We define terms, formulas for classical first-order logic. We furthermore do basic proof theory and
+model theory, defining provability and models and proving the soundness theorem and defining the
+term model.
+
+## Main Definitions
+
+* `Language`: a language for first-order logic: contains functions symbols and relation symbols for
+  any finite arity.
+* `term L`: terms in the language `L`. It is either a variable or a function symbol applied to
+  `n` variables. It is implemented using `preterm` (see implementation notes).
+* `formula L`: formulas in the language `L`. It is either `⊥` (falsum),
+  `≈` (an equality of two terms), `R t₁ ... tₙ` for an `n`-ary relation `R`, `φ ⟹ ψ` (for
+  formulas `φ` and `ψ`) or a universal quantifier applied to a formula.
+  All other connectives and the existential quantifier are defined in terms of these.
+  Implemented in terms of `preformula`.
+* `closed_term`: terms that have no free variables. Implemented using `bounded_preterm`.
+* `sentence`: formulas that have no free variables. Implemented using `bounded_preformula`.
+* `prf Γ t` or `Γ ⊢ t` is the type of proof trees with conclusion `t` and assumptions from the set
+  `Γ`. Implemented using natural deduction.
+* `provable Γ t` or `Γ ⊢' t` is the provability predicate, stating that there exists a proof tree
+  of `t` with assumptions from the set `Γ`.
+* `Structure L`: a structure is a type together with an interpretation of all function symbols and
+  relation symbols from `L`. Structures can be empty in our formalization.
+* We can realize terms and formulas in a structure with `realize_term` and `realize_formula`.
+  They are defined for all preterms/preformula (in which case you need to specify a vector of terms
+  you are  applying it to). One needs a valuation to interpret all free variables.
+  - We can realize bounded terms and bounded formulas `realize_bounded_term` and
+    `realize_bounded_formula`. In this case one only needs a vector of values for the free
+    variables. Also defined for bounded preterms/preformula.
+  - `realize_closed_term` and `realize_sentence` are special cases that do not need addtional data.
+* A `Theory` is a set of sentences. We have a very thin wrapper `sprf` and `sprovable`
+  for proof trees / provability for theories and sentences. (`s` stands for sentence).
+  We write `T ⊢ T'` to indicate that `T` proves all elements of `T'`.
+* We have different notions of satisfiability.
+  - To state that a sentence `s` is satisfied in a structure `S`, use `realize_sentence S s`
+  - `T ⊨ s` states that `s` is true for all non-empty models of `T`.
+  - `T ⊨ T'` states that `T ⊨ s` for all `s ∈ T'`.
+  - We also have versions for formulas of these notions, but I believe they are rarely used.
+* A `Model` of theory `T` is a structure where all sentences of `T` are satisfied.
+* The `term_model` of a theory `T` is the type of closed terms modulo provable equality.
+  This is always an `L`-structure.
+  Furthermore, if we assume that
+  - `T` is a complete theory (a theory that provably decides all sentences and does not prove false)
+  - `T` has enough constants (for all existentially quantified formulas `∃ x, φ x` there is a
+    constant `c` such that the theory proves `(∃ x, φ x) → φ c`)
+  then `T ⊢ s` iff `s` holds in `term_model T`. This proves the completeness theorem for such
+  theories. In other files this is used to prove completeness for all theories.
+
+## Main Results
+
+* `soundness`: soundness theorem for first-order logic. If a theory `T` proves a sentence `A` then
+  `A` is true in every non-empty model of `T`. In notation: `T ⊢ A → T ⊨ A`.
+
+## Implementation notes
+
+* The object theory uses classical logic.
+* We use a deep embedding of the logic, i.e. the type of terms and formulas is inductively defined.
+* There are multiple ways to define terms and formulas. The main design decisions you have to deal
+  with are
+  * You have to work with variable capture. There are different ways to do this, like named
+    variables, de Bruijn variables and locally nameless variables
+    - For named variables, every variable has a name (e.g. a string) and a quantifier captures
+      all variables with the same name. This is notoriously difficult to work with in proof
+      assistants, since one has to avoid accidental variable capture and deal with renaming
+      variables.
+    - De Bruijn variables are variables indexed by natural numbers. A quantifier does *not* capture
+      variables of a specific number. Instead, an occurrence of the variable `n` means that this
+      variable is captured by the `n`-th innermost quantifier that has this occurrence in its scope
+      (start counting from 0). If `n` is larger than the number of quantifiers that have this
+      occurrence in its scope, then this variable is a free variable
+      (not captured by any quantifiers).
+      Example: `∀ x y, x = y → ∀ z, x + z = y + z` is encoded as
+      `∀ ∀ &1 = &0 → ∀ &2 + &0 = &1 + &0` in de Bruijn variables (`&n` is the `n`-th de Bruijn
+      variable).
+      Note that the quantifiers don't specify which variable they quantify. Also notice that the
+      `x` in first equality is encoded as `&1` and in the second equality as `&2`.
+    - Locally nameless variables uses a hybrid approach: de bruijn variables for bound variables
+      and named variables for free variables. This is what the proof assistant Lean uses for its
+      expressions.
+    In this formalization we use de Bruijn variables, so that we don't have to deal with the
+    problems of named variables and don't have to write functions to turn free variables into bound
+    variables and vice versa. This means that we have to define two basic operations for both terms
+    and formulas: lifting (like `lift_term_at`) to avoid variable capture and substitution
+    (like `subst_term`) for subtituting one term into another.
+    We also have to prove various lemmas about these operations
+  * We have to ensure that all function symbols (and relation symbols) are applied to the correct
+    number of arguments. There are multiple ways of doing this:
+    - Define a collection of "preterms" without any restriction on the number of arguments, and
+      then define a predicate that specifies that all applications have the correct number of
+      arguments.
+    - Define term using a nested inductive type that automatically ensures this condition.
+    - What we do: define a collection of "preterms" where the type specifies how many
+      additional arguments this preterm still needs to be applied to before it is a valid term.
+      In this case, a term is just a preterm that has to be applied to 0 additional arguments.
+      This has the advantage that we don't have to work with a well-formedness predicate.
+      The "cost" is that we have to generalize all lemmas to be about `preterm`.
+      We do the same for `formula` so that we can more easily copy-paste definitions about terms,
+      even though the direct encoding would not be a nested inductive type for formulas.
+  * We have to work with closed terms and sentences: terms/formulas that don't have free
+    variables. Or more generally: bounded terms/formulas that have (at most) `n` free variables
+    for some specified number `n`.
+    This can be implemented by a predicate on (pre)term/(pre)formula. In this case you have
+    to prove that all definitions respect this predicate, and then work on the subtype specified by
+    this predicate.
+    What we do instead is to define a separate notion of a `bounded_preterm`/`bounded_preformula`
+    which have an injective map `bounded_preterm.fst` to give the underlying term (the naming comes
+    from the fact that we still think of it as a subtype).
+-/
 
 open nat set
 universe variables u v
@@ -24,13 +127,15 @@ namespace fol
 
 /- realizers of variables are just maps ℕ → S. We need some operations on them -/
 
-/-- Given a valuation v, a nat n, and an x : S, return v truncated to its first n values, with the rest of the values replaced by x. --/
+/-- Insert element `x` at position `n` in the stream `v`. In the first-order logic library
+  streams are used to encode realizers of variables, and this inserts one value in the
+  realizer. This is also used for substitution.
+  Should probably be renamed to `something.insert` in mathlib. -/
 def subst_realize {S : Type u} (v : ℕ → S) (x : S) (n k : ℕ) : S :=
 if k < n then v k else if n < k then v (k - 1) else x
 
 notation v `[`:95 x ` // `:95 n `]`:0 := fol.subst_realize v x n
 
-/-- --/
 @[simp] lemma subst_realize_lt {S : Type u} (v : ℕ → S) (x : S) {n k : ℕ} (H : k < n) :
   v[x // n] k = v k :=
 by simp only [H, subst_realize, if_true, eq_self_iff_true]
@@ -99,8 +204,9 @@ def Language.constants (L : Language) := L.functions 0
 
 variable (L : Language.{u})
 
-/- preterm L l is a partially applied term. if applied to n terms, it becomes a term.
-* Every element of preterm L 0 is a well-formed term.
+/-- Elements of `preterm L l` are partially applied terms.
+If applied to `n` terms, it becomes a term.
+* Every element of `preterm L 0` is a well-formed term.
 * We use this encoding to avoid mutual or nested inductive types, since those are not too convenient to work with in Lean. -/
 inductive preterm : ℕ → Type u
 | var {} : ∀ (k : ℕ), preterm 0
@@ -108,22 +214,16 @@ inductive preterm : ℕ → Type u
 | app : ∀ {l : ℕ} (t : preterm (l + 1)) (s : preterm 0), preterm l
 export preterm
 
+/-- A term is a preterm that needs not be applied to additional arguments. -/
 @[reducible] def term := preterm L 0
 
 variable {L}
 prefix `&`:max := fol.preterm.var
 
-@[simp] def apps : ∀{l}, preterm L l → dvector (term L) l → term L
+/-- Apply a preterm to a vector of terms to obtain a term. -/
+@[simp] def apps : ∀ {l}, preterm L l → dvector (term L) l → term L
 | _ t []       := t
 | _ t (t'::ts) := apps (app t t') ts
-
--- @[simp] def apps' : ∀{l l'}, preterm L (l'+l) → dvector (term L) l → preterm L l'
--- | _ _ t []       := t
--- | _ _ t (t'::ts) := apps' (app t t') ts
-
--- @[simp] def rev_apps : ∀{l l'}, preterm L (l+l) → dvector (term L) l' → preterm L l
--- | _ _ t []       := sorry
--- | l _ t (@dvector.cons _ l' t' ts) := app (@rev_apps (l+1) l' t ts) t'
 
 @[simp] lemma apps_zero (t : term L) (ts : dvector (term L) 0) : apps t ts = t :=
 by cases ts; refl
@@ -135,6 +235,9 @@ begin
 end
 
 namespace preterm
+/-- If `t : preterm L l` and `h : l = l'` then `change_arity h t : preterm L l'`. This
+  is defined recursively instead of using `eq.subst`, so that it computes correctly on
+  explicit terms.  -/
 @[simp] def change_arity' : ∀{l l'} (h : l = l') (t : preterm L l), preterm L l'
 | _ _ h &k          := by induction h; exact &k
 | _ _ h (func f)    := func (by induction h; exact f)
@@ -146,14 +249,6 @@ namespace preterm
 | _ (app t₁ t₂) := by dsimp; simp*
 
 end preterm
-
--- lemma apps'_concat {l l'} (t : preterm L (l'+(l+1))) (s : term L) (ts : dvector (term L) l) :
---   apps' t (ts.concat s) = app (apps' (t.change_arity' (by simp)) ts) s :=
--- begin
---   induction ts generalizing s,
---   { simp },
---   { apply ts_ih (app t ts_x) s }
--- end
 
 lemma apps_ne_var {l} {f : L.functions l} {ts : dvector (term L) l} {k : ℕ} :
   apps (func f) ts ≠ &k :=
@@ -170,34 +265,16 @@ begin
   { rcases ts_ih h with ⟨⟨rfl, rfl⟩, rfl⟩, exact ⟨rfl, rfl⟩ }
 end
 
--- lemma apps_inj_length {l l'} {f : L.functions l} {f' : L.functions l'}
---   {ts : dvector (term L) l} {ts' : dvector (term L) l'}
---   (h : apps (func f) ts = apps (func f') ts') : l = l' :=
--- begin
---   sorry
--- end
-
--- lemma apps'_inj_length {l₁ l₂ l'} {f : L.functions (l' + l₁)} {f' : L.functions (l' + l₂)}
---   {ts : dvector (term L) l₁} {ts' : dvector (term L) l₂}
---   (h : apps' (func f) ts = apps' (func f') ts') : l₁ = l₂ :=
--- begin
---   sorry
---   -- induction ts generalizing l'; cases ts',
---   -- { refl },
---   -- { rcases apps'_eq_app (func f') ts'_x ts'_xs with ⟨t, s, h'⟩, cases h.trans h' },
---   -- { rcases apps'_eq_app (func f) ts_x ts_xs with ⟨t, s, h'⟩, cases h.symm.trans h' },
---   -- { rcases apps'_eq_app (func f) ts_x ts_xs with ⟨t₁, s₁, h₁⟩,
---   --   rcases apps'_eq_app (func f') ts'_x ts'_xs with ⟨t₂, s₂, h₂⟩,
---   --    }
--- end
-
 lemma apps_inj {l} {f f' : L.functions l} {ts ts' : dvector (term L) l}
   (h : apps (func f) ts = apps (func f') ts') : f = f' ∧ ts = ts' :=
 by rcases apps_inj' h with ⟨h', rfl⟩; cases h'; exact ⟨rfl, rfl⟩
 
+/-- Given an `l`-ary function symbol `f` in the language `L` we can view `f` as an `l`-ary
+  function from `term L` to `term L` -/
 def term_of_function {l} (f : L.functions l) : arity' (term L) (term L) l :=
 arity'.of_dvector_map $ apps (func f)
 
+/-- A custom recursion principle for terms that does not refer to preterms. -/
 @[elab_as_eliminator] def term.rec {C : term L → Sort v}
   (hvar : ∀(k : ℕ), C &k)
   (hfunc : Π {l} (f : L.functions l) (ts : dvector (term L) l) (ih_ts : ∀t, ts.pmem t → C t),
@@ -215,6 +292,7 @@ begin
 end,
 λt, h t ([]) (by intros s hs; cases hs)
 
+/-- An auxilliary function for `term.elim`. -/
 @[elab_as_eliminator] def term.elim' {C : Type v}
   (hvar : ∀(k : ℕ), C)
   (hfunc : Π {{l}} (f : L.functions l) (ts : dvector (term L) l) (ih_ts : dvector C l), C) :
@@ -223,6 +301,8 @@ end,
 | _ (func f) ts ih_ts  := hfunc f ts ih_ts
 | _ (app t s) ts ih_ts := term.elim' t (s::ts) (term.elim' s ([]) ([])::ih_ts)
 
+/-- A custom elimination principle for terms that does not refer to preterms. Has better
+  computational properties than `term.rec`. -/
 @[elab_as_eliminator] def term.elim {C : Type v}
   (hvar : ∀(k : ℕ), C)
   (hfunc : Π {{l}} (f : L.functions l) (ts : dvector (term L) l) (ih_ts : dvector C l), C) :
@@ -241,6 +321,7 @@ begin
   { dsimp only [dvector.map, apps], rw [ts_ih], refl }
 end
 
+/-- Computation rule for `term.elim`. The computation rule for variables holds definitionally. -/
 lemma term.elim_apps {C : Type v}
   (hvar : ∀(k : ℕ), C)
   (hfunc : Π {{l}} (f : L.functions l) (ts : dvector (term L) l) (ih_ts : dvector C l), C)
@@ -248,7 +329,8 @@ lemma term.elim_apps {C : Type v}
   @term.elim L C hvar hfunc (apps (func f) ts) = hfunc f ts (ts.map $ @term.elim L C hvar hfunc) :=
 by dsimp only [term.elim]; rw term.elim'_apps; refl
 
-/- lift_term_at _ t n m raises variables in t which are at least m by n -/
+/-- `lift_term_at t n m` or `t ↑ n # m` raises variables in preterm `t` which are at least
+`m` by `n`. This is an important definition for working with de-Bruijn variables. -/
 @[simp] def lift_term_at : ∀ {l}, preterm L l → ℕ → ℕ → preterm L l
 | _ &k          n m := &(if m ≤ k then k+n else k)
 | _ (func f)    n m := func f
@@ -256,14 +338,13 @@ by dsimp only [term.elim]; rw term.elim'_apps; refl
 
 notation t ` ↑' `:90 n ` # `:90 m:90 := fol.lift_term_at t n m -- input ↑ with \u or \upa
 
--- @[simp] lemma lift_term_var_le {k n m} (h : m ≤ k) : &k ↑' n # m = (&(k+n) : term L) := dif_pos h
--- @[simp] lemma lift_term_var_gt {k n m} (h : ¬(m ≤ k)) : &k ↑' n # m = (&k : term L) := dif_neg h
--- @[simp] lemma lift_term_at_func {l} (f : L.functions l) (n m) : func f ↑' n # m = func f := by refl
--- @[simp] lemma lift_term_at_app {l} (t : preterm L (l+1)) (s : preterm L 0) (n m) :
---   app t s ↑' n # m = app (t ↑' n # m) (s ↑' n # m) := by refl
-
+/-- `lift_term t n` or `t ↑ n` raises all variables in preterm `t` by `n`.
+  This is an important definition for working with de-Bruijn variables. However, all lemmas
+  should be (first) stated for `lift_term_at`.
+  This should probably not be reducible in mathlib. -/
 @[reducible] def lift_term {l} (t : preterm L l) (n : ℕ) : preterm L l := t ↑' n # 0
 infix ` ↑ `:100 := fol.lift_term -- input ↑' with \u or \upa
+/-- `lift_term1 t` raises all variables in preterm `t` by 1. -/
 @[reducible, simp] def lift_term1 {l} (t : preterm L l) : preterm L l := t ↑ 1
 
 @[simp] lemma lift_term_def {l} (t : preterm L l) (n : ℕ) : t ↑' n # 0 = t ↑ n := by refl
@@ -291,7 +372,8 @@ lemma injective_lift_term_at : ∀ {l} {n m : ℕ},
 
 @[simp] lemma lift_term_zero {l} (t : preterm L l) : t ↑ 0 = t := lift_term_at_zero t 0
 
-/- the following lemmas simplify iterated lifts, depending on the size of m' -/
+/-! The following lemmas simplify iterated lifts, depending on the size of m' -/
+
 lemma lift_term_at2_small : ∀ {l} (t : preterm L l) (n n') {m m'}, m' ≤ m →
   (t ↑' n # m) ↑' n' # m' = (t ↑' n' # m') ↑' n # (m + n')
 | _ &k          n n' m m' H :=
@@ -350,7 +432,9 @@ by induction ts generalizing t;[refl, apply ts_ih (app t ts_x)]
   (apps t ts) ↑ n = apps (t ↑ n) (ts.map $ λx, x ↑ n) :=
 lift_term_at_apps t ts n 0
 
-/- subst_term t s n substitutes s for (&n) and reduces the level of all variables above n by 1 -/
+/-- `subst_term t s n` or `t[s//n]` substitutes `s` for `&n` and reduces the level of all
+variables above `n` by `1`. This is another fundamental notion when working with de-Bruijn
+variables. -/
 def subst_term : ∀ {l}, preterm L l → term L → ℕ → preterm L l
 | _ &k          s n := subst_realize var (s ↑ n) n k
 | _ (func f)    s n := func f
@@ -501,11 +585,16 @@ lift_is_lift : (forall N A n i j,N ↑' i # n=A ↑' 1 # j -> j<n -> exists M,N=
 subst_is_lift : (forall N T A n j, N [n ← T]=A↑' 1#j->j<n->exists M,N=M↑' 1#j)
 -/
 
-/- preformula l is a partially applied formula. if applied to n terms, it becomes a formula.
-  * We only have implication as binary connective. Since we use classical logic, we can define
-    the other connectives from implication and falsum.
-  * Similarly, universal quantification is our only quantifier.
-  * We could make `falsum` and `equal` into elements of rel. However, if we do that, then we cannot make the interpretation of them in a model definitionally what we want.
+/-- `preformula l` is a partially applied formula.
+When applied to `n` terms, it becomes a formula.
+* We could define the notion of `formula` directly (without using nested inductive types),
+  but it was easier to state the definition this way. In this formulation, all definitions and
+  proofs are entirely analogous to `preterm`.
+* We only have implication as binary connective. Since we use classical logic, we can define
+  the other connectives from implication and falsum.
+* Similarly, universal quantification is our only quantifier.
+* We could make `falsum` and `equal` into elements of rel. However, if we do that, then we
+cannot make the interpretation of them in a model definitionally what we want.
 -/
 variable (L)
 inductive preformula : ℕ → Type u
@@ -516,6 +605,8 @@ inductive preformula : ℕ → Type u
 | imp (f₁ f₂ : preformula 0) : preformula 0
 | all (f : preformula 0) : preformula 0
 export preformula
+
+/-- A formula is a preformula that needs not be applied to additional arguments. -/
 @[reducible] def formula := preformula L 0
 variable {L}
 
@@ -535,6 +626,7 @@ infix ` ⇔ `:61 := fol.biimp -- input \<=>
 def ex    (f : formula L)     : formula L := ∼ ∀' ∼f
 prefix `∃'`:110 := fol.ex -- input \ex
 
+/-- Apply a preformula to a vector of terms to obtain a formula. -/
 @[simp] def apps_rel : ∀{l} (f : preformula L l) (ts : dvector (term L) l), formula L
 | 0     f []      := f
 | (n+1) f (t::ts) := apps_rel (apprel f t) ts
@@ -559,9 +651,12 @@ by cases ts; refl
 --   {f' : formula L} : apps_rel f ts ≠ ∀' f' :=
 -- by induction l; cases ts; [{cases ts_xs, intro h, injection h}, apply l_ih]
 
+/-- Given an `l`-ary relation symbol `R` in the language `L` we can view `R` as an `l`-ary
+  function from `term L` to `formula L` -/
 def formula_of_relation {l} (R : L.relations l) : arity' (term L) (formula L) l :=
 arity'.of_dvector_map $ apps_rel (rel R)
 
+/-- Auxilliary definition for `formula.rec`. -/
 @[elab_as_eliminator] def formula.rec' {C : formula L → Sort v}
   (hfalsum : C ⊥)
   (hequal : Π (t₁ t₂ : term L), C (t₁ ≃ t₂))
@@ -576,6 +671,7 @@ arity'.of_dvector_map $ apps_rel (rel R)
 | _ (f₁ ⟹ f₂)   ts := by cases ts; exact himp (formula.rec' f₁ ([])) (formula.rec' f₂ ([]))
 | _ (∀' f)       ts := by cases ts; exact hall (formula.rec' f ([]))
 
+/-- A custom elimination principle for formulas that does not refer to preformulas. -/
 @[elab_as_eliminator] def formula.rec {C : formula L → Sort v}
   (hfalsum : C ⊥)
   (hequal : Π (t₁ t₂ : term L), C (t₁ ≃ t₂))
@@ -584,7 +680,7 @@ arity'.of_dvector_map $ apps_rel (rel R)
   (hall : Π {{f : formula L}} (ih : C f), C (∀' f)) : ∀f, C f :=
 λf, formula.rec' hfalsum hequal hrel himp hall f ([])
 
-@[simp] def formula.rec'_apps_rel {C : formula L → Sort v}
+@[simp] lemma formula.rec'_apps_rel {C : formula L → Sort v}
   (hfalsum : C ⊥)
   (hequal : Π (t₁ t₂ : term L), C (t₁ ≃ t₂))
   (hrel : Π {{l}} (R : L.relations l) (ts : dvector (term L) l), C (apps_rel (rel R) ts))
@@ -599,7 +695,8 @@ begin
   { dsimp only [dvector.map, apps_rel], rw [ts_ih], refl }
 end
 
-@[simp] def formula.rec_apps_rel {C : formula L → Sort v}
+/-- The only computation rule for `formula.rec` that does not hold definitionally. -/
+@[simp] lemma formula.rec_apps_rel {C : formula L → Sort v}
   (hfalsum : C ⊥)
   (hequal : Π (t₁ t₂ : term L), C (t₁ ≃ t₂))
   (hrel : Π {{l}} (R : L.relations l) (ts : dvector (term L) l), C (apps_rel (rel R) ts))
@@ -609,6 +706,8 @@ end
   @formula.rec L C hfalsum hequal hrel himp hall (apps_rel (rel R) ts) = hrel R ts :=
 by dsimp only [formula.rec]; rw formula.rec'_apps_rel; refl
 
+/-- `lift_formula_at f n m` or `f ↑' n # m` raises variables in preformula `f` which are at least
+`m` by `n`. This is an important definition for working with de-Bruijn variables. -/
 @[simp] def lift_formula_at : ∀ {l}, preformula L l → ℕ → ℕ → preformula L l
 | _ falsum       n m := falsum
 | _ (t₁ ≃ t₂)    n m := lift_term_at t₁ n m ≃ lift_term_at t₂ n m
@@ -1034,6 +1133,10 @@ begin
   apply andE1 _ H₁, apply andE1 _ H₂, apply andE2 _ H₂, apply andE2 _ H₁
 end
 
+/-- This states that `t₁` and `t₂` are provably "equal" preterms: when applied to any vector of
+  terms, we can prove that the applications are equal. Used in the term model.
+  This is type-valued, keeping track of the specific proof trees we use
+  (I do not recall if this is important). -/
 def equal_preterms (T : set (formula L)) {l} (t₁ t₂ : preterm L l) : Type u :=
 ∀(ts : dvector (term L) l), T ⊢ apps t₁ ts ≃ apps t₂ ts
 
@@ -1588,6 +1691,7 @@ by refl
 --   (subst_bounded_term &⟨n, h⟩ s).fst = s.fst ↑ n :=
 -- by simp [subst_bounded_term]
 
+/-- A common version of `subst_bounded_term` that has better type information. -/
 def subst0_bounded_term {n l} (t : bounded_preterm L (n+1) l)
   (s : bounded_term L n) : bounded_preterm L n l :=
 (subst_bounded_term (t.cast_eq $ (n+1).zero_add.symm) s).cast_eq $ n.zero_add
@@ -1949,6 +2053,7 @@ f ↑ 1
   bounded_preformula.cast_fst, lift_bounded_formula_fst, bounded_preformula.fst,
   lift_formula_at]
 
+/-- Not sure what this is, looks like an alternative definition of subtitution. Unused. -/
 def formula_below {n n' l} (f : bounded_preformula L (n+n'+1) l)
   (s : bounded_term L n') : bounded_preformula L (n+n') l :=
 begin
@@ -1963,7 +2068,7 @@ begin
       (f_f.cast_eq_fst _).trans pf₁).cast_eq (succ_add n n') }
 end
 
-/- f[s//n] for bounded_formula, requiring an extra proof that (n+n'+1 = n'') -/
+/-- f[s//n] for bounded_formula, requiring an extra proof that (n+n'+1 = n'') -/
 @[simp] def subst_bounded_formula : ∀{n n' n'' l} (f : bounded_preformula L n'' l)
   (s : bounded_term L n') (h : n+n'+1 = n''), bounded_preformula L (n+n') l
 | _ _ _ _ bd_falsum       s rfl := ⊥
@@ -2077,6 +2182,8 @@ begin
 end,
 λn f, h f ([])
 
+/-- A special case of `subst_bounded_formula` that has an extra hint to the elaborator about the
+  expected type of the argument/conclusion. -/
 @[simp] def substmax_bounded_formula {n l} (f : bounded_preformula L (n+1) l) (s : closed_term L) :
   bounded_preformula L n l :=
 by apply subst_bounded_formula f s rfl
@@ -2174,7 +2281,7 @@ end
   realize_bounded_formula v ∼f dvector.nil ↔ ¬(realize_bounded_formula v f dvector.nil) :=
 by {intros, refl}
 
-@[simp] def realize_bounded_formula_ex {L} {S : Structure L} : ∀ {n} {v : dvector S n}
+@[simp] lemma realize_bounded_formula_ex {L} {S : Structure L} : ∀ {n} {v : dvector S n}
   {f : bounded_formula L (n+1)}, realize_bounded_formula v (∃' f) dvector.nil ↔
     ∃ x, realize_bounded_formula (x::v) f dvector.nil :=
 by {intros, unfold bd_ex, simp [realize_bounded_formula_not]}
@@ -2252,6 +2359,8 @@ def dvector_var_lift {m : ℕ} : ∀ {n : ℕ} (v : dvector (fin m) n), dvector 
 def dvector_lift_var { m : ℕ} : ∀ {n : ℕ} (v : dvector (fin m) n), dvector (fin (m+1)) (n+1) :=
 λ n v, ⟨0, nat.zero_lt_succ(m)⟩ :: (dvector_var_lift v)
 
+/-- Convenient way to substitute multiple variables at once in a term.
+  Rarely used, only a couple of times in the statement of ZFC. -/
 def subst_var_bounded_term {n m : ℕ} : ∀ {l : ℕ}, bounded_preterm L n l → dvector (fin m) n →
   bounded_preterm L m l
 | _ (&k) v := &(dvector.nth v (k.val) k.is_lt)
@@ -2442,6 +2551,7 @@ def all_satisfied_sentences_iff {T T' : Theory L} : T ⊨ T' ↔ T.fst ⊨ T'.fs
 def ssatisfied_snot {S : Structure L} {f : sentence L} (hS : ¬(S ⊨ f)) : S ⊨ ∼ f :=
 by exact hS
 
+-- this should almost certainly become a subtype in mathlib
 def Model (T : Theory L) : Type (u+1) := Σ' (S : Structure L), S ⊨ T
 
 @[reducible] def Model_ssatisfied {T : Theory L} (M : Model T) (ψ : sentence L) := M.fst ⊨ ψ
