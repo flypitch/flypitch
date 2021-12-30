@@ -104,7 +104,8 @@ begin
 
 {exact λp, begin fapply @Lhom.on_function, exact F.obj p.fst, exact @map D F V p.fst, exact p.snd end},
   {intros p q H, rcases p with ⟨i,x⟩, rcases q with ⟨j,y⟩, simp only *,
-   simp[(≈), germ_relation] at H, rcases H with ⟨k,z,⟨f1, H1⟩,f2,H2⟩,
+   simp only [(≈), germ_relation] at H,
+   rcases H with ⟨k,z,f1, f2, H1, H2⟩,
    change (V.map i).on_function x = (V.map j).on_function y, have : (V.map i).on_function x = (V.map k).on_function ((F.mor f1).on_function x),
    simp only [V.h_compat f1, eq_self_iff_true, function.comp_app],
    have : (V.map j).on_function y = (V.map k).on_function ((F.mor f2).on_function y),
@@ -113,7 +114,7 @@ begin
 
 {exact λp, begin fapply @Lhom.on_relation, exact F.obj p.fst, exact @map D F V p.fst, exact p.snd end},
   {intros p q H, rcases p with ⟨i,x⟩, rcases q with ⟨j,y⟩, simp only *,
-   simp[(≈), germ_relation] at H, rcases H with ⟨k,z,⟨f1, H1⟩,f2,H2⟩,
+   simp only [(≈), germ_relation] at H, rcases H with ⟨k,z,f1,f2,H1,H2⟩,
    change (V.map i).on_relation x = (V.map j).on_relation y, have : (V.map i).on_relation x = (V.map k).on_relation ((F.mor f1).on_relation x),
    simp only [V.h_compat f1, eq_self_iff_true, function.comp_app],
    have : (V.map j).on_relation y = (V.map k).on_relation ((F.mor f2).on_relation y),
@@ -245,114 +246,150 @@ end
   | (n+1) := henkin_language_step (henkin_language_chain_objects n)
 
 @[simp]lemma obvious {L : Language} {i : ℕ} : henkin_language_functions (@henkin_language_chain_objects L i) 0 = (@henkin_language_chain_objects L (i+1)).constants :=
-by refl
+rfl
 
 local infix ` ∘ `:60 := Lhom.comp
 
+def henkin_language_chain_maps (L : Language) :
+  Π {x y : ℕ}, x ≤ y →
+  (@henkin_language_chain_objects L x →ᴸ @henkin_language_chain_objects L y)
+| 0     0 h := Lhom.id L
+| (x+1) 0 h := false.elim (nat.not_succ_le_zero _ h)
+| 0 (y+1) h :=
+@henkin_language_inclusion (@henkin_language_chain_objects L y)
+    ∘
+    (henkin_language_chain_maps (nat.zero_le _))
+| (x+1) (y+1) h := dite (x + 1 = y + 1)
+  (λ heq, cast1 (by rw heq))
+  (λ hneq,
+    @henkin_language_inclusion (@henkin_language_chain_objects L y)
+    ∘
+    (henkin_language_chain_maps (nat.le_of_le_and_ne_succ h hneq)))
 
-def henkin_language_chain_maps (L : Language): Π x y, x ≤ y → (@henkin_language_chain_objects L x →ᴸ @henkin_language_chain_objects L y)
-| x 0 H := by {have : x = 0, by exact nat.eq_zero_of_le_zero H, rw[this], apply Lhom.id}
-| x (y+1) H := by {by_cases x = y + 1, rw[h], fapply Lhom.id,
-               refine @henkin_language_inclusion (@henkin_language_chain_objects L y) ∘ _,
-               fapply henkin_language_chain_maps,
-               fapply nat.le_of_le_and_ne_succ, exacts [H, h]}
-
-
-lemma henkin_language_chain_maps_inj (L : Language) : Π x y : ℕ, Π (h : x ≤ y), Lhom.is_injective (henkin_language_chain_maps L x y h) :=
+lemma henkin_language_chain_maps_inj (L : Language) :
+  Π {i j : ℕ}, Π (h : i ≤ j),
+  Lhom.is_injective (henkin_language_chain_maps L h)
+| 0     0 h := ⟨ λ n x y H, H , λ n x y H, H ⟩
+| (i+1) 0 h := false.elim (nat.not_succ_le_zero _ h)
+| 0 (j+1) h :=
 begin
-  intros i j h, split, swap,
-  {induction j,
-    {have : i  = 0, by exact nat.eq_zero_of_le_zero h, subst this,
-    intros n x y H, exact H},
-    {by_cases i = (j_n + 1), dedup,
-     {subst h_1, rw[henkin_language_chain_maps], simp*,
-     intros n x y H, exact H},
-     {have : i ≤ j_n, by {apply nat.le_of_le_and_ne_succ, repeat{assumption}},
-     have ih := j_ih this, show ℕ, exact i,
-     rw[henkin_language_chain_maps], simp only [*, dif_neg, not_false_iff],
-     intro n, fapply function.injective_comp, fapply henkin_language_inclusion_inj.on_relation,
-     change function.injective (Lhom.on_relation (henkin_language_chain_maps L i j_n this)),
-     simp only *,}}
-  },
-  {induction j,
-    {have : i  = 0, by exact nat.eq_zero_of_le_zero h, subst this,
-    intros n x y H, exact H},
-    {by_cases i = (j_n + 1), dedup,
-     {subst h_1, rw[henkin_language_chain_maps], simp*,
-     intros n x y H, exact H},
-     {have : i ≤ j_n, by {apply nat.le_of_le_and_ne_succ, repeat{assumption}},
-     have ih := j_ih this, show ℕ, exact i,
-     rw[henkin_language_chain_maps], simp only [*, dif_neg, not_false_iff],
-     intro n, fapply function.injective_comp, fapply henkin_language_inclusion_inj.on_function,
-     change function.injective (Lhom.on_function (henkin_language_chain_maps L i j_n this)),
-     simp only *,}}},
+  fsplit,
+  { intro n, apply function.injective.comp,
+    {fapply henkin_language_inclusion_inj.on_function},
+    { intros a b H,
+      have hind := (henkin_language_chain_maps_inj (_)).on_function,
+      apply hind,
+      exact H,},},
+  { intro n,
+    apply function.injective.comp,
+    {fapply henkin_language_inclusion_inj.on_relation},
+    { intros a b H,
+      have hind := (henkin_language_chain_maps_inj (_)).on_relation,
+      apply hind,
+      exact H,},},
+end
+| (i+1) (j+1) h :=
+begin
+  unfold henkin_language_chain_maps,
+  by_cases hij : i + 1 = (j + 1),
+  { simp only [hij, dif_pos], fsplit,
+    {intro n, exact λ _ _, (cast_inj _).mp,},
+    {intro n, exact λ _ _, (cast_inj _).mp,},},
+  { simp only [hij, dif_neg, not_false_iff], fsplit,
+    { intro n,
+      apply function.injective.comp,
+      { fapply henkin_language_inclusion_inj.on_function },
+      { intros a b H,
+        have hind := (henkin_language_chain_maps_inj (_)).on_function,
+        apply hind,
+        exact H,},},
+    { intro n,
+      apply function.injective.comp,
+      {fapply henkin_language_inclusion_inj.on_relation},
+      { intros a b H,
+        have hind := (henkin_language_chain_maps_inj (_)).on_relation,
+        apply hind,
+        exact H,},},}
 end
 
 /- Given a language, iterate henkin_language_step, returning this data in the form
    of a directed diagram of types indexed by ℕ' -/
 def henkin_language_chain {L : Language} : (directed_diagram_language directed_type_of_nat) :=
-begin
-  refine ⟨_, _, _⟩,
-  {exact @henkin_language_chain_objects L},
-  {change Π {x y : ℕ},
-    x ≤ y → (henkin_language_chain_objects x →ᴸ henkin_language_chain_objects y),
-    intros x y H, fapply henkin_language_chain_maps, exact H},
-  {change ∀ {x y z : ℕ} {f1 :  x ≤ y} {f2 :  y ≤ z}
-  {f3 :  x ≤ z},
-    henkin_language_chain_maps L x z _ =
-    henkin_language_chain_maps L y z _ ∘
-    henkin_language_chain_maps L x y _,
-    intros x y z f1 f2 f3,
-    induction z,
-      {have this1 : x = 0, by exact nat.eq_zero_of_le_zero f3,
-      have this2 : y = 0, by exact nat.eq_zero_of_le_zero f2,
-       subst this1, subst this2, refl},
-      { unfold henkin_language_chain_maps, by_cases y = z_n + 1, simp*, subst h, by_cases x = z_n+1, simp*, subst h,
-       unfold henkin_language_chain_maps, simp, refl,
-       {simp*,
-       have : eq.mpr _ (Lhom.id (henkin_language_chain_objects (z_n + 1))) ∘ henkin_language_chain_maps L x (z_n + 1) f1 = (Lhom.id (henkin_language_chain_objects (z_n + 1))) ∘ henkin_language_chain_maps L x (z_n + 1) f1, by refl, rw[this],
-       have : Lhom.id (henkin_language_chain_objects (z_n + 1)) ∘ henkin_language_chain_maps L x (z_n + 1) f1 =  henkin_language_chain_maps L x (z_n + 1) f1,
-       by simp only [eq_self_iff_true, fol.Lhom.id_is_left_identity],
-       rw[this], unfold henkin_language_chain_maps, simp*,
-         },
-       {by_cases x = z_n+1,
-         {simp*, have : y < z_n+1, by {fapply nat.lt_of_le_and_ne,
-         repeat{assumption}}, exfalso, linarith},
-         {simp*}
-       }
-    }
-}
-end
+⟨ @henkin_language_chain_objects L ,
+  λ x y H, henkin_language_chain_maps _ H ,
+  λ x y z Hxy Hyz Hxz,
+  begin
+    induction z with z hz,
+    {
+      induction y with y hy, induction x with x hx,
+      {dsimp[diagram.mk.map], refl},
+      {by {exfalso, fapply nat.succ_ne_zero, exact x, apply (nat.le_zero_iff).mp, assumption}},
+      {by {exfalso, fapply nat.succ_ne_zero, exact y, apply (nat.le_zero_iff).mp, assumption}},
+    },
+    {
+      by_cases hyz : y = z+1,
+      {
+        subst hyz,
+        simp only [henkin_language_chain_maps, dif_pos],
+        rw trivial_cast1_is_left_identity,
+      },
+      {
+        by_cases hxz : x = z+1,
+        { exfalso, apply nat.le_lt_antisymm Hxy,
+          subst hxz, exact nat.lt_of_le_and_ne Hyz hyz,
+        },
+        { have hind := hz (nat.le_of_le_and_ne_succ Hyz hyz)
+            (nat.le_of_le_and_ne_succ Hxz hxz),
+          induction y with y hy,
+          {
+            induction x with x hx,
+            { simp only [henkin_language_chain_maps, id_is_right_identity] },
+            { exfalso, exact nat.not_succ_le_zero _ Hxy, }
+          },
+          { induction x with x hx,
+            { simp only [henkin_language_chain_maps, dif_neg hyz, hind] },
+            { simpa only [henkin_language_chain_maps, dif_neg hyz,
+                dif_neg hxz, hind] }, },
+        },
+      },
+    },
+  end ⟩
 
-
-
-@[simp]lemma id_of_self_map (L : Language) : ∀ k, (henkin_language_chain_maps L k k (le_refl k)) = Lhom.id ((@henkin_language_chain L).obj k)
+@[simp]lemma id_of_self_map (L : Language) : ∀ k : ℕ,
+  (henkin_language_chain_maps L (le_refl k)) =
+  Lhom.id ((@henkin_language_chain L).obj k)
 | 0 := by refl
-| (n+1) := by {dsimp[henkin_language_chain_maps], simp*, refl}
+| (n+1) := by {dsimp[henkin_language_chain_maps], simpa }
 
-@[simp]lemma henkin_language_inclusion_chain_map {i} {L : Language} : henkin_language_inclusion = henkin_language_chain_maps L i (i + 1) (by simp[nat.le_succ]) :=
+@[simp]lemma henkin_language_inclusion_chain_map {i} {L : Language} :
+  henkin_language_inclusion =
+  @henkin_language_chain_maps L i (i + 1) (by simp[nat.le_succ]) :=
 begin
-  unfold henkin_language_chain_maps, have : i ≠ i + 1, by {induction i, tidy},
-  simp[this], rw[@Lhom.id_is_right_identity ((@henkin_language_chain L).obj i)]
+  induction i with i hi,
+  { simp only [henkin_language_chain_maps],
+    exact symm id_is_right_identity },
+  { have hne : i + 1 ≠ i.succ + 1 := by simp,
+    simp only [henkin_language_chain_maps, dif_neg hne, dif_pos],
+    exact symm trivial_cast1_is_right_identity,},
 end
 
 def L_infty (L) : Language :=
    colimit_language $ @henkin_language_chain L
 
 /-- For every n : ℕ, return the canonical inclusion L_n → L_infty  --/
-def henkin_language_canonical_map {L : Language} (m : ℕ) : (@henkin_language_chain L).obj m →ᴸ (@L_infty L) := by apply canonical_map_language
+def henkin_language_canonical_map {L : Language} (m : ℕ) :
+  (@henkin_language_chain L).obj m →ᴸ (@L_infty L) :=
+by apply canonical_map_language
 
 @[simp]lemma henkin_language_canonical_map_inj {L : Language} (m : ℕ) : Lhom.is_injective $ @henkin_language_canonical_map L m :=
 begin
   split,
-
   {intro n, unfold henkin_language_canonical_map canonical_map_language Lhom.on_function,
   have := @canonical_map_inj_of_transition_maps_inj directed_type_of_nat (@diagram_functions directed_type_of_nat (@henkin_language_chain L) n), unfold canonical_map at this, apply this,intros i j H, dsimp[diagram_functions, henkin_language_chain],
-  fapply ((henkin_language_chain_maps_inj) L i j H).on_function},
-
+  fapply ((henkin_language_chain_maps_inj) L H).on_function},
   {intro n, unfold henkin_language_canonical_map canonical_map_language Lhom.on_relation,
   have := @canonical_map_inj_of_transition_maps_inj directed_type_of_nat (@diagram_relations directed_type_of_nat (@henkin_language_chain L) n), unfold canonical_map at this, apply this,intros i j H, dsimp[diagram_relations, henkin_language_chain],
-  fapply ((henkin_language_chain_maps_inj) L i j H).on_relation}
+  fapply ((henkin_language_chain_maps_inj) L H).on_relation}
 end
 
 /- To prove that T_infty is Henkin, we'll have to exhibit a witnessing function of the form
@@ -376,9 +413,9 @@ begin
   refine ⟨λ k, preterm (@henkin_language_chain_objects L k) l, _, _⟩,
   {intros x y H, apply Lhom.on_term, apply @henkin_language_chain_maps L, exact H},
   {intros x y z f1 f2 f3, dsimp only [*],
-   have : (henkin_language_chain_maps L x z f3) =
-   (henkin_language_chain_maps L y z f2) ∘ (henkin_language_chain_maps L x y f1),
-   fapply henkin_language_chain.h_mor, simp*}
+  have : (henkin_language_chain_maps L f3) =
+    (henkin_language_chain_maps L f2) ∘ (henkin_language_chain_maps L f1),
+  fapply henkin_language_chain.h_mor, simp*}
 end
 
 def henkin_formula_chain {L : Language} (l : ℕ) : directed_diagram ℕ' :=
@@ -386,9 +423,9 @@ begin
   refine ⟨λ k, preformula (@henkin_language_chain_objects L k) l, _, _⟩,
   {intros x y H, apply Lhom.on_formula, apply @henkin_language_chain_maps L, exact H},
   {intros x y z f1 f2 f3, dsimp only [*],
-   have : (henkin_language_chain_maps L x z f3) =
-   (henkin_language_chain_maps L y z f2) ∘ (henkin_language_chain_maps L x y f1),
-   fapply henkin_language_chain.h_mor, simp*}
+  have : (henkin_language_chain_maps L f3) =
+    (henkin_language_chain_maps L f2) ∘ (henkin_language_chain_maps L f1),
+  fapply henkin_language_chain.h_mor, simp*}
 end
 
 def henkin_bounded_term_chain {L : Language} (n l : ℕ) : directed_diagram ℕ' :=
@@ -396,21 +433,22 @@ begin
   refine ⟨λ k, bounded_preterm (@henkin_language_chain_objects L k) n l, _, _⟩,
   {intros x y H, apply Lhom.on_bounded_term, apply @henkin_language_chain_maps L, exact H},
   {intros x y z f1 f2 f3, dsimp only [*],
-   have : (henkin_language_chain_maps L x z f3) =
-   (henkin_language_chain_maps L y z f2) ∘ (henkin_language_chain_maps L x y f1),
-   fapply henkin_language_chain.h_mor, rw[this, Lhom.comp_on_bounded_term]}
+  have : (henkin_language_chain_maps L f3) =
+    (henkin_language_chain_maps L f2) ∘ (henkin_language_chain_maps L f1),
+  fapply henkin_language_chain.h_mor, rw[this, Lhom.comp_on_bounded_term]}
 end
 
-@[reducible] def henkin_bounded_term_chain' {L : Language} : directed_diagram ℕ' := @henkin_bounded_term_chain L 1 0
+@[reducible] def henkin_bounded_term_chain' {L : Language} :
+  directed_diagram ℕ' := @henkin_bounded_term_chain L 1 0
 
 def henkin_bounded_formula_chain {L : Language} (n l : ℕ) : directed_diagram ℕ' :=
 begin
   refine ⟨λ k, bounded_preformula (@henkin_language_chain_objects L k) n l, _, _⟩,
   {intros x y H, apply Lhom.on_bounded_formula, apply @henkin_language_chain_maps L, exact H},
   {intros x y z f1 f2 f3, dsimp only [*],
-   have : (henkin_language_chain_maps L x z f3) =
-   (henkin_language_chain_maps L y z f2) ∘ (henkin_language_chain_maps L x y f1),
-   fapply henkin_language_chain.h_mor, rw[this, Lhom.comp_on_bounded_formula]}
+  have : (henkin_language_chain_maps L f3) =
+    (henkin_language_chain_maps L f2) ∘ (henkin_language_chain_maps L f1),
+  fapply henkin_language_chain.h_mor, rw[this, Lhom.comp_on_bounded_formula]}
 end
 
 @[reducible]def henkin_bounded_formula_chain' {L : Language} : directed_diagram ℕ' := @henkin_bounded_formula_chain L 1 0
@@ -425,8 +463,9 @@ begin
   {intro i, fapply Lhom.on_term, fapply henkin_language_canonical_map},
   {intros i j H, dsimp[henkin_term_chain],
   rw[<-Lhom.comp_on_term],
-  have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L i j H), swap, rw[this],
-  {have := (@cocone_of_L_infty L).h_compat, tidy}}
+  have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L H), swap, rw[this],
+  unfold henkin_language_canonical_map,
+  exact (@cocone_of_L_infty L).h_compat _,}
 end
 
 def cocone_of_formula_L_infty {L : Language } (l : ℕ) : cocone (@henkin_formula_chain L l) :=
@@ -435,8 +474,9 @@ begin
   {intro i, fapply Lhom.on_formula, fapply henkin_language_canonical_map},
   {intros i j H, dsimp[henkin_formula_chain],
   rw[<-Lhom.comp_on_formula],
-  have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L i j H), swap, rw[this],
-  {have := (@cocone_of_L_infty L).h_compat, tidy}}
+  have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L H), swap, rw[this],
+  unfold henkin_language_canonical_map,
+  exact (@cocone_of_L_infty L).h_compat _,}
 end
 
 def cocone_of_bounded_term_L_infty {L : Language } (n l : ℕ) : cocone (@henkin_bounded_term_chain L n l) :=
@@ -445,8 +485,9 @@ begin
   {intro i, fapply Lhom.on_bounded_term, fapply henkin_language_canonical_map},
   {intros i j H, dsimp[henkin_bounded_term_chain],
   rw[<-Lhom.comp_on_bounded_term],
-  have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L i j H), swap, rw[this],
-  {have := (@cocone_of_L_infty L).h_compat, tidy}}
+  have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L H), swap, rw[this],
+  unfold henkin_language_canonical_map,
+  exact (@cocone_of_L_infty L).h_compat _,}
 end
 
 def cocone_of_bounded_formula_L_infty {L : Language } (n l : ℕ) : cocone (@henkin_bounded_formula_chain L n l) :=
@@ -455,8 +496,9 @@ begin
   {intro i, fapply Lhom.on_bounded_formula, fapply henkin_language_canonical_map},
   {intros i j H, dsimp[henkin_bounded_formula_chain],
   rw[<-Lhom.comp_on_bounded_formula],
-  have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L i j H), swap, rw[this],
-  {have := (@cocone_of_L_infty L).h_compat, tidy}}
+  have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L H), swap, rw[this],
+  unfold henkin_language_canonical_map,
+  exact (@cocone_of_L_infty L).h_compat _,}
 end
 
 /- bounded_formula (L_infty L) 1 is naturally a cocone over the diagram of bounded_formulas -/
@@ -466,8 +508,9 @@ begin
   {intro i, fapply Lhom.on_bounded_formula, fapply henkin_language_canonical_map},
   {intros i j H, dsimp[henkin_bounded_formula_chain', henkin_bounded_formula_chain],
   rw[<-Lhom.comp_on_bounded_formula],
-  have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L i j H), swap, rw[this],
-  {have := (@cocone_of_L_infty L).h_compat, tidy}}
+  have : henkin_language_canonical_map i = (henkin_language_canonical_map j ∘ henkin_language_chain_maps L H), swap, rw[this],
+  unfold henkin_language_canonical_map,
+  exact (@cocone_of_L_infty L).h_compat _,}
 end
 
 def term_comparison {L : Language} (l) : colimit (@henkin_term_chain L l) → preterm (L_infty L) l :=
@@ -526,18 +569,33 @@ begin
       fapply (henkin_term_chain 0).mor, exact j,
       simp only [ℕ', directed_type.rel, zero_le, le_add_iff_nonneg_left],
       exact x_s,
-    have Hxt' : ⟦(⟨i+j,x_t'⟩ : coproduct_of_directed_diagram $ henkin_term_chain (f_l + 1))⟧ = t,
-      {rw[<-Hxt], simp[(≈), germ_relation], refine ⟨(i+j),x_t',⟨by simp,_⟩,_⟩,
-       dsimp[henkin_term_chain, henkin_language_chain_maps], let k := i + j,
-       simp only [id_of_self_map], apply Lhom.id_term,
-       fapply exists.intro, simp only [zero_le, le_add_iff_nonneg_right]},
-    have Hxs' : ⟦(⟨i+j,x_s'⟩ : coproduct_of_directed_diagram $ henkin_term_chain 0)⟧ = s,
-    {{rw[<-Hxs], simp[(≈), germ_relation], refine ⟨(i+j),x_s',⟨by simp,_⟩,_⟩,
-       dsimp[henkin_term_chain, henkin_language_chain_maps], let k := i + j,
-       simp only [id_of_self_map], apply Lhom.id_term,
-       fapply exists.intro, simp only [zero_le, le_add_iff_nonneg_left]},},
+    have Hxt' : ⟦(⟨i+j,x_t'⟩ : coproduct_of_directed_diagram $
+      henkin_term_chain (f_l + 1))⟧ = t,
+    {
+      rw[<-Hxt],
+      rw quotient.eq,
+      simp only [(≈), germ_relation],
+      refine ⟨(i+j),x_t', nat.le_of_eq rfl , nat.le_add_right _ _ , _ ⟩,
+      dsimp[henkin_term_chain, henkin_language_chain_maps],
+      simp only [id_of_self_map], split,
+      {exact Lhom.id_term _ _},
+      {refl},
+    },
+    have Hxs' : ⟦(⟨i+j,x_s'⟩ : coproduct_of_directed_diagram $
+      henkin_term_chain 0)⟧ = s,
+    {
+      rw[<-Hxs],
+      rw quotient.eq,
+      simp only [(≈), germ_relation],
+      refine ⟨(i+j),x_s', nat.le_of_eq rfl , nat.le_add_left _ _ , _ ⟩,
+      dsimp[henkin_term_chain, henkin_language_chain_maps],
+      simp only [id_of_self_map], split,
+      {exact Lhom.id_term _ _},
+      {refl},
+    },
     fapply exists.intro, fapply canonical_map, change ℕ, exact (i + j),
-    fapply app, exact x_t', exact x_s', rw[<-Ht, <-Hs, <-Hxt', <-Hxs'], refl},}
+    fapply app, exact x_t', exact x_s', rw[<-Ht, <-Hs, <-Hxt', <-Hxs'], refl
+    },},
 end
 
 /- At some point, I should write out explicitly the fact that all the comparison maps
@@ -586,10 +644,11 @@ refine ⟨_,_⟩,
   change ∀ i : ℕ, function.injective ((cocone_of_bounded_term_L_infty n l).map i),
   dsimp[cocone_of_bounded_term_L_infty],  intro m,
   fapply Lhom.on_bounded_term_inj (@henkin_language_canonical_map_inj L m)},},
-   {intro f, induction f,
+  {
+    intro f, induction f,
     {refine ⟨(by {fapply canonical_map, by {change ℕ, exact 0}, exact bd_var f}), by split⟩},
     {have W := germ_rep f_f, rcases W with ⟨⟨i,x⟩, Hx⟩, fapply exists.intro,
-     fapply canonical_map i, fapply bd_func, exact x, rw[<-Hx], refl,},
+      fapply canonical_map i, fapply bd_func, exact x, rw[<-Hx], refl,},
     {rcases f_ih_t with ⟨t, Ht⟩, rcases f_ih_s with ⟨s,Hs⟩, have Wt := germ_rep t,
     have Ws := germ_rep s, rcases Wt with ⟨⟨i,x_t⟩, Hxt⟩, rcases Ws with ⟨⟨j, x_s⟩, Hxs⟩,
     let x_t' : (henkin_bounded_term_chain n (f_l + 1)).obj (i+j),
@@ -601,15 +660,27 @@ refine ⟨_,_⟩,
       simp only [ℕ', directed_type.rel, zero_le, le_add_iff_nonneg_left],
       exact x_s,
     have Hxt' : ⟦(⟨i+j,x_t'⟩ : coproduct_of_directed_diagram $ henkin_bounded_term_chain n (f_l + 1))⟧ = t,
-      {rw[<-Hxt], simp[(≈), germ_relation], refine ⟨(i+j),x_t',⟨by simp,_⟩,_⟩,
-       dsimp[henkin_bounded_term_chain, henkin_language_chain_maps], let k := i + j,
-       simp only [id_of_self_map], apply Lhom.id_bounded_term,
-       fapply exists.intro, simp only [zero_le, le_add_iff_nonneg_right]},
+    {
+      rw[<-Hxt],
+      rw quotient.eq,
+      simp only [(≈), germ_relation],
+      refine ⟨(i+j),x_t', nat.le_of_eq rfl , nat.le_add_right _ _ , _ ⟩,
+      dsimp[henkin_bounded_term_chain, henkin_language_chain_maps],
+      simp only [id_of_self_map], split,
+      {exact Lhom.id_bounded_term _ _ _},
+      {refl},
+    },
     have Hxs' : ⟦(⟨i+j,x_s'⟩ : coproduct_of_directed_diagram $ henkin_bounded_term_chain n 0)⟧ = s,
-    {{rw[<-Hxs], simp[(≈), germ_relation], refine ⟨(i+j),x_s',⟨by simp,_⟩,_⟩,
-       dsimp[henkin_bounded_term_chain, henkin_language_chain_maps], let k := i + j,
-       simp only [id_of_self_map], apply Lhom.id_bounded_term,
-       fapply exists.intro, simp only [zero_le, le_add_iff_nonneg_left]},},
+    {
+      rw[<-Hxs],
+      rw quotient.eq,
+      simp only [(≈), germ_relation],
+      refine ⟨(i+j),x_s', nat.le_of_eq rfl , nat.le_add_left _ _ , _ ⟩,
+      dsimp[henkin_bounded_term_chain, henkin_language_chain_maps],
+      simp only [id_of_self_map], split,
+      {exact Lhom.id_bounded_term _ _ _},
+      {refl},
+    },
     fapply exists.intro, fapply canonical_map, change ℕ, exact (i + j),
     fapply bd_app, exact x_t', exact x_s', rw[<-Ht, <-Hs, <-Hxt', <-Hxs'], refl},}
 end
@@ -628,7 +699,7 @@ refine ⟨_,_⟩,
     rcases germ_rep t₁ with ⟨⟨i,x⟩,Hx⟩, rcases germ_rep t₂ with ⟨⟨j,y⟩,Hy⟩,
     fapply exists.intro, fapply canonical_map, exact i+j, fapply bd_equal,
     exact push_to_sum_r x j, exact push_to_sum_l y i,
-    simp[H₁, H₂],
+    -- simp[H₁, H₂],
     rw[<-H₁, <-H₂,<-Hx, <-Hy, <-canonical_map_quotient, same_fiber_as_push_to_r x j ,<-canonical_map_quotient, same_fiber_as_push_to_l y i],
     simpa only},
   {have x := germ_rep f_R, rcases x with ⟨⟨i,x⟩,H⟩, fapply exists.intro, have R' := bd_rel x,
@@ -678,7 +749,7 @@ def ι {L : Language} {T : Theory L} (m : ℕ) :  Theory (L_infty L) :=
 
 @[simp]lemma is_consistent_iota {L : Language} {T : Theory L} (hT : is_consistent T) (m : ℕ) : is_consistent (@ι _ T m) :=
 begin
-  unfold ι, intro,
+  unfold ι, intro a,
   have := @is_consistent_henkin_theory_chain L T hT m,
   suffices : (henkin_theory_chain T m) ⊢' bd_falsum, by contradiction,
   apply nonempty.intro, apply reflect_prf,
@@ -690,7 +761,10 @@ end
 @[simp]lemma not_succ (i : ℕ) : ¬ i = i + 1 :=
 by {have := nat.succ_ne_self i, tidy}
 
-lemma henkin_theory_chain_inclusion_step {L} {T : Theory L} {i : ℕ} {f ∈ henkin_theory_chain T i} : (henkin_bounded_formula_chain 0 0).mor (by simp) f ∈ henkin_theory_chain T (i + 1) :=
+lemma henkin_theory_chain_inclusion_step
+  {L} {T : Theory L} {i : ℕ} {f ∈ henkin_theory_chain T i} :
+  (henkin_bounded_formula_chain 0 0).mor (nat.le_succ _) f ∈
+  henkin_theory_chain T (i + 1) :=
 begin
 dsimp[henkin_bounded_formula_chain, henkin_theory_chain],
 apply or.inl,
@@ -702,35 +776,44 @@ begin
   dsimp[henkin_bounded_formula_chain],
   by_cases i = j +1,
     subst h, simp[id_bounded_formula 0 0 f], exact H,
-  induction j with j ih,
-    {have : i = 0,
-      {suffices : i ≤ 0, by exact nat.eq_zero_of_le_zero this,
-        fapply nat.le_of_le_and_ne_succ, repeat{assumption}},
+  induction j with j hj,
+  {
+    have : i = 0,
+    {suffices : i ≤ 0, by exact nat.eq_zero_of_le_zero this,
+      fapply nat.le_of_le_and_ne_succ, repeat{assumption}},
     subst this,
     apply or.inl, fapply exists.intro,
-    exact f, tidy},
-
-    have : i ≤ nat.succ j,
+    exact f, tidy
+  },
+  {
+    have hij : i ≤ nat.succ j,
       by {fapply nat.le_of_le_and_ne_succ, repeat{assumption}},
-    have := ih this,
+    -- have := hj hij,
     by_cases i = j+1,
        subst h, apply henkin_theory_chain_inclusion_step, assumption,
-  unfold on_sentence henkin_language_chain_maps,
-  simp*, apply or.inl, unfold Theory_induced,
-  fapply exists.intro,
-  exact on_bounded_formula (henkin_language_chain_maps L i (j+1) (by assumption)) f,
-  split, apply ih, assumption, dedup,
-  dsimp[on_sentence], unfold henkin_language_chain_maps, simp*,
-  change  on_bounded_formula
-      (henkin_language_chain_maps L (j+1) (j+2) _)
-      (on_bounded_formula (henkin_language_chain_maps L j (j + 1) _)
-         (on_bounded_formula (henkin_language_chain_maps L i j _) f)) =
-    on_bounded_formula (henkin_language_chain_maps L (j + 1) (j + 2) _)
-      (on_bounded_formula ((Lhom.id (henkin_language_chain_objects (j + 1))))
-         (on_bounded_formula (henkin_language_chain_maps L j (j + 1) _)
-            (on_bounded_formula (Lhom.id (henkin_language_chain_objects j))
-               (on_bounded_formula (henkin_language_chain_maps L i j _) f)))),
-  simp only [id_bounded_formula 0 0, not_false_iff, nat.le_of_le_and_ne_succ, fol.Lhom.on_bounded_formula]
+    induction i with i hi,
+    {
+      unfold on_sentence henkin_language_chain_maps,
+      simp only [*, function.comp_app, on_bounded_formula, comp_on_bounded_formula, dif_neg, not_false_iff,
+        henkin_language_inclusion_chain_map],
+      apply or.inl, unfold Theory_induced,
+      fapply exists.intro,
+      {exact on_bounded_formula (henkin_language_chain_maps L (by assumption)) f},
+      {split, apply hj, assumption, dedup,
+        dsimp[on_sentence], unfold henkin_language_chain_maps, simp*},
+    },
+    {
+      unfold on_sentence henkin_language_chain_maps,
+      simp only [*, function.comp_app, on_bounded_formula, comp_on_bounded_formula, dif_neg, not_false_iff,
+        henkin_language_inclusion_chain_map],
+      apply or.inl, unfold Theory_induced,
+      fapply exists.intro,
+      {exact on_bounded_formula (henkin_language_chain_maps L (by assumption)) f},
+      { split, apply hj, assumption,
+        dedup,
+        dsimp[on_sentence], unfold henkin_language_chain_maps, simp*},
+    },
+  },
 end
 
 @[simp]lemma iota_inclusion_of_le {L} {T : Theory L} : Π{i : ℕ} {j : ℕ} (h : i ≤ j), (@ι _ T i) ⊆ (@ι _ T j)
@@ -795,39 +878,60 @@ begin
    exact (@henkin_language_chain L).obj i, exact henkin_language_inclusion,
    exact f'', exact (wit' f'')},
   {fapply in_iota_of_in_step, fapply or.inr, tidy},
-  {let c_infty := (bd_const ((henkin_language_canonical_map (i + 1)).on_function (wit' f''))),
-  have this1 : bounded_preformula.fst (∃' f) ⟹
+  {
+    set c_infty :=
+      (bd_const ((henkin_language_canonical_map (i + 1)).on_function (wit' f'')))
+      with hc,
+    have this1 : bounded_preformula.fst (∃' f) ⟹
       (bounded_preformula.fst f)[bounded_preterm.fst
           (bd_const ((henkin_language_canonical_map (i + 1)).on_function (wit' f''))) //
-        0] = bounded_preformula.fst ((∃' f) ⟹ f[c_infty/0]), by simp, rw[this1],
-  suffices : (Lhom.on_bounded_formula (henkin_language_canonical_map (i + 1))
-         (wit_property (Lhom.on_bounded_formula henkin_language_inclusion f'') (wit' f''))) = (∃' f ⟹ f[c_infty /0]), by rw[this],
-  unfold wit_property at *, dsimp[c_infty], rw[<-canonical_map_quotient] at H, dsimp at H,
-  rw[<-Hf',<-H.left],
-  unfold bounded_formula'_comparison bounded_formula_comparison id,
-  rw[(@universal_map_property ℕ' (henkin_bounded_formula_chain') (cocone_of_bounded_formula'_L_infty) i f'')],
-  dsimp[cocone_of_bounded_formula'_L_infty],
-  have : henkin_language_canonical_map i = henkin_language_canonical_map (i+1) ∘ henkin_language_inclusion,
-    {have := cocone_of_L_infty.h_compat, have a := @this i (i+1) (by simp),
-     dsimp[cocone_of_L_infty, cocone_of_colimit_language, henkin_language_chain] at a,
-     unfold henkin_language_canonical_map, simp only [*, henkin_language_inclusion_chain_map],
-     exact a},
-  rw[this,Lhom.comp_on_bounded_formula],
-  have : (function.comp (Lhom.on_bounded_formula (henkin_language_canonical_map (i + 1)))
-           (Lhom.on_bounded_formula henkin_language_inclusion) f'') = Lhom.on_bounded_formula (henkin_language_canonical_map (i+1)) (Lhom.on_bounded_formula henkin_language_inclusion f''),
-       by refl,
-  rw[this],
-  have : (Lhom.on_bounded_formula (henkin_language_canonical_map (i + 1))
+        0] = bounded_preformula.fst ((∃' f) ⟹ f[c_infty/0]),
+    {
+      rw [fst_imp, ← hc],
+      delta subst0_bounded_formula,
+      simp only [true_and, eq_self_iff_true,
+        fol.bounded_preformula.cast_eq_fst, subst_bounded_formula_fst],
+    },
+    rw this1,
+    suffices : (Lhom.on_bounded_formula (henkin_language_canonical_map (i + 1))
+         (wit_property (Lhom.on_bounded_formula henkin_language_inclusion f'') (wit' f'')))
+         = (∃' f ⟹ f[c_infty /0]), by rw[this],
+    unfold wit_property at *, dsimp[c_infty], rw[<-canonical_map_quotient] at H,
+    dsimp only [on_bounded_formula] at H,
+    rw[<-Hf',<-H.left],
+    unfold bounded_formula'_comparison bounded_formula_comparison id,
+    rw[(@universal_map_property ℕ' (henkin_bounded_formula_chain') (cocone_of_bounded_formula'_L_infty) i f'')],
+    dsimp only [cocone_of_bounded_formula'_L_infty],
+    have this0 : henkin_language_canonical_map i = henkin_language_canonical_map (i+1) ∘ henkin_language_inclusion,
+    -- { have h := cocone_of_L_infty.h_compat,
+    { have a := @cocone_language.h_compat _ _
+        (@cocone_of_L_infty L) i (i+1) (nat.le_succ _),
+      dsimp only [cocone_of_L_infty, cocone_of_colimit_language,
+        henkin_language_chain] at a,
+      unfold henkin_language_canonical_map,
+      simp only [*, henkin_language_inclusion_chain_map],
+      exact a,},
+    rw[this0,Lhom.comp_on_bounded_formula],
+    have this1 : (function.comp (Lhom.on_bounded_formula (henkin_language_canonical_map (i + 1)))
+           (Lhom.on_bounded_formula henkin_language_inclusion) f'') =
+           Lhom.on_bounded_formula (henkin_language_canonical_map (i+1))
+             (Lhom.on_bounded_formula henkin_language_inclusion f''),
+    by refl,
+    rw[this1],
+    have this2 : (Lhom.on_bounded_formula (henkin_language_canonical_map (i + 1))
            (Lhom.on_bounded_formula henkin_language_inclusion f''))[bd_const
           ((henkin_language_canonical_map (i + 1)).on_function (wit' f'')) /0] =
           (Lhom.on_bounded_formula (henkin_language_canonical_map (i + 1))
            ((Lhom.on_bounded_formula henkin_language_inclusion f'')[bd_const
            (wit' f'') /0])),
-  by tidy, rw[this],
-  have : ∃' Lhom.on_bounded_formula (henkin_language_canonical_map (i + 1))
+    { rw on_bounded_formula_subst0_bounded_formula },
+    rw[this2],
+    have this3 : ∃' Lhom.on_bounded_formula (henkin_language_canonical_map (i + 1))
           (Lhom.on_bounded_formula henkin_language_inclusion f'')
           = Lhom.on_bounded_formula (henkin_language_canonical_map (i+1)) (∃' (Lhom.on_bounded_formula henkin_language_inclusion f'')),
-  by tidy, rw[this]}
+    by refl,
+    rw[this3],
+  }
 end
 
 noncomputable def directed_union_finset_lift {α β : Type*} (ι : α → set β) (Γ' : finset (set.Union ι)) (x ∈ Γ') : Σ' a : α, (ι a) x :=
@@ -839,23 +943,42 @@ rw[← Ha] at a2, exact ⟨a, a2⟩
 end
 
 /- For every n, T_n is a theory over T in Theory L_infty -/
-def henkin_Theory_over {L} (T : Theory L) (hT : is_consistent T) (n : ℕ) : Theory_over (@ι _ T 0) (@is_consistent_iota L T hT 0) :=
-by { refine ⟨@ι _ T n, _⟩, split, apply iota_inclusion_of_le, simp, apply is_consistent_iota hT}
+def henkin_Theory_over {L} (T : Theory L) (hT : is_consistent T) (n : ℕ) :
+  Theory_over (@ι _ T 0) (@is_consistent_iota L T hT 0) :=
+⟨@ι _ T n,
+begin
+  split, apply iota_inclusion_of_le (nat.zero_le _),
+  apply is_consistent_iota hT
+end⟩
 
 def henkin_theory_schain {L} (T : Theory L) (hT : is_consistent T): set (Theory_over (@ι _ T 0) (@is_consistent_iota L T hT 0))
 := {T' | ∃ k : ℕ, (@ι _ T k) = T'.val}
 
 /- (T ∪ set.sUnion (subtype.val '' Ts)) actually is (henkinization hT) -/
-lemma iota_union_rw {L} (T : Theory L) (hT : is_consistent T) : (@ι _ T 0) ∪ ⋃₀(subtype.val '' henkin_theory_schain T hT) = henkinization hT :=
+lemma iota_union_rw {L} (T : Theory L) (hT : is_consistent T) :
+  (@ι _ T 0) ∪ ⋃₀(subtype.val '' henkin_theory_schain T hT)
+  = henkinization hT :=
 begin
-  ext, split; intros; auto_cases,
-    {tidy},
-    {tidy},
-    {right, cases a_h with H₁ H₂, use a_w, refine ⟨_,‹_›⟩,
-      { unfold henkin_theory_schain, rw[set.mem_range] at H₁,
-        cases H₁ with n Hn, rw[set.mem_image], refine ⟨_,_⟩,
-        use a_w, tidy, apply is_consistent_iota; from ‹_› }}, recover
+  ext, split,
+  intro a,
+  cases a,
+    { obtain ⟨ a_w, hl, hr⟩ := a, cases hr,
+      simp only [set.mem_Union, on_sentence] at *,
+      refine ⟨0 , a_w , hl , _ ⟩, simp only [on_sentence],},
+    { obtain ⟨ s , H , hxs ⟩ := a, refine ⟨ s , _ , hxs ⟩,
+      simp only [on_sentence, set.mem_range, on_bounded_formula],
+      obtain ⟨ ⟨S, _ ⟩ , hSmem , hrw ⟩ :=  H,
+      rw ← hrw, exact hSmem,},
+    { intro hx, right, obtain ⟨ s , hsmem , hxs ⟩ := hx,
+      simp only [exists_prop, set.mem_Union, set.sUnion_image,
+        exists_and_distrib_right, subtype.exists, subtype.coe_mk,
+        subtype.val_eq_coe],
+      obtain ⟨ k , hks ⟩ := hsmem, refine ⟨ s , ⟨ _ , k , hks ⟩ , hxs ⟩,
+      rw ← hks, exact ⟨ iota_inclusion_of_le (nat.zero_le _) ,
+      is_consistent_iota hT _ ⟩,
+    }, recover
 end
+
 
 /- henkin_theory_chain satisfies the chain condition -/
 lemma chain_henkin_theory_chain {L} (T : Theory L) (hT : is_consistent T) : zorn.chain Theory_over_subset (henkin_theory_schain T hT) :=

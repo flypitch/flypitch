@@ -30,15 +30,16 @@ end
 lemma provable_of_inconsis_not {L} {T : Theory L} {f : sentence L} :
 ¬ is_consistent (T ∪ {∼f})  → T ⊢' f :=
 begin
-by_contra, simp[*,-a] at a, cases a with a1 a2, apply consis_not_of_not_provable a2,
-exact classical.by_contradiction (by tidy)
+  by_contra a, simp[*,-a] at a,
+  cases a with a1 a2, apply consis_not_of_not_provable a2,
+  exact classical.by_contradiction (by tidy)
 end
 
 /-- Given a theory T and a sentence ψ, either T ∪ {ψ} or T ∪ {∼ ψ} is consistent.--/
 lemma can_extend {L : Language} (T : Theory L) (ψ : sentence L) (h : is_consistent T) :
   is_consistent (T ∪ {ψ}) ∨ is_consistent (T ∪ {∼ ψ}) :=
 begin
-  simp only [is_consistent, set.union_singleton], by_contra,
+  simp only [is_consistent, set.union_singleton], by_contra a,
   rw[not_or_distrib] at a, rcases a with ⟨H1, H2⟩,
   suffices : T ⊢' (⊥ : sentence L), by contradiction,
   exact snot_and_self'' (simpI' (classical.by_contradiction H1)) (simpI' (classical.by_contradiction H2))
@@ -59,8 +60,9 @@ Now, we have to show that given an arbitrary chain in this poset, we can obtain 
 /- Given a set of theories and a proof that they form a chain under set-inclusion, return their union and a proof that this contains every theory in the chain
 -/
 
-lemma nonempty_of_not_empty {α : Type u} (s : set α) (h : ¬ s = ∅) : nonempty s :=
-by rwa [coe_nonempty_iff_ne_empty]
+lemma nonempty_of_not_empty {α : Type u} (s : set α) (h : ¬ s = ∅) :
+  set.nonempty s :=
+by rwa ← ne_empty_iff_nonempty
 
 /-- Theory_over T is the subtype of Theory L consisting of consistent theories T' such that T' ⊇ T--/
 def Theory_over {L : Language.{u}} (T : Theory L) (hT : is_consistent T): Type u :=
@@ -91,8 +93,8 @@ end
 
 /- Given a chain of sets with nonempty union, conclude that the chain is nonempty-/
 def nonempty_chain_of_nonempty_union {α : Type u} {A_i : set $ set α} {h_chain : chain (⊆) A_i}
-  (h : nonempty $ set.sUnion A_i) : nonempty A_i :=
-by { unfreezeI, rcases h with ⟨a, s, hs, ha⟩, exact ⟨⟨s, hs⟩⟩ }
+  (h : set.nonempty $ set.sUnion A_i) : set.nonempty A_i :=
+by rw nonempty_sUnion at h; obtain ⟨ _ , hs , _ ⟩ := h; exact nonempty_of_mem hs
 
 /- Given two elements in a chain of sets over T, their union over T is in the chain -/
 lemma in_chain_of_union {α : Type u} (T : set α) (A_i : set $ set α)
@@ -172,17 +174,26 @@ begin
         { tidy, right, tidy }}},
 end
 
+/- probably in the library somewhere -/
+lemma set.eq_empty_of_is_empty_coe
+  {α : Type*} (s : set α) (h : is_empty s) : s = ∅ :=
+eq_empty_iff_forall_not_mem.mpr
+  (λ x hxs, (@is_empty.exists_iff s h (λ x, true)).mp
+    ⟨ subtype_of_exists ⟨ x , hxs ⟩, trivial ⟩)
+
 /-- The limit theory of a chain of consistent theories over T is consistent --/
-lemma consis_limit {L : Language} {T : Theory L} {hT : is_consistent T} (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts) : is_consistent (T ∪ set.sUnion (subtype.val '' Ts)) :=
+lemma consis_limit {L : Language} {T : Theory L} {hT : is_consistent T}
+  (Ts : set (Theory_over T hT)) (h_chain : chain Theory_over_subset Ts)
+  : is_consistent (T ∪ set.sUnion (subtype.val '' Ts)) :=
 begin
   intro h_inconsis,
   by_cases nonempty Ts, swap,
   { simp at h, simp[*, -h_inconsis] at h_inconsis, unfold is_consistent at hT, apply hT,
-    rw [←union_empty T], convert h_inconsis, symmetry, apply bUnion_empty },
+    rw [←union_empty T], convert h_inconsis,
+    rw [set.eq_empty_of_is_empty_coe Ts h, bUnion_empty] },
 
   have Γpair := theory_proof_compactness' (T ∪ ⋃₀(subtype.val '' Ts)) ⊥ h_inconsis,
   have h_bad : ∃ T' : (Theory L), (T' ∈ (subtype.val '' Ts)) ∧ {ψ | ψ ∈ Γpair.fst} ⊆ T',
-
 
  {cases Γpair with fs Hfs, rename h hTs,
   have dSs : Π f ∈ fs, Σ' S_f : (Theory_over T hT), set.mem S_f Ts ∧ (set.mem (f) (S_f.val)), -- to each f in fs, associate an S_f containing f from the chain
@@ -203,12 +214,17 @@ have witness_property := witness.property, cases witness_property with case1 cas
   have T_max : Σ' (T_max : Theory_over T hT), (T_max ∈ Ts) ∧ ∀ ψ ∈ fs, (ψ) ∈ T_max.val,  -- get the theory and a proof that it contains all the f
     {  let F : {f | f ∈ fs} → Theory_over T hT :=
     begin intro f, exact (dSs f.val f.property).fst end,
- let fs_list_subtype := list_is_list_of_subtype _ fs,
- let T_list : list (Theory_over T hT) :=
+  let fs_list_subtype := list_is_list_of_subtype _ fs,
+  let T_list : list (Theory_over T hT) :=
     begin fapply list.map F, exact fs_list_subtype.fst end,
   have T_list_subset_Ts : (∀ (S : Theory_over T hT), S ∈ T_list → S ∈ Ts),
-    intro S, simp [-sigma.exists, -sigma.forall], intros x h1 h2, simp [*,-h2] at h2, rw[<-h2.right],
-    have := (dSs x h1).snd.left, assumption,
+  {
+    intro S, simp only [-sigma.exists, -sigma.forall, and_imp, bex_imp_distrib,
+    list.mem_map, set_coe.exists, mem_set_of_eq, list.map],
+    intros x h1 h2, simp only [*,-h2] at h2,
+    rw[<-h2.right],
+    exact (dSs x h1).snd.left,
+  },
 
   have max_of_list := max_of_list_in_chain h_chain T_list T_list_subset_Ts,
   split, swap,
@@ -280,14 +296,18 @@ begin
 end
 
 /-- The maximal extension returned by maximal_extension cannot be extended. --/
-lemma cannot_extend_maximal_extension {L : Language} {T : Theory L} {hT : is_consistent T} (T_max' : Σ' (T_max : Theory_over T hT), ∀ T' : Theory_over T hT, T_max ⊆ T' → T' ⊆ T_max) (ψ : sentence L) (H : is_consistent (T_max'.fst.val ∪ {ψ}))(H1 : ψ ∉ T_max'.fst.val) : false :=
+lemma cannot_extend_maximal_extension {L : Language} {T : Theory L}
+  {hT : is_consistent T}
+  (T_max' : Σ' (T_max : Theory_over T hT), ∀ T' : Theory_over T hT, T_max ⊆ T' → T' ⊆ T_max)
+  (ψ : sentence L) (H : is_consistent (T_max'.fst.val ∪ {ψ}))
+  (H1 : ψ ∉ T_max'.fst.val) : false :=
 begin
   let T_bad : Theory_over T hT :=
     by {refine ⟨T_max'.fst.val ∪ {ψ}, ⟨_, H⟩⟩, simp[has_subset.subset], intros ψ hψT,
         dedup, have extension_assumption := T_max'.fst.property.left, simp[has_insert.insert],
         from or.inr (extension_assumption ‹_›)},
   have h_bad := T_max'.snd T_bad,
-  from absurd (h_bad (by finish) (by simp[has_insert.insert])) H1
+  from absurd (h_bad (by finish) (by simp)) H1
 end
 
 /-- Given a maximal consistent extension of consistent theory T, show it is complete --/

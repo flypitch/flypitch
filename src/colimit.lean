@@ -71,7 +71,8 @@ begin
     {intros x y, rcases x with ⟨i, x⟩, rcases y with ⟨j, y⟩, intro h,
     rcases h with ⟨ℓ,z,f_x,f_y,H⟩, repeat{fapply exists.intro},
     exacts [ℓ,z,f_y,f_x, and.intro H.right H.left]},
-    {unfold transitive, intros, cases x with i x, cases y with j y, cases z with k z,
+    {unfold transitive, intros x y z a a_1,
+    cases x with i x, cases y with j y, cases z with k z,
     rcases a with ⟨ℓ₁, z, fi, fj_1, Hℓ₁⟩, rcases a_1 with ⟨ℓ₂, z', fj_2, fk, Hℓ₂⟩,
     have a_2 := D.h_directed ℓ₁ ℓ₂, rcases a_2 with ⟨ℓ₃, g1, g2⟩,
     have f1 : D.rel i (ℓ₃),
@@ -127,13 +128,15 @@ end
 def universal_map {D} {F : directed_diagram D} {V : cocone F} : colimit F → (V.vertex) :=
 begin
   fapply quotient.lift, {exact λp, V.map p.fst p.snd},
-  {intros p q H, rcases p with ⟨i,x⟩, rcases q with ⟨j,y⟩, simp only *,
-   simp[(≈), germ_relation] at H, rcases H with ⟨k,z,⟨f1, H1⟩,f2,H2⟩,
-   change V.map i x = V.map j y, have : V.map i x = V.map k (F.mor f1 x),
-   simp only [V.h_compat f1, eq_self_iff_true, function.comp_app],
-   have : V.map j y = V.map k (F.mor f2 y),
-   simp only [V.h_compat f2, eq_self_iff_true, function.comp_app],
-   simp only [*, eq_self_iff_true],
+  { intros p q H, rcases p with ⟨i,x⟩, rcases q with ⟨j,y⟩,
+    simp only [(≈), germ_relation] at H,
+    obtain ⟨k , z , f1 , f2, ⟨H1 , H2⟩⟩ := H,
+    change V.map i x = V.map j y,
+    have : V.map i x = V.map k (F.mor f1 x),
+    simp only [V.h_compat f1, eq_self_iff_true, function.comp_app],
+    have : V.map j y = V.map k (F.mor f2 y),
+    simp only [V.h_compat f2, eq_self_iff_true, function.comp_app],
+    simp only [*, eq_self_iff_true],
   }
 end
 
@@ -155,15 +158,20 @@ simp only [*, V.h_compat Hik, V.h_compat Hjk, function.injective.eq_iff, eq_self
 end
 
 /- Given a germ-equivalence class from the colimit, return a representative from the coproduct and a proof that this is a lift  -/
-noncomputable def germ_rep {D} {F : directed_diagram D} (a : colimit F) : Σ' x : (coproduct_of_directed_diagram F), ⟦x⟧ = a := classical.psigma_of_exists (quotient.exists_rep a)
+noncomputable def germ_rep {D} {F : directed_diagram D} (a : colimit F) :
+  Σ' x : (coproduct_of_directed_diagram F), ⟦x⟧ = a :=
+classical.psigma_of_exists (quotient.exists_rep a)
 
 @[simp]lemma canonical_map_quotient {D} {F : directed_diagram D} (a : coproduct_of_directed_diagram F) : canonical_map a.fst a.snd = ⟦a⟧ :=
-by {auto_cases, refl}
+by {cases a, refl}
 
 /- Assuming canonical maps into the colimit are injective, ⟨i,x⟩ and ⟨j,y⟩ in the same fiber
 over a ⟦z⟧ : colimit F are related by any transition map i → j. -/
-@[simp]lemma eq_mor_of_same_fiber {D} {F : directed_diagram D} (a b : coproduct_of_directed_diagram F) {z : colimit F} (Ha : ⟦a⟧ = z) (Hb : ⟦b⟧ = z)
-                           (H_inj : ∀ i : D.carrier, function.injective (@canonical_map D F i)) (H_rel : D.rel a.fst b.fst) : F.mor H_rel a.snd = b.snd :=
+@[simp]lemma eq_mor_of_same_fiber {D} {F : directed_diagram D}
+  (a b : coproduct_of_directed_diagram F) {z : colimit F}
+  (Ha : ⟦a⟧ = z) (Hb : ⟦b⟧ = z)
+  (H_inj : ∀ i : D.carrier, function.injective (@canonical_map D F i))
+  (H_rel : D.rel a.fst b.fst) : F.mor H_rel a.snd = b.snd :=
 begin
 have H_eq : z = canonical_map (b.fst) (F.mor H_rel (a.snd)), by
   {have := (cocone_of_colimit F).h_compat, have H := congr_fun (@this a.fst b.fst H_rel) a.snd,
@@ -192,58 +200,99 @@ F.mor (by simp only [zero_le, le_add_iff_nonneg_right, add_comm]) x
 /- The push_to of x is in the same germ-equivalence class of x -/
 lemma same_fiber_as_push_to_r {F : directed_diagram ℕ'} {i} (x : F.obj i) (j) :
      canonical_map i x = canonical_map (i+j) (push_to_sum_r x j)  :=
-by {have := (cocone_of_colimit F).h_compat, have := @this i (i+j) (by simp), tidy}
+begin
+  have h := congr_fun (@cocone.h_compat _ _ (cocone_of_colimit F) i (i+j) (nat.le_add_right _ _)) x,
+  dsimp only [cocone_of_colimit] at h,
+  simp only [push_to_sum_r, h],
+end
 
 lemma same_fiber_as_push_to_l {F : directed_diagram ℕ'} {j} (x : F.obj j) (i) :
      canonical_map j x = canonical_map (i+j) (push_to_sum_l x i)  :=
-by {have := (cocone_of_colimit F).h_compat, have := @this i (i+j) (by simp), tidy}
+begin
+  have h := congr_fun (@cocone.h_compat _ _ (cocone_of_colimit F) j (i+j) (nat.le_add_left _ _)) x,
+  dsimp only [cocone_of_colimit] at h,
+  simp only [push_to_sum_l, h],
+end
 
 end colimit
 namespace omega_colimit
 open colimit
+
 /- Facts about directed colimits indexed by ℕ'. -/
-def diagram.mk.map {F : ℕ → Type*} {h_succ : ∀{i : ℕ}, F i → F (i+1)} : Π (x y : ℕ), x ≤ y → F x → F y
-| x 0 h := by {rw[nat.eq_zero_of_le_zero h], exact id}
-| x (y+1) h := by {by_cases x = y + 1, rw[h], exact id, refine h_succ ∘ _,
-                  apply diagram.mk.map, apply nat.le_of_le_and_ne_succ, repeat{assumption}}
+def diagram.mk.map {F : ℕ → Type*}
+  (h_succ : ∀{i : ℕ}, F i → F (i+1)) :
+  Π {x y : ℕ}, x ≤ y → F x → F y
+| 0     0 h := id -- by {rw[nat.eq_zero_of_le_zero h], exact id}
+| (x+1) 0 h := false.elim (nat.not_succ_le_zero _ h)
+| 0 (y+1) h := h_succ ∘ (diagram.mk.map (nat.le_of_le_and_ne_succ h (nat.succ_ne_zero y).symm))
+| (x+1) (y+1) h := dite (x + 1 = y + 1)
+  (λ heq, cast (congr_arg F heq) )
+  (λ hneq, h_succ ∘ (diagram.mk.map (nat.le_of_le_and_ne_succ h hneq)))
 
 @[simp]lemma diagram.mk.map_self_id {F : ℕ → Type*} {h_succ : ∀(i : ℕ), F i → F (i+1)} (x : ℕ) :
                   @diagram.mk.map F @h_succ x x (by constructor) = id :=
-by {induction x, tidy, simp[diagram.mk.map,*], refl}
+by {induction x, tidy, simp[diagram.mk.map,*]}
 
+lemma diagram.mk.map_le_succ {F : ℕ → Type*} {h_succ : ∀{i : ℕ}, F i → F (i+1)} :
+  Π {x y : ℕ} (h : x ≤ y+1) (hneq : x ≠ y + 1),
+  @diagram.mk.map _ (λ i, @h_succ i) _ _ h  =
+  h_succ ∘ (@diagram.mk.map _ (λ i, @h_succ i) _ _
+    (nat.le_of_le_and_ne_succ h hneq))
+| 0     y h hneq := rfl
+| (x+1) y h hneq := by simp only [diagram.mk.map, dif_neg hneq]
 
 /- If the successive maps of h_succ are injective, then all their compositions are injective -/
-lemma diagram.mk.map_inj {F : ℕ → Type*} {h_succ : ∀(i : ℕ), F i → F (i+1)} {h_inj : ∀ {i : ℕ}, function.injective (@h_succ i )} (x y : ℕ) (h : x ≤ y) : function.injective (@diagram.mk.map F h_succ x y h) :=
+lemma diagram.mk.map_inj
+  {F : ℕ → Type*} {h_succ : ∀(i : ℕ), F i → F (i+1)}
+  {h_inj : ∀ {i : ℕ}, function.injective (@h_succ i )} :
+  Π {x y : ℕ} (h : x ≤ y), function.injective (@diagram.mk.map F h_succ x y h)
+| 0     0 h := function.injective_id
+| (x+1) 0 h := (nat.not_succ_le_zero _ h).elim
+| 0 (y+1) h := function.injective.comp h_inj (diagram.mk.map_inj _)
+| (x+1) (y+1) h :=
 begin
-  induction y,
-    {have : x = 0, by exact nat.eq_zero_of_le_zero h, dsimp[*,diagram.mk.map], finish},
-    by_cases x = y_n + 1,
-      {dsimp[*, diagram.mk.map], finish},
-    have : x ≤ y_n, by {apply nat.le_of_le_and_ne_succ, repeat{assumption}},
-    simp[*, diagram.mk.map], apply function.injective_comp, apply h_inj, apply y_ih
+  rw [diagram.mk.map],
+  by_cases h' : x + 1 = y + 1,
+  {
+    simp only [h', dif_pos],
+    exact λ _ _, (cast_inj _).mp,
+  },
+  {
+    simp only [h', dif_neg, not_false_iff],
+    apply function.injective.comp h_inj,
+    apply diagram.mk.map_inj,
+  }
 end
 
 -- /- Given a ℕ-indexed family of types and a way of assigning maps between successive objects
 --    in this family, return the induced directed_diagram over ℕ'. -/
-def diagram.mk(F : ℕ → Type*) (h_succ :∀{i : ℕ}, F i → F (i+1)) : directed_diagram ℕ' :=
+def diagram.mk (F : ℕ → Type*) (h_succ :∀{i : ℕ}, F i → F (i+1)) :
+  directed_diagram ℕ' :=
+⟨F, by {apply diagram.mk.map, assumption}, λ x y z Hxy Hyz Hxz,
 begin
-refine ⟨F, by {apply diagram.mk.map, assumption}, _⟩,
-  intros x y z H1 H2 H3,
-    induction z, induction y, induction x,
-    dsimp[diagram.mk.map], refl,
-     by {exfalso, fapply nat.succ_ne_zero, exact x_n, apply (nat.le_zero_iff).mp, assumption},
-     by {exfalso, fapply nat.succ_ne_zero, exact y_n, apply (nat.le_zero_iff).mp, assumption},
-     by_cases h : y = z_n+1, subst h;
-       by_cases x = z_n+1;
-       {repeat{dsimp[diagram.mk.map], simp*, refl}},
-     by_cases h' : x = z_n+1,
-       {exfalso, have : y < z_n+1 := lt_of_le_of_ne H2 h, dsimp at *, linarith},
-       {have h_x : x ≤ z_n; have h_y : y ≤ z_n,
-         all_goals{try{apply nat.le_of_le_and_ne_succ, repeat{assumption}}},
-        have := @z_ih h_y h_x,
-        dsimp[diagram.mk.map],
-        simp only [h, h', dif_neg, not_false_iff, nat.le_of_le_and_ne_succ, this]}
+  induction z with z hz,
+  {
+    induction y with y hy, induction x with x hx,
+    {dsimp[diagram.mk.map], refl},
+    {by {exfalso, fapply nat.succ_ne_zero, exact x, apply (nat.le_zero_iff).mp, assumption}},
+    {by {exfalso, fapply nat.succ_ne_zero, exact y, apply (nat.le_zero_iff).mp, assumption}},
+  },
+  {
+    by_cases hyz : y = z+1,
+    subst hyz; by_cases x = z+1; {repeat{dsimp[diagram.mk.map], simp*, refl}},
+    by_cases hxz : x = z+1,
+    {exfalso, have h'': y < z+1 := lt_of_le_of_ne Hyz hyz, dsimp at *, linarith},
+    {
+      have h_x : x ≤ z; have h_y : y ≤ z,
+      all_goals{try{apply nat.le_of_le_and_ne_succ, repeat{assumption}}},
+      dsimp[diagram.mk.map],
+      rw diagram.mk.map_le_succ Hxz hxz,
+      rw diagram.mk.map_le_succ Hyz hyz,
+      simp only [nat.le_of_le_and_ne_succ, @hz h_y h_x],
+    }
+  }
 end
+⟩
 
 -- TODO refactor henkin_language_chain et al in terms of diagram.mk
 
