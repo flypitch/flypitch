@@ -39,7 +39,9 @@ end
 theorem model_existence_of_completeness {L : Language} (T : Theory L) (h_completeness : ∀ (T : Theory L) (ψ : sentence L), T ⊢' ψ ↔ T ⊨ ψ) : is_consistent T ↔ (∃ M : Structure L, (nonempty M) ∧ M ⊨ T) :=
 begin
   refine ⟨_,_⟩; intro H,
-    { by_contra H', push_neg at H', apply H, finish },
+    { by_contra H', push_neg at H', apply H,
+      rw h_completeness,
+      intros M hM0 hMT, exfalso, exact H' M hM0 hMT },
     { intro H', rcases H with ⟨_,_,_⟩, rw[h_completeness] at H',
       exact false_of_satisfied_false (H' ‹_› ‹_›) }
 end
