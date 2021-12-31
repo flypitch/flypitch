@@ -1,5 +1,5 @@
 
-* WARNING: 
+*** WARNING: 
 This branch only compiles up to completenss.lean and its dependencies, 
 but is compatible with a later version of lean (3.33.0). 
 If you are interested in just using the basic setup of model theory 
