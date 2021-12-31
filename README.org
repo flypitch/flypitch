@@ -2,6 +2,12 @@
 *** A formal proof of the independence of the continuum hypothesis
 In this repository we give a formal proof of the [[https://en.wikipedia.org/wiki/Continuum_hypothesis#Independence_from_ZFC][independence of the continuum hypothesis]], completing the original objective of the Flypitch project.
 
+** WARNING: this branch only compiles up to completenss.lean and its dependencies, 
+but is compatible with a later version of lean (3.33.0). 
+If you are interested in just using the basic setup of model theory 
+(including the compactness theorem - located at the end of completeness.lean) this should be all you need.
+However the master branch hosts the fully compilable project.
+
 The formal statement of the independence of the continuum hypothesis is given in [[src/summary.lean]]:
 #+begin_src lean
 theorem independence_of_CH : independent ZFC CH_f
