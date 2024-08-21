@@ -1,5 +1,4 @@
-image:
-  file: leanprovercommunity/mathlib
+image: leanprovercommunity/mathlib
 
 vscode:
   extensions:
