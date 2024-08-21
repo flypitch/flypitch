@@ -1,5 +1,5 @@
 image:
-  file: .docker/Dockerfile
+  file: leanprovercommunity/mathlib
 
 vscode:
   extensions:
