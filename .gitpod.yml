@@ -6,5 +6,8 @@ vscode:
     - jroesch.lean
 
 tasks:
-  - init: leanpkg configure && leanproject get-cache --fallback=download-all && leanproject build
+  - init: |
+      leanpkg configure
+      leanproject get-cache --fallback=download-all
+      leanproject build
     command: . /home/gitpod/.profile
