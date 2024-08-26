@@ -2362,6 +2362,17 @@ end
 @[simp] lemma all_realize_sentence_singleton {S : Structure L} {f : sentence L} : S ⊨ {f} ↔ S ⊨ f :=
 ⟨by{intro H, apply H, exact or.inl rfl}, by {intros H g Hg, repeat{cases Hg}, assumption}⟩
 
+@[simp] lemma all_realize_sentence_union {L} (S : Structure L) (T₁ T₂ : Theory L) :
+  S ⊨ T₁ ∪ T₂ ↔ S ⊨ T₁ ∧ S ⊨ T₂ :=
+by simp only [all_realize_sentence, set.mem_union_eq,
+  or_imp_distrib, forall_and_distrib]
+
+@[simp] lemma all_realize_sentence_range {L} {α}
+  (S : Structure L) (fs : α → sentence L) :
+S ⊨ set.range fs ↔ ∀ a : α, S ⊨ fs a :=
+by simp only [all_realize_sentence, forall_apply_eq_imp_iff',
+  set.mem_range, exists_imp_distrib]
+
 @[simp]lemma realize_sentence_of_mem {S} {T : Theory L} {f : sentence L} (H : S ⊨ T) (H_mem : f ∈ T) : S ⊨ f := H H_mem
 
 def ssatisfied (T : Theory L) (f : sentence L) :=
